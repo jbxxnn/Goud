@@ -9,9 +9,47 @@ export interface Service {
   lead_time: number; // Minimum lead time in hours before booking
   reschedule_cutoff: number; // Hours before appointment when rescheduling is no longer allowed
   instructions: string | null;
+  price: number; // Service price in euros
+  sale_price: number | null; // Sale price in euros (optional)
+  cancel_cutoff: number | null; // Hours before appointment when cancellation is no longer allowed
+  scheduling_window: number; // How many weeks in advance can be booked
+  category_id: string | null; // Service category ID
+  service_categories?: ServiceCategory; // Joined category data
+  policy_fields: ServicePolicyField[]; // Dynamic policy fields
+  staff_ids?: string[]; // IDs of staff qualified for this service
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServicePolicyField {
+  id: string;
+  service_id: string;
+  field_type: 'multi_choice' | 'text_input' | 'number_input' | 'date_time' | 'checkbox' | 'file_upload';
+  title: string;
+  description: string | null;
+  is_required: boolean;
+  order: number;
+  choices?: ServicePolicyFieldChoice[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServicePolicyFieldChoice {
+  id: string;
+  field_id: string;
+  title: string;
+  price: number;
+  order: number;
 }
 
 export interface ServiceAddon {
@@ -38,6 +76,13 @@ export interface CreateServiceRequest {
   lead_time?: number;
   reschedule_cutoff?: number;
   instructions?: string;
+  price?: number;
+  sale_price?: number | null;
+  cancel_cutoff?: number | null;
+  scheduling_window?: number;
+  category_id?: string | null;
+  policy_fields?: ServicePolicyField[];
+  staff_ids?: string[];
   is_active?: boolean;
 }
 
@@ -49,6 +94,13 @@ export interface UpdateServiceRequest {
   lead_time?: number;
   reschedule_cutoff?: number;
   instructions?: string;
+  price?: number;
+  sale_price?: number | null;
+  cancel_cutoff?: number | null;
+  scheduling_window?: number;
+  category_id?: string | null;
+  policy_fields?: ServicePolicyField[];
+  staff_ids?: string[];
   is_active?: boolean;
 }
 
@@ -109,6 +161,13 @@ export interface ServiceFormData {
   lead_time: number;
   reschedule_cutoff: number;
   instructions: string;
+  price: number;
+  sale_price: number | null;
+  cancel_cutoff: number | null;
+  scheduling_window: number;
+  category_id: string | null;
+  policy_fields: ServicePolicyField[];
+  staff_ids: string[];
   is_active: boolean;
 }
 
@@ -175,9 +234,9 @@ export const formatDuration = (minutes: number): string => {
 
 // Helper function to format price for display
 export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('nl-NL', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
   }).format(price);
 };
 

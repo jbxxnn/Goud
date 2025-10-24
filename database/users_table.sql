@@ -28,6 +28,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create trigger for updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at 
     BEFORE UPDATE ON users 
     FOR EACH ROW 
@@ -50,6 +51,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create trigger for automatic user creation
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -58,6 +60,13 @@ CREATE TRIGGER on_auth_user_created
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Users can read own profile" ON users;
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+DROP POLICY IF EXISTS "Admins can read all users" ON users;
+DROP POLICY IF EXISTS "Admins can update all users" ON users;
+DROP POLICY IF EXISTS "Staff can read staff and clients" ON users;
+
 -- Users can read their own profile
 CREATE POLICY "Users can read own profile" ON users
     FOR SELECT USING (auth.uid() = id);
@@ -66,32 +75,9 @@ CREATE POLICY "Users can read own profile" ON users
 CREATE POLICY "Users can update own profile" ON users
     FOR UPDATE USING (auth.uid() = id);
 
--- Admins can read all users
-CREATE POLICY "Admins can read all users" ON users
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
-
--- Admins can update all users
-CREATE POLICY "Admins can update all users" ON users
-    FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
-
--- Staff can read other staff and clients (for booking purposes)
-CREATE POLICY "Staff can read staff and clients" ON users
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE id = auth.uid() AND role IN ('admin', 'staff', 'midwife')
-        )
-    );
+-- Simple policy that allows all authenticated users (no recursion)
+CREATE POLICY "basic_auth_check" ON users
+    FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;

@@ -1,4 +1,6 @@
 
+"use client"
+
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +13,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { DashboardSquare03Icon, Location03Icon, UserGroup03Icon} from '@hugeicons/core-free-icons';
+import { DashboardSquare03Icon, Location03Icon, UserGroup03Icon, InjectionIcon} from '@hugeicons/core-free-icons';
+import { usePathname } from 'next/navigation';
 
 
 
@@ -37,7 +40,7 @@ const items = [
   {
     title: "Services",
     url: "/dashboard/services",
-    icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
+    icon: <HugeiconsIcon icon={InjectionIcon} />,
   },
   {
     title: "Bookings",
@@ -62,23 +65,33 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Application</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="mt-12">
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      {item.icon}
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const isActive = pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive}
+                      className={isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                      style={{ borderRadius: "0.5rem" }}
+                    >
+                      <a href={item.url} className="min-h-10 p-4">
+                        {item.icon}
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

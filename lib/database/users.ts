@@ -1,13 +1,12 @@
 // Database utilities for user operations
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { User, CreateUserRequest, UpdateUserRequest, UserResponse, UsersResponse } from '@/lib/types/user';
-
-const supabase = createClient();
 
 export class UserService {
   // Get user by ID
   static async getUserById(id: string): Promise<UserResponse> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -30,6 +29,7 @@ export class UserService {
   // Get user by email
   static async getUserByEmail(email: string): Promise<UserResponse> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -52,6 +52,7 @@ export class UserService {
   // Get all users with pagination
   static async getUsers(page: number = 1, limit: number = 10, role?: string): Promise<UsersResponse> {
     try {
+      const supabase = await createClient();
       let query = supabase
         .from('users')
         .select('*', { count: 'exact' })
@@ -93,6 +94,7 @@ export class UserService {
   // Update user
   static async updateUser(id: string, updates: UpdateUserRequest): Promise<UserResponse> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -119,6 +121,7 @@ export class UserService {
   // Update last login
   static async updateLastLogin(id: string): Promise<UserResponse> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from('users')
         .update({
@@ -145,6 +148,7 @@ export class UserService {
   // Get current user from session
   static async getCurrentUser(): Promise<UserResponse> {
     try {
+      const supabase = await createClient();
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !authUser) {
@@ -163,6 +167,7 @@ export class UserService {
   // Search users
   static async searchUsers(searchTerm: string, role?: string): Promise<UsersResponse> {
     try {
+      const supabase = await createClient();
       let query = supabase
         .from('users')
         .select('*')
@@ -194,6 +199,7 @@ export class UserService {
   // Get users by role
   static async getUsersByRole(role: string): Promise<UsersResponse> {
     try {
+      const supabase = await createClient();
       const { data, error } = await supabase
         .from('users')
         .select('*')
