@@ -10,7 +10,7 @@ import {
 } from '@/lib/types/staff';
 
 export class StaffService {
-  async getStaffById(id: string): Promise<Staff | null> {
+  static async getStaffById(id: string): Promise<Staff | null> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff')
@@ -26,7 +26,7 @@ export class StaffService {
     return data;
   }
 
-  async getStaffWithDetails(id: string): Promise<StaffWithDetails | null> {
+  static async getStaffWithDetails(id: string): Promise<StaffWithDetails | null> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff_with_details')
@@ -42,7 +42,7 @@ export class StaffService {
     return data;
   }
 
-  async getStaff(params: StaffSearchParams = {}): Promise<{
+  static async getStaff(params: StaffSearchParams = {}): Promise<{
     data: Staff[];
     total: number;
   }> {
@@ -103,7 +103,26 @@ export class StaffService {
     };
   }
 
-  async createStaff(staffData: CreateStaffRequest): Promise<Staff> {
+  static async getActiveStaff(): Promise<{
+    success: boolean;
+    data?: Staff[];
+    error?: string;
+  }> {
+    try {
+      const result = await this.getStaff({ active_only: true, limit: 1000 });
+      return {
+        success: true,
+        data: result.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  static async createStaff(staffData: CreateStaffRequest): Promise<Staff> {
     const { location_ids, service_ids, ...staffFields } = staffData;
 
     const supabase = await createClient();
@@ -157,7 +176,7 @@ export class StaffService {
     return staff;
   }
 
-  async updateStaff(id: string, staffData: UpdateStaffRequest): Promise<Staff> {
+  static async updateStaff(id: string, staffData: UpdateStaffRequest): Promise<Staff> {
     const { location_ids, service_ids, ...staffFields } = staffData;
 
     const supabase = await createClient();
@@ -233,7 +252,7 @@ export class StaffService {
     return staff;
   }
 
-  async deleteStaff(id: string): Promise<void> {
+  static async deleteStaff(id: string): Promise<void> {
     const supabase = await createClient();
     const { error } = await supabase
       .from('staff')
@@ -245,23 +264,39 @@ export class StaffService {
     }
   }
 
-  async getStaffByUserId(userId: string): Promise<Staff | null> {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('staff')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+  static async getStaffByUserId(userId: string): Promise<{
+    success: boolean;
+    data?: Staff;
+    error?: string;
+  }> {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    if (error) {
-      console.error('Error fetching staff by user ID:', error);
-      return null;
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+
+      return {
+        success: true,
+        data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
-
-    return data;
   }
 
-  async getStaffByLocation(locationId: string): Promise<Staff[]> {
+  static async getStaffByLocation(locationId: string): Promise<Staff[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff')
@@ -280,7 +315,7 @@ export class StaffService {
     return data || [];
   }
 
-  async getStaffByService(serviceId: string): Promise<Staff[]> {
+  static async getStaffByService(serviceId: string): Promise<Staff[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff')
@@ -300,7 +335,7 @@ export class StaffService {
     return data || [];
   }
 
-  async getStaffLocations(staffId: string): Promise<StaffLocationAssignment[]> {
+  static async getStaffLocations(staffId: string): Promise<StaffLocationAssignment[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff_locations')
@@ -318,7 +353,7 @@ export class StaffService {
     return data || [];
   }
 
-  async getStaffServices(staffId: string): Promise<StaffServiceQualification[]> {
+  static async getStaffServices(staffId: string): Promise<StaffServiceQualification[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('staff_services')
@@ -336,7 +371,7 @@ export class StaffService {
     return data || [];
   }
 
-  async updateStaffLocationAssignment(
+  static async updateStaffLocationAssignment(
     staffId: string, 
     locationId: string, 
     isPrimary: boolean
@@ -353,7 +388,7 @@ export class StaffService {
     }
   }
 
-  async updateStaffServiceQualification(
+  static async updateStaffServiceQualification(
     staffId: string,
     serviceId: string,
     isQualified: boolean,
@@ -384,7 +419,7 @@ export class StaffService {
     }
   }
 
-  async staffEmailExists(email: string, excludeId?: string): Promise<boolean> {
+  static async staffEmailExists(email: string, excludeId?: string): Promise<boolean> {
     const supabase = await createClient();
     let query = supabase
       .from('staff')

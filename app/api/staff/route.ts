@@ -36,8 +36,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply pagination
-    const from = (params.page - 1) * params.limit;
-    const to = from + params.limit - 1;
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
     query = query.range(from, to).order('created_at', { ascending: false });
 
@@ -54,10 +56,10 @@ export async function GET(request: NextRequest) {
       success: true,
       data: data || [],
       pagination: {
-        page: params.page,
-        limit: params.limit,
+        page,
+        limit,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / params.limit)
+        totalPages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
