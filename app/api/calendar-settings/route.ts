@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
     const { badge_variant, visible_hours, working_hours } = body;
 
     // Execute updates
-    const updatePromises: Promise<any>[] = [];
+    const updatePromises: Promise<{ data: CalendarSetting[] | null; error: unknown }>[] = [];
 
     if (badge_variant !== undefined) {
       updatePromises.push(
