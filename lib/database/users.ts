@@ -1,6 +1,8 @@
 // Database utilities for user operations
 import { createClient } from '@/lib/supabase/server';
-import { User, CreateUserRequest, UpdateUserRequest, UserResponse, UsersResponse } from '@/lib/types/user';
+import { 
+  // User, CreateUserRequest, 
+  UpdateUserRequest, UserResponse, UsersResponse } from '@/lib/types/user';
 
 export class UserService {
   // Get user by ID

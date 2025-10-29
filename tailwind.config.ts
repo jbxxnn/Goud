@@ -7,10 +7,19 @@ export default {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    "./calendar/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
+      spacing: {
+        '18': '4.5rem',
+      },
+      backgroundImage: {
+        'diagonal-stripe': 'repeating-linear-gradient(45deg, transparent, transparent 10px, hsl(var(--muted) / 0.15) 10px, hsl(var(--muted) / 0.15) 20px)',
+        'diagonal-stripe-light': 'repeating-linear-gradient(45deg, transparent, transparent 10px, hsl(var(--muted) / 0.08) 10px, hsl(var(--muted) / 0.08) 20px)',
+      },
       colors: {
+        'calendar-disabled-hour': 'hsl(var(--muted) / 0.3)',
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: {
