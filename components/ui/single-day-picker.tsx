@@ -42,7 +42,7 @@ function SingleDayPicker({ id, onSelect, className, placeholder, labelVariant = 
       </PopoverTrigger>
 
       <PopoverContent align="center" className="w-fit p-0">
-        <SingleCalendar mode="single" selected={value} onSelect={handleSelect} />
+        <SingleCalendar selected={value} onSelect={handleSelect} />
       </PopoverContent>
     </Popover>
   );
