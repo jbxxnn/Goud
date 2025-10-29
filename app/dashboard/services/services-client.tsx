@@ -9,6 +9,7 @@ import ServiceModal from '@/components/service-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createServiceColumns } from '@/components/services-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from 'sonner';
 
 interface ServicesClientProps {
   initialServices: Service[];
@@ -24,7 +25,6 @@ export default function ServicesClient({
 }: ServicesClientProps) {
   const [services, setServices] = useState<Service[]>(initialServices);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | undefined>();
@@ -37,7 +37,6 @@ export default function ServicesClient({
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -49,12 +48,15 @@ export default function ServicesClient({
       const data: ServicesResponse = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch services');
+        throw new Error('Failed to fetch services');
       }
 
       setServices(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch services';
+      toast.error('Failed to load services', {
+        description: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
@@ -75,20 +77,31 @@ export default function ServicesClient({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete service');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete service');
       }
 
       // Refresh services
       await fetchServices();
       setDeleteDialogOpen(false);
+      const serviceName = serviceToDelete.name;
       setServiceToDelete(null);
+      toast.success('Service deleted', {
+        description: `${serviceName} has been deleted successfully.`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete service');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete service';
+      toast.error('Failed to delete service', {
+        description: errorMessage,
+      });
     }
   };
 
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const service = services.find(s => s.id === id);
+    const newStatus = !currentStatus;
+    
     try {
       const response = await fetch(`/api/services/${id}`, {
         method: 'PUT',
@@ -96,18 +109,25 @@ export default function ServicesClient({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          is_active: !currentStatus,
+          is_active: newStatus,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update service');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update service');
       }
 
       // Refresh services
       await fetchServices();
+      toast.success(`Service ${newStatus ? 'activated' : 'deactivated'}`, {
+        description: service ? `${service.name} has been ${newStatus ? 'activated' : 'deactivated'}.` : undefined,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update service');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update service';
+      toast.error('Failed to update service', {
+        description: errorMessage,
+      });
     }
   };
 
@@ -142,6 +162,8 @@ export default function ServicesClient({
 
   // Save service
   const handleSaveService = async (data: CreateServiceRequest | UpdateServiceRequest) => {
+    const isEditing = !!editingService;
+    
     try {
       const url = editingService ? `/api/services/${editingService.id}` : '/api/services';
       const method = editingService ? 'PUT' : 'POST';
@@ -155,17 +177,25 @@ export default function ServicesClient({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to save service');
       }
 
       // Refresh services
       await fetchServices();
       
+      // Show success toast
+      toast.success(`Service ${isEditing ? 'updated' : 'created'}`, {
+        description: `${data.name} has been ${isEditing ? 'updated' : 'created'} successfully.`,
+      });
+      
       // Close modal after successful save
       handleCloseModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save service');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save service';
+      toast.error('Failed to save service', {
+        description: errorMessage,
+      });
       throw err; // Re-throw to let the form handle it
     }
   };
@@ -194,18 +224,6 @@ export default function ServicesClient({
           Add Service
         </Button>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="border-destructive bg-destructive/5">
-          <div className="pt-6">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-destructive" />
-              <p className="text-destructive font-medium">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Services Table */}
       <div>

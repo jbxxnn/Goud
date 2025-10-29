@@ -9,6 +9,7 @@ import StaffModal from '@/components/staff-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createStaffColumns } from '@/components/staff-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from 'sonner';
 
 interface StaffClientProps {
   initialStaff: Staff[];
@@ -24,7 +25,6 @@ export default function StaffClient({
 }: StaffClientProps) {
   const [staff, setStaff] = useState<Staff[]>(initialStaff);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>();
@@ -37,7 +37,6 @@ export default function StaffClient({
   const fetchStaff = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -54,7 +53,10 @@ export default function StaffClient({
 
       setStaff(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch staff';
+      toast.error('Failed to load staff', {
+        description: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
@@ -75,20 +77,31 @@ export default function StaffClient({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete staff');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete staff');
       }
 
       // Refresh staff
       await fetchStaff();
       setDeleteDialogOpen(false);
+      const staffName = `${staffToDelete.first_name} ${staffToDelete.last_name}`;
       setStaffToDelete(null);
+      toast.success('Staff deleted', {
+        description: `${staffName} has been deleted successfully.`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete staff');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete staff';
+      toast.error('Failed to delete staff', {
+        description: errorMessage,
+      });
     }
   };
 
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const staffMember = staff.find(s => s.id === id);
+    const newStatus = !currentStatus;
+    
     try {
       const response = await fetch(`/api/staff/${id}`, {
         method: 'PUT',
@@ -96,18 +109,26 @@ export default function StaffClient({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          is_active: !currentStatus,
+          is_active: newStatus,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update staff');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update staff');
       }
 
       // Refresh staff
       await fetchStaff();
+      const staffName = staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'Staff member';
+      toast.success(`Staff ${newStatus ? 'activated' : 'deactivated'}`, {
+        description: `${staffName} has been ${newStatus ? 'activated' : 'deactivated'}.`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update staff');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update staff';
+      toast.error('Failed to update staff', {
+        description: errorMessage,
+      });
     }
   };
 
@@ -142,6 +163,8 @@ export default function StaffClient({
 
   // Save staff
   const handleSaveStaff = async (data: CreateStaffRequest | UpdateStaffRequest) => {
+    const isEditing = !!editingStaff;
+    
     try {
       const url = editingStaff ? `/api/staff/${editingStaff.id}` : '/api/staff';
       const method = editingStaff ? 'PUT' : 'POST';
@@ -155,17 +178,28 @@ export default function StaffClient({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to save staff');
       }
 
       // Refresh staff
       await fetchStaff();
       
+      // Show success toast
+      const staffName = data.first_name && data.last_name 
+        ? `${data.first_name} ${data.last_name}` 
+        : 'Staff member';
+      toast.success(`Staff ${isEditing ? 'updated' : 'created'}`, {
+        description: `${staffName} has been ${isEditing ? 'updated' : 'created'} successfully.`,
+      });
+      
       // Close modal after successful save
       handleCloseModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save staff');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save staff';
+      toast.error('Failed to save staff', {
+        description: errorMessage,
+      });
       throw err; // Re-throw to let the form handle it
     }
   };
@@ -194,18 +228,6 @@ export default function StaffClient({
           Add Staff
         </Button>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="border-destructive bg-destructive/5">
-          <div className="pt-6">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-destructive" />
-              <p className="text-destructive font-medium">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Staff Table */}
       <div>
