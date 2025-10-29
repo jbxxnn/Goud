@@ -146,6 +146,13 @@ import {
     const dayHours = workingHours[dayIndex];
     return hour >= dayHours.from && hour < dayHours.to;
   }
+
+  export function isDayClosed(day: Date, workingHours: TWorkingHours) {
+    const dayIndex = day.getDay() as keyof typeof workingHours;
+    const dayHours = workingHours[dayIndex];
+    // A day is closed when both from and to are 0
+    return dayHours.from === 0 && dayHours.to === 0;
+  }
   
   export function getVisibleHours(visibleHours: TVisibleHours, singleDayEvents: IEvent[]) {
     let earliestEventHour = visibleHours.from;

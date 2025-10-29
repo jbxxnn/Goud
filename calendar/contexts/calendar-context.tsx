@@ -37,11 +37,39 @@ const WORKING_HOURS = {
 
 const VISIBLE_HOURS = { from: 7, to: 18 };
 
-export function CalendarProvider({ children, users, events }: { children: React.ReactNode; users: IUser[]; events: IEvent[] }) {
-  // Initialize with default values, will be updated after API call
-  const [badgeVariant, setBadgeVariant] = useState<TBadgeVariant>("colored");
-  const [visibleHours, setVisibleHours] = useState<TVisibleHours>(VISIBLE_HOURS);
-  const [workingHours, setWorkingHours] = useState<TWorkingHours>(WORKING_HOURS);
+interface CalendarProviderProps {
+  children: React.ReactNode;
+  users: IUser[];
+  events: IEvent[];
+  initialSettings?: Record<string, unknown> | null;
+}
+
+export function CalendarProvider({ children, users, events, initialSettings }: CalendarProviderProps) {
+  // Initialize with server-side fetched settings if available, otherwise use defaults
+  const getInitialBadgeVariant = (): TBadgeVariant => {
+    if (initialSettings?.badge_variant) {
+      return initialSettings.badge_variant as TBadgeVariant;
+    }
+    return "colored";
+  };
+
+  const getInitialVisibleHours = (): TVisibleHours => {
+    if (initialSettings?.visible_hours) {
+      return initialSettings.visible_hours as TVisibleHours;
+    }
+    return VISIBLE_HOURS;
+  };
+
+  const getInitialWorkingHours = (): TWorkingHours => {
+    if (initialSettings?.working_hours) {
+      return initialSettings.working_hours as TWorkingHours;
+    }
+    return WORKING_HOURS;
+  };
+
+  const [badgeVariant, setBadgeVariant] = useState<TBadgeVariant>(getInitialBadgeVariant());
+  const [visibleHours, setVisibleHours] = useState<TVisibleHours>(getInitialVisibleHours());
+  const [workingHours, setWorkingHours] = useState<TWorkingHours>(getInitialWorkingHours());
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -54,7 +82,8 @@ export function CalendarProvider({ children, users, events }: { children: React.
   // and the request that fetches the events should be refetched
   const [localEvents, setLocalEvents] = useState<IEvent[]>(events);
 
-  // Fetch settings from API on mount
+  // Fetch settings from API on mount to ensure we have the latest
+  // Since we already have initial settings from server, this is just a background sync
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -63,14 +92,21 @@ export function CalendarProvider({ children, users, events }: { children: React.
           const data = await response.json();
           if (data.success && data.data) {
             // Update settings from API (directly set state, don't trigger save)
+            // Only update if different from current values to avoid unnecessary re-renders
             if (data.data.badge_variant !== undefined) {
-              setBadgeVariant(data.data.badge_variant);
+              setBadgeVariant(prev => data.data.badge_variant !== prev ? data.data.badge_variant : prev);
             }
             if (data.data.visible_hours !== undefined) {
-              setVisibleHours(data.data.visible_hours);
+              setVisibleHours(prev => {
+                const newHours = data.data.visible_hours as TVisibleHours;
+                return JSON.stringify(newHours) !== JSON.stringify(prev) ? newHours : prev;
+              });
             }
             if (data.data.working_hours !== undefined) {
-              setWorkingHours(data.data.working_hours);
+              setWorkingHours(prev => {
+                const newHours = data.data.working_hours as TWorkingHours;
+                return JSON.stringify(newHours) !== JSON.stringify(prev) ? newHours : prev;
+              });
             }
           }
         }
@@ -81,8 +117,14 @@ export function CalendarProvider({ children, users, events }: { children: React.
       }
     };
 
+    // If we have initial settings, mark as loaded immediately (settings already available)
+    // Still fetch in background to ensure we have the latest
+    if (initialSettings) {
+      setIsInitialLoad(false);
+    }
     fetchSettings();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleSelectDate = (date: Date | undefined) => {
     if (!date) return;

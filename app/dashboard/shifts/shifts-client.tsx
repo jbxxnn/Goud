@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import { CalendarEvent, ShiftWithDetails, ShiftsWithDetailsResponse } from '@/lib/types/shift';
@@ -9,7 +9,9 @@ import { CalendarProvider } from '@/calendar/contexts/calendar-context';
 import { ShiftCalendarContainer } from '@/components/shift-calendar-container';
 import { CalendarSettings } from '@/components/calendar-settings';
 import { Staff } from '@/lib/types/staff';
+import { Location } from '@/lib/types/location_simple';
 import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
+import { mapLocationColorToCalendarColor } from '@/lib/utils/location-color-mapper';
 import type { TCalendarView } from '@/calendar/types';
 
 interface IUser {
@@ -28,9 +30,15 @@ interface IEvent {
   user: IUser;
 }
 
-export default function ShiftsClient() {
+interface ShiftsClientProps {
+  initialCalendarSettings?: Record<string, unknown> | null;
+}
+
+export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientProps) {
   const [shifts, setShifts] = useState<ShiftWithDetails[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate] = useState<Date>(new Date());
@@ -94,10 +102,30 @@ export default function ShiftsClient() {
     }
   }, []);
 
+  // Fetch locations
+  const fetchLocations = useCallback(async () => {
+    try {
+      setLocationsLoading(true);
+      const response = await fetch('/api/locations-simple?active_only=true&limit=1000');
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error('Failed to fetch locations');
+      }
+
+      setLocations(data.data || []);
+    } catch (err) {
+      console.error('Error fetching locations:', err);
+    } finally {
+      setLocationsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchShifts();
     fetchStaff();
-  }, [fetchShifts, fetchStaff]);
+    fetchLocations();
+  }, [fetchShifts, fetchStaff, fetchLocations]);
 
   // Convert staff to calendar users format
   const users: IUser[] = staff.map((s) => ({
@@ -106,36 +134,65 @@ export default function ShiftsClient() {
     picturePath: null,
   }));
 
-  // Color map for locations
-  const locationColors: { [key: string]: IEvent['color'] } = {};
-  const colors: IEvent['color'][] = ['blue', 'green', 'red', 'yellow', 'purple', 'orange'];
-  
-  shifts.forEach((shift) => {
-    if (!locationColors[shift.location_id]) {
-      locationColors[shift.location_id] = colors[Object.keys(locationColors).length % colors.length];
+  // Color map for locations using actual location colors
+  // Use useMemo to ensure it only recalculates when locations change
+  // Only build color map if locations are loaded to avoid fallback colors
+  const locationColors = useMemo(() => {
+    const colorMap: { [key: string]: IEvent['color'] } = {};
+    
+    // Only build color map if locations are loaded
+    if (locations.length > 0) {
+      locations.forEach((location) => {
+        const mappedColor = mapLocationColorToCalendarColor(location.color);
+        colorMap[location.id] = mappedColor;
+      });
     }
-  });
+
+    // Fallback for any shifts with locations not in the fetched list (only after locations are loaded)
+    if (!locationsLoading && locations.length > 0) {
+      const defaultColors: IEvent['color'][] = ['blue', 'green', 'red', 'yellow', 'purple', 'orange'];
+      shifts.forEach((shift) => {
+        if (!colorMap[shift.location_id]) {
+          // Use a consistent fallback color based on location ID hash
+          const hash = shift.location_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          colorMap[shift.location_id] = defaultColors[hash % defaultColors.length];
+        }
+      });
+    }
+
+    return colorMap;
+  }, [locations, shifts, locationsLoading]);
 
   // Convert shifts to calendar events
-  const events: CalendarEvent[] = shifts.map((shift) => {
-    const calendarEvent = shiftToCalendarEvent(shift, locationColors);
-    return {
-      id: calendarEvent.id, // Use shift ID as string
-      startDate: calendarEvent.startDate,
-      endDate: calendarEvent.endDate,
-      title: calendarEvent.title,
-      color: calendarEvent.color,
-      description: calendarEvent.description,
-      user: calendarEvent.user,
-    };
-  });
+  // Only convert if locations are loaded (to avoid using fallback colors)
+  const events: CalendarEvent[] = useMemo(() => {
+    // Wait for locations to load before generating events with colors
+    if (locationsLoading) {
+      return [];
+    }
+    
+    return shifts.map((shift) => {
+      const calendarEvent = shiftToCalendarEvent(shift, locationColors);
+      return {
+        id: calendarEvent.id, // Use shift ID as string
+        startDate: calendarEvent.startDate,
+        endDate: calendarEvent.endDate,
+        title: calendarEvent.title,
+        color: calendarEvent.color,
+        description: calendarEvent.description,
+        user: calendarEvent.user,
+      };
+    });
+  }, [shifts, locationColors, locationsLoading]);
 
-  if (loading) {
+  if (loading || locationsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex items-center gap-3">
           <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="text-muted-foreground">Loading shifts...</span>
+          <span className="text-muted-foreground">
+            {loading ? 'Loading shifts...' : 'Loading locations...'}
+          </span>
         </div>
       </div>
     );
@@ -166,7 +223,11 @@ export default function ShiftsClient() {
       {/* Calendar */}
       <div className="bg-background">
         {users.length > 0 ? (
-          <CalendarProvider users={users} events={events as unknown as IEvent[]}>
+          <CalendarProvider 
+            users={users} 
+            events={events as unknown as IEvent[]}
+            initialSettings={initialCalendarSettings}
+          >
             <ShiftCalendarContainer 
               view={calendarView} 
               onViewChange={setCalendarView}

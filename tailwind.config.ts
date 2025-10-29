@@ -15,8 +15,8 @@ export default {
         '18': '4.5rem',
       },
       backgroundImage: {
-        'diagonal-stripe': 'repeating-linear-gradient(45deg, transparent, transparent 10px, hsl(var(--muted) / 0.15) 10px, hsl(var(--muted) / 0.15) 20px)',
-        'diagonal-stripe-light': 'repeating-linear-gradient(45deg, transparent, transparent 10px, hsl(var(--muted) / 0.08) 10px, hsl(var(--muted) / 0.08) 20px)',
+        'diagonal-stripe': 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+        'diagonal-stripe-light': 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
       },
       colors: {
         'calendar-disabled-hour': 'hsl(var(--muted) / 0.3)',

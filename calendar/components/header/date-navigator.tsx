@@ -10,7 +10,7 @@ import { getEventsCount, navigateDate, rangeText } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
-import { MoveLeftIcon, MoveRightIcon } from "@hugeicons/core-free-icons";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 interface IProps {
@@ -35,20 +35,20 @@ export function DateNavigator({ view, events }: IProps) {
         <span className="text-lg font-semibold">
           {month} {year}
         </span>
-        <Badge variant="outline" className="px-1.5">
+        <Badge className="px-1.5 bg-secondary text-secondary-foreground border-secondary-foreground">
           {eventCount} events
         </Badge>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button onClick={handlePrevious} className="bg-secondary hover:bg-secondary/80 text-primary rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
-          <HugeiconsIcon icon={MoveLeftIcon} size={24} />
+        <Button onClick={handlePrevious} className="bg-secondary-foreground hover:bg-secondary-foreground/80 text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} />
         </Button>
 
         <p className="text-sm text-muted-foreground">{rangeText(view, selectedDate)}</p>
 
-        <Button onClick={handleNext} className="bg-secondary hover:bg-secondary/80 text-primary rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
-          <HugeiconsIcon icon={MoveRightIcon} size={24} />
+        <Button onClick={handleNext} className="bg-secondary-foreground hover:bg-secondary-foreground/80 text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
+          <HugeiconsIcon icon={ArrowRight01Icon} size={24} />
         </Button>
       </div>
     </div>

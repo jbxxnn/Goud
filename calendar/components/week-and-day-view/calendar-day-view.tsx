@@ -13,7 +13,7 @@ import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calend
 import { DayViewMultiDayEventsRow } from "@/calendar/components/week-and-day-view/day-view-multi-day-events-row";
 
 import { cn } from "@/lib/utils";
-import { groupEvents, getEventBlockStyle, isWorkingHour, getCurrentEvents, getVisibleHours } from "@/calendar/helpers";
+import { groupEvents, getEventBlockStyle, isWorkingHour, getCurrentEvents, getVisibleHours, isDayClosed } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
 
@@ -43,18 +43,6 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
   // If no events are happening right now, show all events for the selected day
   const displayEvents = currentEvents.length > 0 ? currentEvents : dayEvents;
 
-  // Debug logging
-  console.log('CalendarDayView Debug:', {
-    selectedDate: selectedDate.toISOString(),
-    selectedDateFormatted: format(selectedDate, 'MMM d, yyyy'),
-    dayEventsCount: dayEvents.length,
-    currentEventsCount: currentEvents.length,
-    displayEventsCount: displayEvents.length,
-    dayEvents: dayEvents.map(e => ({ title: e.title, startDate: e.startDate, endDate: e.endDate })),
-    currentEvents: currentEvents.map(e => ({ title: e.title, startDate: e.startDate, endDate: e.endDate })),
-    displayEvents: displayEvents.map(e => ({ title: e.title, startDate: e.startDate, endDate: e.endDate }))
-  });
-
   const groupedEvents = groupEvents(dayEvents);
 
   return (
@@ -66,7 +54,16 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
           {/* Day header */}
           <div className="relative z-20 flex border-b">
             <div className="w-18"></div>
-            <span className="flex-1 border-l py-2 text-center text-xs font-medium text-muted-foreground">
+            <span 
+              className={cn(
+                "flex-1 border-l py-2 text-center text-xs font-medium text-muted-foreground",
+                !isDayClosed(selectedDate, workingHours) && "bg-secondary"
+              )}
+              style={isDayClosed(selectedDate, workingHours) ? {
+                backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                backgroundColor: 'hsl(var(--muted) / 0.15)'
+              } : undefined}
+            >
               {format(selectedDate, "EE")} <span className="font-semibold text-foreground">{format(selectedDate, "d")}</span>
             </span>
           </div>
@@ -86,13 +83,29 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
             </div>
 
             {/* Day grid */}
-            <div className="relative flex-1 border-l">
+            <div 
+              className="relative flex-1 border-l"
+              style={isDayClosed(selectedDate, workingHours) ? {
+                backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                backgroundColor: 'hsl(var(--muted) / 0.1)'
+              } : undefined}
+            >
               <div className="relative">
                 {hours.map((hour, index) => {
                   const isDisabled = !isWorkingHour(selectedDate, hour, workingHours);
 
                   return (
-                    <div key={hour} className={cn("relative", isDisabled && "bg-calendar-disabled-hour")} style={{ height: "96px" }}>
+                    <div 
+                      key={hour} 
+                      className="relative" 
+                      style={{ 
+                        height: "96px",
+                        ...(isDisabled ? {
+                          backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                          backgroundColor: 'hsl(var(--muted) / 0.1)'
+                        } : undefined)
+                      }}
+                    >
                       {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b"></div>}
 
                       <DroppableTimeBlock date={selectedDate} hour={hour} minute={0}>

@@ -11,7 +11,7 @@ import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calend
 import { WeekViewMultiDayEventsRow } from "@/calendar/components/week-and-day-view/week-view-multi-day-events-row";
 
 import { cn } from "@/lib/utils";
-import { groupEvents, getEventBlockStyle, isWorkingHour, getVisibleHours } from "@/calendar/helpers";
+import { groupEvents, getEventBlockStyle, isWorkingHour, getVisibleHours, isDayClosed } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
 
@@ -40,11 +40,20 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
             <div className="w-18"></div>
             <div className="grid flex-1 grid-cols-7 divide-x border-l">
               {weekDays.map((day, index) => {
-                const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-                const isClosed = dayOfWeek === 0 || dayOfWeek === 6; // Check if it's a weekend
+                const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
                 
                 return (
-                  <span key={index} className={cn("py-2 text-center text-xs font-medium bg-secondary text-muted-foreground", isClosed && "bg-diagonal-stripe-light")}>
+                  <span 
+                    key={index} 
+                    className={cn(
+                      "py-2 text-center text-xs font-medium text-muted-foreground",
+                      !isClosed && "bg-secondary"
+                    )}
+                    style={isClosed ? {
+                      backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                      backgroundColor: 'hsl(var(--muted) / 0.15)'
+                    } : undefined}
+                  >
                     {format(day, "EE")} <span className="ml-1 font-semibold text-foreground">{format(day, "d")}</span>
                   </span>
                 );
@@ -70,20 +79,36 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
             <div className="relative flex-1 border-l">
               <div className="grid grid-cols-7 divide-x">
                 {weekDays.map((day, dayIndex) => {
-                  const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-                  const isClosed = dayOfWeek === 0 || dayOfWeek === 6; // Check if it's a weekend
+                  const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
                   
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
                   const groupedEvents = groupEvents(dayEvents);
 
                   return (
-                    <div key={dayIndex} className={cn("relative", isClosed && "bg-diagonal-stripe-light")}>
+                    <div 
+                      key={dayIndex} 
+                      className="relative"
+                      style={isClosed ? {
+                        backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                        backgroundColor: 'hsl(var(--muted) / 0.1)'
+                      } : undefined}
+                    >
                       {hours.map((hour, index) => {
                         const isDisabled = !isWorkingHour(day, hour, workingHours);
 
                         return (
-                          <div key={hour} className={cn("relative", isDisabled && "bg-calendar-disabled-hour")} style={{ height: "96px" }}>
-                            {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b"></div>}
+                          <div 
+                            key={hour} 
+                            className="relative" 
+                            style={{ 
+                              height: "96px",
+                              ...(isDisabled ? {
+                                backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                                backgroundColor: 'hsl(var(--muted) / 0.1)'
+                              } : undefined)
+                            }}
+                          >
+                            {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b border-[#E8E8E8]"></div>}
 
                             <DroppableTimeBlock date={day} hour={hour} minute={0}>
                               <AddShiftDialog startDate={day} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>

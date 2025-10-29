@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { parseISO, startOfDay, startOfWeek, endOfWeek, addDays, differenceInDays, isBefore, isAfter } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useCalendar } from "@/calendar/contexts/calendar-context";
+import { isDayClosed } from "@/calendar/helpers";
 
 import { MonthEventBadge } from "@/calendar/components/month-view/month-event-badge";
 
@@ -12,6 +14,7 @@ interface IProps {
 }
 
 export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IProps) {
+  const { workingHours } = useCalendar();
   const weekStart = startOfWeek(selectedDate);
   const weekEnd = endOfWeek(selectedDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -83,8 +86,7 @@ export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IPro
       <div className="w-18 border-b"></div>
       <div className="grid flex-1 grid-cols-7 divide-x border-b border-l">
         {weekDays.map((day, dayIndex) => {
-          const dayOfWeek = day.getDay(); // 0 = Sunday, 6 = Saturday
-          const isClosed = dayOfWeek === 0 || dayOfWeek === 6; // Check if it's a weekend
+          const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
           
           return (
             <div key={day.toISOString()} className={cn("flex h-full flex-col gap-1 py-1", isClosed && "bg-diagonal-stripe-light")}>

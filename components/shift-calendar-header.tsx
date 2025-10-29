@@ -1,9 +1,11 @@
-import { Columns, Grid3x3, List, Grid2x2, CalendarRange, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UserSelect } from "@/calendar/components/header/user-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { AddShiftDialog } from "@/calendar/components/dialogs/add-shift-dialog";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIcon, Calendar03Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { cn } from "@/lib/utils";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
 
@@ -16,7 +18,7 @@ interface IProps {
 
 export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated }: IProps) {
   return (
-    <div className="flex flex-col gap-4 border-b bg-primary-foreground p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-4 border-b bg-sidebar p-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center gap-3">
         <TodayButton />
         <DateNavigator view={view} events={events} />
@@ -28,59 +30,74 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
             <Button
               aria-label="View by day"
               size="icon"
-              variant={view === "day" ? "default" : "outline"}
-              className="rounded-r-none [&_svg]:size-5"
+              variant="outline"
+              className={cn(
+                "rounded-r-none [&_svg]:size-5",
+                view === "day" && "text-background bg-secondary-foreground"
+              )}
               onClick={() => onViewChange("day")}
             >
-              <List strokeWidth={1.8} />
+              <HugeiconsIcon icon={LeftToRightListDashIcon} size={24} />
             </Button>
 
             <Button
               aria-label="View by week"
               size="icon"
-              variant={view === "week" ? "default" : "outline"}
-              className="-ml-px rounded-none [&_svg]:size-5"
+              variant="outline"
+              className={cn(
+                "-ml-px rounded-none [&_svg]:size-5",
+                view === "week" && "text-background bg-secondary-foreground"
+              )}
               onClick={() => onViewChange("week")}
             >
-              <Columns strokeWidth={1.8} />
+              <HugeiconsIcon icon={Layout3ColumnIcon} size={24} />
             </Button>
 
             <Button
               aria-label="View by month"
               size="icon"
-              variant={view === "month" ? "default" : "outline"}
-              className="-ml-px rounded-none [&_svg]:size-5"
+              variant="outline"
+              className={cn(
+                "-ml-px rounded-none [&_svg]:size-5",
+                view === "month" && "text-background bg-secondary-foreground"
+              )}
               onClick={() => onViewChange("month")}
             >
-              <Grid2x2 strokeWidth={1.8} />
+              <HugeiconsIcon icon={LayoutGridIcon} size={24} />
             </Button>
 
             <Button
               aria-label="View by year"
               size="icon"
-              variant={view === "year" ? "default" : "outline"}
-              className="-ml-px rounded-none [&_svg]:size-5"
+              variant="outline"
+              className={cn(
+                "-ml-px rounded-none [&_svg]:size-5",
+                view === "year" && "text-background bg-secondary-foreground"
+              )}
               onClick={() => onViewChange("year")}
             >
-              <Grid3x3 strokeWidth={1.8} />
+              <HugeiconsIcon icon={GridTableIcon} size={24} />
             </Button>
 
             <Button
               aria-label="View by agenda"
               size="icon"
-              variant={view === "agenda" ? "default" : "outline"}
-              className="-ml-px rounded-l-none [&_svg]:size-5"
+              variant="outline"
+              className={cn(
+                "-ml-px rounded-l-none [&_svg]:size-5",
+                view === "agenda" && "text-background bg-secondary-foreground"
+              )}
               onClick={() => onViewChange("agenda")}
             >
-              <CalendarRange strokeWidth={1.8} />
+              <HugeiconsIcon icon={Calendar03Icon} size={24} />
             </Button>
           </div>
 
           <UserSelect />
           
           <AddShiftDialog onShiftCreated={onShiftCreated}>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" style={{ borderRadius: '0.3rem' }}>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="bg-secondary-foreground hover:bg-primary/90 text-primary-foreground" style={{ borderRadius: '0.2rem' }}>
+              <HugeiconsIcon icon={PlusSignIcon} size={24} />
               Add Shift
             </Button>
           </AddShiftDialog>

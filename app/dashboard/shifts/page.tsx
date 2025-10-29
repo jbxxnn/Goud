@@ -31,6 +31,27 @@ export default async function ShiftsPage() {
     redirect('/dashboard');
   }
 
-  return <ShiftsClient />;
+  // Fetch calendar settings server-side for faster initial load
+  let initialCalendarSettings = null;
+  try {
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('calendar_settings')
+      .select('*')
+      .order('setting_key');
+
+    if (!settingsError && settingsData) {
+      // Convert settings array to object format
+      const settingsObject = settingsData.reduce((acc, setting) => {
+        acc[setting.setting_key] = setting.setting_value;
+        return acc;
+      }, {} as Record<string, unknown>);
+      initialCalendarSettings = settingsObject;
+    }
+  } catch (error) {
+    console.error('Error fetching calendar settings:', error);
+    // Continue without settings, will use defaults
+  }
+
+  return <ShiftsClient initialCalendarSettings={initialCalendarSettings} />;
 }
 
