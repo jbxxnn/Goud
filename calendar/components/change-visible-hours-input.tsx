@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Info, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from "react";
+import { Info } from "lucide-react";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
-import { Button } from "@/components/ui/button";
 import { TimeInput } from "@/components/ui/time-input";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 import type { TimeValue } from "react-aria-components";
 
-export function ChangeVisibleHoursInput() {
-  const { visibleHours, setVisibleHours, isSaving } = useCalendar();
+interface ChangeVisibleHoursInputProps {
+  onSaveHandlerReady?: (handler: () => Promise<void>) => void;
+}
+
+export function ChangeVisibleHoursInput({ onSaveHandlerReady }: ChangeVisibleHoursInputProps = {}) {
+  const { visibleHours, setVisibleHours } = useCalendar();
 
   const [from, setFrom] = useState<{ hour: number; minute: number }>({ hour: visibleHours.from, minute: 0 });
   const [to, setTo] = useState<{ hour: number; minute: number }>({ hour: visibleHours.to, minute: 0 });
-  const [isLoading, setIsLoading] = useState(false);
 
   // Update local state when visibleHours changes from context
   useEffect(() => {
@@ -24,18 +25,17 @@ export function ChangeVisibleHoursInput() {
     setTo({ hour: visibleHours.to === 24 ? 0 : visibleHours.to, minute: 0 });
   }, [visibleHours]);
 
-  const handleApply = async () => {
-    setIsLoading(true);
+  const handleApply = useCallback(async () => {
     const toHour = to.hour === 0 ? 24 : to.hour;
-    try {
-      await setVisibleHours({ from: from.hour, to: toHour });
-      toast.success("Visible hours updated successfully");
-    } catch (error) {
-      toast.error("Failed to update visible hours");
-    } finally {
-      setIsLoading(false);
+    await setVisibleHours({ from: from.hour, to: toHour });
+  }, [from, to, setVisibleHours]);
+
+  // Expose the save handler to parent
+  useEffect(() => {
+    if (onSaveHandlerReady) {
+      onSaveHandlerReady(handleApply);
     }
-  };
+  }, [handleApply, onSaveHandlerReady]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -61,15 +61,6 @@ export function ChangeVisibleHoursInput() {
         <p>To</p>
         <TimeInput id="end-time" hourCycle={12} granularity="hour" value={to as TimeValue} onChange={setTo as (value: TimeValue | null) => void} />
       </div>
-
-      <Button 
-        className="mt-4 w-fit" 
-        onClick={handleApply}
-        disabled={isLoading || isSaving}
-      >
-        {(isLoading || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Apply
-      </Button>
     </div>
   );
 }

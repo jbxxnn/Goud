@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Info, Moon, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from "react";
+import { Info, Moon } from "lucide-react";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { TimeInput } from "@/components/ui/time-input";
 
@@ -24,11 +22,14 @@ const DAYS_OF_WEEK = [
   { index: 6, name: "Saturday" },
 ];
 
-export function ChangeWorkingHoursInput() {
-  const { workingHours, setWorkingHours, isSaving } = useCalendar();
+interface ChangeWorkingHoursInputProps {
+  onSaveHandlerReady?: (handler: () => Promise<void>) => void;
+}
+
+export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHoursInputProps = {}) {
+  const { workingHours, setWorkingHours } = useCalendar();
 
   const [localWorkingHours, setLocalWorkingHours] = useState({ ...workingHours });
-  const [isLoading, setIsLoading] = useState(false);
 
   // Update local state when workingHours changes from context
   useEffect(() => {
@@ -52,8 +53,7 @@ export function ChangeWorkingHoursInput() {
     });
   };
 
-  const handleSave = async () => {
-    setIsLoading(true);
+  const handleSave = useCallback(async () => {
     const updatedWorkingHours = { ...localWorkingHours };
 
     for (const dayId in updatedWorkingHours) {
@@ -71,15 +71,15 @@ export function ChangeWorkingHoursInput() {
       }
     }
 
-    try {
-      await setWorkingHours(updatedWorkingHours);
-      toast.success("Working hours updated successfully");
-    } catch (error) {
-      toast.error("Failed to update working hours");
-    } finally {
-      setIsLoading(false);
+    await setWorkingHours(updatedWorkingHours);
+  }, [localWorkingHours, setWorkingHours]);
+
+  // Expose the save handler to parent
+  useEffect(() => {
+    if (onSaveHandlerReady) {
+      onSaveHandlerReady(handleSave);
     }
-  };
+  }, [handleSave, onSaveHandlerReady]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -144,15 +144,6 @@ export function ChangeWorkingHoursInput() {
           );
         })}
       </div>
-
-      <Button 
-        className="mt-4 w-fit" 
-        onClick={handleSave}
-        disabled={isLoading || isSaving}
-      >
-        {(isLoading || isSaving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Apply
-      </Button>
     </div>
   );
 }
