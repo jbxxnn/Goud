@@ -110,34 +110,37 @@ export async function PUT(request: NextRequest) {
 
     if (badge_variant !== undefined) {
       updatePromises.push(
-        supabase
-          .from('calendar_settings')
-          .update({ setting_value: badge_variant })
-          .eq('setting_key', 'badge_variant')
-          .select()
-          .then(res => res)
+        Promise.resolve(
+          supabase
+            .from('calendar_settings')
+            .update({ setting_value: badge_variant })
+            .eq('setting_key', 'badge_variant')
+            .select()
+        )
       );
     }
 
     if (visible_hours !== undefined) {
       updatePromises.push(
-        supabase
-          .from('calendar_settings')
-          .update({ setting_value: visible_hours })
-          .eq('setting_key', 'visible_hours')
-          .select()
-          .then(res => res)
+        Promise.resolve(
+          supabase
+            .from('calendar_settings')
+            .update({ setting_value: visible_hours })
+            .eq('setting_key', 'visible_hours')
+            .select()
+        )
       );
     }
 
     if (working_hours !== undefined) {
       updatePromises.push(
-        supabase
-          .from('calendar_settings')
-          .update({ setting_value: working_hours })
-          .eq('setting_key', 'working_hours')
-          .select()
-          .then(res => res)
+        Promise.resolve(
+          supabase
+            .from('calendar_settings')
+            .update({ setting_value: working_hours })
+            .eq('setting_key', 'working_hours')
+            .select()
+        )
       );
     }
 
