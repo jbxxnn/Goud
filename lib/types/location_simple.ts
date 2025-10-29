@@ -6,6 +6,7 @@ export interface Location {
   address: string;
   phone: string | null;
   email: string | null;
+  color: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -16,6 +17,7 @@ export interface CreateLocationRequest {
   address: string;
   phone?: string;
   email?: string;
+  color?: string;
   is_active?: boolean;
 }
 
@@ -24,6 +26,7 @@ export interface UpdateLocationRequest {
   address?: string;
   phone?: string;
   email?: string;
+  color?: string;
   is_active?: boolean;
 }
 
@@ -52,6 +55,7 @@ export interface LocationFormData {
   address: string;
   phone: string;
   email: string;
+  color: string;
   is_active: boolean;
 }
 

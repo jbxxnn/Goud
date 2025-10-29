@@ -1,18 +1,12 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { HugeiconsIcon } from '@hugeicons/react';
+import { EditIcon, Delete02Icon, Location03Icon, CallIcon, MailIcon } from '@hugeicons/core-free-icons';
 import { Location } from "@/lib/types/location_simple"
 import { getFullAddress, getLocationDisplayName } from "@/lib/types/location_simple"
 
@@ -37,7 +31,14 @@ export const createLocationColumns = (
     cell: ({ row }) => {
       const location = row.original
       return (
-        <div className="font-medium ml-2">
+        <div className="font-medium ml-2 flex items-center gap-2">
+          {location.color && (
+            <div
+              className="w-4 h-4 rounded-full border border-input flex-shrink-0"
+              style={{ backgroundColor: location.color }}
+              title={`Location color: ${location.color}`}
+            />
+          )}
           {getLocationDisplayName(location)}
         </div>
       )
@@ -49,8 +50,9 @@ export const createLocationColumns = (
     cell: ({ row }) => {
       const location = row.original
       return (
-        <div className="text-sm text-muted-foreground max-w-[300px]">
-          {getFullAddress(location)}
+        <div className="text-sm text-muted-foreground max-w-[300px] flex items-center gap-2">
+          <HugeiconsIcon icon={Location03Icon} className="h-4 w-4 flex-shrink-0" />
+          <span>{getFullAddress(location)}</span>
         </div>
       )
     },
@@ -61,8 +63,15 @@ export const createLocationColumns = (
     cell: ({ row }) => {
       const location = row.original
       return (
-        <div className="text-sm">
-          {location.phone ? `${location.phone}` : '-'}
+        <div className="text-sm flex items-center gap-2">
+          {location.phone ? (
+            <>
+              <HugeiconsIcon icon={CallIcon} className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{location.phone}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
         </div>
       )
     },
@@ -73,8 +82,15 @@ export const createLocationColumns = (
     cell: ({ row }) => {
       const location = row.original
       return (
-        <div className="text-sm">
-          {location.email ? `${location.email}` : '-'}
+        <div className="text-sm flex items-center gap-2">
+          {location.email ? (
+            <>
+              <HugeiconsIcon icon={MailIcon} className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span>{location.email}</span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
         </div>
       )
     },
@@ -83,18 +99,14 @@ export const createLocationColumns = (
     accessorKey: "is_active",
     header: "Status",
     cell: ({ row }) => {
+      const location = row.original
       const isActive = row.getValue("is_active") as boolean
       return (
-        <Badge 
-          variant={isActive ? "default" : "secondary"} 
-          className={`rounded-full border-input bg-sidebar ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0 ${
-            isActive 
-              ? "text-primary-foreground bg-primary" 
-              : "text-sidebar-foreground bg-sidebar"
-          }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </Badge>
+        <Switch
+          checked={isActive}
+          onCheckedChange={() => onToggleActive(location.id, isActive)}
+          aria-label={`${isActive ? 'Deactivate' : 'Activate'} ${location.name}`}
+        />
       )
     },
     filterFn: (row, id, value) => {
@@ -103,43 +115,30 @@ export const createLocationColumns = (
   },
   {
     id: "actions",
+    header: "Actions",
     enableHiding: false,
     cell: ({ row }) => {
       const location = row.original
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="h-8 w-8 p-0 bg-[#ffffff]">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4 text-sidebar-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(location.id)}
-            >
-              Copy location ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onEdit(location)}>
-              Edit location
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onToggleActive(location.id, location.is_active)}
-            >
-              {location.is_active ? "Deactivate" : "Activate"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onDelete(location)}
-              className="text-destructive"
-            >
-              Delete location
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(location)}
+            className="h-8 w-8 p-0"
+          >
+            <HugeiconsIcon icon={EditIcon} className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(location)}
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          >
+            <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+          </Button>
+        </div>
       )
     },
   },

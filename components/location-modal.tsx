@@ -19,9 +19,10 @@ export function LocationModal({ isOpen, onClose, location, onSave }: LocationMod
     try {
       setLoading(true);
       await onSave(data);
-      onClose();
+      // Don't close here - let handleSaveLocation close it after showing the toast
     } catch (error) {
       console.error('Save error:', error);
+      // Error toast is handled in handleSaveLocation
     } finally {
       setLoading(false);
     }
@@ -29,13 +30,13 @@ export function LocationModal({ isOpen, onClose, location, onSave }: LocationMod
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[600px] sm:w-[700px]">
-        <SheetHeader>
+      <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
+        <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>
             {location ? 'Edit Location' : 'Add New Location'}
           </SheetTitle>
         </SheetHeader>
-        <div className="mt-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           <LocationForm
             location={location}
             onSave={handleSave}

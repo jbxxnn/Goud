@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { PlusSignIcon, Loading03Icon } from '@hugeicons/core-free-icons';
 import { Location, LocationsResponse, CreateLocationRequest, UpdateLocationRequest } from '@/lib/types/location_simple';
@@ -10,6 +9,7 @@ import { LocationModal } from '@/components/location-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createLocationColumns } from '@/components/locations-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { toast } from 'sonner';
 
 interface LocationsClientProps {
   initialLocations: Location[];
@@ -25,7 +25,6 @@ export default function LocationsClient({
 }: LocationsClientProps) {
   const [locations, setLocations] = useState<Location[]>(initialLocations);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | undefined>();
@@ -36,7 +35,6 @@ export default function LocationsClient({
   const fetchLocations = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -53,7 +51,10 @@ export default function LocationsClient({
 
       setLocations(data.data || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch locations';
+      toast.error('Failed to load locations', {
+        description: errorMessage,
+      });
     } finally {
       setLoading(false);
     }
@@ -74,20 +75,30 @@ export default function LocationsClient({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete location');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete location');
       }
 
       // Refresh locations
       await fetchLocations();
       setDeleteDialogOpen(false);
       setLocationToDelete(null);
+      toast.success('Location deleted', {
+        description: `${locationToDelete.name} has been deleted successfully.`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete location');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete location';
+      toast.error('Failed to delete location', {
+        description: errorMessage,
+      });
     }
   };
 
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const location = locations.find(loc => loc.id === id);
+    const newStatus = !currentStatus;
+    
     try {
       const response = await fetch(`/api/locations-simple/${id}`, {
         method: 'PUT',
@@ -95,18 +106,25 @@ export default function LocationsClient({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          is_active: !currentStatus,
+          is_active: newStatus,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update location');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update location');
       }
 
       // Refresh locations
       await fetchLocations();
+      toast.success(`Location ${newStatus ? 'activated' : 'deactivated'}`, {
+        description: location ? `${location.name} has been ${newStatus ? 'activated' : 'deactivated'}.` : undefined,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update location');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update location';
+      toast.error('Failed to update location', {
+        description: errorMessage,
+      });
     }
   };
 
@@ -129,6 +147,8 @@ export default function LocationsClient({
 
   // Save location
   const handleSaveLocation = async (data: CreateLocationRequest | UpdateLocationRequest) => {
+    const isEditing = !!editingLocation;
+    
     try {
       const url = editingLocation ? `/api/locations-simple/${editingLocation.id}` : '/api/locations-simple';
       const method = editingLocation ? 'PUT' : 'POST';
@@ -142,14 +162,25 @@ export default function LocationsClient({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to save location');
       }
 
       // Refresh locations
       await fetchLocations();
+      
+      // Show success toast
+      toast.success(`Location ${isEditing ? 'updated' : 'created'}`, {
+        description: `${data.name} has been ${isEditing ? 'updated' : 'created'} successfully.`,
+      });
+      
+      // Close modal after toast is shown
+      handleCloseModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save location');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save location';
+      toast.error('Failed to save location', {
+        description: errorMessage,
+      });
       throw err; // Re-throw to let the form handle it
     }
   };
@@ -175,15 +206,6 @@ export default function LocationsClient({
         </Button>
       </div>
 
-
-      {/* Error Message */}
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Advanced Locations Table */}
       <div>

@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
         address: body.address,
         phone: body.phone || null,
         email: body.email || null,
+        color: body.color || '#3b82f6',
         is_active: body.is_active ?? true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

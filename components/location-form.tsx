@@ -7,9 +7,9 @@ import { useState,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Location03Icon, AllBookmarkIcon, MultiplicationSignIcon } from '@hugeicons/core-free-icons';
+import { MultiplicationSignIcon, CallIcon, MailIcon, Location03Icon } from '@hugeicons/core-free-icons';
 import { Location, CreateLocationRequest, UpdateLocationRequest } from '@/lib/types/location_simple';
 import { validatePhoneNumber, formatPhoneNumber } from '@/lib/types/location_simple';
 
@@ -26,6 +26,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
     address: location?.address || '',
     phone: location?.phone || '',
     email: location?.email || '',
+    color: location?.color || '#3b82f6',
     is_active: location?.is_active ?? true,
   });
 
@@ -71,8 +72,12 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
   };
 
   // Handle input changes
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: string | boolean) => {
+    if (field === 'is_active') {
+      setFormData(prev => ({ ...prev, [field]: value as boolean }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value as string }));
+    }
     
     // Clear error when user starts typing
     if (errors[field]) {
@@ -87,25 +92,11 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <HugeiconsIcon icon={Location03Icon} className="h-5 w-5" />
-          {location ? 'Edit Location' : 'Add New Location'}
-        </CardTitle>
-        <CardDescription>
-          {location 
-            ? 'Update the location information below'
-            : 'Fill in the details to create a new location'
-          }
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    // <Card className="w-full max-w-2xl mx-auto">
+    //   <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-12 pb-10">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Location Information</h3>
-            
             <div>
               <Label htmlFor="name">Location Name *</Label>
               <Input
@@ -122,13 +113,19 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
             <div>
               <Label htmlFor="address">Address *</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="e.g., 123 Main Street, Suite 100"
-                className={errors.address ? 'border-destructive' : ''}
-              />
+              <div className="relative">
+                <HugeiconsIcon 
+                  icon={Location03Icon} 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                />
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="e.g., 123 Main Street, Suite 100"
+                  className={`pl-10 ${errors.address ? 'border-destructive' : ''}`}
+                />
+              </div>
               {errors.address && (
                 <p className="text-sm text-destructive mt-1">{errors.address}</p>
               )}
@@ -137,13 +134,19 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handlePhoneChange(e.target.value)}
-                  placeholder="e.g., (555) 123-4567"
-                  className={errors.phone ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <HugeiconsIcon 
+                    icon={CallIcon} 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                  />
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    placeholder="e.g., (555) 123-4567"
+                    className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
+                  />
+                </div>
                 {errors.phone && (
                   <p className="text-sm text-destructive mt-1">{errors.phone}</p>
                 )}
@@ -151,30 +154,57 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="e.g., info@clinic.com"
-                  className={errors.email ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <HugeiconsIcon 
+                    icon={MailIcon} 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                  />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="e.g., info@clinic.com"
+                    className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                  />
+                </div>
                 {errors.email && (
                   <p className="text-sm text-destructive mt-1">{errors.email}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                title="Active Location"
-                type="checkbox"
-                id="is_active"
-                checked={formData.is_active}
-                onChange={(e) => handleInputChange('is_active', e.target.checked.toString())}
-                className="rounded"
-              />
-              <Label htmlFor="is_active">Active Location</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="color">Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="color"
+                    type="color"
+                    title="Select location color"
+                    value={formData.color}
+                    onChange={(e) => handleInputChange('color', e.target.value)}
+                    className="h-10 w-20 rounded border border-input cursor-pointer"
+                    aria-label="Location color picker"
+                  />
+                  <Input
+                    type="text"
+                    value={formData.color}
+                    onChange={(e) => handleInputChange('color', e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 pt-6">
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+                />
+                <Label htmlFor="is_active" className="cursor-pointer">Active Location</Label>
+              </div>
             </div>
           </div>
 
@@ -185,12 +215,11 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              <HugeiconsIcon icon={AllBookmarkIcon} className="mr-2 h-4 w-4" />
               {loading ? 'Saving...' : location ? 'Update Location' : 'Create Location'}
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    //   </CardContent>
+    // </Card>
   );
 }
