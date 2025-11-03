@@ -53,14 +53,14 @@ export default function BookingPage() {
         fetch('/api/locations-simple').then(r => r.json()).catch(() => ({ data: [] })),
       ]);
       const svcData = Array.isArray(svcRes?.data) ? svcRes.data : [];
-      setServices(svcData.map((s: any) => ({
+      setServices(svcData.map((s: Service) => ({
         id: s.id,
         name: s.name,
         // Services API returns price in euros; convert to cents for formatter
         price: typeof s.price === 'number' ? Math.round(s.price * 100) : 0,
       })));
       const locData = Array.isArray(locRes?.data) ? locRes.data : [];
-      setLocations(locData.map((l: any) => ({ id: l.id, name: l.name })));
+      setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
     };
     load();
   }, []);
@@ -72,7 +72,7 @@ export default function BookingPage() {
       fetch(`/api/availability?${params.toString()}`)
         .then(r => r.json())
         .then(d => {
-          const s: Slot[] = (d.slots ?? []).map((x: any) => ({
+          const s: Slot[] = (d.slots ?? []).map((x: Slot) => ({
             shiftId: x.shiftId,
             staffId: x.staffId,
             startTime: new Date(x.startTime).toISOString(),
@@ -164,7 +164,7 @@ export default function BookingPage() {
           <h2 className="text-lg font-medium">Step 2: Location, Date, Time</h2>
           <div>
             <label className="block text-sm mb-1">Location</label>
-            <select className="border rounded px-3 py-2 w-full" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+            <select title="Location" className="border rounded px-3 py-2 w-full" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
               <option value="">Select location</option>
               {locations.map(l => (
                 <option key={l.id} value={l.id}>{l.name}</option>
@@ -341,8 +341,8 @@ export default function BookingPage() {
                 }
 
                 alert('Booking confirmed!' + (emailChecked?.exists === false ? ' We sent a magic link to your email to access your account.' : ''));
-              } catch (e: any) {
-                setErrorMsg(e?.message || 'Checkout failed');
+              } catch (e: unknown) {
+                setErrorMsg((e as Error)?.message || 'Checkout failed');
               } finally {
                 setFinalizing(false);
               }
@@ -615,19 +615,19 @@ function CheckoutForm({
           <>
             <div>
               <label className="block text-sm mb-1">First name</label>
-              <input className="border rounded px-3 py-2 w-full" value={firstName} onChange={(e) => onFirstNameChange(e.target.value)} />
+              <input title="First name" className="border rounded px-3 py-2 w-full" value={firstName} onChange={(e) => onFirstNameChange(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm mb-1">Last name</label>
-              <input className="border rounded px-3 py-2 w-full" value={lastName} onChange={(e) => onLastNameChange(e.target.value)} />
+              <input title="Last name" className="border rounded px-3 py-2 w-full" value={lastName} onChange={(e) => onLastNameChange(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm mb-1">Phone</label>
-              <input className="border rounded px-3 py-2 w-full" value={phone} onChange={(e) => onPhoneChange(e.target.value)} />
+              <input title="Phone" className="border rounded px-3 py-2 w-full" value={phone} onChange={(e) => onPhoneChange(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm mb-1">Address</label>
-              <input className="border rounded px-3 py-2 w-full" value={address} onChange={(e) => onAddressChange(e.target.value)} />
+              <input title="Address" className="border rounded px-3 py-2 w-full" value={address} onChange={(e) => onAddressChange(e.target.value)} />
             </div>
           </>
         )}
