@@ -1,0 +1,152 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { generateSlotsForDay, type BlackoutPeriod, type Shift, type TimeInterval, type ServiceRules } from '@/lib/availability/slots';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const serviceId = searchParams.get('serviceId');
+    const locationId = searchParams.get('locationId');
+    const dateStr = searchParams.get('date'); // ISO YYYY-MM-DD
+    const excludeBookingId = searchParams.get('excludeBookingId'); // For rescheduling - exclude this booking from conflicts
+    const staffId = searchParams.get('staffId'); // Optional - filter by staff
+
+    if (!serviceId || !locationId || !dateStr) {
+      return NextResponse.json({ error: 'Missing serviceId, locationId, or date' }, { status: 400 });
+    }
+
+    const date = new Date(`${dateStr}T00:00:00.000Z`);
+    console.log('[availability] params', { serviceId, locationId, date: dateStr });
+    const dayStart = new Date(date);
+    const dayEnd = new Date(date);
+    dayEnd.setUTCHours(23, 59, 59, 999);
+
+    const supabase = getServiceSupabase();
+
+    // Fetch service rules (duration, buffer, lead_time) from services
+    const { data: serviceData, error: serviceErr } = await supabase
+      .from('services')
+      .select('id, duration, buffer_time, lead_time')
+      .eq('id', serviceId)
+      .maybeSingle();
+    if (serviceErr || !serviceData) {
+      console.log('[availability] service not found or error', serviceErr);
+      return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+    }
+    const serviceRules: ServiceRules = {
+      durationMinutes: Number(serviceData.duration) || 0,
+      bufferMinutes: Number(serviceData.buffer_time) || 0,
+      leadTimeMinutes: Number(serviceData.lead_time) || 0,
+    };
+
+    // shift_services → collect shift_ids that allow this service
+    const { data: shiftServices, error: ssErr } = await supabase
+      .from('shift_services')
+      .select('shift_id')
+      .eq('service_id', serviceId);
+    if (ssErr) {
+      console.log('[availability] shift_services error', ssErr);
+      return NextResponse.json({ error: 'Failed to load shift services' }, { status: 500 });
+    }
+    const allowedShiftIds = (shiftServices ?? []).map((s: any) => s.shift_id);
+    if (allowedShiftIds.length === 0) {
+      return NextResponse.json({ slots: [] });
+    }
+
+    // Shifts intersecting the day, at location, active, and included in allowedShiftIds
+    let shiftsQuery = supabase
+      .from('shifts')
+      .select('id, staff_id, location_id, start_time, end_time, is_active')
+      .eq('location_id', locationId)
+      .eq('is_active', true)
+      .in('id', allowedShiftIds)
+      .lt('start_time', dayEnd.toISOString())
+      .gt('end_time', dayStart.toISOString());
+    
+    // Filter by staff if specified
+    if (staffId) {
+      shiftsQuery = shiftsQuery.eq('staff_id', staffId);
+    }
+
+    const { data: shiftsData, error: shiftsErr } = await shiftsQuery;
+    if (shiftsErr) {
+      console.log('[availability] shifts error', shiftsErr);
+      return NextResponse.json({ error: 'Failed to load shifts' }, { status: 500 });
+    }
+
+    const shifts: Shift[] = (shiftsData ?? []).map((s: any) => ({
+      id: s.id,
+      staffId: s.staff_id,
+      locationId: s.location_id,
+      startTime: new Date(s.start_time),
+      endTime: new Date(s.end_time),
+      isActive: !!s.is_active,
+      qualifiedServiceIds: [serviceId],
+    }));
+
+    // Blackouts for the location intersecting the day
+    const { data: blackoutData, error: blackoutErr } = await supabase
+      .from('blackout_periods')
+      .select('location_id, start_date, end_date')
+      .eq('location_id', locationId)
+      .lte('start_date', dayEnd.toISOString())
+      .gte('end_date', dayStart.toISOString());
+    if (blackoutErr) {
+      console.log('[availability] blackout error', blackoutErr);
+      return NextResponse.json({ error: 'Failed to load blackouts' }, { status: 500 });
+    }
+    const blackouts: BlackoutPeriod[] = (blackoutData ?? []).map((b: any) => ({
+      locationId: b.location_id,
+      startDate: new Date(b.start_date),
+      endDate: new Date(b.end_date),
+    }));
+
+    // Existing bookings for those shifts on that day (not cancelled)
+    // Exclude the current booking if rescheduling
+    let bookingsQuery = supabase
+      .from('bookings')
+      .select('shift_id, start_time, end_time, status')
+      .in('shift_id', allowedShiftIds)
+      .neq('status', 'cancelled')
+      .lt('start_time', dayEnd.toISOString())
+      .gt('end_time', dayStart.toISOString());
+    
+    if (excludeBookingId) {
+      bookingsQuery = bookingsQuery.neq('id', excludeBookingId);
+    }
+
+    const { data: bookingsData, error: bookingsErr } = await bookingsQuery;
+    if (bookingsErr) {
+      console.log('[availability] bookings error', bookingsErr);
+      return NextResponse.json({ error: 'Failed to load bookings' }, { status: 500 });
+    }
+    const existingByShift = new Map<string, TimeInterval[]>();
+    for (const b of bookingsData ?? []) {
+      const list = existingByShift.get(b.shift_id) ?? [];
+      list.push({ start: new Date(b.start_time), end: new Date(b.end_time) });
+      existingByShift.set(b.shift_id, list);
+    }
+
+    const existingAll: TimeInterval[] = [];
+    for (const arr of existingByShift.values()) existingAll.push(...arr);
+
+    const slots = generateSlotsForDay({
+      date,
+      serviceId,
+      locationId,
+      shifts,
+      serviceRules,
+      blackouts,
+      existingBookings: existingAll,
+    });
+
+    console.log('[availability] slots count', slots.length);
+    return NextResponse.json({ slots });
+  } catch (e: any) {
+    console.error('[availability] error', e);
+    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+  }
+}
+
+
+

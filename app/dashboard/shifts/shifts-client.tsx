@@ -189,10 +189,7 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex items-center gap-3">
-          <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
-          <span className="text-muted-foreground">
-            {loading ? 'Loading shifts...' : 'Loading locations...'}
-          </span>
+          <HugeiconsIcon icon={Loading03Icon} className="h-10 w-10 animate-spin text-muted-foreground" />
         </div>
       </div>
     );

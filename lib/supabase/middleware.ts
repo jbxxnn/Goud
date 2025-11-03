@@ -51,7 +51,17 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    // Public booking flow and its supporting APIs should be accessible without auth
+    !request.nextUrl.pathname.startsWith("/booking") &&
+    !request.nextUrl.pathname.startsWith("/api/availability") &&
+    !request.nextUrl.pathname.startsWith("/api/availability/heatmap") &&
+    !request.nextUrl.pathname.startsWith("/api/services") &&
+    !request.nextUrl.pathname.startsWith("/api/locations-simple") &&
+    !request.nextUrl.pathname.startsWith("/api/auth/email-exists") &&
+    !request.nextUrl.pathname.startsWith("/api/auth/checkout-signup") &&
+    !request.nextUrl.pathname.startsWith("/api/users/by-email") &&
+    !request.nextUrl.pathname.startsWith("/api/bookings")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

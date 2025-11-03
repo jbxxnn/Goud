@@ -18,6 +18,8 @@ interface DeleteConfirmationDialogProps {
   title: string;
   description: string;
   itemName?: string;
+  confirmButtonText?: string;
+  confirmButtonVariant?: 'default' | 'destructive';
 }
 
 export function DeleteConfirmationDialog({
@@ -27,7 +29,13 @@ export function DeleteConfirmationDialog({
   title,
   description,
   itemName,
+  confirmButtonText = 'Delete',
+  confirmButtonVariant = 'destructive',
 }: DeleteConfirmationDialogProps) {
+  const buttonClassName = confirmButtonVariant === 'destructive' 
+    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+    : 'bg-secondary-foreground hover:bg-secondary-foreground/90';
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
@@ -36,7 +44,7 @@ export function DeleteConfirmationDialog({
           <AlertDialogDescription>
             {description}
             {itemName && (
-              <span className="font-semibold"> "{itemName}"</span>
+              <span className="font-semibold"> &quot;{itemName}&quot;</span>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -44,9 +52,9 @@ export function DeleteConfirmationDialog({
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className={buttonClassName}
           >
-            Delete
+            {confirmButtonText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

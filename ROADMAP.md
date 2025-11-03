@@ -134,28 +134,28 @@ A full-featured, web-based appointment scheduling platform for multi-location pr
 *Building the calendar-based shift creation and management*
 
 ### Shift Database Schema
-- [ ] **4.1** Create shift-related tables
-  - [ ] 4.1.1 Create `shifts` table (id, staff_id, location_id, start_time, end_time, priority, is_active, created_at, updated_at)
-  - [ ] 4.1.2 Create `shift_services` table (id, shift_id, service_id, max_bookings, created_at)
-  - [ ] 4.1.3 Create `blackout_periods` table (id, location_id, start_date, end_date, reason, created_at)
-  - [ ] 4.1.4 Add proper constraints and indexes
+- [x] **4.1** Create shift-related tables
+  - [x] 4.1.1 Create `shifts` table (id, staff_id, location_id, start_time, end_time, priority, is_active, created_at, updated_at)
+  - [x] 4.1.2 Create `shift_services` table (id, shift_id, service_id, max_bookings, created_at)
+  - [x] 4.1.3 Create `blackout_periods` table (id, location_id, start_date, end_date, reason, created_at)
+  - [x] 4.1.4 Add proper constraints and indexes
 
 ### Shift Management Interface
-- [ ] **4.2** Shift Calendar (`/dashboard/shift`)
-  - [ ] 4.2.1 Create week-view calendar component
-  - [ ] 4.2.2 Add click-to-create shift functionality
-  - [ ] 4.2.3 Add drag-and-drop shift editing
-  - [ ] 4.2.4 Add shift conflict detection and prevention
-  - [ ] 4.2.5 Add staff availability filtering
-  - [ ] 4.2.6 Add location-based shift filtering
+- [x] **4.2** Shift Calendar (`/dashboard/shift`)
+  - [x] 4.2.1 Create week-view calendar component
+  - [x] 4.2.2 Add click-to-create shift functionality
+  - [x] 4.2.3 Add drag-and-drop shift editing
+  - [x] 4.2.4 Add shift conflict detection and prevention
+  - [x] 4.2.5 Add staff availability filtering
+  - [x] 4.2.6 Add location-based shift filtering
 
-- [ ] **4.3** Shift Form & Management
-  - [ ] 4.3.1 Create shift creation/editing form
-  - [ ] 4.3.2 Add staff selection with availability checking
-  - [ ] 4.3.3 Add service assignment to shifts
-  - [ ] 4.3.4 Add shift priority management
-  - [ ] 4.3.5 Add bulk shift operations
-  - [ ] 4.3.6 Add shift template functionality
+- [x] **4.3** Shift Form & Management
+  - [x] 4.3.1 Create shift creation/editing form
+  - [x] 4.3.2 Add staff selection with availability checking
+  - [x] 4.3.3 Add service assignment to shifts
+  - [x] 4.3.4 Add shift priority management
+  - [x] 4.3.5 Add bulk shift operations
+  - [x] 4.3.6 Add shift template functionality
 
 ---
 

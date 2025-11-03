@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     phone VARCHAR(20),
+    address TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_login TIMESTAMP WITH TIME ZONE
@@ -38,14 +39,26 @@ CREATE TRIGGER update_users_updated_at
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.users (id, email, first_name, last_name, role)
+    INSERT INTO public.users (id, email, first_name, last_name, role, phone, address, created_at, updated_at)
     VALUES (
         NEW.id,
         NEW.email,
-        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'role', 'client')
-    );
+        COALESCE(NEW.raw_user_meta_data->>'first_name', NULL),
+        COALESCE(NEW.raw_user_meta_data->>'last_name', NULL),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'client'),
+        COALESCE(NEW.raw_user_meta_data->>'phone', NULL),
+        COALESCE(NEW.raw_user_meta_data->>'address', NULL),
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        first_name = COALESCE(EXCLUDED.first_name, users.first_name),
+        last_name = COALESCE(EXCLUDED.last_name, users.last_name),
+        role = COALESCE(EXCLUDED.role, users.role),
+        phone = COALESCE(EXCLUDED.phone, users.phone),
+        address = COALESCE(EXCLUDED.address, users.address),
+        updated_at = NOW();
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
