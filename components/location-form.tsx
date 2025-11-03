@@ -92,9 +92,9 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
   };
 
   return (
-    // <Card className="w-full max-w-2xl mx-auto">
-    //   <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-12 pb-10">
+    <div className="flex flex-col h-full">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-12 pb-10">
           {/* Basic Information */}
           <div className="space-y-4">
             <div>
@@ -208,8 +208,11 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
             </div>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end gap-2 pt-4">
+        </div>
+
+        {/* Form Actions - Fixed at Bottom */}
+        <div className="py-4 border-t bg-background mt-auto">
+          <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onCancel}>
               <HugeiconsIcon icon={MultiplicationSignIcon} className="mr-2 h-4 w-4" />
               Cancel
@@ -218,8 +221,8 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
               {loading ? 'Saving...' : location ? 'Update Location' : 'Create Location'}
             </Button>
           </div>
-        </form>
-    //   </CardContent>
-    // </Card>
+        </div>
+      </form>
+    </div>
   );
 }

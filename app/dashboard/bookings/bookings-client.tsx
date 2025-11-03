@@ -234,9 +234,11 @@ export default function BookingsClient({
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Status:</label>
           <select
+            title="Status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="border rounded-md px-3 py-1.5 text-sm"
+            style={{ borderRadius: '0.2rem' }}
           >
             <option value="all">All</option>
             <option value="pending">Pending</option>
@@ -305,8 +307,6 @@ export default function BookingsClient({
                 }
               )}
               data={bookings}
-              searchKey="id"
-              searchPlaceholder="Search by booking ID..."
             />
           )}
         </div>

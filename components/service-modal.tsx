@@ -22,15 +22,19 @@ export default function ServiceModal({ isOpen, onClose, onSave, service, isViewM
             {isViewMode ? 'View Service' : service ? 'Edit Service' : 'Add New Service'}
           </SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-hidden flex flex-col">
           {isViewMode ? (
+            <div className="flex-1 overflow-y-auto px-6 py-4">
             <ServiceView service={service!} />
+            </div>
           ) : (
+            <div className="flex-1 overflow-hidden px-6 py-4">
             <ServiceForm
               service={service}
               onSave={onSave}
               onCancel={onClose}
             />
+            </div>
           )}
         </div>
       </SheetContent>

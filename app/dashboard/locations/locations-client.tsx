@@ -200,7 +200,7 @@ export default function LocationsClient({
             Manage clinic locations and their information
           </p>
         </div>
-        <Button onClick={handleAddLocation} className="hover:bg-secondary hover:text-secondary-foreground" style={{ borderRadius: '0.5rem' }}>
+        <Button onClick={handleAddLocation}>
           <HugeiconsIcon icon={PlusSignIcon} className="mr-2 h-4 w-4" />
           Add Location
         </Button>

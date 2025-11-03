@@ -221,7 +221,6 @@ export default function StaffClient({
         </div>
         <Button 
           onClick={handleAddStaff} 
-          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           size="default"
         >
           <HugeiconsIcon icon={PlusSignIcon} className="mr-2 h-4 w-4" />

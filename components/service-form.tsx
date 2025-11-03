@@ -446,8 +446,10 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const selectedStaff = staff.filter(s => watch('staff_ids').includes(s.id));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 min-h-0">
-      <Tabs defaultValue="details" className="w-full">
+    <div className="flex flex-col h-full">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto">
+          <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-5" style={{ borderRadius: '0.5rem' }}>
           <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
             Details
@@ -485,8 +487,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       <TabsContent value="details" className="space-y-4 min-h-0 mt-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Service Name */}
-        <div className="md:col-span-2">
-          <Label htmlFor="name">Service Name *</Label>
+        <div className="md:col-span-2 mb-4">
+          <Label htmlFor="name" className="text-sm font-medium mb-2">Service Name *</Label>
           <Input
             id="name"
             disabled={getDisabledState()}
@@ -499,8 +501,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
         {/* Description */}
-        <div className="md:col-span-2">
-          <Label htmlFor="description">Description</Label>
+        <div className="md:col-span-2 mb-4">
+          <Label htmlFor="description" className="text-sm font-medium mb-2">Description</Label>
           <Textarea
             id="description"
             {...register('description')}
@@ -510,8 +512,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
             {/* Duration */}
-            <div>
-              <Label htmlFor="duration">Duration (minutes) *</Label>
+            <div className="mb-4">
+              <Label htmlFor="duration" className="text-sm font-medium mb-2">Duration (minutes) *</Label>
               <Input
                 id="duration"
                 type="number"
@@ -527,8 +529,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             </div>
 
             {/* Category */}
-            <div>
-              <Label htmlFor="category">Category</Label>
+            <div className="mb-4">
+              <Label htmlFor="category" className="text-sm font-medium mb-2">Category</Label>
               <div className="space-y-2">
                 <Select
                   key={watch('category_id')} // Force re-render when value changes
@@ -620,8 +622,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             </div>
 
             {/* Instructions */}
-            <div className="md:col-span-2">
-              <Label htmlFor="instructions">Instructions</Label>
+            <div className="md:col-span-2 mb-4">
+              <Label htmlFor="instructions" className="text-sm font-medium mb-2">Instructions</Label>
               <Textarea
                 id="instructions"
                 {...register('instructions')}
@@ -631,7 +633,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             </div>
 
             {/* Active Status */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 mb-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="is_active"
@@ -640,7 +642,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                     setValue('is_active', checked);
                   }}
                 />
-                <Label htmlFor="is_active">Active Service</Label>
+                <Label htmlFor="is_active" className="text-sm font-medium mb-2">Active Service</Label>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Only active services are available for booking
@@ -653,8 +655,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         <TabsContent value="pricing" className="space-y-4 min-h-0 mt-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Service Price */}
-            <div>
-              <Label htmlFor="price">Service Price ($) *</Label>
+            <div className="mb-4">
+              <Label htmlFor="price" className="text-sm font-medium mb-2">Service Price ($) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -675,8 +677,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             </div>
 
             {/* Sale Price */}
-            <div>
-              <Label htmlFor="sale_price">Sale Price ($)</Label>
+            <div className="mb-4">
+              <Label htmlFor="sale_price" className="text-sm font-medium mb-2">Sale Price ($)</Label>
               <Input
                 id="sale_price"
                 type="number"
@@ -701,8 +703,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         <TabsContent value="advanced" className="space-y-4 min-h-0 mt-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Buffer Time */}
-        <div>
-          <Label htmlFor="buffer_time">Buffer Time (minutes)</Label>
+        <div className="mb-4">
+          <Label htmlFor="buffer_time" className="text-sm font-medium mb-2">Buffer Time (minutes)</Label>
           <Input
             id="buffer_time"
             type="number"
@@ -717,8 +719,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
         {/* Lead Time */}
-        <div>
-          <Label htmlFor="lead_time">Lead Time (hours)</Label>
+        <div className="mb-4">
+          <Label htmlFor="lead_time" className="text-sm font-medium mb-2">Lead Time (hours)</Label>
           <Input
             id="lead_time"
             type="number"
@@ -733,8 +735,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
             {/* Scheduling Window */}
-            <div>
-              <Label htmlFor="scheduling_window">Scheduling Window (weeks)</Label>
+            <div className="mb-4">
+              <Label htmlFor="scheduling_window" className="text-sm font-medium mb-2">Scheduling Window (weeks)</Label>
               <Input
                 id="scheduling_window"
                 type="number"
@@ -750,7 +752,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             </div>
 
             {/* Reschedule Cutoff Switch */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 mb-4">
               <div className="flex items-center space-x-2 mb-4">
                 <Switch
                   id="enable_reschedule_cutoff"
@@ -763,12 +765,12 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                     }
                   }}
                 />
-                <Label htmlFor="enable_reschedule_cutoff">Enable Reschedule Cutoff</Label>
+                <Label htmlFor="enable_reschedule_cutoff" className="text-sm font-medium mb-2">Enable Reschedule Cutoff</Label>
               </div>
               
               {watch('reschedule_cutoff') > 0 && (
-        <div>
-          <Label htmlFor="reschedule_cutoff">Reschedule Cutoff (hours)</Label>
+        <div className="mb-4">
+          <Label htmlFor="reschedule_cutoff" className="text-sm font-medium mb-2">Reschedule Cutoff (hours)</Label>
           <Input
             id="reschedule_cutoff"
             type="number"
@@ -785,7 +787,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
             {/* Cancel Cutoff Switch */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 mb-4">
               <div className="flex items-center space-x-2 mb-4">
                 <Switch
                   id="enable_cancel_cutoff"
@@ -798,12 +800,12 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                     }
                   }}
                 />
-                <Label htmlFor="enable_cancel_cutoff">Enable Cancel Cutoff</Label>
+                <Label htmlFor="enable_cancel_cutoff" className="text-sm font-medium mb-2">Enable Cancel Cutoff</Label>
               </div>
               
               {watch('cancel_cutoff') !== null && watch('cancel_cutoff')! > 0 && (
-                <div>
-                  <Label htmlFor="cancel_cutoff">Cancel Cutoff (hours)</Label>
+                <div className="mb-4">
+                  <Label htmlFor="cancel_cutoff" className="text-sm font-medium mb-2">Cancel Cutoff (hours)</Label>
                   <Input
                     id="cancel_cutoff"
                     type="number"
@@ -834,7 +836,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="field_type">Field Type</Label>
+                  <Label htmlFor="field_type" className="text-sm font-medium mb-2">Field Type</Label>
                   <Select 
                     value=""
                     onValueChange={(value: string) => {
@@ -933,7 +935,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </div>
               <div className="space-y-4">
                 <div>
-                  <Label>Select Staff Members</Label>
+                  <Label className="text-sm font-medium mb-2">Select Staff Members</Label>
                   <Popover open={staffDropdownOpen} onOpenChange={setStaffDropdownOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -941,7 +943,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                         variant="outline"
                         role="combobox"
                         aria-expanded={staffDropdownOpen}
-                        className="w-full justify-between mt-1 bg-transparent h-12 border-2 border-primary-foreground"
+                        className="w-full justify-between mt-1 bg-background h-12 border border-secondary-foreground active:bg-background hover:bg-background"
+                        style={{ borderRadius: '0.2rem' }}
                         disabled={getDisabledState()}
                       >
                         <span className="text-muted-foreground">
@@ -996,7 +999,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                 {/* Selected Staff as Badges */}
                 {selectedStaff.length > 0 && (
                   <div>
-                    <Label>Assigned Staff</Label>
+                    <Label className="text-sm font-medium mb-2">Assigned Staff</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {selectedStaff.map((staffMember) => (
                         <Badge key={staffMember.id} variant="secondary" className="gap-1 py-2 px-3">
@@ -1032,63 +1035,67 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             )}
           </div>
         </TabsContent>
-      </Tabs>
+          </Tabs>
+        </div>
 
-      {/* Form Actions */}
-      {!isViewMode && (
-        <div className="flex flex-col justify-between items-start pt-4 border-t gap-8">
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-muted-foreground">
-              {service 
-                ? 'Update your service details' 
-                : isFormComplete() 
-                  ? 'Ready to create service' 
-                  : 'Complete required fields: Name, Duration, and Price'
-              }
-            </div>
-            {!service && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span>Progress:</span>
-                <div className="flex gap-1">
-                  {[
-                    { key: 'details', condition: watch('name') && watch('duration') },
-                    { key: 'pricing', condition: watch('price') !== undefined && watch('price') >= 0 },
-                    { key: 'advanced', condition: watch('buffer_time') !== undefined && watch('lead_time') !== undefined },
-                    { key: 'policy', condition: watch('policy_fields') && watch('policy_fields').length > 0 }
-                  ].map((tab) => (
-                    <div
-                      key={tab.key}
-                      className={`w-2 h-2 rounded-full ${tab.condition ? 'bg-primary' : 'bg-gray-300'}`}
-                      title={`${tab.key} ${tab.condition ? 'completed' : 'pending'}`}
-                    />
-                  ))}
+        {/* Form Actions - Fixed at Bottom */}
+        {!isViewMode && (
+          <div className="py-4 border-t bg-background mt-auto">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-muted-foreground">
+                  {service 
+                    ? 'Update your service details' 
+                    : isFormComplete() 
+                      ? 'Ready to create service' 
+                      : 'Complete required fields: Name, Duration, and Price'
+                  }
                 </div>
+                {!service && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span>Progress:</span>
+                    <div className="flex gap-1">
+                      {[
+                        { key: 'details', condition: watch('name') && watch('duration') },
+                        { key: 'pricing', condition: watch('price') !== undefined && watch('price') >= 0 },
+                        { key: 'advanced', condition: watch('buffer_time') !== undefined && watch('lead_time') !== undefined },
+                        { key: 'policy', condition: watch('policy_fields') && watch('policy_fields').length > 0 }
+                      ].map((tab) => (
+                        <div
+                          key={tab.key}
+                          className={`w-2 h-2 rounded-full ${tab.condition ? 'bg-primary' : 'bg-gray-300'}`}
+                          title={`${tab.key} ${tab.condition ? 'completed' : 'pending'}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting || (!service && !isFormComplete())} 
+                  className="min-w-[120px]"
+                >
+                  {isSubmitting ? 'Saving...' : service ? 'Update Service' : 'Create Service'}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-2">
+        )}
+        
+        {/* View Mode Actions - Fixed at Bottom */}
+        {isViewMode && (
+          <div className="py-4 border-t bg-background mt-auto flex justify-end">
             <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || (!service && !isFormComplete())} 
-              className="min-w-[120px]"
-            >
-              {isSubmitting ? 'Saving...' : service ? 'Update Service' : 'Create Service'}
+              Close
             </Button>
           </div>
-        </div>
-      )}
-      
-      {/* View Mode Actions */}
-      {isViewMode && (
-        <div className="flex justify-end pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Close
-          </Button>
-        </div>
-      )}
-    </form>
+        )}
+      </form>
+    </div>
   );
 }

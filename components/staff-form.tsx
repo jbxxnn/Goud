@@ -408,7 +408,8 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={locationDropdownOpen}
-                className="w-full justify-between mt-1 bg-transparent h-12 border-2 border-primary-foreground"
+                className="w-full justify-between mt-1 bg-background h-9 border border-secondary-foreground active:bg-background hover:bg-background"
+                style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">
                   {selectedLocations.length === 0
@@ -478,7 +479,8 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={serviceDropdownOpen}
-                className="w-full justify-between mt-1 bg-transparent h-12 border-2 border-primary-foreground"
+                className="w-full justify-between mt-1 bg-background h-9 border border-secondary-foreground active:bg-background hover:bg-background"
+                style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">
                   {selectedServices.length === 0

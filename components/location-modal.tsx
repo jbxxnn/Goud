@@ -36,13 +36,15 @@ export function LocationModal({ isOpen, onClose, location, onSave }: LocationMod
             {location ? 'Edit Location' : 'Add New Location'}
           </SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <LocationForm
-            location={location}
-            onSave={handleSave}
-            onCancel={onClose}
-            loading={loading}
-          />
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden px-6 py-4">
+            <LocationForm
+              location={location}
+              onSave={handleSave}
+              onCancel={onClose}
+              loading={loading}
+            />
+          </div>
         </div>
       </SheetContent>
     </Sheet>

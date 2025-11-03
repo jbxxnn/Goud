@@ -72,15 +72,14 @@ export function DataTable<TData, TValue>({
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
-        {searchKey && (
+        {searchKey && table.getColumn(searchKey) && (
           <Input
             placeholder={searchPlaceholder}
             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn(searchKey)?.setFilterValue(event.target.value)
             }
-            className="max-w-sm border-input ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
-            style={{ borderRadius: '0.5rem' }}
+            className="max-w-sm border-secondary-foreground ring-0 focus:ring-0 focus:ring-offset-0 focus:border-secondary-foreground focus-visible:border-secondary-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         )}
         <DropdownMenu>
