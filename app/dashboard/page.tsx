@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-
 import { createClient } from "@/lib/supabase/server";
+import DashboardClient from "./dashboard-client";
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
@@ -10,7 +10,5 @@ export default async function ProtectedPage() {
     redirect("/auth/login");
   }
 
-  return (
-    <p>Dashboard</p>
-  );
+  return <DashboardClient />;
 }
