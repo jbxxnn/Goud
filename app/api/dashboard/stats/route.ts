@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
     >();
 
     bookingsData?.forEach((booking) => {
-      const service = booking.services as { id: string; name: string; service_code: string | null } | null;
+      const service = booking.services as unknown as { id: string; name: string; service_code: string | null } | null;
       if (!service) {
         return;
       }
@@ -177,7 +177,7 @@ export async function GET(req: NextRequest) {
     });
 
     const serviceSeries = Array.from(serviceSeriesMap.values()).sort((a, b) => b.total - a.total);
-    const seriesOutput = serviceSeries.map(({ total, ...rest }) => rest);
+    const seriesOutput = serviceSeries.map(({ ...rest }) => rest);
     const totalsOutput = serviceSeries.map(({ serviceId, serviceName, serviceCode, total }) => ({
       serviceId,
       serviceName,
@@ -198,8 +198,8 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('[dashboard/stats] error', e);
-    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
