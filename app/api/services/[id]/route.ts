@@ -3,6 +3,37 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { UpdateServiceRequest, ServicePolicyField, ServicePolicyFieldChoice } from '@/lib/types/service';
 
+const deriveServiceCode = (name?: string, providedCode?: string): string | null => {
+  const normalizedProvided = providedCode?.replace(/[^A-Za-z0-9]/g, '').toUpperCase() ?? '';
+  if (normalizedProvided.length === 3) {
+    return normalizedProvided;
+  }
+
+  if (!name) {
+    return null;
+  }
+
+  const normalizedName = name.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (normalizedName.length >= 3) {
+    return normalizedName.slice(0, 3);
+  }
+
+  return null;
+};
+
+const mapServiceRecord = (
+  service: Record<string, any>,
+  extras: Partial<Record<string, any>> = {}
+) => {
+  if (!service) return service;
+  const { service_code, ...rest } = service;
+  return {
+    ...rest,
+    serviceCode: service_code ?? null,
+    ...extras,
+  };
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -68,11 +99,10 @@ export async function GET(
 
     const staff_ids = staffAssignments?.map(sa => sa.staff_id) || [];
     
-    const mappedData = {
-      ...data,
+    const mappedData = mapServiceRecord(data, {
       policy_fields: policyFields,
-      staff_ids
-    };
+      staff_ids,
+    });
 
     return NextResponse.json({
       success: true,
@@ -121,12 +151,25 @@ export async function PUT(
       );
     }
 
+    const {
+      serviceCode,
+      policy_fields: policyFieldsPayload,
+      staff_ids: staffIdsPayload,
+      ...rest
+    } = body;
+
+    const updates: Record<string, any> = {
+      ...rest,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof serviceCode !== 'undefined' || typeof rest.name !== 'undefined') {
+      updates.service_code = deriveServiceCode(rest.name, serviceCode);
+    }
+
     const { data, error } = await supabase
       .from('services')
-      .update({
-        ...body,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', id)
       .select()
       .single();
@@ -139,7 +182,7 @@ export async function PUT(
     }
 
     // Handle policy fields update if provided
-    if (body.policy_fields !== undefined) {
+    if (typeof policyFieldsPayload !== 'undefined') {
       // Delete existing policy fields
       await supabase
         .from('service_policy_fields')
@@ -147,8 +190,8 @@ export async function PUT(
         .eq('service_id', id);
 
       // Insert new policy fields if any
-      if (body.policy_fields.length > 0) {
-        const policyFieldsData = body.policy_fields.map((field: ServicePolicyField, index: number) => ({
+      if (policyFieldsPayload.length > 0) {
+        const policyFieldsData = policyFieldsPayload.map((field: ServicePolicyField, index: number) => ({
           service_id: id,
           field_type: field.field_type,
           title: field.title,
@@ -170,9 +213,9 @@ export async function PUT(
             .order('field_order');
 
           // Handle choices for multi-choice fields
-          for (const field of body.policy_fields) {
+        for (const field of policyFieldsPayload) {
             if (field.field_type === 'multi_choice' && field.choices && field.choices.length > 0) {
-              const fieldId = insertedFields?.find(f => f.field_order === body.policy_fields?.indexOf(field))?.id;
+            const fieldId = insertedFields?.find(f => f.field_order === policyFieldsPayload?.indexOf(field))?.id;
               if (fieldId) {
                 const choicesData = field.choices.map((choice: ServicePolicyFieldChoice, choiceIndex: number) => ({
                   field_id: fieldId,
@@ -192,7 +235,7 @@ export async function PUT(
     }
 
     // Handle staff assignments update if provided
-    if (body.staff_ids !== undefined) {
+    if (typeof staffIdsPayload !== 'undefined') {
       // Delete existing staff assignments
       await supabase
         .from('staff_services')
@@ -200,8 +243,8 @@ export async function PUT(
         .eq('service_id', id);
 
       // Insert new staff assignments if any
-      if (body.staff_ids.length > 0) {
-        const staffAssignments = body.staff_ids.map((staff_id: string) => ({
+      if (staffIdsPayload.length > 0) {
+        const staffAssignments = staffIdsPayload.map((staff_id: string) => ({
           staff_id,
           service_id: id,
           is_qualified: true,
@@ -220,7 +263,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data
+      data: mapServiceRecord(data),
     });
   } catch (error) {
     console.error('Service PUT error:', error);

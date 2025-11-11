@@ -262,6 +262,7 @@ export default function StaffClient({
               data={staff}
               searchKey="first_name"
               searchPlaceholder="Search staff..."
+              emptyMessage="No staff records found."
             />
           )}
         </div>

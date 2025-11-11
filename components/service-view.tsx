@@ -72,6 +72,11 @@ export default function ServiceView({ service }: ServiceViewProps) {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-bold">{service.name}</h2>
+          {service.serviceCode && (
+            <p className="text-sm font-mono uppercase tracking-wide text-muted-foreground mt-1">
+              Code: {service.serviceCode}
+            </p>
+          )}
           {service.description && (
             <p className="text-muted-foreground mt-1">{service.description}</p>
           )}

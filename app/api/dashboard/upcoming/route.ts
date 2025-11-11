@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
         ),
         services:services!service_id (
           id,
+          service_code,
           name,
           duration
         ),
@@ -81,9 +82,9 @@ export async function GET(req: NextRequest) {
         total_pages: totalPages,
       },
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('[dashboard/upcoming] error', e);
-    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Unexpected error' }, { status: 500 });
   }
 }
 

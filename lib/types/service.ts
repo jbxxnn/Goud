@@ -3,6 +3,7 @@
 export interface Service {
   id: string;
   name: string;
+  serviceCode: string | null;
   description: string | null;
   duration: number; // Duration in minutes
   buffer_time: number; // Buffer time in minutes between appointments
@@ -70,6 +71,7 @@ export interface ServiceWithAddons extends Service {
 
 export interface CreateServiceRequest {
   name: string;
+  serviceCode?: string;
   description?: string;
   duration: number;
   buffer_time?: number;
@@ -88,6 +90,7 @@ export interface CreateServiceRequest {
 
 export interface UpdateServiceRequest {
   name?: string;
+  serviceCode?: string;
   description?: string;
   duration?: number;
   buffer_time?: number;
@@ -155,6 +158,7 @@ export interface ServiceAddonsResponse {
 // Form validation schemas
 export interface ServiceFormData {
   name: string;
+  serviceCode: string;
   description: string;
   duration: number;
   buffer_time: number;

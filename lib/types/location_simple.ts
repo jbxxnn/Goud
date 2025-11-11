@@ -3,6 +3,7 @@
 export interface Location {
   id: string;
   name: string;
+  locationCode: string | null;
   address: string;
   phone: string | null;
   email: string | null;
@@ -14,6 +15,7 @@ export interface Location {
 
 export interface CreateLocationRequest {
   name: string;
+  locationCode?: string;
   address: string;
   phone?: string;
   email?: string;
@@ -23,6 +25,7 @@ export interface CreateLocationRequest {
 
 export interface UpdateLocationRequest {
   name?: string;
+  locationCode?: string;
   address?: string;
   phone?: string;
   email?: string;
@@ -52,6 +55,7 @@ export interface LocationsResponse {
 // Form validation schemas
 export interface LocationFormData {
   name: string;
+  locationCode: string;
   address: string;
   phone: string;
   email: string;

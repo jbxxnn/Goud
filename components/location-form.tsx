@@ -20,9 +20,29 @@ interface LocationFormProps {
   loading?: boolean;
 }
 
+type LocationFormState = {
+  name: string;
+  locationCode: string;
+  address: string;
+  phone: string;
+  email: string;
+  color: string;
+  is_active: boolean;
+};
+
+const generateLocationCode = (name: string): string => {
+  const lettersOnly = name.replace(/[^A-Za-z]/g, '').toUpperCase();
+  return lettersOnly.slice(0, 3);
+};
+
 export function LocationForm({ location, onSave, onCancel, loading = false }: LocationFormProps) {
-  const [formData, setFormData] = useState({
+  const initialLocationCode =
+    location?.locationCode ??
+    generateLocationCode(location?.name ?? '');
+
+  const [formData, setFormData] = useState<LocationFormState>({
     name: location?.name || '',
+    locationCode: initialLocationCode,
     address: location?.address || '',
     phone: location?.phone || '',
     email: location?.email || '',
@@ -30,25 +50,35 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
     is_active: location?.is_active ?? true,
   });
 
+  const [hasCustomLocationCode, setHasCustomLocationCode] = useState<boolean>(
+    initialLocationCode.trim().length > 0 && Boolean(location?.locationCode)
+  );
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Validate form data
-  const validateForm = () => {
+  const validateForm = (data: LocationFormState) => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    if (!data.name.trim()) {
       newErrors.name = 'Location name is required';
     }
 
-    if (!formData.address.trim()) {
+    if (!data.locationCode.trim()) {
+      newErrors.locationCode = 'Location code is required';
+    } else if (!/^[A-Z]{3}$/.test(data.locationCode.trim())) {
+      newErrors.locationCode = 'Location code must be exactly 3 letters';
+    }
+
+    if (!data.address.trim()) {
       newErrors.address = 'Address is required';
     }
 
-    if (formData.phone && !validatePhoneNumber(formData.phone)) {
+    if (data.phone && !validatePhoneNumber(data.phone)) {
       newErrors.phone = 'Invalid phone number format';
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       newErrors.email = 'Invalid email format';
     }
 
@@ -60,28 +90,60 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    const userProvidedCode = formData.locationCode.trim();
+    const sanitizedUserCode = userProvidedCode
+      ? userProvidedCode.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3)
+      : '';
+    const generatedCode = generateLocationCode(formData.name);
+    const finalLocationCode = sanitizedUserCode || generatedCode;
+
+    const submissionData: LocationFormState = {
+      ...formData,
+      locationCode: finalLocationCode,
+    };
+
+    const isCustom = Boolean(sanitizedUserCode);
+
+    if (!validateForm(submissionData)) {
+      setFormData(submissionData);
+      setHasCustomLocationCode(isCustom);
       return;
     }
 
     try {
-      await onSave(formData);
+      setFormData(submissionData);
+      setHasCustomLocationCode(isCustom);
+      await onSave(submissionData);
     } catch (error) {
       console.error('Form submission error:', error);
     }
   };
 
   // Handle input changes
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: keyof LocationFormState, value: string | boolean) => {
     if (field === 'is_active') {
       setFormData(prev => ({ ...prev, [field]: value as boolean }));
+    } else if (field === 'name') {
+      const nameValue = value as string;
+      setFormData(prev => {
+        const next: LocationFormState = { ...prev, name: nameValue };
+        if (!hasCustomLocationCode) {
+          next.locationCode = generateLocationCode(nameValue);
+        }
+        return next;
+      });
+    } else if (field === 'locationCode') {
+      const sanitized = (value as string).replace(/[^A-Za-z]/g, '').toUpperCase();
+      const truncated = sanitized.slice(0, 3);
+      setFormData(prev => ({ ...prev, locationCode: truncated }));
+      setHasCustomLocationCode(truncated.trim().length > 0);
     } else {
       setFormData(prev => ({ ...prev, [field]: value as string }));
     }
-    
+
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field as string]) {
+      setErrors(prev => ({ ...prev, [field as string]: '' }));
     }
   };
 
@@ -108,6 +170,23 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
               />
               {errors.name && (
                 <p className="text-sm text-destructive mt-1">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="locationCode">Location Code *</Label>
+              <Input
+                id="locationCode"
+                value={formData.locationCode}
+                onChange={(e) => handleInputChange('locationCode', e.target.value)}
+                placeholder="Automatically generated from name"
+                className={errors.locationCode ? 'border-destructive' : ''}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Defaults to the first three letters of the name if left blank.
+              </p>
+              {errors.locationCode && (
+                <p className="text-sm text-destructive mt-1">{errors.locationCode}</p>
               )}
             </div>
 

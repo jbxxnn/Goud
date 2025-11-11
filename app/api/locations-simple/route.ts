@@ -3,6 +3,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { CreateLocationRequest } from '@/lib/types/location_simple';
 
+const deriveLocationCode = (name: string, providedCode?: string): string | null => {
+  const normalizedProvided = providedCode?.replace(/[^A-Za-z]/g, '').toUpperCase() ?? '';
+  if (normalizedProvided.length === 3) {
+    return normalizedProvided;
+  }
+
+  const normalizedName = name.replace(/[^A-Za-z]/g, '').toUpperCase();
+  const generated = normalizedName.slice(0, 3);
+  return generated.length ? generated : null;
+};
+
+const mapLocationRecord = (location: Record<string, any>) => {
+  if (!location) return location;
+  return {
+    ...location,
+    locationCode: location.location_code ?? null,
+  };
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -40,9 +59,11 @@ export async function GET(request: NextRequest) {
 
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
+    const formattedData = (data || []).map(mapLocationRecord);
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: formattedData,
       pagination: {
         page,
         limit,
@@ -89,10 +110,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const locationCode = deriveLocationCode(body.name, body.locationCode ?? undefined);
+
     const { data, error } = await supabase
       .from('locations')
       .insert({
         name: body.name,
+        location_code: locationCode,
         address: body.address,
         phone: body.phone || null,
         email: body.email || null,
@@ -111,7 +135,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, data }, { status: 201 });
+    const formattedData = mapLocationRecord(data);
+
+    return NextResponse.json({ success: true, data: formattedData }, { status: 201 });
   } catch (error) {
     console.error('Locations POST error:', error);
     return NextResponse.json(

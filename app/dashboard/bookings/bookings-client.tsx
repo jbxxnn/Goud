@@ -307,6 +307,7 @@ export default function BookingsClient({
                 }
               )}
               data={bookings}
+              emptyMessage="No bookings to display."
             />
           )}
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FocusEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,7 @@ interface ServiceFormProps {
 
 interface ServiceFormData {
   name: string;
+  serviceCode: string;
   description: string;
   duration: number;
   buffer_time: number;
@@ -60,6 +61,11 @@ interface ServiceFormData {
   staff_ids: string[];
   is_active: boolean;
 }
+
+const generateServiceCode = (name: string): string => {
+  const alphanumeric = name.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  return alphanumeric.slice(0, 3);
+};
 
 // Sortable Field Component
 function SortableField({ 
@@ -259,6 +265,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
+  const [hasCustomServiceCode, setHasCustomServiceCode] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -277,6 +284,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   } = useForm<ServiceFormData>({
     defaultValues: {
       name: '',
+      serviceCode: '',
       description: '',
       duration: 30,
       buffer_time: 0,
@@ -294,11 +302,22 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
     },
   });
 
+  const serviceCodeRegister = register('serviceCode', {
+    validate: (value) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return 'Service code is required';
+      }
+      return /^[A-Z0-9]{3}$/.test(trimmed) || 'Service code must be exactly 3 letters or numbers';
+    },
+  });
+
   // Reset form when service changes
   useEffect(() => {
     if (service) {
       reset({
         name: service.name,
+        serviceCode: service.serviceCode || generateServiceCode(service.name),
         description: service.description || '',
         duration: service.duration,
         buffer_time: service.buffer_time,
@@ -314,9 +333,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         staff_ids: service.staff_ids || [],
         is_active: service.is_active,
       });
+      setHasCustomServiceCode(Boolean(service.serviceCode));
     } else {
       reset({
         name: '',
+        serviceCode: '',
         description: '',
         duration: 30,
         buffer_time: 0,
@@ -332,6 +353,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         staff_ids: [],
         is_active: true,
       });
+      setHasCustomServiceCode(false);
     }
   }, [service, reset]);
 
@@ -363,7 +385,18 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const onSubmit = async (data: ServiceFormData) => {
     setIsSubmitting(true);
     try {
-      await onSave(data);
+      const sanitizedUserCode = data.serviceCode
+        ? data.serviceCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 3)
+        : '';
+      const generatedCode = generateServiceCode(data.name);
+      const finalServiceCode = sanitizedUserCode || generatedCode;
+      const submissionData: ServiceFormData = {
+        ...data,
+        serviceCode: finalServiceCode,
+      };
+      setHasCustomServiceCode(Boolean(sanitizedUserCode));
+      setValue('serviceCode', finalServiceCode);
+      await onSave(submissionData);
     } finally {
       setIsSubmitting(false);
     }
@@ -380,6 +413,34 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       const newFields = arrayMove(watch('policy_fields'), oldIndex, newIndex);
       setValue('policy_fields', newFields);
     }
+  };
+
+  const watchName = watch('name');
+
+  useEffect(() => {
+    if (!service && !hasCustomServiceCode) {
+      setValue('serviceCode', generateServiceCode(watchName || ''));
+    }
+  }, [watchName, hasCustomServiceCode, setValue, service]);
+
+  const handleServiceCodeChange = (value: string) => {
+    const sanitized = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 3);
+    setValue('serviceCode', sanitized, { shouldValidate: true, shouldDirty: true });
+    setHasCustomServiceCode(true);
+  };
+
+  const handleServiceCodeBlur = (event: FocusEvent<HTMLInputElement>) => {
+    serviceCodeRegister.onBlur(event);
+    const trimmed = event.target.value.trim();
+    if (!trimmed) {
+      setHasCustomServiceCode(false);
+      const regenerated = generateServiceCode(watchName || '');
+      setValue('serviceCode', regenerated, { shouldValidate: true, shouldDirty: false });
+    }
+  };
+
+  const handleServiceCodeFocus = () => {
+    setHasCustomServiceCode(true);
   };
 
   // Field management handlers
@@ -497,6 +558,29 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
           />
           {errors.name && (
             <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+          )}
+        </div>
+
+        {/* Service Code */}
+        <div className="md:col-span-2 mb-4">
+          <Label htmlFor="serviceCode" className="text-sm font-medium mb-2">Service Code *</Label>
+          <Input
+            id="serviceCode"
+            name="serviceCode"
+            disabled={getDisabledState()}
+            value={watch('serviceCode')}
+            onChange={(e) => handleServiceCodeChange(e.target.value)}
+            onFocus={handleServiceCodeFocus}
+            onBlur={handleServiceCodeBlur}
+            ref={serviceCodeRegister.ref}
+            placeholder="Automatically generated from name"
+            className={errors.serviceCode ? 'border-destructive' : ''}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Defaults to the first three characters of the name if left blank.
+          </p>
+          {errors.serviceCode && (
+            <p className="text-sm text-destructive mt-1">{errors.serviceCode.message}</p>
           )}
         </div>
 
@@ -656,7 +740,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Service Price */}
             <div className="mb-4">
-              <Label htmlFor="price" className="text-sm font-medium mb-2">Service Price ($) *</Label>
+              <Label htmlFor="price" className="text-sm font-medium mb-2">Service Price (€) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -678,7 +762,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
 
             {/* Sale Price */}
             <div className="mb-4">
-              <Label htmlFor="sale_price" className="text-sm font-medium mb-2">Sale Price ($)</Label>
+              <Label htmlFor="sale_price" className="text-sm font-medium mb-2">Sale Price (€)</Label>
               <Input
                 id="sale_price"
                 type="number"

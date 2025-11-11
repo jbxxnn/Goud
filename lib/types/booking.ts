@@ -28,6 +28,7 @@ export interface Booking {
   };
   services?: {
     id: string;
+    service_code: string | null;
     name: string;
     duration: number;
   };
@@ -40,6 +41,18 @@ export interface Booking {
     first_name: string | null;
     last_name: string | null;
   } | null;
+}
+
+export interface RecentBookingSummary {
+  id: string;
+  clientName: string;
+  clientEmail: string | null;
+  serviceName: string;
+  serviceCode: string | null;
+  staffName: string | null;
+  locationName: string | null;
+  startTime: string;
+  status: BookingStatus;
 }
 
 export interface BookingsResponse {

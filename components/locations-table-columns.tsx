@@ -16,6 +16,28 @@ export const createLocationColumns = (
   onToggleActive: (id: string, currentStatus: boolean) => void
 ): ColumnDef<Location>[] => [
   {
+    accessorKey: "locationCode",
+    header: ({ column }) => {
+      return (
+        <Button
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="rounded-sm text-sidebar-foreground border-input bg-sidebar ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          Code
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const code = row.getValue<string>("locationCode")
+      return (
+        <span className="font-mono text-sm uppercase tracking-wide">
+          {code || "-"}
+        </span>
+      )
+    },
+  },
+  {
     accessorKey: "name",
     header: ({ column }) => {
       return (

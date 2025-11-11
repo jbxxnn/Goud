@@ -224,6 +224,7 @@ export default function LocationsClient({
               data={locations}
               searchKey="name"
               searchPlaceholder="Search locations..."
+              emptyMessage="No locations found. Add a new location to get started."
             />
           )}
         </div>

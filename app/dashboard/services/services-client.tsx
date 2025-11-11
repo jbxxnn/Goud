@@ -258,6 +258,7 @@ export default function ServicesClient({
               data={services}
               searchKey="name"
               searchPlaceholder="Search services..."
+              emptyMessage="No services found. Add a new service to get started."
             />
           )}
         </div>
