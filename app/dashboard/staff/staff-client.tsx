@@ -214,8 +214,8 @@ export default function StaffClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Staff</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-md font-bold tracking-tight">Staff</h1>
+          <p className="text-muted-foreground text-sm">
             Manage clinic staff, their qualifications, and location assignments
           </p>
         </div>
@@ -234,7 +234,7 @@ export default function StaffClient({
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center gap-3">
-                <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
+                <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             </div>
           ) : staff.length === 0 ? (

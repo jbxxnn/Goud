@@ -85,14 +85,14 @@ export function DataTable<TData, TValue>({
             onChange={(event) =>
               table.getColumn(searchKey)?.setFilterValue(event.target.value)
             }
-            className="max-w-sm border-secondary-foreground ring-0 focus:ring-0 focus:ring-offset-0 focus:border-secondary-foreground focus-visible:border-secondary-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="max-w-sm"
           />
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
-            className="h-12 rounded-sm ml-auto text-sidebar-foreground border-2 border-primary-foreground bg-transparent ring-0 focus:ring-0 focus:ring-offset-0 focus:border-primary-foreground focus-visible:border-primary-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-            style={{ borderRadius: '0.5rem' }}>
+            className="rounded-sm ml-auto text-sidebar-foreground border border-border bg-card ring-0 focus:ring-0 focus:ring-offset-0 focus:border-border focus-visible:border-border focus-visible:ring-0 focus-visible:ring-offset-0"
+            style={{ borderRadius: '0.2rem' }}>
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -117,9 +117,9 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card">
         <Table>
-          <TableHeader className="bg-sidebar">
+          <TableHeader className="bg-border">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

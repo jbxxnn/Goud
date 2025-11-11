@@ -35,7 +35,7 @@ export const createServiceColumns = (
       return (
         <Button
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="rounded-sm text-sidebar-foreground border-input bg-sidebar ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="rounded-sm text-sidebar-foreground border-input bg-transparent ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           Code
         </Button>
@@ -44,7 +44,7 @@ export const createServiceColumns = (
     cell: ({ row }) => {
       const code = row.getValue<string>('serviceCode');
       return (
-        <span className="font-mono text-sm uppercase tracking-wide">
+        <span className="font-mono text-sm uppercase tracking-wide ml-2">
           {code || '-'}
         </span>
       );

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { 
-  EditIcon, 
+  // EditIcon, 
   Delete02Icon,
   EyeIcon
 } from '@hugeicons/core-free-icons';
@@ -52,7 +52,7 @@ export const createBookingColumns = (
   onView: (booking: Booking) => void,
   onCancel: (booking: Booking) => void,
   onDelete: (booking: Booking) => void,
-  onReschedule?: (booking: Booking) => void
+  // onReschedule?: (booking: Booking) => void
 ): ColumnDef<Booking>[] => [
   {
     id: 'select',
@@ -172,7 +172,7 @@ export const createBookingColumns = (
           >
             <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
           </Button>
-          {onReschedule && booking.status !== 'cancelled' && (
+          {/* {onReschedule && booking.status !== 'cancelled' && (
             <Button
               variant="ghost"
               size="icon"
@@ -182,7 +182,7 @@ export const createBookingColumns = (
             >
               <HugeiconsIcon icon={EditIcon} className="h-4 w-4" />
             </Button>
-          )}
+          )} */}
           {booking.status !== 'cancelled' ? (
             <Button
               variant="ghost"

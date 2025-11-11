@@ -18,7 +18,7 @@ interface IProps {
 
 export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated }: IProps) {
   return (
-    <div className="flex flex-col gap-4 border-b bg-sidebar p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-col gap-4 border-b bg-border p-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center gap-3">
         <TodayButton />
         <DateNavigator view={view} events={events} />
@@ -96,7 +96,7 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
           <UserSelect />
           
           <AddShiftDialog onShiftCreated={onShiftCreated}>
-            <Button className="bg-secondary-foreground hover:bg-primary/90 text-primary-foreground" style={{ borderRadius: '0.2rem' }}>
+            <Button size="default" className="bg-secondary-foreground hover:bg-primary/90 text-primary-foreground" style={{ borderRadius: '0.2rem' }}>
               <HugeiconsIcon icon={PlusSignIcon} size={24} />
               Add Shift
             </Button>

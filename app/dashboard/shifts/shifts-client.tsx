@@ -189,7 +189,7 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex items-center gap-3">
-          <HugeiconsIcon icon={Loading03Icon} className="h-10 w-10 animate-spin text-muted-foreground" />
+          <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -200,8 +200,8 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Shift Management</h1>
-          <p className="text-muted-foreground">
+            <h1 className="text-md font-bold tracking-tight">Shift Management</h1>
+          <p className="text-muted-foreground text-sm">
             Manage staff schedules and availability
           </p>
         </div>

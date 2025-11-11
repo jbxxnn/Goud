@@ -10,7 +10,7 @@ export function TodayButton() {
 
   return (
     <button
-      className="flex size-14 flex-col items-start overflow-hidden rounded-lg border border-secondary-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      className="flex size-14 flex-col items-start bg-card overflow-hidden rounded-lg border border-secondary-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       onClick={handleClick}
       style={{ borderRadius: '0.3rem' }}
     >

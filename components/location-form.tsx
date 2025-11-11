@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { MultiplicationSignIcon, CallIcon, MailIcon, Location03Icon } from '@hugeicons/core-free-icons';
+import { CallIcon, MailIcon, Location03Icon } from '@hugeicons/core-free-icons';
 import { Location, CreateLocationRequest, UpdateLocationRequest } from '@/lib/types/location_simple';
 import { validatePhoneNumber, formatPhoneNumber } from '@/lib/types/location_simple';
 
@@ -153,14 +153,23 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
     handleInputChange('phone', formatted);
   };
 
+  const isFormComplete = () => {
+    return (
+      formData.name.trim().length > 0 &&
+      formData.address.trim().length > 0 &&
+      formData.locationCode.trim().length === 3
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto space-y-12 pb-10">
           {/* Basic Information */}
           <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Location Name *</Label>
+              <Label htmlFor="name" className="text-xs font-semibold mb-2">Location Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -174,7 +183,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
             </div>
 
             <div>
-              <Label htmlFor="locationCode">Location Code *</Label>
+              <Label htmlFor="locationCode" className="text-xs font-semibold mb-2">Location Code *</Label>
               <Input
                 id="locationCode"
                 value={formData.locationCode}
@@ -182,16 +191,17 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
                 placeholder="Automatically generated from name"
                 className={errors.locationCode ? 'border-destructive' : ''}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              {/* <p className="text-xs text-muted-foreground mt-1">
                 Defaults to the first three letters of the name if left blank.
-              </p>
+              </p> */}
               {errors.locationCode && (
                 <p className="text-sm text-destructive mt-1">{errors.locationCode}</p>
               )}
             </div>
+            </div>
 
             <div>
-              <Label htmlFor="address">Address *</Label>
+              <Label htmlFor="address" className="text-xs font-semibold mb-2">Address *</Label>
               <div className="relative">
                 <HugeiconsIcon 
                   icon={Location03Icon} 
@@ -212,7 +222,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-xs font-semibold mb-2">Phone Number</Label>
                 <div className="relative">
                   <HugeiconsIcon 
                     icon={CallIcon} 
@@ -232,7 +242,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
               </div>
 
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-xs font-semibold mb-2">Email</Label>
                 <div className="relative">
                   <HugeiconsIcon 
                     icon={MailIcon} 
@@ -255,7 +265,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="color">Color</Label>
+                <Label htmlFor="color" className="text-xs font-semibold mb-2">Color</Label>
                 <div className="flex items-center gap-2">
                   <input
                     id="color"
@@ -282,7 +292,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
                   checked={formData.is_active}
                   onCheckedChange={(checked) => handleInputChange('is_active', checked)}
                 />
-                <Label htmlFor="is_active" className="cursor-pointer">Active Location</Label>
+                <Label htmlFor="is_active" className="cursor-pointer text-xs font-semibold">Active Location</Label>
               </div>
             </div>
           </div>
@@ -291,14 +301,22 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
         {/* Form Actions - Fixed at Bottom */}
         <div className="py-4 border-t bg-background mt-auto">
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-muted-foreground">
+              {location
+                ? 'Review the details before saving.'
+                : isFormComplete()
+                  ? 'Ready to create this location.'
+                  : 'Fill in the required fields: name, address, and code.'}
+            </div>
+            <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onCancel}>
-              <HugeiconsIcon icon={MultiplicationSignIcon} className="mr-2 h-4 w-4" />
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? 'Saving...' : location ? 'Update Location' : 'Create Location'}
             </Button>
+          </div>
           </div>
         </div>
       </form>

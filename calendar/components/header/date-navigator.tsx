@@ -35,7 +35,7 @@ export function DateNavigator({ view, events }: IProps) {
         <span className="text-lg font-semibold">
           {month} {year}
         </span>
-        <Badge className="px-1.5 bg-secondary text-secondary-foreground border-secondary-foreground">
+        <Badge className="px-1.5 bg-secondary-foreground text-white border-border">
           {eventCount} events
         </Badge>
       </div>

@@ -195,12 +195,12 @@ export default function LocationsClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Locations</h1>
-          <p className="text-muted-foreground">
-            Manage clinic locations and their information
+          <h1 className="text-md font-bold tracking-tight">Locations</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage clinic locations and their information.
           </p>
         </div>
-        <Button onClick={handleAddLocation}>
+        <Button size="default" onClick={handleAddLocation}>
           <HugeiconsIcon icon={PlusSignIcon} className="mr-2 h-4 w-4" />
           Add Location
         </Button>
@@ -212,7 +212,7 @@ export default function LocationsClient({
         <div className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-8 w-8 animate-spin" />
+              <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <DataTable

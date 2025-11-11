@@ -222,8 +222,8 @@ export default function BookingsClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Bookings</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-md font-bold tracking-tight">Bookings</h1>
+          <p className="text-muted-foreground text-sm">
             Manage all appointments and bookings
           </p>
         </div>
@@ -237,7 +237,7 @@ export default function BookingsClient({
             title="Status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-md px-3 py-1.5 text-sm"
+            className="border rounded-md px-3 py-1.5 text-sm h-9"
             style={{ borderRadius: '0.2rem' }}
           >
             <option value="all">All</option>
@@ -301,10 +301,10 @@ export default function BookingsClient({
                 handleView,
                 handleCancel,
                 handleDelete,
-                (booking) => {
-                  setReschedulingBooking(booking);
-                  setIsRescheduleModalOpen(true);
-                }
+                // (booking) => {
+                //   setReschedulingBooking(booking);
+                //   setIsRescheduleModalOpen(true);
+                // }
               )}
               data={bookings}
               emptyMessage="No bookings to display."

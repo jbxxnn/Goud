@@ -21,7 +21,7 @@ export const createLocationColumns = (
       return (
         <Button
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="rounded-sm text-sidebar-foreground border-input bg-sidebar ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="rounded-sm text-sidebar-foreground border-input bg-transparent ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           Code
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -31,7 +31,7 @@ export const createLocationColumns = (
     cell: ({ row }) => {
       const code = row.getValue<string>("locationCode")
       return (
-        <span className="font-mono text-sm uppercase tracking-wide">
+        <span className="ml-2 font-mono text-sm uppercase tracking-wide">
           {code || "-"}
         </span>
       )
@@ -43,7 +43,7 @@ export const createLocationColumns = (
       return (
         <Button
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="rounded-sm text-sidebar-foreground border-input bg-sidebar ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="rounded-sm text-sidebar-foreground border-input bg-transparent ring-0 focus:ring-0 focus:ring-offset-0 focus:border-input focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -56,7 +56,7 @@ export const createLocationColumns = (
         <div className="font-medium ml-2 flex items-center gap-2">
           {location.color && (
             <div
-              className="w-4 h-4 rounded-full border border-input flex-shrink-0"
+              className="w-2 h-2 rounded-full border border-input flex-shrink-0"
               style={{ backgroundColor: location.color }}
               title={`Location color: ${location.color}`}
             />

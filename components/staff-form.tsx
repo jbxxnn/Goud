@@ -245,12 +245,14 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
   const selectedServices = services.filter(svc => watch('service_ids').includes(svc.id));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-12 pb-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="flex flex-col h-full">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-12 pb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* User Selection (only for new staff) */}
         {!staff && (
           <div className="md:col-span-2">
-            <Label htmlFor="user_id">User Account *</Label>
+            <Label htmlFor="user_id" className="text-xs font-semibold mb-2">User Account *</Label>
             <Select
               value={watch('user_id')}
               onValueChange={handleUserSelect}
@@ -304,7 +306,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* First Name */}
         <div>
-          <Label htmlFor="first_name">First Name *</Label>
+          <Label htmlFor="first_name" className="text-xs font-semibold mb-2">First Name *</Label>
           <Input
             id="first_name"
             {...register('first_name', { required: 'First name is required' })}
@@ -317,7 +319,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Last Name */}
         <div>
-          <Label htmlFor="last_name">Last Name *</Label>
+          <Label htmlFor="last_name" className="text-xs font-semibold mb-2">Last Name *</Label>
           <Input
             id="last_name"
             {...register('last_name', { required: 'Last name is required' })}
@@ -330,7 +332,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Email */}
         <div>
-          <Label htmlFor="email">Email *</Label>
+          <Label htmlFor="email" className="text-xs font-semibold mb-2">Email *</Label>
           <Input
             id="email"
             type="email"
@@ -350,7 +352,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Phone */}
         <div>
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone" className="text-xs font-semibold mb-2">Phone</Label>
           <Input
             id="phone"
             {...register('phone')}
@@ -360,7 +362,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Hire Date */}
         <div>
-          <Label htmlFor="hire_date">Hire Date</Label>
+          <Label htmlFor="hire_date" className="text-xs font-semibold mb-2">Hire Date</Label>
           <Input
             id="hire_date"
             type="date"
@@ -370,7 +372,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Role */}
         <div>
-          <Label htmlFor="role">Role *</Label>
+          <Label htmlFor="role" className="text-xs font-semibold mb-2">Role *</Label>
           <Select
             value={watch('role')}
             onValueChange={(value) => setValue('role', value as StaffRole)}
@@ -389,7 +391,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Bio */}
         <div className="md:col-span-2">
-          <Label htmlFor="bio">Bio</Label>
+          <Label htmlFor="bio" className="text-xs font-semibold mb-2">Bio</Label>
           <Textarea
             id="bio"
             {...register('bio')}
@@ -400,7 +402,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Location Assignments */}
         <div className="md:col-span-2">
-          <Label>Location Assignments</Label>
+          <Label htmlFor="location_ids" className="text-xs font-semibold mb-2">Location Assignments</Label>
           <Popover open={locationDropdownOpen} onOpenChange={setLocationDropdownOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -408,7 +410,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={locationDropdownOpen}
-                className="w-full justify-between mt-1 bg-background h-9 border border-secondary-foreground active:bg-background hover:bg-background"
+                className="w-full justify-between mt-1 bg-card h-9 border border-border active:bg-card hover:bg-card"
                 style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">
@@ -471,7 +473,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
 
         {/* Service Qualifications */}
         <div className="md:col-span-2">
-          <Label>Service Qualifications</Label>
+          <Label htmlFor="service_ids" className="text-xs font-semibold mb-2">Service Qualifications</Label>
           <Popover open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -479,7 +481,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={serviceDropdownOpen}
-                className="w-full justify-between mt-1 bg-background h-9 border border-secondary-foreground active:bg-background hover:bg-background"
+                className="w-full justify-between mt-1 bg-card h-9 border border-border active:bg-card hover:bg-card"
                 style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">
@@ -549,24 +551,32 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               checked={watch('is_active')}
               onCheckedChange={(checked) => setValue('is_active', checked)}
             />
-            <Label htmlFor="is_active">Active Staff Member</Label>
+            <Label htmlFor="is_active" className="text-xs font-semibold">Active Staff Member</Label>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Only active staff are available for scheduling
           </p>
         </div>
-      </div>
+          </div>
+        </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end space-x-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : staff ? 'Update Staff' : 'Create Staff'}
-        </Button>
-      </div>
-
-    </form>
+        {/* Form Actions - Fixed at Bottom */}
+        <div className="py-4 border-t bg-background mt-auto">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-muted-foreground">
+              {staff ? 'Review and update staff details' : 'Complete required fields to add this staff member'}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : staff ? 'Update Staff' : 'Create Staff'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }

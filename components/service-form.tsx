@@ -1027,7 +1027,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                         variant="outline"
                         role="combobox"
                         aria-expanded={staffDropdownOpen}
-                        className="w-full justify-between mt-1 bg-background h-12 border border-secondary-foreground active:bg-background hover:bg-background"
+                        className="w-full justify-between mt-1 bg-card border border-border active:bg-card hover:bg-card"
                         style={{ borderRadius: '0.2rem' }}
                         disabled={getDisabledState()}
                       >

@@ -51,7 +51,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                     )}
                     style={isClosed ? {
                       backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                      backgroundColor: 'hsl(var(--muted) / 0.15)'
+                      backgroundColor: '#f3f4f6'
                     } : undefined}
                   >
                     {format(day, "EE")} <span className="ml-1 font-semibold text-foreground">{format(day, "d")}</span>
@@ -90,7 +90,8 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                       className="relative"
                       style={isClosed ? {
                         backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                        backgroundColor: 'hsl(var(--muted) / 0.1)'
+                        // backgroundColor: 'hsl(var(--muted) / 0.1)'
+                        backgroundColor: '#f3f4f6'
                       } : undefined}
                     >
                       {hours.map((hour, index) => {
@@ -104,7 +105,8 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                               height: "96px",
                               ...(isDisabled ? {
                                 backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                                backgroundColor: 'hsl(var(--muted) / 0.1)'
+                                // backgroundColor: 'hsl(var(--muted) / 0.1)'
+                                backgroundColor: '#f3f4f6'
                               } : undefined)
                             }}
                           >

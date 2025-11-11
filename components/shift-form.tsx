@@ -165,7 +165,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
       if (!result.success) {
         if (result.conflicts) {
-          alert(`Shift conflicts detected:\n${result.conflicts.map((c: any) => c.message).join('\n')}`);
+          alert(`Shift conflicts detected:\n${result.conflicts.map((c: { message: string }) => c.message).join('\n')}`);
         } else {
           throw new Error(result.error || 'Failed to save shift');
         }
@@ -203,7 +203,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Staff Selection */}
       <div>
-        <Label htmlFor="staff_id">Staff Member *</Label>
+        <Label htmlFor="staff_id" className="text-xs font-semibold mb-2">Staff Member *</Label>
         <Select
           value={watch('staff_id')}
           onValueChange={(value) => setValue('staff_id', value)}
@@ -227,7 +227,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
       {/* Location Selection */}
       <div>
-        <Label htmlFor="location_id">Location *</Label>
+        <Label htmlFor="location_id" className="text-xs font-semibold mb-2">Location *</Label>
         <Select
           value={watch('location_id')}
           onValueChange={(value) => setValue('location_id', value)}
@@ -252,7 +252,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
       {/* Date and Time */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="start_time">Start Time *</Label>
+          <Label htmlFor="start_time" className="text-xs font-semibold mb-2">Start Time *</Label>
           <Input
             id="start_time"
             type="datetime-local"
@@ -265,7 +265,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
         </div>
 
         <div>
-          <Label htmlFor="end_time">End Time *</Label>
+          <Label htmlFor="end_time" className="text-xs font-semibold mb-2">End Time *</Label>
           <Input
             id="end_time"
             type="datetime-local"
@@ -293,10 +293,10 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
         {watch('is_recurring') && (
           <div className="space-y-4 pl-6 border-l-2 border-muted">
             <div>
-              <Label htmlFor="recurrence_frequency">Frequency *</Label>
+              <Label htmlFor="recurrence_frequency" className="text-xs font-semibold mb-2">Frequency *</Label>
               <Select
                 value={watch('recurrence_frequency')}
-                onValueChange={(value) => setValue('recurrence_frequency', value as any)}
+                onValueChange={(value) => setValue('recurrence_frequency', value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY')}
                 disabled={isViewMode}
               >
                 <SelectTrigger>
@@ -312,7 +312,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
             {watch('recurrence_frequency') === 'WEEKLY' && (
               <div>
-                <Label>Days of Week</Label>
+                <Label className="text-xs font-semibold mb-2">Days of Week</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {weekDays.map((day) => (
                     <div key={day.value} className="flex items-center space-x-2">
@@ -340,7 +340,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
             )}
 
             <div>
-              <Label htmlFor="recurrence_until">Repeat Until (Optional)</Label>
+              <Label htmlFor="recurrence_until" className="text-xs font-semibold mb-2">Repeat Until (Optional)</Label>
               <Input
                 id="recurrence_until"
                 type="date"
@@ -357,7 +357,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
       {/* Services */}
       <div>
-        <Label>Services *</Label>
+        <Label className="text-xs font-semibold mb-2">Services *</Label>
         <div className="mt-2 space-y-2 border rounded-lg p-4 max-h-64 overflow-y-auto">
           {services.map((service) => (
             <div key={service.id} className="flex items-start space-x-2">
@@ -402,7 +402,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
       {/* Priority */}
       <div>
-        <Label htmlFor="priority">Priority</Label>
+        <Label htmlFor="priority" className="text-xs font-semibold mb-2">Priority</Label>
         <Input
           id="priority"
           type="number"
@@ -417,7 +417,7 @@ export default function ShiftForm({ shift, onSave, onCancel, isViewMode = false 
 
       {/* Notes */}
       <div>
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes" className="text-xs font-semibold mb-2">Notes</Label>
         <Textarea
           id="notes"
           {...register('notes')}

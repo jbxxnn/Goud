@@ -85,7 +85,7 @@ export function AppSidebar() {
                       asChild 
                       isActive={isActive}
                       className={isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
-                      style={{ borderRadius: "0.5rem" }}
+                      style={{ borderRadius: "0.2rem" }}
                     >
                       <a href={item.url} className="min-h-10 p-4">
                         {item.icon}

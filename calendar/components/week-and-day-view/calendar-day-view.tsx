@@ -61,7 +61,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
               )}
               style={isDayClosed(selectedDate, workingHours) ? {
                 backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                backgroundColor: 'hsl(var(--muted) / 0.15)'
+                backgroundColor: '#f3f4f6'
               } : undefined}
             >
               {format(selectedDate, "EE")} <span className="font-semibold text-foreground">{format(selectedDate, "d")}</span>
@@ -87,7 +87,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
               className="relative flex-1 border-l"
               style={isDayClosed(selectedDate, workingHours) ? {
                 backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                backgroundColor: 'hsl(var(--muted) / 0.1)'
+                backgroundColor: '#f3f4f6'
               } : undefined}
             >
               <div className="relative">
@@ -102,7 +102,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                         height: "96px",
                         ...(isDisabled ? {
                           backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
-                          backgroundColor: 'hsl(var(--muted) / 0.1)'
+                          backgroundColor: '#f3f4f6'
                         } : undefined)
                       }}
                     >

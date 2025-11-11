@@ -5,8 +5,8 @@ import { Booking } from '@/lib/types/booking';
 import { Badge } from '@/components/ui/badge';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+// import { HugeiconsIcon } from '@hugeicons/react';
+// import { Cancel01Icon } from '@hugeicons/core-free-icons';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -193,7 +193,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     }}
                     className="bg-secondary-foreground hover:bg-secondary-foreground/70"
                   >
-                    <HugeiconsIcon icon={Cancel01Icon} className="mr-2 h-4 w-4" />
+                    {/* <HugeiconsIcon icon={Cancel01Icon} className="mr-2 h-4 w-4" /> */}
                     Cancel Appointment
                   </Button>
                 )}
@@ -219,7 +219,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                <HugeiconsIcon icon={Cancel01Icon} className="mr-2 h-4 w-4" />
+                {/* <HugeiconsIcon icon={Cancel01Icon} className="mr-2 h-4 w-4" /> */}
                 Delete Booking
               </Button>
             )}
