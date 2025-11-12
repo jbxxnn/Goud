@@ -5,6 +5,7 @@ import { StaffSearchParams } from '@/lib/types/staff';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const withAssignments = searchParams.get('with_assignments') === 'true';
     
     const params: StaffSearchParams = {
       page: parseInt(searchParams.get('page') || '1'),
@@ -18,6 +19,82 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
     
+    // If with_assignments is true, use a single query with joins
+    if (withAssignments) {
+      let query = supabase
+        .from('staff')
+        .select(`
+          *,
+          staff_locations (
+            location_id,
+            is_primary
+          ),
+          staff_services (
+            service_id,
+            is_qualified
+          )
+        `, { count: 'exact' });
+
+      // Apply filters
+      if (params.search) {
+        query = query.or(`first_name.ilike.%${params.search}%,last_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
+      }
+
+      if (params.role) {
+        query = query.eq('role', params.role);
+      }
+
+      if (params.active_only) {
+        query = query.eq('is_active', true);
+      }
+
+      // Apply pagination
+      const page = params.page ?? 1;
+      const limit = params.limit ?? 1000; // For assignments, usually want all
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      query = query.range(from, to).order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400 }
+        );
+      }
+
+      // Transform the data to include location_ids and service_ids arrays
+      const transformedData = (data || []).map((staff: any) => ({
+        ...staff,
+        location_ids: (staff.staff_locations || []).map((sl: any) => sl.location_id),
+        service_ids: (staff.staff_services || [])
+          .filter((ss: any) => ss.is_qualified)
+          .map((ss: any) => ss.service_id),
+      }));
+
+      // Cache headers with version for cache invalidation
+      // Use a version query param to bust cache when needed
+      const cacheVersion = searchParams.get('v') || Date.now().toString();
+      const cacheHeaders = {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+        'X-Cache-Version': cacheVersion,
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages: Math.ceil((count || 0) / limit)
+        }
+      }, { headers: cacheHeaders });
+    }
+
+    // Original query without assignments
     let query = supabase
       .from('staff')
       .select('*', { count: 'exact' });
@@ -136,9 +213,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Invalidate cache by returning a cache-busting header
+    // This tells clients to fetch fresh data on next request
     return NextResponse.json({
       success: true,
-      data: staff
+      data: staff,
+      cacheInvalidated: true,
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, must-revalidate',
+        'X-Cache-Invalidate': 'staff-assignments',
+      }
     });
   } catch (error) {
     console.error('Staff POST error:', error);

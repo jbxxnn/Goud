@@ -47,6 +47,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   const { isOpen, onClose, onToggle } = useDisclosure();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -79,54 +80,56 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        // Fetch staff with their location and service assignments
-        const staffResponse = await fetch('/api/staff?active_only=true&limit=1000');
-        const staffData = await staffResponse.json();
+        // Get cache version from localStorage (updated on mutations) or use timestamp
+        const { getStaffAssignmentsCacheVersion } = await import('@/lib/utils/cache-invalidation');
+        const cacheVersion = getStaffAssignmentsCacheVersion();
+        
+        // Fetch all data in parallel - single API call for staff with assignments
+        // Add cache version to bust cache when mutations occur
+        const [staffResponse, locationsResponse, servicesResponse] = await Promise.all([
+          fetch(`/api/staff?active_only=true&limit=1000&with_assignments=true&v=${cacheVersion}`, {
+            cache: 'no-store', // Always fetch fresh when dialog opens
+          }),
+          fetch('/api/locations-simple?active_only=true&limit=1000'),
+          fetch('/api/services?active_only=true&limit=1000'),
+        ]);
+
+        const [staffData, locationsData, servicesData] = await Promise.all([
+          staffResponse.json(),
+          locationsResponse.json(),
+          servicesResponse.json(),
+        ]);
+
         if (staffData.success) {
-          setStaff(staffData.data || []);
+          const staffList = staffData.data || [];
+          setStaff(staffList);
           
-          // Build staff-location mapping
+          // Build staff-location and staff-service mappings from the single response
           const locationMapping: { [key: string]: string[] } = {};
           const serviceMapping: { [key: string]: string[] } = {};
           
-          for (const member of staffData.data || []) {
-            // Fetch location assignments
-            const locationsResponse = await fetch(`/api/staff/${member.id}/locations`);
-            const locationsData = await locationsResponse.json();
-            if (locationsData.success) {
-              locationMapping[member.id] = (locationsData.data || []).map((loc: any) => loc.location_id);
-            }
-            
-            // Fetch service qualifications
-            const servicesResponse = await fetch(`/api/staff/${member.id}/services`);
-            const servicesData = await servicesResponse.json();
-            if (servicesData.success) {
-              serviceMapping[member.id] = (servicesData.data || [])
-                .filter((svc: any) => svc.is_qualified)
-                .map((svc: any) => svc.service_id);
-            }
+          for (const member of staffList) {
+            locationMapping[member.id] = member.location_ids || [];
+            serviceMapping[member.id] = member.service_ids || [];
           }
           
           setStaffLocationMap(locationMapping);
           setStaffServiceMap(serviceMapping);
         }
 
-        // Fetch locations
-        const locationsResponse = await fetch('/api/locations-simple?active_only=true&limit=1000');
-        const locationsData = await locationsResponse.json();
         if (locationsData.success) {
           setLocations(locationsData.data || []);
         }
 
-        // Fetch services
-        const servicesResponse = await fetch('/api/services?active_only=true&limit=1000');
-        const servicesData = await servicesResponse.json();
         if (servicesData.success) {
           setServices(servicesData.data || []);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -136,6 +139,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       // Reset state when dialog closes
       setSelectedServices([]);
       setShowServices(false);
+      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -309,12 +313,17 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               <Select
                 value={watch('staff_id')}
                 onValueChange={handleStaffChange}
+                disabled={isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select staff member" />
+                  <SelectValue placeholder={isLoading ? "Loading..." : "Select staff member"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredStaff.length === 0 ? (
+                  {isLoading ? (
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                      Loading staff...
+                    </div>
+                  ) : filteredStaff.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {watch('location_id') 
                         ? 'No staff assigned to this location'
@@ -345,12 +354,17 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               <Select
                 value={watch('location_id')}
                 onValueChange={handleLocationChange}
+                disabled={isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
+                  <SelectValue placeholder={isLoading ? "Loading..." : "Select location"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredLocations.length === 0 ? (
+                  {isLoading ? (
+                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                      Loading locations...
+                    </div>
+                  ) : filteredLocations.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {watch('staff_id') 
                         ? 'Selected staff is not assigned to any locations'

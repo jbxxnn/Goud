@@ -81,6 +81,10 @@ export default function StaffClient({
         throw new Error(errorData.error || 'Failed to delete staff');
       }
 
+      // Invalidate cache
+      const { invalidateStaffAssignmentsCache } = await import('@/lib/utils/cache-invalidation');
+      invalidateStaffAssignmentsCache();
+
       // Refresh staff
       await fetchStaff();
       setDeleteDialogOpen(false);
@@ -181,6 +185,10 @@ export default function StaffClient({
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to save staff');
       }
+
+      // Invalidate cache if response indicates it
+      const { invalidateStaffAssignmentsCache } = await import('@/lib/utils/cache-invalidation');
+      invalidateStaffAssignmentsCache();
 
       // Refresh staff
       await fetchStaff();

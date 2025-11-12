@@ -162,9 +162,18 @@ export async function PUT(
       }
     }
 
+    // Invalidate cache when staff assignments are updated
+    const invalidateCache = location_ids !== undefined || service_ids !== undefined;
+    
     return NextResponse.json({
       success: true,
-      data: staff
+      data: staff,
+      cacheInvalidated: invalidateCache,
+    }, {
+      headers: invalidateCache ? {
+        'Cache-Control': 'no-cache, must-revalidate',
+        'X-Cache-Invalidate': 'staff-assignments',
+      } : {}
     });
   } catch (error) {
     console.error('Staff PUT error:', error);
@@ -212,9 +221,16 @@ export async function DELETE(
       );
     }
 
+    // Invalidate cache when staff is deleted
     return NextResponse.json({
       success: true,
-      message: 'Staff deleted successfully'
+      message: 'Staff deleted successfully',
+      cacheInvalidated: true,
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, must-revalidate',
+        'X-Cache-Invalidate': 'staff-assignments',
+      }
     });
   } catch (error) {
     console.error('Staff DELETE error:', error);
