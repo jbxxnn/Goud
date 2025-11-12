@@ -6,7 +6,7 @@ import { Clock, Text, User } from "lucide-react";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
-import { EventDetailsDialog } from "@/calendar/components/dialogs/event-details-dialog";
+import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
 
 import type { IEvent } from "@/calendar/interfaces";
 import type { VariantProps } from "class-variance-authority";
@@ -45,9 +45,11 @@ interface IProps {
   event: IEvent;
   eventCurrentDay?: number;
   eventTotalDays?: number;
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays }: IProps) {
+export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated }: IProps) {
   const { badgeVariant } = useCalendar();
 
   const startDate = parseISO(event.startDate);
@@ -65,7 +67,7 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays }: IPro
   };
 
   return (
-    <EventDetailsDialog event={event}>
+    <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
       <div role="button" tabIndex={0} className={agendaEventCardClasses} onKeyDown={handleKeyDown}>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-1.5">
@@ -103,6 +105,6 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays }: IPro
           </div>
         </div>
       </div>
-    </EventDetailsDialog>
+    </ShiftDetailsDialog>
   );
 }

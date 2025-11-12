@@ -4,7 +4,7 @@ import { endOfDay, format, isSameDay, parseISO, startOfDay } from "date-fns";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
-import { EventDetailsDialog } from "@/calendar/components/dialogs/event-details-dialog";
+import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
 
 import { cn } from "@/lib/utils";
 
@@ -54,9 +54,11 @@ interface IProps extends Omit<VariantProps<typeof eventBadgeVariants>, "color" |
   eventTotalDays?: number;
   className?: string;
   position?: "first" | "middle" | "last" | "none";
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition }: IProps) {
+export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated }: IProps) {
   const { badgeVariant } = useCalendar();
 
   const itemStart = startOfDay(parseISO(event.startDate));
@@ -95,7 +97,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
   return (
     <DraggableEvent event={event}>
-      <EventDetailsDialog event={event}>
+      <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
         <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown}>
           <div className="flex items-center gap-1.5 truncate">
             {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
@@ -118,7 +120,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
           {renderBadgeText && <span>{format(new Date(event.startDate), "h:mm a")}</span>}
         </div>
-      </EventDetailsDialog>
+      </ShiftDetailsDialog>
     </DraggableEvent>
   );
 }

@@ -19,9 +19,11 @@ interface IProps {
   singleDayEvents: IEvent[];
   multiDayEvents: IEvent[];
   onShiftCreated?: () => void;
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated }: IProps) {
+export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated }: IProps) {
   const { selectedDate, workingHours, visibleHours } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
@@ -33,7 +35,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
     <>
       <div className="flex flex-col">
         <div>
-          <WeekViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} />
+          <WeekViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
 
           {/* Week header */}
           <div className="relative z-20 flex border-b">
@@ -159,7 +161,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
                           return (
                             <div key={event.id} className="absolute p-1" style={style}>
-                              <EventBlock event={event} />
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
                             </div>
                           );
                         })

@@ -16,9 +16,11 @@ interface IProps {
   view: TCalendarView;
   onViewChange: (view: TCalendarView) => void;
   onShiftCreated?: () => void;
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated }: IProps) {
+export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated }: IProps) {
   const { selectedDate, selectedUserId, events } = useCalendar();
 
   const filteredEvents = useMemo(() => {
@@ -89,11 +91,11 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated }: I
       <ShiftCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} onShiftCreated={onShiftCreated} />
 
       <DndProviderWrapper>
-        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} />}
-        {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
-        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} />}
+        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />}
+        {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />}
+        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />}
         {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
-        {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
+        {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />}
       </DndProviderWrapper>
     </div>
   );

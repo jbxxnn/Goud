@@ -265,8 +265,8 @@ function ShiftCalendarContainerWrapper({
   const searchParams = useSearchParams();
   const { selectedDate } = useCalendar();
 
-  // Handle shift creation - preserve the current selectedDate from URL
-  const handleShiftCreated = async () => {
+  // Handle shift creation/update/deletion - preserve the current selectedDate from URL
+  const handleShiftChange = async () => {
     // Get date from URL first (most reliable), fallback to context
     const dateParam = searchParams.get('date');
     let dateToUse = selectedDate;
@@ -287,7 +287,9 @@ function ShiftCalendarContainerWrapper({
     <ShiftCalendarContainer 
       view={view} 
       onViewChange={onViewChange}
-      onShiftCreated={handleShiftCreated}
+      onShiftCreated={handleShiftChange}
+      onShiftDeleted={handleShiftChange}
+      onShiftUpdated={handleShiftChange}
     />
   );
 }

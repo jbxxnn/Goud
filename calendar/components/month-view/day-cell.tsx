@@ -17,11 +17,13 @@ interface IProps {
   cell: ICalendarCell;
   events: IEvent[];
   eventPositions: Record<string, number>;
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
 const MAX_VISIBLE_EVENTS = 3;
 
-export function DayCell({ cell, events, eventPositions }: IProps) {
+export function DayCell({ cell, events, eventPositions, onShiftDeleted, onShiftUpdated }: IProps) {
   const { push } = useRouter();
   const { setSelectedDate } = useCalendar();
 
@@ -59,7 +61,7 @@ export function DayCell({ cell, events, eventPositions }: IProps) {
                 {event && (
                   <>
                     <EventBullet className="lg:hidden" color={event.color} />
-                    <MonthEventBadge className="hidden lg:flex" event={event} cellDate={startOfDay(date)} />
+                    <MonthEventBadge className="hidden lg:flex" event={event} cellDate={startOfDay(date)} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
                   </>
                 )}
               </div>

@@ -11,9 +11,11 @@ import type { IEvent } from "@/calendar/interfaces";
 interface IProps {
   selectedDate: Date;
   multiDayEvents: IEvent[];
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IProps) {
+export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
   const { workingHours } = useCalendar();
   const weekStart = startOfWeek(selectedDate);
   const weekEnd = endOfWeek(selectedDate);
@@ -109,7 +111,7 @@ export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IPro
                 position = "middle";
               }
 
-              return <MonthEventBadge key={`${event.id}-${dayIndex}`} event={event} cellDate={startOfDay(day)} position={position} />;
+              return <MonthEventBadge key={`${event.id}-${dayIndex}`} event={event} cellDate={startOfDay(day)} position={position} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />;
             })}
             </div>
           );

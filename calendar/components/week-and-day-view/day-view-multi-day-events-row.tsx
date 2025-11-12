@@ -7,9 +7,11 @@ import type { IEvent } from "@/calendar/interfaces";
 interface IProps {
   selectedDate: Date;
   multiDayEvents: IEvent[];
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IProps) {
+export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
   const dayStart = startOfDay(selectedDate);
   const dayEnd = endOfDay(selectedDate);
 
@@ -45,7 +47,7 @@ export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents }: IProp
           const eventTotalDays = differenceInDays(eventEnd, eventStart) + 1;
           const eventCurrentDay = differenceInDays(currentDate, eventStart) + 1;
 
-          return <MonthEventBadge key={event.id} event={event} cellDate={selectedDate} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} />;
+          return <MonthEventBadge key={event.id} event={event} cellDate={selectedDate} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />;
         })}
       </div>
     </div>

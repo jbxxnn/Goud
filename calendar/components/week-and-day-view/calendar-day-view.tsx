@@ -21,9 +21,11 @@ interface IProps {
   singleDayEvents: IEvent[];
   multiDayEvents: IEvent[];
   onShiftCreated?: () => void;
+  onShiftDeleted?: () => void;
+  onShiftUpdated?: () => void;
 }
 
-export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated }: IProps) {
+export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated }: IProps) {
   const { selectedDate, setSelectedDate, users, visibleHours, workingHours } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
@@ -49,7 +51,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
     <div className="flex">
       <div className="flex flex-1 flex-col">
         <div>
-          <DayViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} />
+          <DayViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
 
           {/* Day header */}
           <div className="relative z-20 flex border-b">
@@ -155,7 +157,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
                     return (
                       <div key={event.id} className="absolute p-1" style={style}>
-                        <EventBlock event={event} />
+                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
                       </div>
                     );
                   })
