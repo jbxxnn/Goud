@@ -26,21 +26,21 @@ export async function GET(req: NextRequest) {
 
     const supabase = getServiceSupabase();
 
-    const skipCache = Boolean(excludeBookingId);
-    const cacheKey = skipCache
-      ? null
+     const skipCache = Boolean(excludeBookingId);
+     const cacheKey = skipCache
+       ? null
       : makeDaySlotsCacheKey({
-          serviceId,
-          locationId,
-          date: dateStr,
-          staffId: staffId ?? null,
-        });
-    if (!skipCache && cacheKey) {
-      const cached = daySlotsCache.get(cacheKey);
-      if (cached) {
-        return NextResponse.json(cached, { headers: availabilityCacheHeaders });
-      }
-    }
+           serviceId,
+           locationId,
+           date: dateStr,
+           staffId: staffId ?? null,
+         });
+     if (!skipCache && cacheKey) {
+       const cached = daySlotsCache.get(cacheKey);
+       if (cached) {
+         return NextResponse.json(cached, { headers: availabilityCacheHeaders });
+       }
+     }
 
     // Fetch service rules (duration, buffer, lead_time) from services
     const { data: serviceData, error: serviceErr } = await supabase

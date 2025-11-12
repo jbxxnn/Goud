@@ -121,7 +121,7 @@ export async function GET(
       .eq('service_id', id);
 
     const staff_ids = staffAssignments?.map(sa => sa.staff_id) || [];
-
+    
     // Fetch addons for this service separately
     // Use service role client to bypass RLS for public API endpoint
     const serviceSupabase = getServiceSupabase();

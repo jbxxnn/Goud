@@ -411,6 +411,10 @@ export default function BookingsClient({
         onDelete={(booking) => {
           handleDelete(booking);
         }}
+        onUpdate={(updatedBooking) => {
+          setViewingBooking(updatedBooking);
+          fetchBookings();
+        }}
         onReschedule={(booking) => {
           setIsViewModalOpen(false);
           setReschedulingBooking(booking);

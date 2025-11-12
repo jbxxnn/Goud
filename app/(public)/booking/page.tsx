@@ -6,8 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { MapPin } from 'lucide-react';
 import { bookingContactSchema, BookingContactInput, BookingPolicyAnswer, BookingAddonSelection } from '@/lib/validation/booking';
 import { ServiceAddon, ServicePolicyField, ServicePolicyFieldChoice } from '@/lib/types/service';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowLeft01Icon, ArrowRight01Icon, Loading03Icon } from '@hugeicons/core-free-icons';
 // Using custom inline calendar below for finer heatmap control
 
 type PolicyField = ServicePolicyField & {
@@ -596,7 +602,7 @@ export default function BookingPage() {
                 onChange={(e) => updatePolicyResponse(field.id, e.target.checked)}
               />
               <span>
-                <span className="font-medium">
+                <span className="text-xs font-medium">
                   {field.title}
                   {field.is_required && <span className="text-red-600 ml-1">*</span>}
                 </span>
@@ -612,7 +618,7 @@ export default function BookingPage() {
         return (
           <div key={field.id} className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">
+              <span className="text-xs font-medium">
                 {field.title}
                 {field.is_required && <span className="text-red-600 ml-1">*</span>}
               </span>
@@ -628,7 +634,7 @@ export default function BookingPage() {
                     ? choice.price
                     : 0;
                 return (
-                  <label key={choice.id} className="flex items-center gap-2">
+                  <label key={choice.id} className="flex items-center gap-2 text-xs">
                     <input
                       type="checkbox"
                       checked={selected.includes(choice.id)}
@@ -636,7 +642,7 @@ export default function BookingPage() {
                     />
                     <span className="flex-1">{choice.title}</span>
                     {price > 0 && (
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-gray-600">
                         {formatEuroCents(Math.round(price * 100))}
                       </span>
                     )}
@@ -654,7 +660,7 @@ export default function BookingPage() {
           : '';
         return (
           <div key={field.id} className="space-y-2">
-            <label className="block text-sm font-medium">
+            <label className="block text-xs font-bold">
               {field.title}
               {field.is_required && <span className="text-red-600 ml-1">*</span>}
             </label>
@@ -681,7 +687,7 @@ export default function BookingPage() {
         const value = typeof policyResponses[field.id] === 'string' ? (policyResponses[field.id] as string) : '';
         return (
           <div key={field.id} className="space-y-2">
-            <label className="block text-sm font-medium">
+            <label className="block text-xs font-bold">
               {field.title}
               {field.is_required && <span className="text-red-600 ml-1">*</span>}
             </label>
@@ -699,7 +705,7 @@ export default function BookingPage() {
       case 'file_upload': {
         return (
           <div key={field.id} className="space-y-2">
-            <label className="block text-sm font-medium">
+            <label className="block text-xs font-bold">
               {field.title}
               {field.is_required && <span className="text-red-600 ml-1">*</span>}
             </label>
@@ -716,7 +722,7 @@ export default function BookingPage() {
         const value = typeof policyResponses[field.id] === 'string' ? (policyResponses[field.id] as string) : '';
         return (
           <div key={field.id} className="space-y-2">
-            <label className="block text-sm font-medium">
+            <label className="block text-xs font-bold">
               {field.title}
               {field.is_required && <span className="text-red-600 ml-1">*</span>}
             </label>
@@ -733,70 +739,129 @@ export default function BookingPage() {
     }
   };
 
+  const totalSteps = hasAddons ? 4 : 3;
+  const currentStepNumber = getDisplayStepNumber(step);
+
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      <h1 className="text-2xl font-semibold mb-4">Book an Appointment</h1>
-
-      <Stepper step={step} />
-
-      {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Step 1: Select Service</h2>
-          <div className="space-y-2">
-            {services.map(s => (
-              <label key={s.id} className="flex items-center gap-3 p-3 border rounded">
-                <input
-                  type="radio"
-                  name="service"
-                  value={s.id}
-                  checked={serviceId === s.id}
-                  onChange={() => setServiceId(s.id)}
-                />
-                <span className="flex-1">{s.name}</span>
-                <span className="font-medium">{formatEuroCents(s.price ?? 0)}</span>
-              </label>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-lg shadow-xl" style={{ borderRadius: '0.2rem' }}>
+        <CardHeader className="relative pb-6">
+          <div className="flex items-start justify-between">
+            <h1 className="text-lg font-bold text-gray-900">Book Your Appointment</h1>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 font-medium">STEP {currentStepNumber}/{totalSteps}</div>
+            </div>
           </div>
-          {selectedService?.policyFields.length ? (
-            <div className="space-y-3 border rounded p-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">Servicebeleid</h3>
+          
+          {/* Modern Progress Bar */}
+          <div className="flex gap-2 mt-6 max-w-[200px]">
+            {Array.from({ length: totalSteps }).map((_, idx) => {
+              const stepNum = idx + 1;
+              const isActive = currentStepNumber >= stepNum;
+              return (
+                <div
+                  key={idx}
+                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                    isActive ? 'bg-[#8B4513]' : 'bg-gray-200'
+                  }`}
+                />
+              );
+            })}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+
+          {step === 1 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Select service</h2>
+                <p className="text-xs text-gray-600">Choose a service to continue.</p>
+              </div>
+
               <div className="space-y-4">
-                {selectedService.policyFields.map((field) => renderPolicyField(field))}
+                <div className="space-y-2">
+                  <Label htmlFor="service-select" className="text-sm font-bold text-gray-700">
+                    Services
+                  </Label>
+                  <Select value={serviceId} onValueChange={setServiceId}>
+                    <SelectTrigger id="service-select" className="w-full h-11">
+                      <SelectValue placeholder="Select services">
+                        {serviceId ? services.find(s => s.id === serviceId)?.name : 'Select services'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {services.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{s.name}</span>
+                            <span className="ml-4 text-gray-500">{formatEuroCents(s.price ?? 0)}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {selectedService?.policyFields.length ? (
+                <div className="space-y-4 p-4 bg-muted" style={{ borderRadius: '0.2rem' }}>
+                  <h3 className="text-xs font-bold tracking-wide text-gray-600">Servicebeleid</h3>
+                  <div className="space-y-4">
+                    {selectedService.policyFields.map((field) => renderPolicyField(field))}
+                  </div>
+                </div>
+              ) : null}
+              
+              {selectedService && (
+                <div className="flex items-center justify-between px-4 py-3 bg-border" style={{ borderRadius: '0.2rem' }}>
+                  <span className="text-sm font-bold text-gray-700">Actuele totaalprijs</span>
+                  <span className="text-sm font-bold text-gray-900">
+                    {formatEuroCents(grandTotalCents)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleStep1Continue}
+                  disabled={!serviceId}
+                  className="h-11 px-8 bg-secondary-foreground hover:bg-secondary-foreground/90 text-white rounded-md font-medium"
+                >
+                  Continue
+                </Button>
               </div>
             </div>
-          ) : null}
-          {selectedService && (
-            <div className="flex items-center justify-between rounded border bg-gray-50 px-3 py-2 text-sm">
-              <span>Actuele totaalprijs</span>
-              <span className="font-medium">
-                {formatEuroCents(grandTotalCents)}
-              </span>
-            </div>
           )}
-          <div className="flex justify-end">
-            <button
-              className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-              disabled={!serviceId}
-              onClick={handleStep1Continue}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
 
-      {step === 2 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Step 2: Location, Date, Time</h2>
-          <div>
-            <label className="block text-sm mb-1">Location</label>
-            <select title="Location" className="border rounded px-3 py-2 w-full" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-              <option value="">Select location</option>
-              {locations.map(l => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-          </div>
+          {step === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Location, Date & Time</h2>
+                <p className="text-xs text-gray-600">Choose your location, date and time slot.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location-select-step2" className="text-sm font-bold text-gray-700">
+                  Location
+                </Label>
+                <Select value={locationId} onValueChange={setLocationId}>
+                  <SelectTrigger id="location-select-step2" className="w-full h-11">
+                    <SelectValue placeholder="Choose location">
+                      {locationId ? locations.find(l => l.id === locationId)?.name : 'Choose location'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map(l => (
+                      <SelectItem key={l.id} value={l.id}>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <span>{l.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
           <div className="relative">
             <Calendar
               month={monthCursor}
@@ -818,46 +883,54 @@ export default function BookingPage() {
             selected={selectedSlot}
             onSelect={(s) => setSelectedSlot(s)}
           />
-          <div className="flex justify-between">
-            <button className="px-4 py-2 border rounded" onClick={() => setStep(1)}>Back</button>
-            <button
-              className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-              disabled={!selectedSlot}
-              onClick={() => {
-                // Skip to review (step 4) if no addons, otherwise go to addons (step 3)
-                setStep(hasAddons ? 3 : 4);
-              }}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="h-11 px-6 border-gray-300"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    setStep(hasAddons ? 3 : 4);
+                  }}
+                  disabled={!selectedSlot}
+                  className="h-11 px-8 bg-secondary-foreground hover:bg-secondary-foreground/90 text-white rounded-md font-medium"
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>
+          )}
 
-      {step === 3 && hasAddons && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Step 3: Add-ons</h2>
-          {!selectedService ? (
-            <p className="text-sm text-gray-600">Selecteer eerst een service om beschikbare add-ons te zien.</p>
-          ) : (
-            <div className="space-y-3">
-              {selectedService.addons.map((addon) => {
-                const checked = addon.isRequired || Boolean(selectedAddons[addon.id]);
-                return (
-                  <label key={addon.id} className="flex items-start gap-3 rounded border p-3">
-                    <input
-                      type="checkbox"
-                      className="mt-1"
+          {step === 3 && hasAddons && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Select add-ons</h2>
+                <p className="text-xs text-gray-600">Choose any additional services you&apos;d like to include.</p>
+              </div>
+              {!selectedService ? (
+                <p className="text-xs text-gray-600">Selecteer eerst een service om beschikbare add-ons te zien.</p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedService.addons.map((addon) => {
+                    const checked = addon.isRequired || Boolean(selectedAddons[addon.id]);
+                    return (
+                      <label key={addon.id} className="flex items-start gap-3 p-4 bg-muted hover:bg-border transition-colors cursor-pointer" style={{ borderRadius: '0.2rem' }}>
+                        <input
+                          type="checkbox"
+                      className="mt-0.5"
                       disabled={addon.isRequired}
                       checked={checked}
                       onChange={() => toggleAddonSelection(addon.id)}
                     />
                     <div className="flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-3">
-                        <span className="font-medium">{addon.name}</span>
-                        <span className="text-sm text-gray-700">{formatEuroCents(addon.priceCents)}</span>
+                        <span className="text-xs font-bold">{addon.name}</span>
+                        <span className="text-xs text-gray-700">{formatEuroCents(addon.priceCents)}</span>
                       </div>
-                      {addon.description && <p className="text-sm text-gray-600">{addon.description}</p>}
+                      {addon.description && <p className="text-xs text-gray-600">{addon.description}</p>}
                       {addon.isRequired && (
                         <p className="text-xs text-amber-600">Deze add-on is verplicht en automatisch toegevoegd.</p>
                       )}
@@ -867,41 +940,55 @@ export default function BookingPage() {
               })}
             </div>
           )}
-          {selectedService && (
-            <div className="flex items-center justify-between rounded border bg-gray-50 px-3 py-2 text-sm">
-              <span>Actuele totaalprijs</span>
-              <span className="font-medium">{formatEuroCents(grandTotalCents)}</span>
+              {selectedService && (
+                <div className="flex items-center justify-between px-4 py-3 bg-border" style={{ borderRadius: '0.2rem' }}>
+                  <span className="text-sm font-medium text-gray-700">Actuele totaalprijs</span>
+                  <span className="text-sm font-bold text-gray-900">{formatEuroCents(grandTotalCents)}</span>
+                </div> 
+              )}
+              <div className="flex justify-between pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(2)}
+                  className="h-11 px-6 border-gray-300"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={() => setStep(4)}
+                  className="h-11 px-8 bg-secondary-foreground hover:bg-secondary-foreground/90 text-white rounded-md font-medium"
+                >
+                  Continue
+                </Button>
+              </div>
             </div>
           )}
-          <div className="flex justify-between">
-            <button className="px-4 py-2 border rounded" onClick={() => setStep(2)}>Back</button>
-            <button className="px-4 py-2 bg-black text-white rounded" onClick={() => setStep(4)}>Continue</button>
-          </div>
-        </div>
-      )}
 
-      {step === 4 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-medium">Step {getDisplayStepNumber(4)}: Review & Checkout</h2>
-          <div className="border rounded p-3 space-y-2">
+          {step === 4 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Review & checkout</h2>
+                <p className="text-xs text-gray-600">Review your booking details and complete your appointment.</p>
+              </div>
+              <div className="p-4 space-y-3 bg-border" style={{ borderRadius: '0.2rem' }}>
             <div className="flex justify-between">
-              <span>Service</span>
+              <span className="text-xs font-bold">Service</span>
               <span>
                 {selectedService?.name}
-                <span className="block text-xs text-gray-500">Basisprijs: {formatEuroCents(selectedService?.price ?? 0)}</span>
+                <span className="block text-xs text-gray-700">Basisprijs: {formatEuroCents(selectedService?.price ?? 0)}</span>
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Date</span>
+              <span className="text-xs font-bold">Date</span>
               <span>{date}</span>
             </div>
             <div className="flex justify-between">
-              <span>Time</span>
+              <span className="text-xs font-bold">Time</span>
               <span>{selectedSlot ? new Date(selectedSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
             </div>
             {selectedAddOnItems.length > 0 && (
               <div className="pt-2">
-                <p className="text-sm font-medium">Gekozen add-ons</p>
+                <p className="text-xs font-bold">Gekozen add-ons</p>
                 <div className="space-y-1 pt-1">
                   {selectedAddOnItems.map((addon) => (
                     <div key={addon.id} className="flex justify-between text-sm">
@@ -924,12 +1011,12 @@ export default function BookingPage() {
                 <span>{formatEuroCents(addonExtraPriceCents)}</span>
               </div>
             )}
-            <div className="flex justify-between font-semibold border-t pt-2">
-              <span>Total</span>
-              <span>{formatEuroCents(grandTotalCents)}</span>
-            </div>
-          </div>
-          <CheckoutForm
+                <div className="flex justify-between font-semibold border-t pt-3 mt-3">
+                  <span className="text-base">Total</span>
+                  <span className="text-lg">{formatEuroCents(grandTotalCents)}</span>
+                </div>
+              </div>
+              <CheckoutForm
             currentEmail={clientEmail}
             contactDefaults={contactDefaults}
             contactDefaultsVersion={contactDefaultsVersion}
@@ -943,19 +1030,21 @@ export default function BookingPage() {
             finalizing={finalizing}
             errorMsg={errorMsg}
           />
-          <div className="flex justify-between">
-            <button 
-              className="px-4 py-2 border rounded" 
-              onClick={() => {
-                // Go back to addons step if addons exist, otherwise go back to step 2
-                setStep(hasAddons ? 3 : 2);
-              }}
-            >
-              Back
-            </button>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setStep(hasAddons ? 3 : 2);
+                  }}
+                  className="h-11 px-6 border-gray-300"
+                >
+                  Back
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -1038,21 +1127,6 @@ function mergeRanges(ranges: DateRange[]): DateRange[] {
   return merged;
 }
 
-function Stepper({ step }: { step: number }) {
-  return (
-    <div className="flex items-center gap-3 mb-6 text-sm">
-      {[1, 2, 3, 4].map((s) => (
-        <div key={s} className={`flex items-center gap-2 ${step >= s ? 'text-black' : 'text-gray-400'}`}>
-          <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${step >= s ? 'bg-black text-white border-black' : ''}`}>{s}</div>
-          <span className="hidden sm:inline">
-            {s === 1 ? 'Service' : s === 2 ? 'Schedule' : s === 3 ? 'Add-ons' : 'Review'}
-          </span>
-          {s < 4 && <div className="w-6 h-px bg-gray-300" />}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function toISODate(d: Date): string {
   const y = d.getFullYear();
@@ -1214,17 +1288,19 @@ function Calendar(props: {
   }
 
   const monthLabel = month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
+ 
   return (
-    <div className="border rounded p-3">
-      <div className="flex justify-between items-center mb-3">
-        <button className="px-2 py-1 border rounded" onClick={onPrevMonth}>Prev</button>
-        <div className="font-medium">{monthLabel}</div>
-        <button className="px-2 py-1 border rounded" onClick={onNextMonth}>Next</button>
+    <div className="">
+      <div className="flex justify-between items-center mb-3 p-4">
+        <div className="text-sm font-bold">{monthLabel}</div>
+        <div className="flex items-center gap-2">
+        <button className="p-1 border rounded-full hover:bg-accent" onClick={onPrevMonth}><HugeiconsIcon icon={ArrowLeft01Icon} size={16} /></button>
+        <button className="p-1 border rounded-full hover:bg-accent" onClick={onNextMonth}><HugeiconsIcon icon={ArrowRight01Icon} size={16} /></button>
+        </div>
       </div>
-      <div className="grid grid-cols-7 gap-2 text-xs mb-2">
-        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-          <div key={d} className="text-center text-gray-500">{d}</div>
+      <div className="grid grid-cols-7 gap-2 text-md mb-3">
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d) => (
+          <div key={d} className="text-center text-secondary-foreground font-normal">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-2">
@@ -1236,19 +1312,21 @@ function Calendar(props: {
             <button
               key={idx}
               className={
-                `aspect-square border rounded flex flex-col items-center justify-center ${
+                `aspect-square flex flex-col items-center justify-center ${
                   isSelected
-                    ? 'bg-black text-white'
+                    ? 'bg-secondary-foreground text-white rounded-full'
                     : enabled
-                      ? (cell.isOtherMonth ? 'text-gray-400 hover:bg-gray-50' : 'hover:bg-gray-50')
+                      ? (cell.isOtherMonth ? 'text-gray-400 hover:bg-accent hover:rounded-full text-primary font-bold' : 'hover:bg-accent hover:rounded-full text-primary font-bold')
                       : 'opacity-40 cursor-not-allowed'
                 }`
               }
               disabled={!enabled}
               onClick={() => enabled && onSelectDate(cell.dateStr!)}
             >
-              <div className="text-sm">{new Date(cell.dateStr).getDate()}</div>
-              <div className="text-[10px] text-gray-600">{count} slots</div>
+              <div className="text-md">{new Date(cell.dateStr).getDate()}</div>
+              {enabled && count > 0 && (
+                <div className="w-1 h-1 rounded-full bg-current mt-0.5" />
+              )}
             </button>
           );
         })}
@@ -1271,12 +1349,12 @@ function TimePicker({
   const groups = groupSlots(slots);
   return (
     <div>
-      <label className="block text-sm mb-2">Available Times</label>
+      <label className="block text-sm font-bold">Available Times</label>
       {loading && (
-        <div className="text-sm text-gray-500 mb-2">Loading times…</div>
+        <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin text-muted-foreground h-6 w-6" />
       )}
       {!loading && slots.length === 0 && (
-        <div className="text-sm text-gray-500">No slots available for chosen date.</div>
+        <div className="text-xs text-gray-500">No slots available for chosen date.</div>
       )}
       {!loading && slots.length > 0 && (
         <div className="space-y-4">

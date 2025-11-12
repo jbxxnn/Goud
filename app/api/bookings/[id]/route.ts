@@ -132,19 +132,105 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { status } = body || {};
+    const { status, notes } = body || {};
     
-    if (!status) return NextResponse.json({ error: 'status is required' }, { status: 400 });
+    // Build update object with only provided fields
+    const updates: Record<string, any> = {};
+    if (status !== undefined) updates.status = status;
+    if (notes !== undefined) updates.notes = notes === null || notes === '' ? null : notes;
+    
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
     
     const supabase = getServiceSupabase();
+    
+    // Fetch existing booking to include related data
+    const { data: existing } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        users:users!client_id (
+          id,
+          email,
+          first_name,
+          last_name,
+          phone
+        ),
+        services:services!service_id (
+          id,
+          name,
+          duration
+        ),
+        locations:locations!location_id (
+          id,
+          name
+        ),
+        staff:staff!staff_id (
+          id,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (!existing) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+    
+    // Update booking
     const { data, error } = await supabase
       .from('bookings')
-      .update({ status })
+      .update(updates)
       .eq('id', id)
       .select('*')
       .maybeSingle();
-    if (error || !data) return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
-    return NextResponse.json({ booking: data });
+    
+    if (error || !data) {
+      return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
+    }
+    
+    // Fetch add-ons if they exist
+    const { data: addonsData } = await supabase
+      .from('booking_addons')
+      .select(`
+        booking_id,
+        quantity,
+        price_eur_cents,
+        service_addons (
+          id,
+          name,
+          description,
+          price
+        )
+      `)
+      .eq('booking_id', id);
+    
+    const addons = (addonsData || []).map((addon) => {
+      const serviceAddon = Array.isArray(addon.service_addons) 
+        ? addon.service_addons[0] 
+        : addon.service_addons;
+      return {
+        id: serviceAddon?.id || '',
+        name: serviceAddon?.name || '',
+        description: serviceAddon?.description || null,
+        quantity: addon.quantity || 1,
+        price_eur_cents: addon.price_eur_cents || 0,
+      };
+    });
+    
+    // Merge with existing related data
+    const updatedBooking = {
+      ...data,
+      users: existing.users,
+      services: existing.services,
+      locations: existing.locations,
+      staff: existing.staff,
+      addons,
+    };
+    
+    return NextResponse.json({ booking: updatedBooking });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }

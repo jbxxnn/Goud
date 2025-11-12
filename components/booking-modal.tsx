@@ -1,10 +1,14 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Booking } from '@/lib/types/booking';
 import { Badge } from '@/components/ui/badge';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Pencil, Save, X } from 'lucide-react';
+import { toast } from 'sonner';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 
@@ -15,6 +19,7 @@ interface BookingModalProps {
   onCancel?: (booking: Booking) => void;
   onDelete?: (booking: Booking) => void;
   onReschedule?: (booking: Booking) => void;
+  onUpdate?: (booking: Booking) => void;
 }
 
 const formatDate = (dateString: string) => {
@@ -63,7 +68,17 @@ const getPaymentBadge = (status: string) => {
   return <Badge variant={config.variant}>{config.label}</Badge>;
 };
 
-export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate }: BookingModalProps) {
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+
+  useEffect(() => {
+    if (booking) {
+      setNotesValue(booking.notes || '');
+    }
+  }, [booking]);
+
   if (!booking) return null;
 
   const user = booking.users;
@@ -239,14 +254,93 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
           )}
 
           {/* Notes */}
-          {booking.notes && (
-            <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">Notes</h3>
-              <div className="text-sm p-3 bg-muted rounded-md">
-                {booking.notes}
-              </div>
+              {!isEditingNotes && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingNotes(true)}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  {booking.notes ? 'Edit' : 'Add Notes'}
+                </Button>
+              )}
             </div>
-          )}
+            
+            {isEditingNotes ? (
+              <div className="space-y-2">
+                <Textarea
+                  value={notesValue}
+                  onChange={(e) => setNotesValue(e.target.value)}
+                  placeholder="Add internal notes about this booking..."
+                  rows={4}
+                  className="resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingNotes(false);
+                      setNotesValue(booking.notes || '');
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        setIsSavingNotes(true);
+                        const response = await fetch(`/api/bookings/${booking.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ notes: notesValue.trim() || null }),
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Failed to update notes');
+                        }
+
+                        toast.success('Notes updated successfully');
+                        setIsEditingNotes(false);
+                        if (onUpdate && data.booking) {
+                          onUpdate(data.booking);
+                        }
+                      } catch (error) {
+                        toast.error('Failed to update notes', {
+                          description: error instanceof Error ? error.message : 'Unknown error',
+                        });
+                      } finally {
+                        setIsSavingNotes(false);
+                      }
+                    }}
+                    disabled={isSavingNotes}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSavingNotes ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              booking.notes ? (
+                <div className="text-sm p-3 bg-muted rounded-md whitespace-pre-wrap">
+                  {booking.notes}
+                </div>
+              ) : (
+                <div className="text-sm p-3 bg-muted rounded-md text-muted-foreground italic">
+                  No notes added yet
+                </div>
+              )
+            )}
+          </div>
 
           {/* Booking Metadata */}
           <div className="space-y-2 pt-4 border-t">
