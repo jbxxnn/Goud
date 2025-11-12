@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
-import { CalendarEvent, ShiftWithDetails, ShiftsWithDetailsResponse } from '@/lib/types/shift';
-import { shiftToCalendarEvent } from '@/lib/types/shift';
-import { CalendarProvider } from '@/calendar/contexts/calendar-context';
+import { CalendarEvent, ShiftWithDetails, ShiftsWithDetailsResponse, shiftToCalendarEvent } from '@/lib/types/shift';
+import { CalendarProvider, useCalendar } from '@/calendar/contexts/calendar-context';
 import { ShiftCalendarContainer } from '@/components/shift-calendar-container';
 import { CalendarSettings } from '@/components/calendar-settings';
 import { Staff } from '@/lib/types/staff';
@@ -41,22 +41,25 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate] = useState<Date>(new Date());
   const [calendarView, setCalendarView] = useState<TCalendarView>('week');
 
-  // Fetch shifts
-  const fetchShifts = useCallback(async () => {
+  // Fetch shifts - accepts optional date to preserve calendar view
+  const fetchShifts = useCallback(async (preserveDate?: Date) => {
     try {
       setLoading(true);
       setError(null);
 
+      // Use provided date or current date (for initial load)
+      // This allows preserving the calendar's selectedDate when refreshing
+      const dateToUse = preserveDate || new Date();
+
       // Get start and end dates based on view
       // For recurring shifts, we need to look ahead at least 6 months
-      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-      // const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+      const startOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), 1);
+      // const endOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 1, 0);
       
       // Expand the range to include 6 months ahead for recurring shifts
-      const expandedEndDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 6, 0);
+      const expandedEndDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 6, 0);
 
       const params = new URLSearchParams({
         with_details: 'true',
@@ -84,7 +87,7 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, []);
 
   // Fetch staff
   const fetchStaff = useCallback(async () => {
@@ -225,10 +228,10 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
             events={events as unknown as IEvent[]}
             initialSettings={initialCalendarSettings}
           >
-            <ShiftCalendarContainer 
+            <ShiftCalendarContainerWrapper
               view={calendarView} 
               onViewChange={setCalendarView}
-              onShiftCreated={fetchShifts}
+              fetchShifts={fetchShifts}
             />
             {/* Calendar Settings */}
             <CalendarSettings />
@@ -246,6 +249,46 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
         )}
       </div>
     </div>
+  );
+}
+
+// Wrapper component that has access to calendar context
+function ShiftCalendarContainerWrapper({
+  view,
+  onViewChange,
+  fetchShifts,
+}: {
+  view: TCalendarView;
+  onViewChange: (view: TCalendarView) => void;
+  fetchShifts: (preserveDate?: Date) => Promise<void>;
+}) {
+  const searchParams = useSearchParams();
+  const { selectedDate } = useCalendar();
+
+  // Handle shift creation - preserve the current selectedDate from URL
+  const handleShiftCreated = async () => {
+    // Get date from URL first (most reliable), fallback to context
+    const dateParam = searchParams.get('date');
+    let dateToUse = selectedDate;
+    
+    if (dateParam) {
+      const parsed = new Date(dateParam);
+      if (!isNaN(parsed.getTime())) {
+        dateToUse = parsed;
+      }
+    }
+    
+    // Fetch shifts using the preserved date to maintain the view
+    await fetchShifts(dateToUse);
+    // Events will be updated automatically when shifts state updates in parent
+  };
+
+  return (
+    <ShiftCalendarContainer 
+      view={view} 
+      onViewChange={onViewChange}
+      onShiftCreated={handleShiftCreated}
+    />
   );
 }
 

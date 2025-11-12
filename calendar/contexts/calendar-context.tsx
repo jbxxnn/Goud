@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import type { Dispatch, SetStateAction } from "react";
 import type { IEvent, IUser } from "@/calendar/interfaces";
@@ -45,6 +46,10 @@ interface CalendarProviderProps {
 }
 
 export function CalendarProvider({ children, users, events, initialSettings }: CalendarProviderProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   // Initialize with server-side fetched settings if available, otherwise use defaults
   const getInitialBadgeVariant = (): TBadgeVariant => {
     if (initialSettings?.badge_variant) {
@@ -67,13 +72,67 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
     return WORKING_HOURS;
   };
 
+  // Get initial date from URL or use current date
+  const getInitialDate = (): Date => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const parsed = new Date(dateParam);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  };
+
   const [badgeVariant, setBadgeVariant] = useState<TBadgeVariant>(getInitialBadgeVariant());
   const [visibleHours, setVisibleHours] = useState<TVisibleHours>(getInitialVisibleHours());
   const [workingHours, setWorkingHours] = useState<TWorkingHours>(getInitialWorkingHours());
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Initialize selectedDate from URL or current date
+  const [selectedDate, setSelectedDateState] = useState<Date>(getInitialDate());
+  const selectedDateRef = useRef<Date>(selectedDate);
+  
+  // Sync selectedDate from URL when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const parsed = new Date(dateParam);
+      if (!isNaN(parsed.getTime())) {
+        const currentDateStr = selectedDate.toISOString().split('T')[0];
+        const urlDateStr = parsed.toISOString().split('T')[0];
+        // Only update if different to avoid unnecessary updates
+        if (currentDateStr !== urlDateStr) {
+          selectedDateRef.current = parsed;
+          setSelectedDateState(parsed);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only depend on searchParams
+
+  // Update URL when selectedDate changes (but not when URL changes to avoid loops)
+  useEffect(() => {
+    const dateStr = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const currentDateParam = searchParams.get('date');
+    
+    // Only update URL if it's different to avoid unnecessary navigation
+    if (currentDateParam !== dateStr) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('date', dateStr);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]); // Only depend on selectedDate, not searchParams to avoid loops
+  
+  // Update both ref and state when selectedDate changes
+  const setSelectedDate = (date: Date | undefined) => {
+    if (!date) return;
+    selectedDateRef.current = date;
+    setSelectedDateState(date);
+  };
+
   const [selectedUserId, setSelectedUserId] = useState<IUser["id"] | "all">("all");
 
   // This localEvents doesn't need to exists in a real scenario.
@@ -81,6 +140,19 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   // In a real scenario, the events would be updated in the backend
   // and the request that fetches the events should be refetched
   const [localEvents, setLocalEvents] = useState<IEvent[]>(events);
+
+  // Sync localEvents when events prop changes (e.g., after fetching new shifts)
+  // This ensures the calendar shows updated events while preserving selectedDate
+  // IMPORTANT: We do NOT reset selectedDate here - it should persist across event updates
+  useEffect(() => {
+    setLocalEvents(events);
+    // Ensure selectedDate stays in sync with ref (preserves user's current view)
+    // Only update if they're different to avoid unnecessary re-renders
+    if (selectedDateRef.current.getTime() !== selectedDate.getTime()) {
+      setSelectedDateState(selectedDateRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]); // Only depend on events, not selectedDate to avoid loops
 
   // Fetch settings from API on mount to ensure we have the latest
   // Since we already have initial settings from server, this is just a background sync
@@ -128,7 +200,8 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
 
   const handleSelectDate = (date: Date | undefined) => {
     if (!date) return;
-    setSelectedDate(date);
+    selectedDateRef.current = date;
+    setSelectedDateState(date);
   };
 
   // Wrappers to save settings to backend
