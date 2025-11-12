@@ -201,7 +201,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                       <span>Total</span>
                       <span>{formatEuroCents(booking.price_eur_cents)}</span>
-                    </div>
+              </div>
                   </>
                 );
               })()}

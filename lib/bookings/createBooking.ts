@@ -11,6 +11,13 @@ export type CreateBookingInput = {
   endTime: string;   // ISO
   priceEurCents: number;
   notes?: string;
+  dueDate?: string; // YYYY-MM-DD
+  birthDate?: string; // YYYY-MM-DD
+  midwifeId?: string;
+  houseNumber?: string;
+  postalCode?: string;
+  streetName?: string;
+  city?: string;
   policyAnswers?: BookingPolicyAnswer[] | null;
   addons?: BookingAddonSelection[] | null;
 };
@@ -75,6 +82,13 @@ export async function createBooking(input: CreateBookingInput) {
       status: 'confirmed',
       payment_status: 'unpaid',
       notes: input.notes ?? null,
+      due_date: input.dueDate || null,
+      birth_date: input.birthDate || null,
+      midwife_id: input.midwifeId || null,
+      house_number: input.houseNumber || null,
+      postal_code: input.postalCode || null,
+      street_name: input.streetName || null,
+      city: input.city || null,
       policy_answers: input.policyAnswers && input.policyAnswers.length > 0 ? input.policyAnswers : null,
     })
     .select('*')

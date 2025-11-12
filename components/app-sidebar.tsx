@@ -13,7 +13,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon} from '@hugeicons/core-free-icons';
+import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon} from '@hugeicons/core-free-icons';
 import { usePathname } from 'next/navigation';
 
 
@@ -34,6 +34,11 @@ const items = [
       title: "Staff",
     url: "/dashboard/staff",
     icon: <HugeiconsIcon icon={UserGroup03Icon} />,
+  },
+  {
+    title: "Midwives",
+    url: "/dashboard/midwives",
+    icon: <HugeiconsIcon icon={UserIcon} />,
   },
   {
     title: "Services",

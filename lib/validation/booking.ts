@@ -28,12 +28,43 @@ const optionalPhone = z
   .or(z.literal(''))
   .transform((value) => (value === '' ? undefined : value));
 
+const optionalDate = z
+  .string()
+  .trim()
+  .or(z.literal(''))
+  .transform((value) => (value === '' ? undefined : value))
+  .optional()
+  .refine(
+    (value) => {
+      if (!value) return true;
+      const date = new Date(value);
+      return !isNaN(date.getTime());
+    },
+    { message: 'Ongeldige datum' }
+  );
+
+const optionalUuid = z
+  .string()
+  .uuid('Ongeldig ID')
+  .or(z.literal(''))
+  .transform((value) => (value === '' ? undefined : value))
+  .optional();
+
 export const bookingContactSchema = z.object({
   clientEmail: emailSchema,
   firstName: requiredName('Voornaam'),
   lastName: requiredName('Achternaam'),
   phone: optionalPhone.optional(),
   address: optionalText('Adres').optional(),
+  // New fields
+  dueDate: optionalDate,
+  birthDate: optionalDate,
+  midwifeId: optionalUuid,
+  houseNumber: optionalText('Huisnummer', 20).optional(),
+  postalCode: optionalText('Postcode', 20).optional(),
+  streetName: optionalText('Straatnaam', 255).optional(),
+  city: optionalText('Woonplaats', 100).optional(),
+  notes: optionalText('Notities', 500).optional(),
 });
 
 export type BookingContactInput = z.infer<typeof bookingContactSchema>;

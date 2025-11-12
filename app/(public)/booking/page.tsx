@@ -9,11 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { MapPin } from 'lucide-react';
 import { bookingContactSchema, BookingContactInput, BookingPolicyAnswer, BookingAddonSelection } from '@/lib/validation/booking';
 import { ServiceAddon, ServicePolicyField, ServicePolicyFieldChoice } from '@/lib/types/service';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon, ArrowRight01Icon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Separator } from '@/components/ui/separator';
 // Using custom inline calendar below for finer heatmap control
 
 type PolicyField = ServicePolicyField & {
@@ -437,6 +440,14 @@ export default function BookingPage() {
           lastName: values.lastName,
           phone: values.phone,
           address: values.address,
+          dueDate: values.dueDate || undefined,
+          birthDate: values.birthDate || undefined,
+          midwifeId: values.midwifeId || undefined,
+          houseNumber: values.houseNumber || undefined,
+          postalCode: values.postalCode || undefined,
+          streetName: values.streetName || undefined,
+          city: values.city || undefined,
+          notes: values.notes || undefined,
           serviceId,
           locationId,
           staffId: selectedSlot.staffId,
@@ -970,21 +981,21 @@ export default function BookingPage() {
                 <h2 className="text-sm font-bold text-gray-900">Review & checkout</h2>
                 <p className="text-xs text-gray-600">Review your booking details and complete your appointment.</p>
               </div>
-              <div className="p-4 space-y-3 bg-border" style={{ borderRadius: '0.2rem' }}>
+              <div className="p-4 space-y-3 bg-background" style={{ borderRadius: '0.2rem' }}>
             <div className="flex justify-between">
               <span className="text-xs font-bold">Service</span>
-              <span>
-                {selectedService?.name}
-                <span className="block text-xs text-gray-700">Basisprijs: {formatEuroCents(selectedService?.price ?? 0)}</span>
+              <span className="text-xs text-gray-700">
+                {selectedService?.name} {formatEuroCents(selectedService?.price ?? 0)}
+                {/* <span className="block text-xs text-gray-700">Basisprijs: {formatEuroCents(selectedService?.price ?? 0)}</span> */}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-xs font-bold">Date</span>
-              <span>{date}</span>
+              <span className="text-xs text-gray-700">{date}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-xs font-bold">Time</span>
-              <span>{selectedSlot ? new Date(selectedSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+              <span className="text-xs text-gray-700">{selectedSlot ? new Date(selectedSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
             </div>
             {selectedAddOnItems.length > 0 && (
               <div className="pt-2">
@@ -992,8 +1003,8 @@ export default function BookingPage() {
                 <div className="space-y-1 pt-1">
                   {selectedAddOnItems.map((addon) => (
                     <div key={addon.id} className="flex justify-between text-sm">
-                      <span>{addon.name}</span>
-                      <span>{formatEuroCents(addon.priceCents)}</span>
+                      <span className="text-xs text-gray-700">{addon.name}</span>
+                      <span className="text-xs text-gray-700">{formatEuroCents(addon.priceCents)}</span>
                     </div>
                   ))}
                 </div>
@@ -1001,14 +1012,14 @@ export default function BookingPage() {
             )}
             {policyExtraPriceCents > 0 && (
               <div className="flex justify-between">
-                <span>Servicebeleid</span>
-                <span>{formatEuroCents(policyExtraPriceCents)}</span>
+                <span className="text-xs">Servicebeleid</span>
+                <span className="text-xs text-gray-700">{formatEuroCents(policyExtraPriceCents)}</span>
               </div>
             )}
             {addonExtraPriceCents > 0 && (
               <div className="flex justify-between">
-                <span>Add-ons</span>
-                <span>{formatEuroCents(addonExtraPriceCents)}</span>
+                <span className="text-xs font-bold">Add-ons</span>
+                <span className="text-xs font-bold text-gray-700">{formatEuroCents(addonExtraPriceCents)}</span>
               </div>
             )}
                 <div className="flex justify-between font-semibold border-t pt-3 mt-3">
@@ -1282,8 +1293,8 @@ function Calendar(props: {
   // trailing days to complete last week
   while (cells.length % 7 !== 0) {
     const last = cells[cells.length - 1];
-    const nextDate = new Date(last.dateStr + 'T00:00:00');
-    nextDate.setDate(nextDate.getDate() + 1);
+    const [lastYear, lastMonth, lastDay] = last.dateStr.split('-').map(Number);
+    const nextDate = new Date(lastYear, lastMonth - 1, lastDay + 1);
     cells.push({ dateStr: toISODate(nextDate), isOtherMonth: true });
   }
 
@@ -1323,7 +1334,7 @@ function Calendar(props: {
               disabled={!enabled}
               onClick={() => enabled && onSelectDate(cell.dateStr!)}
             >
-              <div className="text-md">{new Date(cell.dateStr).getDate()}</div>
+              <div className="text-md">{parseInt(cell.dateStr.split('-')[2], 10)}</div>
               {enabled && count > 0 && (
                 <div className="w-1 h-1 rounded-full bg-current mt-0.5" />
               )}
@@ -1421,6 +1432,7 @@ function CheckoutForm({
   finalizing: boolean;
   errorMsg: string;
 }) {
+  const [midwives, setMidwives] = useState<Array<{ id: string; first_name: string | null; last_name: string | null; practice_name: string | null }>>([]);
   const {
     register,
     handleSubmit,
@@ -1428,6 +1440,7 @@ function CheckoutForm({
     reset,
     trigger,
     getValues,
+    watch,
   } = useForm<BookingContactInput>({
     resolver: zodResolver(bookingContactSchema),
     mode: 'onChange',
@@ -1438,8 +1451,32 @@ function CheckoutForm({
       lastName: contactDefaults.lastName ?? '',
       phone: contactDefaults.phone ?? '',
       address: contactDefaults.address ?? '',
+      dueDate: contactDefaults.dueDate ?? '',
+      birthDate: contactDefaults.birthDate ?? '',
+      midwifeId: contactDefaults.midwifeId ?? '',
+      houseNumber: contactDefaults.houseNumber ?? '',
+      postalCode: contactDefaults.postalCode ?? '',
+      streetName: contactDefaults.streetName ?? '',
+      city: contactDefaults.city ?? '',
+      notes: contactDefaults.notes ?? '',
     },
   });
+
+  // Fetch midwives for dropdown
+  useEffect(() => {
+    const fetchMidwives = async () => {
+      try {
+        const response = await fetch('/api/midwives?active_only=true&limit=1000');
+        const data = await response.json();
+        if (data.success) {
+          setMidwives(data.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching midwives:', error);
+      }
+    };
+    fetchMidwives();
+  }, []);
 
   const defaultsVersionRef = useRef(contactDefaultsVersion);
 
@@ -1452,6 +1489,14 @@ function CheckoutForm({
         lastName: contactDefaults.lastName ?? '',
         phone: contactDefaults.phone ?? '',
         address: contactDefaults.address ?? '',
+        dueDate: contactDefaults.dueDate ?? '',
+        birthDate: contactDefaults.birthDate ?? '',
+        midwifeId: contactDefaults.midwifeId ?? '',
+        houseNumber: contactDefaults.houseNumber ?? '',
+        postalCode: contactDefaults.postalCode ?? '',
+        streetName: contactDefaults.streetName ?? '',
+        city: contactDefaults.city ?? '',
+        notes: contactDefaults.notes ?? '',
       });
     }
   }, [contactDefaults, contactDefaultsVersion, getValues, reset]);
@@ -1464,10 +1509,20 @@ function CheckoutForm({
   const lastNameField = register('lastName');
   const phoneField = register('phone');
   const addressField = register('address');
+  const dueDateField = register('dueDate');
+  const birthDateField = register('birthDate');
+  const midwifeIdField = register('midwifeId');
+  const houseNumberField = register('houseNumber');
+  const postalCodeField = register('postalCode');
+  const streetNameField = register('streetName');
+  const cityField = register('city');
+  const notesField = register('notes');
 
   return (
-    <form className="border rounded p-3 space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form className="space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="grid md:grid-cols-2 gap-3">
+
+
         <div className="md:col-span-2">
           <label className="block text-sm mb-1">E-mailadres</label>
           <input
@@ -1526,6 +1581,7 @@ function CheckoutForm({
             </Button>
           </div>
         )}
+        <Separator className="w-full col-span-2 my-4" />
         {showDetailsForm && (
           <>
             <div>
@@ -1557,12 +1613,103 @@ function CheckoutForm({
             </div>
             <div>
               <label className="block text-sm mb-1">Adres</label>
-              <input
-                className="border rounded px-3 py-2 w-full"
+              <Input
                 placeholder="Optioneel"
                 {...addressField}
               />
               {errors.address && <div className="text-xs text-red-600 mt-1">{errors.address.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Uitgerekende datum</label>
+              <Input
+                type="date"
+                {...dueDateField}
+              />
+              {errors.dueDate && <div className="text-xs text-red-600 mt-1">{errors.dueDate.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Geboortedatum</label>
+              <Input
+                type="date"
+                {...birthDateField}
+              />
+              {errors.birthDate && <div className="text-xs text-red-600 mt-1">{errors.birthDate.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Je eigen verloskundige</label>
+              <Select 
+                value={watch('midwifeId') || undefined} 
+                onValueChange={(value) => {
+                  midwifeIdField.onChange({ target: { value: value || '' } });
+                  midwifeIdField.onBlur({ target: { value: value || '' } });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer verloskundige (optioneel)">
+                    {watch('midwifeId') && midwives.find(m => m.id === watch('midwifeId')) 
+                      ? (() => {
+                          const midwife = midwives.find(m => m.id === watch('midwifeId'));
+                          const name = [midwife?.first_name, midwife?.last_name].filter(Boolean).join(' ');
+                          const practice = midwife?.practice_name;
+                          return practice ? `${name} (${practice})` : name;
+                        })()
+                      : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {midwives.map((m) => {
+                    const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Naamloos';
+                    const practice = m.practice_name;
+                    return (
+                      <SelectItem key={m.id} value={m.id}>
+                        {practice ? `${name} (${practice})` : name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {errors.midwifeId && <div className="text-xs text-red-600 mt-1">{errors.midwifeId.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Straatnaam</label>
+              <Input
+                placeholder="Optioneel"
+                {...streetNameField}
+              />
+              {errors.streetName && <div className="text-xs text-red-600 mt-1">{errors.streetName.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Huisnummer</label>
+              <Input
+                placeholder="Optioneel"
+                {...houseNumberField}
+              />
+              {errors.houseNumber && <div className="text-xs text-red-600 mt-1">{errors.houseNumber.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Postcode</label>
+              <Input
+                placeholder="Optioneel"
+                {...postalCodeField}
+              />
+              {errors.postalCode && <div className="text-xs text-red-600 mt-1">{errors.postalCode.message}</div>}
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Woonplaats</label>
+              <Input
+                placeholder="Optioneel"
+                {...cityField}
+              />
+              {errors.city && <div className="text-xs text-red-600 mt-1">{errors.city.message}</div>}
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm mb-1">Notities</label>
+              <Textarea
+                placeholder="Optioneel"
+                rows={3}
+                {...notesField}
+              />
+              {errors.notes && <div className="text-xs text-red-600 mt-1">{errors.notes.message}</div>}
             </div>
           </>
         )}
