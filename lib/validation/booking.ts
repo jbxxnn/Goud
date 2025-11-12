@@ -51,7 +51,7 @@ export const bookingPolicyAnswerSchema = z.object({
   fieldType: z.enum(['multi_choice', 'text_input', 'number_input', 'date_time', 'checkbox', 'file_upload']).optional(),
   value: policyAnswerValueSchema,
   priceEurCents: z
-    .number({ error: 'Prijs moet een geheel getal zijn' })
+    .number()
     .int('Prijs moet een geheel getal zijn')
     .nonnegative('Prijs kan niet negatief zijn')
     .optional(),
@@ -62,17 +62,11 @@ export type BookingPolicyAnswer = z.infer<typeof bookingPolicyAnswerSchema>;
 export const bookingAddonSelectionSchema = z.object({
   addonId: z.string().uuid('Ongeldig add-on ID'),
   quantity: z
-    .number({
-      invalid_type_error: 'Aantal moet een geheel getal zijn',
-      required_error: 'Aantal is verplicht',
-    })
+    .number()
     .int('Aantal moet een geheel getal zijn')
     .min(1, 'Aantal moet minimaal 1 zijn'),
   priceEurCents: z
-    .number({
-      invalid_type_error: 'Prijs moet een geheel getal zijn',
-      required_error: 'Prijs is verplicht',
-    })
+    .number()
     .int('Prijs moet een geheel getal zijn')
     .nonnegative('Prijs kan niet negatief zijn'),
 });
@@ -94,7 +88,7 @@ export const bookingSelectionSchema = z.object({
     .trim()
     .datetime({ offset: true, message: 'Eindtijd heeft ongeldig formaat' }),
   priceEurCents: z
-    .number({ invalid_type_error: 'Prijs moet een getal zijn', required_error: 'Prijs is verplicht' })
+    .number()
     .int('Prijs moet een geheel getal in centen zijn')
     .nonnegative('Prijs kan niet negatief zijn'),
   notes: optionalText('Notities', 500).optional(),
