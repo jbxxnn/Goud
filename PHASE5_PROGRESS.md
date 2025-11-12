@@ -21,6 +21,8 @@ Phase 5 implements the complete authenticated booking flow from service selectio
   - `supabase/migrations/2025-10-30-0001_phase5_bookings.sql`
   - `supabase/migrations/2025-10-30-0000_add_address_to_users.sql`
   - `supabase/migrations/2025-10-30-0001_fix_users_table_columns.sql`
+  - `supabase/migrations/2025-11-11-0000_add_policy_answers_to_bookings.sql`
+  - `supabase/migrations/2025-11-11-0001_create_booking_addons.sql`
 
 ### 2. Availability & Slot Generation
 - **Slot calculation engine:**
@@ -62,9 +64,9 @@ Phase 5 implements the complete authenticated booking flow from service selectio
 
 ### 4. Booking Wizard UI
 - **Single-page step-based wizard:**
-  - Step 1: Service selection with € pricing
+  - Step 1: Service selection with € pricing and policy fields
   - Step 2: Location, Date (calendar), Time selection
-  - Step 3: Add-ons (placeholder)
+  - Step 3: Add-ons selection (conditionally shown if service has add-ons)
   - Step 4: Review & Checkout
 
 - **Calendar Features:**
@@ -80,9 +82,25 @@ Phase 5 implements the complete authenticated booking flow from service selectio
   - Loading state during fetch
   - Selected time highlighted
 
+- **Policy Fields Integration:**
+  - Dynamic policy fields displayed in Step 1
+  - Supports multiple field types (text, number, multi-choice, checkbox, date-time)
+  - Policy answers stored in `policy_answers` JSONB column
+  - Additional costs from policy fields included in total price
+
+- **Add-ons Integration:**
+  - Add-ons displayed in Step 3 (only shown if service has add-ons)
+  - Supports required and optional add-ons
+  - Add-ons stored in `booking_addons` table
+  - Add-on costs included in total price
+  - Step numbering adjusts dynamically (Step 3 becomes review if no add-ons)
+
 - **Files:**
   - `app/(public)/booking/page.tsx`
   - `lib/currency/format.ts` (Euro formatting)
+  - `lib/validation/booking.ts` (Zod schemas)
+  - `supabase/migrations/2025-11-11-0000_add_policy_answers_to_bookings.sql`
+  - `supabase/migrations/2025-11-11-0001_create_booking_addons.sql`
 
 ### 5. Checkout & Authentication
 - **Email-first checkout flow:**
@@ -127,61 +145,130 @@ Phase 5 implements the complete authenticated booking flow from service selectio
   - New users receive magic link for account access
   - Session persists across page refreshes
 
+### 7. Validation & Error Handling
+- **Zod Schemas:**
+  - `bookingContactSchema` - Validates contact information
+  - `bookingPolicyAnswerSchema` - Validates policy field responses
+  - `bookingAddonSelectionSchema` - Validates add-on selections
+  - `bookingSelectionSchema` - Validates booking selections
+  - `bookingRequestSchema` - Complete booking payload validation
+  - Server-side validation with structured error responses
+
+- **Files:**
+  - `lib/validation/booking.ts`
+
+### 8. Performance Optimizations
+- **Calendar Prefetching:**
+  - 3-month prefetch window for availability heatmap
+  - Merges overlapping date ranges to avoid duplicate fetches
+  - Caches fetched ranges to prevent redundant API calls
+
+- **Edge Caching:**
+  - Availability heatmap endpoint uses `Cache-Control` headers
+  - 20-second TTL with stale-while-revalidate
+  - Reduces server load for frequently accessed data
+
+- **In-Memory LRU Cache:**
+  - Server-side caching for slot generation
+  - 20-second TTL with 200-item max size
+  - Caches both individual day slots and heatmap data
+  - Significantly reduces redundant database queries
+
+- **Files:**
+  - `lib/availability/cache.ts`
+  - `app/api/availability/route.ts`
+  - `app/api/availability/heatmap/route.ts`
+
+### 9. Admin Dashboard Features
+- **Service Add-ons Management:**
+  - New "Add-ons" tab in service form
+  - Create, edit, and delete add-ons
+  - Toggle required/optional and active/inactive status
+  - Full CRUD operations with proper validation
+
+- **Booking Views with Price Breakdown:**
+  - Booking modal displays complete price breakdown
+  - Shows base service, policy extras, and add-ons separately
+  - Lists selected add-ons with details
+  - Displays policy responses with costs
+  - Matches the breakdown clients see during booking
+
+- **Files:**
+  - `components/service-form.tsx` (Add-ons Manager component)
+  - `components/booking-modal.tsx` (Price breakdown)
+  - `app/api/services/[id]/addons/route.ts`
+  - `app/api/services/addons/[id]/route.ts`
+  - `lib/database/services.ts` (ServiceAddonService)
+
+### 10. Booking Confirmation Page
+- **Post-Booking Experience:**
+  - Dedicated confirmation page at `/booking/confirmation`
+  - Automatically redirects after successful booking
+  - Displays complete booking summary
+
+- **Features:**
+  - Service, date, time, location, and staff information
+  - Complete price breakdown (base, policy, add-ons, total)
+  - Selected add-ons list with descriptions
+  - Policy responses display
+  - Client information
+  - Next steps instructions
+
+- **Calendar Integration:**
+  - Google Calendar button (opens with pre-filled event)
+  - iCal download (.ics file) for all calendar apps
+  - Includes service name, date, time, and location
+
+- **Files:**
+  - `app/(public)/booking/confirmation/page.tsx`
+
 ---
 
 ## 🔄 In Progress / Partially Complete
 
 ### 1. Error Handling
 - ✅ Basic error handling in place
+- ✅ Structured error responses with field-level details
 - ⚠️ Can be improved with better user-facing messages
 - ⚠️ Need to handle race conditions more gracefully
 - ⚠️ Need better error recovery for slot conflicts
-
-### 2. Validation
-- ✅ Basic validation in API routes
-- ⚠️ Need Zod schemas for client-side validation
-- ⚠️ Need server-side validation schemas
-- ⚠️ Need form-level validation feedback
 
 ---
 
 ## 📋 Remaining Tasks
 
 ### 1. Admin Bookings Management
-- [ ] Create admin bookings list page (`/dashboard/bookings`)
-- [ ] Add filtering and search (by date, service, client, status)
-- [ ] Add booking detail view
-- [ ] Add reschedule functionality with rule enforcement
-- [ ] Add cancel functionality with rule enforcement
+- [x] View bookings with price breakdown (add-ons and policy totals)
 - [ ] Add booking notes management
 - [ ] Add export functionality
 
 ### 2. Booking Confirmation Page
-- [ ] Create booking confirmation page (`/booking/confirmation`)
-- [ ] Display booking details
-- [ ] Show next steps for user
-- [ ] Add calendar download option (iCal)
+- [x] Create booking confirmation page (`/booking/confirmation`)
+- [x] Display booking details
+- [x] Show next steps for user
+- [x] Add calendar download option (iCal)
+- [x] Add Google Calendar integration
 
 ### 3. Performance Optimizations
-- [ ] Implement 3-month prefetch window for calendar
-- [ ] Add edge caching for availability heatmap (15-30s TTL)
-- [ ] Add server-side in-memory cache (LRU) for slots
+- [x] Implement 3-month prefetch window for calendar
+- [x] Add edge caching for availability heatmap (20s TTL)
+- [x] Add server-side in-memory cache (LRU) for slots
 - [ ] Create precomputed availability table (optional)
-- [ ] Optimize slot generation queries
+- [ ] Optimize slot generation queries further
 - [ ] Add pagination for large booking lists
 
 ### 4. Validation & Error Handling
-- [ ] Add Zod schemas for all form inputs
-- [ ] Add comprehensive server-side validation
+- [x] Add Zod schemas for all form inputs
+- [x] Add comprehensive server-side validation
 - [ ] Improve error messages (user-friendly)
 - [ ] Add retry mechanism for slot conflicts
 - [ ] Add validation for time zone handling
-- [ ] Add client-side form validation with real-time feedback
+- [x] Add client-side form validation with real-time feedback
 
 ### 5. Additional Features
-- [ ] Add service policy fields to checkout (Step 1 placeholder)
+- [x] Add service policy fields to checkout (Step 1)
 - [ ] Add pregnancy due date selector (Step 1 placeholder)
-- [ ] Implement add-ons selection (Step 3 placeholder)
+- [x] Implement add-ons selection (Step 3)
 - [ ] Add "Add another appointment" functionality (Step 2 placeholder)
 - [ ] Add booking email notifications (Phase 7)
 - [ ] Add Google Calendar sync (Phase 8)
@@ -205,68 +292,70 @@ Phase 5 implements the complete authenticated booking flow from service selectio
 ## 🎯 Next Steps (Priority Order)
 
 ### Immediate (This Week)
-1. **Admin Bookings Management Page**
-   - Create `/dashboard/bookings` page
-   - List all bookings with basic filtering
-   - Add view/edit/cancel actions
+1. **Admin Bookings Management Enhancements**
+   - Add booking notes management
+   - Add export functionality (CSV/Excel)
+   - Improve filtering and search capabilities
 
-2. **Validation Improvements**
-   - Add Zod schemas to booking form
-   - Improve error messages
-   - Add form-level validation
+2. **Error Handling Improvements**
+   - Improve user-friendly error messages
+   - Add retry mechanism for slot conflicts
+   - Better handling of race conditions
 
 ### Short Term (Next 2 Weeks)
-3. **Booking Confirmation Page**
-   - Create confirmation page after booking
-   - Redirect after successful booking
-   - Display booking summary
+3. **Additional Features**
+   - Add pregnancy due date selector (Step 1)
+   - Add "Add another appointment" functionality
+   - Email notifications for bookings
 
-4. **Performance Optimizations**
-   - Implement 3-month calendar prefetch
-   - Add caching layer for availability queries
-   - Optimize database queries
+4. **Performance & Polish**
+   - Further optimize slot generation queries
+   - Add pagination for large booking lists
+   - UI/UX refinements based on user feedback
 
 ### Medium Term (Next Month)
-5. **Complete Placeholder Features**
-   - Service policy fields integration
-   - Pregnancy due date selector
-   - Add-ons selection
-   - Multi-appointment booking
+5. **Payment Integration (Phase 6)**
+   - Payment processing integration
+   - Payment status tracking
+   - Refund handling
 
-6. **Testing & Polish**
-   - Comprehensive testing
-   - Error handling improvements
-   - UI/UX refinements
+6. **Testing & Documentation**
+   - Comprehensive testing (unit, integration, E2E)
+   - API documentation
+   - User and admin guides
+   - Code comments and JSDoc
 
 ---
 
 ## 📊 Progress Summary
 
-- **Phase 5 Completion:** ~70%
+- **Phase 5 Completion:** ~85%
 - **Core Booking Flow:** ✅ Complete
 - **Authentication:** ✅ Complete
-- **Admin Tools:** ⚠️ Not Started
-- **Performance:** ⚠️ Basic (needs optimization)
+- **Policy Fields:** ✅ Complete
+- **Add-ons:** ✅ Complete
+- **Validation:** ✅ Complete
+- **Performance Optimizations:** ✅ Complete
+- **Booking Confirmation:** ✅ Complete
+- **Admin Tools:** ✅ Partially Complete (viewing with breakdown, add-ons management)
 - **Testing:** ⚠️ Not Started
 
 ---
 
 ## 🐛 Known Issues
 
-1. **Calendar Performance:** 
-   - Currently fetches full 3-month window on each month change
-   - Can be slow with many shifts
-   - **Solution:** Implement caching and prefetch optimization
-
-2. **Slot Conflict Handling:**
+1. **Slot Conflict Handling:**
    - Basic conflict detection via unique constraint
    - User sees generic error message
    - **Solution:** Better error handling and retry mechanism
 
-3. **Form Validation:**
-   - Basic validation exists
-   - No client-side real-time validation
-   - **Solution:** Add Zod schemas and form-level validation
+2. **Error Messages:**
+   - Some error messages could be more user-friendly
+   - **Solution:** Improve error message localization and clarity
+
+3. **Large Booking Lists:**
+   - No pagination for very large booking lists
+   - **Solution:** Add pagination and virtual scrolling if needed
 
 ---
 
@@ -278,11 +367,16 @@ Phase 5 implements the complete authenticated booking flow from service selectio
 - Session persistence is working
 - User data auto-fill works for existing users
 - New users get passwordless account creation
+- Policy fields support multiple types with price adjustments
+- Add-ons can be required or optional, with quantity support
+- Booking flow dynamically adjusts step numbering based on add-ons availability
+- Price breakdown is consistent between client booking and admin views
+- Calendar integration supports both Google Calendar and iCal formats
 
 ---
 
-**Last Updated:** October 31, 2025  
-**Next Review:** After admin bookings page completion
+**Last Updated:** November 11, 2025  
+**Next Review:** After booking notes management and export functionality
 
 
 

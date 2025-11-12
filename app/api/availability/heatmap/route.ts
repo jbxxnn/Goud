@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
-import { summarizeDayHeatmap, generateSlotsForDay, type BlackoutPeriod, type Shift, type TimeInterval, type ServiceRules } from '@/lib/availability/slots';
+import {
+  summarizeDayHeatmap,
+  generateSlotsForDay,
+  type BlackoutPeriod,
+  type Shift,
+  type TimeInterval,
+  type ServiceRules,
+  type Slot,
+} from '@/lib/availability/slots';
+import {
+  heatmapCache,
+  daySlotsCache,
+  availabilityCacheHeaders,
+  makeDaySlotsCacheKey,
+  makeHeatmapCacheKey,
+} from '@/lib/availability/cache';
+
+export const runtime = 'edge';
 
 function parseISODateOnly(s: string): Date {
   return new Date(`${s}T00:00:00.000Z`);
@@ -25,6 +42,18 @@ export async function GET(req: NextRequest) {
     const end = parseISODateOnly(endStr);
     if (!(start <= end)) return NextResponse.json({ error: 'Invalid range' }, { status: 400 });
 
+    const cacheKey = makeHeatmapCacheKey({
+      serviceId,
+      locationId,
+      start: startStr,
+      end: endStr,
+      staffId: staffId ?? null,
+    });
+    const cached = heatmapCache.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, { headers: availabilityCacheHeaders });
+    }
+
     const supabase = getServiceSupabase();
 
     // Fetch service rules once
@@ -41,7 +70,9 @@ export async function GET(req: NextRequest) {
     };
     if (!serviceRules.durationMinutes || serviceRules.durationMinutes <= 0) {
       console.log('[availability/heatmap] no duration for service → returning empty days');
-      return NextResponse.json({ days: [] });
+      const payload = { days: [] as any[] };
+      heatmapCache.set(cacheKey, payload);
+      return NextResponse.json(payload, { headers: availabilityCacheHeaders });
     }
 
     // Collect allowed shifts
@@ -53,7 +84,9 @@ export async function GET(req: NextRequest) {
     const allowedShiftIds = (shiftServices ?? []).map((s: any) => s.shift_id);
     if (allowedShiftIds.length === 0) {
       console.log('[availability/heatmap] no allowed shifts for service at all');
-      return NextResponse.json({ days: [] });
+      const payload = { days: [] as any[] };
+      heatmapCache.set(cacheKey, payload);
+      return NextResponse.json(payload, { headers: availabilityCacheHeaders });
     }
 
     const startUTC = new Date(start);
@@ -155,13 +188,34 @@ export async function GET(req: NextRequest) {
     console.log('[availability/heatmap] existing bookings', bookingsData?.length ?? 0);
 
     // Iterate days and compute slot counts
-    const perDaySlots = new Map<string, any[]>();
+    const perDaySlots = new Map<string, Slot[]>();
     const dayList: Date[] = [];
-    for (let d = new Date(start); d <= end; d = new Date(d.getTime() + 24 * 60 * 60 * 1000)) {
+    const combinedExisting: TimeInterval[] = [];
+    for (const arr of existingByShift.values()) combinedExisting.push(...arr);
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    for (let d = new Date(start); d <= end; d = new Date(d.getTime() + dayMs)) {
       dayList.push(new Date(d));
       const dayKey = d.toISOString().slice(0, 10);
-      const existingAll: TimeInterval[] = [];
-      for (const arr of existingByShift.values()) existingAll.push(...arr);
+      const dayCacheKey = makeDaySlotsCacheKey({
+        serviceId,
+        locationId,
+        date: dayKey,
+        staffId: staffId ?? null,
+      });
+      const cachedSlots = daySlotsCache.get(dayCacheKey);
+      if (cachedSlots?.slots) {
+        perDaySlots.set(
+          dayKey,
+          cachedSlots.slots.map((slot: Slot) => ({
+            ...slot,
+            startTime: new Date(slot.startTime),
+            endTime: new Date(slot.endTime),
+          })),
+        );
+        continue;
+      }
+
       const slots = generateSlotsForDay({
         date: d,
         serviceId,
@@ -169,15 +223,22 @@ export async function GET(req: NextRequest) {
         shifts,
         serviceRules,
         blackouts,
-        existingBookings: existingAll,
+        existingBookings: combinedExisting,
       });
       perDaySlots.set(dayKey, slots);
+      daySlotsCache.set(dayCacheKey, {
+        slots: slots.map((slot) => ({
+          ...slot,
+        })),
+      });
     }
 
     const days = summarizeDayHeatmap(dayList, perDaySlots);
     const totalDaysWithSlots = days.filter((x) => x.availableSlots > 0).length;
     console.log('[availability/heatmap] days computed', { total: days.length, withSlots: totalDaysWithSlots, sample: days.slice(0, 3) });
-    return NextResponse.json({ days });
+    const payload = { days };
+    heatmapCache.set(cacheKey, payload);
+    return NextResponse.json(payload, { headers: availabilityCacheHeaders });
   } catch (e: any) {
     console.error('[availability/heatmap] error', e);
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });

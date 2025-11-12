@@ -17,7 +17,9 @@ export async function GET(
       );
     }
 
-    const result = await ServiceAddonService.getAddonsByServiceId(id);
+    // For admin dashboard, include inactive addons
+    const includeInactive = true;
+    const result = await ServiceAddonService.getAddonsByServiceId(id, includeInactive);
 
     if (!result.success) {
       return NextResponse.json(

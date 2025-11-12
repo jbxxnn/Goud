@@ -1,7 +1,24 @@
 // Services API routes - GET (list services) and POST (create service)
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { CreateServiceRequest, ServicePolicyField, ServicePolicyFieldChoice } from '@/lib/types/service';
+import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { CreateServiceRequest, ServicePolicyField, ServicePolicyFieldChoice, ServiceAddon } from '@/lib/types/service';
+
+type RawPolicyField = ServicePolicyField & {
+  choices?: ServicePolicyFieldChoice[];
+  service_policy_field_choices?: ServicePolicyFieldChoice[];
+};
+
+type RawServiceAddon = ServiceAddon & {
+  price?: number | string | null;
+};
+
+type RawServiceRecord = {
+  service_code?: string | null;
+  service_policy_fields?: RawPolicyField[];
+  service_addons?: RawServiceAddon[];
+  [key: string]: unknown;
+};
 
 const deriveServiceCode = (name: string, providedCode?: string): string | null => {
   const normalizedProvided = providedCode?.replace(/[^A-Za-z0-9]/g, '').toUpperCase() ?? '';
@@ -18,14 +35,26 @@ const deriveServiceCode = (name: string, providedCode?: string): string | null =
 };
 
 const mapServiceRecord = (
-  service: Record<string, any>,
-  extras: Partial<Record<string, any>> = {}
+  service: RawServiceRecord | null | undefined,
+  extras: Partial<Record<string, unknown>> = {}
 ) => {
   if (!service) return service;
-  const { service_code, ...rest } = service;
+  const { service_code, service_policy_fields, service_addons, ...rest } = service;
+  const policyFields = (service_policy_fields ?? []).map((field) => ({
+    ...field,
+    choices: field.service_policy_field_choices ?? field.choices ?? [],
+  }));
+  // Use addons from extras if provided, otherwise fall back to service_addons from the record
+  const rawAddons = (extras.addons as RawServiceAddon[]) ?? service_addons ?? [];
+  const addons = rawAddons.map((addon) => ({
+    ...addon,
+    price: typeof addon.price === 'number' ? addon.price : Number(addon.price) || 0,
+  }));
   return {
     ...rest,
     serviceCode: service_code ?? null,
+    policy_fields: policyFields,
+    addons,
     ...extras,
   };
 };
@@ -89,11 +118,6 @@ export async function GET(request: NextRequest) {
 
     // Map the data to match the Service interface
     const mappedData = await Promise.all((data || []).map(async (service) => {
-      const policyFields = (service.service_policy_fields || []).map((field: ServicePolicyField) => ({
-        ...field,
-        choices: (field as ServicePolicyField & { service_policy_field_choices: ServicePolicyFieldChoice[] }).service_policy_field_choices || []
-      }));
-
       // Fetch staff assignments for this service
       const { data: staffAssignments } = await supabase
         .from('staff_services')
@@ -102,10 +126,20 @@ export async function GET(request: NextRequest) {
 
       const staff_ids = staffAssignments?.map(sa => sa.staff_id) || [];
 
-      return mapServiceRecord(service, {
-        policy_fields: policyFields,
-        staff_ids,
-      });
+      // Fetch addons for this service separately
+      // Use service role client to bypass RLS for public API endpoint
+      const serviceSupabase = getServiceSupabase();
+      const { data: addons, error: addonsError } = await serviceSupabase
+        .from('service_addons')
+        .select('id, service_id, name, description, price, is_required, is_active')
+        .eq('service_id', service.id)
+        .eq('is_active', true);
+      
+      if (addonsError) {
+        console.error('Error fetching addons for service', service.id, addonsError);
+      }
+
+      return mapServiceRecord(service, { staff_ids, addons: addons || [] });
     }));
 
     return NextResponse.json({

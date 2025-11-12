@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { generateSlotsForDay, type BlackoutPeriod, type Shift, type TimeInterval, type ServiceRules } from '@/lib/availability/slots';
+import { daySlotsCache, availabilityCacheHeaders, makeDaySlotsCacheKey } from '@/lib/availability/cache';
+
+const NO_CACHE_HEADERS: Record<string, string> = { 'Cache-Control': 'no-store' };
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,6 +25,22 @@ export async function GET(req: NextRequest) {
     dayEnd.setUTCHours(23, 59, 59, 999);
 
     const supabase = getServiceSupabase();
+
+    const skipCache = Boolean(excludeBookingId);
+    const cacheKey = skipCache
+      ? null
+      : makeDaySlotsCacheKey({
+          serviceId,
+          locationId,
+          date: dateStr,
+          staffId: staffId ?? null,
+        });
+    if (!skipCache && cacheKey) {
+      const cached = daySlotsCache.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, { headers: availabilityCacheHeaders });
+      }
+    }
 
     // Fetch service rules (duration, buffer, lead_time) from services
     const { data: serviceData, error: serviceErr } = await supabase
@@ -50,7 +69,11 @@ export async function GET(req: NextRequest) {
     }
     const allowedShiftIds = (shiftServices ?? []).map((s: any) => s.shift_id);
     if (allowedShiftIds.length === 0) {
-      return NextResponse.json({ slots: [] });
+      const payload = { slots: [] as any[] };
+      if (!skipCache && cacheKey) {
+        daySlotsCache.set(cacheKey, payload);
+      }
+      return NextResponse.json(payload, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
     }
 
     // Shifts intersecting the day, at location, active, and included in allowedShiftIds
@@ -141,7 +164,11 @@ export async function GET(req: NextRequest) {
     });
 
     console.log('[availability] slots count', slots.length);
-    return NextResponse.json({ slots });
+    const payload = { slots };
+    if (!skipCache && cacheKey) {
+      daySlotsCache.set(cacheKey, payload);
+    }
+    return NextResponse.json(payload, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
   } catch (e: any) {
     console.error('[availability] error', e);
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });

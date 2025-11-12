@@ -3,6 +3,14 @@
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 
+export interface BookingAddon {
+  id: string;
+  name: string;
+  description: string | null;
+  quantity: number;
+  price_eur_cents: number;
+}
+
 export interface Booking {
   id: string;
   client_id: string;
@@ -16,6 +24,7 @@ export interface Booking {
   status: BookingStatus;
   payment_status: PaymentStatus;
   notes: string | null;
+  policy_answers?: Record<string, any> | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -41,6 +50,7 @@ export interface Booking {
     first_name: string | null;
     last_name: string | null;
   } | null;
+  addons?: BookingAddon[];
 }
 
 export interface RecentBookingSummary {

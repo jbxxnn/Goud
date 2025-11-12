@@ -5,9 +5,72 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     const supabase = getServiceSupabase();
-    const { data, error } = await supabase.from('bookings').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        users:users!client_id (
+          id,
+          email,
+          first_name,
+          last_name,
+          phone
+        ),
+        services:services!service_id (
+          id,
+          name,
+          duration
+        ),
+        locations:locations!location_id (
+          id,
+          name
+        ),
+        staff:staff!staff_id (
+          id,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('id', id)
+      .maybeSingle();
+    
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ booking: data });
+    
+    // Fetch add-ons for this booking
+    const { data: addonsData } = await supabase
+      .from('booking_addons')
+      .select(`
+        booking_id,
+        quantity,
+        price_eur_cents,
+        service_addons (
+          id,
+          name,
+          description,
+          price
+        )
+      `)
+      .eq('booking_id', id);
+    
+    const addons = (addonsData || []).map((addon) => {
+      const serviceAddon = Array.isArray(addon.service_addons) 
+        ? addon.service_addons[0] 
+        : addon.service_addons;
+      return {
+        id: serviceAddon?.id || '',
+        name: serviceAddon?.name || '',
+        description: serviceAddon?.description || null,
+        quantity: addon.quantity || 1,
+        price_eur_cents: addon.price_eur_cents || 0,
+      };
+    });
+    
+    return NextResponse.json({ 
+      booking: {
+        ...data,
+        addons,
+      }
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }

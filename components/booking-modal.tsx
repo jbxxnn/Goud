@@ -142,12 +142,101 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                 <div className="text-muted-foreground">Staff</div>
                 <div className="font-medium">{staffName}</div>
               </div>
-              <div>
-                <div className="text-muted-foreground">Price</div>
-                <div className="font-medium">{formatEuroCents(booking.price_eur_cents)}</div>
-              </div>
             </div>
           </div>
+
+          {/* Price Breakdown */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-lg">Price Breakdown</h3>
+            <div className="space-y-2 text-sm">
+              {/* Calculate base service price */}
+              {(() => {
+                const addonsTotal = (booking.addons || []).reduce((sum, addon) => sum + (addon.price_eur_cents * addon.quantity), 0);
+                const policyTotal = (() => {
+                  if (!booking.policy_answers || !Array.isArray(booking.policy_answers)) return 0;
+                  return booking.policy_answers.reduce((sum: number, answer: { priceEurCents?: number }) => {
+                    return sum + (answer.priceEurCents || 0);
+                  }, 0);
+                })();
+                const basePrice = booking.price_eur_cents - addonsTotal - policyTotal;
+                
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Base Service</span>
+                      <span className="font-medium">{formatEuroCents(basePrice)}</span>
+                    </div>
+                    
+                    {/* Policy Extras */}
+                    {policyTotal > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Service Policy</span>
+                        <span className="font-medium">{formatEuroCents(policyTotal)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Add-ons */}
+                    {addonsTotal > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Add-ons</span>
+                        <span className="font-medium">{formatEuroCents(addonsTotal)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between font-semibold border-t pt-2 mt-2">
+                      <span>Total</span>
+                      <span>{formatEuroCents(booking.price_eur_cents)}</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Add-ons Details */}
+          {booking.addons && booking.addons.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Selected Add-ons</h3>
+              <div className="space-y-2">
+                {booking.addons.map((addon) => (
+                  <div key={addon.id} className="flex justify-between items-start p-3 bg-muted rounded-md text-sm">
+                    <div className="flex-1">
+                      <div className="font-medium">{addon.name}</div>
+                      {addon.description && (
+                        <div className="text-muted-foreground text-xs mt-1">{addon.description}</div>
+                      )}
+                      {addon.quantity > 1 && (
+                        <div className="text-muted-foreground text-xs mt-1">Quantity: {addon.quantity}</div>
+                      )}
+                    </div>
+                    <div className="font-medium ml-4">{formatEuroCents(addon.price_eur_cents * addon.quantity)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Policy Answers */}
+          {booking.policy_answers && Array.isArray(booking.policy_answers) && booking.policy_answers.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Policy Responses</h3>
+              <div className="space-y-2">
+                {booking.policy_answers.map((answer: { fieldId?: string; value?: unknown; priceEurCents?: number }, index: number) => (
+                  <div key={answer.fieldId || index} className="p-3 bg-muted rounded-md text-sm">
+                    <div className="font-medium mb-1">Field ID: {answer.fieldId || 'N/A'}</div>
+                    <div className="text-muted-foreground">
+                      Value: {Array.isArray(answer.value) ? answer.value.join(', ') : String(answer.value || 'N/A')}
+                    </div>
+                    {answer.priceEurCents && answer.priceEurCents > 0 && (
+                      <div className="text-muted-foreground mt-1">
+                        Additional Cost: {formatEuroCents(answer.priceEurCents)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           {booking.notes && (

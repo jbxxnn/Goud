@@ -34,7 +34,9 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, ChevronDown, ChevronRight } from 'lucide-react';
+import { GripVertical, ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ServiceAddon } from '@/lib/types/service';
+import { toast } from 'sonner';
 
 interface ServiceFormProps {
   service?: Service;
@@ -251,6 +253,338 @@ function SortableField({
               </div>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Addons Manager Component
+function AddonsManager({ serviceId }: { serviceId?: string }) {
+  const [addons, setAddons] = useState<ServiceAddon[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '0',
+    is_required: false,
+    is_active: true,
+  });
+
+  const fetchAddons = async () => {
+    if (!serviceId) {
+      setAddons([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/services/${serviceId}/addons`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setAddons(data.data || []);
+      } else {
+        toast.error('Failed to load add-ons', {
+          description: data.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to load add-ons', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAddons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceId]);
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      price: '0',
+      is_required: false,
+      is_active: true,
+    });
+    setIsAdding(false);
+    setEditingId(null);
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    setIsAdding(true);
+  };
+
+  const handleEdit = (addon: ServiceAddon) => {
+    setFormData({
+      name: addon.name,
+      description: addon.description || '',
+      price: addon.price.toString(),
+      is_required: addon.is_required,
+      is_active: addon.is_active,
+    });
+    setEditingId(addon.id);
+    setIsAdding(false);
+  };
+
+  const handleSave = async () => {
+    if (!serviceId) {
+      toast.error('Service ID is required');
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      toast.error('Add-on name is required');
+      return;
+    }
+
+    try {
+      const price = parseFloat(formData.price) || 0;
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        price,
+        is_required: formData.is_required,
+        is_active: formData.is_active,
+      };
+
+      if (editingId) {
+        // Update existing addon
+        const response = await fetch(`/api/services/addons/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          toast.success('Add-on updated successfully');
+          resetForm();
+          fetchAddons();
+        } else {
+          toast.error('Failed to update add-on', {
+            description: data.error || 'Unknown error',
+          });
+        }
+      } else {
+        // Create new addon
+        const response = await fetch(`/api/services/${serviceId}/addons`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          toast.success('Add-on created successfully');
+          resetForm();
+          fetchAddons();
+        } else {
+          toast.error('Failed to create add-on', {
+            description: data.error || 'Unknown error',
+          });
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to save add-on', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this add-on?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/services/addons/${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Add-on deleted successfully');
+        fetchAddons();
+      } else {
+        toast.error('Failed to delete add-on', {
+          description: data.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to delete add-on', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
+
+  if (!serviceId) {
+    return (
+      <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+        <p className="text-sm">Please save the service first to manage add-ons</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">Service Add-ons</h3>
+          <p className="text-sm text-muted-foreground">
+            Manage optional add-ons that customers can select when booking this service
+          </p>
+        </div>
+        <Button type="button" onClick={handleAdd} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Add-on
+        </Button>
+      </div>
+
+      {/* Add/Edit Form */}
+      {(isAdding || editingId) && (
+        <div className="border rounded-lg p-4 bg-muted/50 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium">{editingId ? 'Edit Add-on' : 'New Add-on'}</h4>
+            <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
+              Cancel
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <Label htmlFor="addon-name">Name *</Label>
+              <Input
+                id="addon-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Extra Photo Prints"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label htmlFor="addon-description">Description</Label>
+              <Textarea
+                id="addon-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Optional description of the add-on"
+                rows={3}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="addon-price">Price (€) *</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">€</span>
+                <Input
+                  id="addon-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="pl-7"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-6 pt-6">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="addon-required"
+                  checked={formData.is_required}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
+                />
+                <Label htmlFor="addon-required" className="cursor-pointer">
+                  Required (automatically added)
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="addon-active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+                <Label htmlFor="addon-active" className="cursor-pointer">
+                  Active
+                </Label>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={resetForm}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSave}>
+              {editingId ? 'Update' : 'Create'} Add-on
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Addons List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-sm text-muted-foreground">Loading add-ons...</div>
+        </div>
+      ) : addons.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+          <p className="text-sm">No add-ons yet</p>
+          <p className="text-xs mt-1">Click "Add Add-on" to create one</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {addons.map((addon) => (
+            <div
+              key={addon.id}
+              className="border rounded-lg p-4 flex items-start justify-between hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{addon.name}</span>
+                  {addon.is_required && (
+                    <Badge variant="secondary" className="text-xs">Required</Badge>
+                  )}
+                  {!addon.is_active && (
+                    <Badge variant="outline" className="text-xs">Inactive</Badge>
+                  )}
+                </div>
+                {addon.description && (
+                  <p className="text-sm text-muted-foreground">{addon.description}</p>
+                )}
+                <p className="text-sm font-medium">€{addon.price.toFixed(2)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(addon)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(addon.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -511,7 +845,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto">
           <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-5" style={{ borderRadius: '0.5rem' }}>
+        <TabsList className="grid w-full grid-cols-6" style={{ borderRadius: '0.5rem' }}>
           <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
             Details
             {watch('name') && watch('duration') && (
@@ -541,6 +875,9 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             {watch('staff_ids') && watch('staff_ids').length > 0 && (
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
             )}
+          </TabsTrigger>
+          <TabsTrigger value="addons" style={{ borderRadius: '0.5rem' }} className="relative">
+            Add-ons
           </TabsTrigger>
         </TabsList>
         
@@ -1118,6 +1455,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </div>
             )}
           </div>
+        </TabsContent>
+
+        {/* Add-ons Tab */}
+        <TabsContent value="addons" className="space-y-4 min-h-0 mt-12">
+          <AddonsManager serviceId={service?.id} />
         </TabsContent>
           </Tabs>
         </div>

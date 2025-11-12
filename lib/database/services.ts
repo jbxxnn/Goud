@@ -1,5 +1,6 @@
 // Database utilities for service operations
 import { createClient } from '@/lib/supabase/client';
+import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { 
   Service, 
   ServiceAddon, 
@@ -253,14 +254,22 @@ export class ServiceService {
 
 export class ServiceAddonService {
   // Get addons for a service
-  static async getAddonsByServiceId(serviceId: string): Promise<ServiceAddonsResponse> {
+  // For admin use, returns all addons (active and inactive)
+  // Uses service role client to bypass RLS for admin operations
+  static async getAddonsByServiceId(serviceId: string, includeInactive: boolean = false): Promise<ServiceAddonsResponse> {
     try {
-      const { data, error } = await supabase
+      // Use service role client for admin operations to bypass RLS
+      const adminSupabase = getServiceSupabase();
+      let query = adminSupabase
         .from('service_addons')
         .select('*')
-        .eq('service_id', serviceId)
-        .eq('is_active', true)
-        .order('name');
+        .eq('service_id', serviceId);
+      
+      if (!includeInactive) {
+        query = query.eq('is_active', true);
+      }
+      
+      const { data, error } = await query.order('name');
 
       if (error) {
         return { success: false, error: error.message };
@@ -276,9 +285,11 @@ export class ServiceAddonService {
   }
 
   // Create service addon
+  // Uses service role client to bypass RLS for admin operations
   static async createAddon(addonData: CreateServiceAddonRequest): Promise<ServiceAddonResponse> {
     try {
-      const { data, error } = await supabase
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
         .from('service_addons')
         .insert({
           ...addonData,
@@ -302,9 +313,11 @@ export class ServiceAddonService {
   }
 
   // Update service addon
+  // Uses service role client to bypass RLS for admin operations
   static async updateAddon(id: string, updates: UpdateServiceAddonRequest): Promise<ServiceAddonResponse> {
     try {
-      const { data, error } = await supabase
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
         .from('service_addons')
         .update({
           ...updates,
@@ -327,15 +340,14 @@ export class ServiceAddonService {
     }
   }
 
-  // Delete service addon (soft delete)
+  // Delete service addon (hard delete for admin operations)
+  // Uses service role client to bypass RLS
   static async deleteAddon(id: string): Promise<ServiceAddonResponse> {
     try {
-      const { data, error } = await supabase
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
         .from('service_addons')
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString(),
-        })
+        .delete()
         .eq('id', id)
         .select()
         .single();

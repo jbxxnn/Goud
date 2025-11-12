@@ -2,10 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { createBooking } from '@/lib/bookings/createBooking';
 import { createUserAndProfile } from '@/lib/auth/account';
+import { bookingRequestSchema } from '@/lib/validation/booking';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const parsed = bookingRequestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      const flattened = parsed.error.flatten();
+      return NextResponse.json(
+        {
+          error: firstIssue?.message || 'Ongeldige boekingsaanvraag',
+          details: flattened.fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
     const {
       clientId,
       clientEmail,
@@ -21,11 +36,9 @@ export async function POST(req: NextRequest) {
       endTime,
       priceEurCents,
       notes,
-    } = body || {};
-
-    if ((!clientId && !clientEmail) || !serviceId || !locationId || !staffId || !shiftId || !startTime || !endTime || typeof priceEurCents !== 'number') {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+      policyAnswers,
+      addons,
+    } = parsed.data;
 
     // Resolve client id: use provided or find/create by email
     let resolvedClientId = clientId as string | undefined;
@@ -51,7 +64,10 @@ export async function POST(req: NextRequest) {
       } else {
         const user = await createUserAndProfile({ email: clientEmail, firstName, lastName });
         resolvedClientId = user.id;
-        await getServiceSupabase().from('users').update({ phone: phone ?? null, address: address ?? null }).eq('id', user.id);
+        await getServiceSupabase()
+          .from('users')
+          .update({ phone: phone ?? null, address: address ?? null })
+          .eq('id', user.id);
       }
     }
 
@@ -65,11 +81,13 @@ export async function POST(req: NextRequest) {
       endTime,
       priceEurCents,
       notes,
+      policyAnswers,
+      addons,
     });
 
     return NextResponse.json({ booking });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
 
@@ -173,11 +191,65 @@ export async function GET(req: NextRequest) {
 
     if (error) return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
 
+    // Fetch add-ons for all bookings
+    const bookingIds = (data || []).map((b) => b.id);
+    const addonsMap: Record<string, Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      quantity: number;
+      price_eur_cents: number;
+    }>> = {};
+    
+    if (bookingIds.length > 0) {
+      const { data: addonsData } = await supabase
+        .from('booking_addons')
+        .select(`
+          booking_id,
+          quantity,
+          price_eur_cents,
+          service_addons (
+            id,
+            name,
+            description,
+            price
+          )
+        `)
+        .in('booking_id', bookingIds);
+      
+      // Group addons by booking_id
+      for (const addon of addonsData || []) {
+        if (!addon.booking_id) continue;
+        const serviceAddon = Array.isArray(addon.service_addons) 
+          ? addon.service_addons[0] 
+          : addon.service_addons;
+        
+        if (!addonsMap[addon.booking_id]) {
+          addonsMap[addon.booking_id] = [];
+        }
+        if (serviceAddon) {
+          addonsMap[addon.booking_id].push({
+            id: serviceAddon.id,
+            name: serviceAddon.name || '',
+            description: serviceAddon.description || null,
+            quantity: addon.quantity || 1,
+            price_eur_cents: addon.price_eur_cents || 0,
+          });
+        }
+      }
+    }
+
+    // Attach addons to each booking
+    const bookingsWithAddons = (data || []).map((booking) => ({
+      ...booking,
+      addons: addonsMap[booking.id] || [],
+    }));
+
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: bookingsWithAddons,
       pagination: {
         page,
         limit,
@@ -185,8 +257,8 @@ export async function GET(req: NextRequest) {
         total_pages: totalPages,
       },
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
 
