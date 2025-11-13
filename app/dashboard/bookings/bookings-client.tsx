@@ -20,11 +20,13 @@ interface BookingsClientProps {
     page: number;
     totalPages: number;
   };
+  clientId?: string; // Optional: if provided, filter bookings for this client only
 }
 
 export default function BookingsClient({ 
   initialBookings, 
-  initialPagination 
+  initialPagination,
+  clientId 
 }: BookingsClientProps) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [loading, setLoading] = useState(false);
@@ -70,6 +72,10 @@ export default function BookingsClient({
         params.append('search', searchQuery);
       }
 
+      if (clientId) {
+        params.append('clientId', clientId);
+      }
+
       const response = await fetch(`/api/bookings?${params}`);
       const data: BookingsResponse = await response.json();
 
@@ -90,7 +96,7 @@ export default function BookingsClient({
     } finally {
       setLoading(false);
     }
-  }, [page, limit, statusFilter, dateFrom, dateTo, searchQuery]);
+  }, [page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId]);
 
   // Cancel booking
   const handleCancel = async (booking: Booking) => {
@@ -264,16 +270,18 @@ export default function BookingsClient({
             className="w-40"
           />
         </div>
-        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-          <label className="text-sm font-medium">Search:</label>
-          <Input
-            type="text"
-            placeholder="Client name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
-        </div>
+        {!clientId && (
+          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+            <label className="text-sm font-medium">Search:</label>
+            <Input
+              type="text"
+              placeholder="Client name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+          </div>
+        )}
       </div>
 
       {/* Bookings Table */}
@@ -301,6 +309,7 @@ export default function BookingsClient({
                 handleView,
                 handleCancel,
                 handleDelete,
+                !clientId, // Only allow delete if not a client (i.e., admin)
                 // (booking) => {
                 //   setReschedulingBooking(booking);
                 //   setIsRescheduleModalOpen(true);
@@ -408,9 +417,9 @@ export default function BookingsClient({
         onCancel={(booking) => {
           handleCancel(booking);
         }}
-        onDelete={(booking) => {
+        onDelete={!clientId ? (booking) => {
           handleDelete(booking);
-        }}
+        } : undefined}
         onUpdate={(updatedBooking) => {
           setViewingBooking(updatedBooking);
           fetchBookings();

@@ -453,8 +453,8 @@ export default function BookingPage() {
   useEffect(() => {
     // Only clear policy responses if serviceId actually changed (not on initial mount/restore)
     if (previousServiceIdRef.current !== undefined && previousServiceIdRef.current !== serviceId) {
-      setPolicyResponses({});
-      setPolicyErrors({});
+    setPolicyResponses({});
+    setPolicyErrors({});
     }
     previousServiceIdRef.current = serviceId;
   }, [serviceId]);
@@ -1318,8 +1318,8 @@ export default function BookingPage() {
               >
                 Start Over
               </Button>
-              <div className="text-right">
-                <div className="text-xs text-gray-500 font-medium">STEP {currentStepNumber}/{totalSteps}</div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 font-medium">STEP {currentStepNumber}/{totalSteps}</div>
               </div>
             </div>
           </div>

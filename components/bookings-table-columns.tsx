@@ -52,6 +52,7 @@ export const createBookingColumns = (
   onView: (booking: Booking) => void,
   onCancel: (booking: Booking) => void,
   onDelete: (booking: Booking) => void,
+  canDelete: boolean = true, // Default to true for admin users
   // onReschedule?: (booking: Booking) => void
 ): ColumnDef<Booking>[] => [
   {
@@ -194,15 +195,17 @@ export const createBookingColumns = (
               <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
             </Button>
           ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onDelete(booking)}
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              title="Delete"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-            </Button>
+            canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDelete(booking)}
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                title="Delete"
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+              </Button>
+            )
           )}
         </div>
       );

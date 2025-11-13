@@ -12,6 +12,13 @@ import { toast } from 'sonner';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 
+interface PolicyField {
+  id: string;
+  title: string;
+  field_type: string;
+  choices?: Array<{ id: string; title: string; price?: number }>;
+}
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -72,10 +79,41 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
 
   useEffect(() => {
     if (booking) {
       setNotesValue(booking.notes || '');
+      
+      // Fetch policy fields for the service
+      if (booking.service_id) {
+        fetch(`/api/services/${booking.service_id}`)
+          .then(res => res.json())
+          .then(data => {
+            const service = data.data || data.service;
+            if (service?.policy_fields && Array.isArray(service.policy_fields)) {
+              const fieldsMap: Record<string, PolicyField> = {};
+              service.policy_fields.forEach((field: PolicyField & { 
+                service_policy_field_choices?: Array<{ id: string; title: string; price?: number }>;
+                choices?: Array<{ id: string; title: string; price?: number }>;
+              }) => {
+                if (field.id && field.title) {
+                  const choices = field.choices || field.service_policy_field_choices || [];
+                  fieldsMap[field.id] = {
+                    id: field.id,
+                    title: field.title,
+                    field_type: field.field_type,
+                    choices: choices,
+                  };
+                }
+              });
+              setPolicyFields(fieldsMap);
+            }
+          })
+          .catch(() => {
+            // Silently handle error - policy fields are optional
+          });
+      }
     }
   }, [booking]);
 
@@ -232,26 +270,105 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
           )}
 
           {/* Policy Answers */}
-          {booking.policy_answers && Array.isArray(booking.policy_answers) && booking.policy_answers.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Policy Responses</h3>
+          {booking.policy_answers && (() => {
+            // Handle both array and object formats
+            let answers: Array<{ fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }> = [];
+            
+            if (Array.isArray(booking.policy_answers)) {
+              answers = booking.policy_answers;
+            } else if (typeof booking.policy_answers === 'object' && booking.policy_answers !== null) {
+              // Convert object format { fieldId: { value, priceEurCents } } to array
+              answers = Object.entries(booking.policy_answers).map(([fieldId, data]: [string, unknown]) => {
+                const dataObj = data as { value?: unknown; priceEurCents?: number; price_eur_cents?: number } | unknown;
+                let priceEurCents: number | undefined = undefined;
+                if (typeof dataObj === 'object' && dataObj !== null) {
+                  if ('priceEurCents' in dataObj && typeof dataObj.priceEurCents === 'number') {
+                    priceEurCents = dataObj.priceEurCents;
+                  } else if ('price_eur_cents' in dataObj && typeof dataObj.price_eur_cents === 'number') {
+                    priceEurCents = dataObj.price_eur_cents;
+                  }
+                }
+                return {
+                  fieldId,
+                  value: (typeof dataObj === 'object' && dataObj !== null && 'value' in dataObj) ? dataObj.value : dataObj,
+                  priceEurCents,
+                };
+              });
+            }
+            
+            if (answers.length === 0) return null;
+            
+            return (
               <div className="space-y-2">
-                {booking.policy_answers.map((answer: { fieldId?: string; value?: unknown; priceEurCents?: number }, index: number) => (
-                  <div key={answer.fieldId || index} className="p-3 bg-muted rounded-md text-sm">
-                    <div className="font-medium mb-1">Field ID: {answer.fieldId || 'N/A'}</div>
-                    <div className="text-muted-foreground">
-                      Value: {Array.isArray(answer.value) ? answer.value.join(', ') : String(answer.value || 'N/A')}
-                    </div>
-                    {answer.priceEurCents && answer.priceEurCents > 0 && (
-                      <div className="text-muted-foreground mt-1">
-                        Additional Cost: {formatEuroCents(answer.priceEurCents)}
+                <h3 className="font-semibold text-lg">Policy Responses</h3>
+                <div className="space-y-2">
+                  {answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
+                    // Handle both fieldId and field_id formats
+                    const fieldId = answer.fieldId || answer.field_id;
+                    const field = fieldId ? policyFields[fieldId] : null;
+                    const questionText = field?.title || fieldId || 'Unknown Field';
+                    
+                    // Format the answer value
+                    let answerText = 'N/A';
+                    const rawValue = answer.value;
+                    
+                    if (rawValue !== undefined && rawValue !== null) {
+                      if (Array.isArray(rawValue)) {
+                        // Handle array of values (for multi_choice fields)
+                        if (field?.field_type === 'multi_choice' && field.choices && rawValue.length > 0) {
+                          // Map UUIDs to choice titles
+                          const choiceTitles = rawValue.map((val: unknown) => {
+                            const valStr = String(val);
+                            // Check if it's a UUID
+                            if (valStr.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                              const choice = field.choices!.find((c: { id: string }) => c.id === valStr);
+                              return choice?.title || valStr;
+                            }
+                            return valStr;
+                          });
+                          answerText = choiceTitles.join(', ');
+                        } else {
+                          // Not a multi_choice or no choices, just join the array
+                          answerText = rawValue.map((v: unknown) => String(v)).join(', ');
+                        }
+                      } else if (typeof rawValue === 'boolean') {
+                        answerText = rawValue ? 'Yes' : 'No';
+                      } else if (typeof rawValue === 'string' && rawValue.length > 0) {
+                        // Check if it's a UUID (36 chars with dashes)
+                        if (rawValue.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                          // It's a UUID - might be a choice ID, try to find the choice title
+                          if (field?.field_type === 'multi_choice' && field.choices) {
+                            const choice = field.choices.find((c: { id: string }) => c.id === rawValue);
+                            answerText = choice?.title || rawValue;
+                          } else {
+                            answerText = rawValue;
+                          }
+                        } else {
+                          answerText = rawValue;
+                        }
+                      } else if (typeof rawValue === 'number') {
+                        answerText = String(rawValue);
+                      } else {
+                        answerText = String(rawValue);
+                      }
+                    }
+                    
+                    return (
+                      <div key={fieldId || index} className="p-3 bg-muted rounded-md text-sm">
+                        <div className="font-medium mb-1">{questionText}</div>
+                        <div className="text-muted-foreground">{answerText}</div>
+                        {answer.priceEurCents && answer.priceEurCents > 0 && (
+                          <div className="text-muted-foreground mt-1">
+                            Additional Cost: {formatEuroCents(answer.priceEurCents)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Notes */}
           <div className="space-y-2">
