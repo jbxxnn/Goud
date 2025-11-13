@@ -275,54 +275,54 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Staff Selection - Only show when creating new shift */}
       {!shift && (
-        <div>
-          <Label htmlFor="staff_id" className="text-xs font-semibold mb-2">Staff Member *</Label>
-          <Select
-            value={watch('staff_id')}
-            onValueChange={(value) => setValue('staff_id', value)}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select staff member" />
-            </SelectTrigger>
-            <SelectContent>
-              {staff.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.first_name} {s.last_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.staff_id && (
-            <p className="text-sm text-destructive mt-1">{errors.staff_id.message}</p>
-          )}
-        </div>
+      <div>
+        <Label htmlFor="staff_id" className="text-xs font-semibold mb-2">Staff Member *</Label>
+        <Select
+          value={watch('staff_id')}
+          onValueChange={(value) => setValue('staff_id', value)}
+          disabled={isViewMode}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select staff member" />
+          </SelectTrigger>
+          <SelectContent>
+            {staff.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.first_name} {s.last_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.staff_id && (
+          <p className="text-sm text-destructive mt-1">{errors.staff_id.message}</p>
+        )}
+      </div>
       )}
 
       {/* Location Selection - Only show when creating new shift */}
       {!shift && (
-        <div>
-          <Label htmlFor="location_id" className="text-xs font-semibold mb-2">Location *</Label>
-          <Select
-            value={watch('location_id')}
-            onValueChange={(value) => setValue('location_id', value)}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent>
-              {locations.map((l) => (
-                <SelectItem key={l.id} value={l.id}>
-                  {l.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.location_id && (
-            <p className="text-sm text-destructive mt-1">{errors.location_id.message}</p>
-          )}
-        </div>
+      <div>
+        <Label htmlFor="location_id" className="text-xs font-semibold mb-2">Location *</Label>
+        <Select
+          value={watch('location_id')}
+          onValueChange={(value) => setValue('location_id', value)}
+          disabled={isViewMode}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select location" />
+          </SelectTrigger>
+          <SelectContent>
+            {locations.map((l) => (
+              <SelectItem key={l.id} value={l.id}>
+                {l.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.location_id && (
+          <p className="text-sm text-destructive mt-1">{errors.location_id.message}</p>
+        )}
+      </div>
       )}
 
       {/* Date and Time */}
@@ -503,43 +503,43 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   Showing {selectedServices.length} of {filteredServices.length} services selected
                 </p>
                 {filteredServices.map((service) => (
-                  <div key={service.id} className="flex items-start space-x-2">
-                    <Checkbox
-                      id={service.id}
-                      checked={selectedServices.includes(service.id)}
-                      onCheckedChange={() => toggleService(service.id)}
+            <div key={service.id} className="flex items-start space-x-2">
+              <Checkbox
+                id={service.id}
+                checked={selectedServices.includes(service.id)}
+                onCheckedChange={() => toggleService(service.id)}
+                disabled={isViewMode}
+              />
+              <div className="flex-1">
+                <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
+                  {service.name}
+                </label>
+                {selectedServices.includes(service.id) && (
+                    <Input
+                      type="number"
+                      min="1"
+                          placeholder="Max bookings (optional)"
+                      value={watch(`max_concurrent_bookings.${service.id}`) || ''}
+                      onChange={(e) => {
+                        const value = e.target.value ? parseInt(e.target.value) : null;
+                        setValue(`max_concurrent_bookings.${service.id}`, value);
+                      }}
+                          className="mt-1 h-8 text-xs"
                       disabled={isViewMode}
                     />
-                    <div className="flex-1">
-                      <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
-                        {service.name}
-                      </label>
-                      {selectedServices.includes(service.id) && (
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="Max bookings (optional)"
-                          value={watch(`max_concurrent_bookings.${service.id}`) || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? parseInt(e.target.value) : null;
-                            setValue(`max_concurrent_bookings.${service.id}`, value);
-                          }}
-                          className="mt-1 h-8 text-xs"
-                          disabled={isViewMode}
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
+                )}
+              </div>
+            </div>
+          ))}
               </>
             )}
-          </div>
+        </div>
         )}
 
         {!showServices && staffId && filteredServices.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Select services that can be booked during this shift
-          </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Select services that can be booked during this shift
+        </p>
         )}
       </div>
 

@@ -54,3 +54,4 @@ export function getMidwifeFullDisplay(midwife: Midwife): string {
   return midwife.practice_name ? `${name} (${midwife.practice_name})` : name;
 }
 
+

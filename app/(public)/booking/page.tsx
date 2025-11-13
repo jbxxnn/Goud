@@ -60,8 +60,196 @@ type ServiceApiResponse = {
 type DateRange = { start: string; end: string };
 const PREFETCH_MONTHS = 2;
 
+type BookingState = {
+  step: 1 | 2 | 3 | 4;
+  serviceId: string;
+  locationId: string;
+  date: string;
+  selectedSlot: Slot | null;
+  policyResponses: PolicyResponses;
+  selectedAddons: AddonSelections;
+  clientEmail: string;
+  contactDefaults: Omit<BookingContactInput, 'clientEmail'>;
+  emailChecked: null | { exists: boolean };
+  isLoggedIn: boolean;
+  monthCursor: string; // ISO date string
+  timestamp: number; // to detect stale data
+};
+
+const BOOKING_STATE_KEY = 'goudecho_booking_state';
+const STATE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Helper functions to save/load state
+function saveBookingState(state: Partial<BookingState>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    // Ensure all values are serializable and add timestamp
+    const serializable: Partial<BookingState> = {
+      ...state,
+      timestamp: Date.now(),
+    };
+    
+    // Sanitize selectedSlot if present
+    if (serializable.selectedSlot !== undefined && serializable.selectedSlot !== null) {
+      serializable.selectedSlot = {
+        shiftId: String(serializable.selectedSlot.shiftId || ''),
+        staffId: String(serializable.selectedSlot.staffId || ''),
+        startTime: String(serializable.selectedSlot.startTime || ''),
+        endTime: String(serializable.selectedSlot.endTime || ''),
+      };
+    }
+    
+    const jsonString = JSON.stringify(serializable);
+    localStorage.setItem(BOOKING_STATE_KEY, jsonString);
+  } catch (e) {
+    console.warn('Failed to save booking state:', e);
+    // If saving fails, try to clear potentially corrupted data
+    try {
+      clearBookingState();
+    } catch (clearError) {
+      console.warn('Failed to clear booking state after save error:', clearError);
+    }
+  }
+}
+
+function loadBookingState(): Partial<BookingState> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(BOOKING_STATE_KEY);
+    if (!stored || stored.trim() === '') return null;
+    
+    // Try to parse the JSON
+    let state: BookingState;
+    try {
+      state = JSON.parse(stored) as BookingState;
+    } catch (parseError) {
+      // If parsing fails, clear the corrupted data
+      console.warn('Failed to parse booking state from localStorage, clearing:', parseError);
+      clearBookingState();
+      return null;
+    }
+    
+    // Validate that we have a valid state object
+    if (!state || typeof state !== 'object') {
+      clearBookingState();
+      return null;
+    }
+    
+    // Check if state is expired
+    if (typeof state.timestamp !== 'number' || Date.now() - state.timestamp > STATE_EXPIRY_MS) {
+      clearBookingState();
+      return null;
+    }
+    
+    // Validate and sanitize the state
+    const sanitized: Partial<BookingState> = {};
+    if (typeof state.step === 'number' && state.step >= 1 && state.step <= 4) {
+      sanitized.step = state.step as 1 | 2 | 3 | 4;
+    }
+    if (typeof state.serviceId === 'string') sanitized.serviceId = state.serviceId;
+    if (typeof state.locationId === 'string') sanitized.locationId = state.locationId;
+    if (typeof state.date === 'string') sanitized.date = state.date;
+    if (state.selectedSlot && typeof state.selectedSlot === 'object') {
+      sanitized.selectedSlot = {
+        shiftId: String(state.selectedSlot.shiftId || ''),
+        staffId: String(state.selectedSlot.staffId || ''),
+        startTime: String(state.selectedSlot.startTime || ''),
+        endTime: String(state.selectedSlot.endTime || ''),
+      };
+    }
+    if (state.policyResponses && typeof state.policyResponses === 'object') {
+      sanitized.policyResponses = state.policyResponses;
+    }
+    if (state.selectedAddons && typeof state.selectedAddons === 'object') {
+      sanitized.selectedAddons = state.selectedAddons;
+    }
+    if (typeof state.clientEmail === 'string') sanitized.clientEmail = state.clientEmail;
+    if (state.contactDefaults && typeof state.contactDefaults === 'object') {
+      sanitized.contactDefaults = state.contactDefaults;
+    }
+    if (state.emailChecked === null || (state.emailChecked && typeof state.emailChecked === 'object' && typeof state.emailChecked.exists === 'boolean')) {
+      sanitized.emailChecked = state.emailChecked;
+    }
+    if (typeof state.isLoggedIn === 'boolean') sanitized.isLoggedIn = state.isLoggedIn;
+    if (typeof state.monthCursor === 'string') sanitized.monthCursor = state.monthCursor;
+    
+    return sanitized;
+  } catch (e) {
+    console.warn('Failed to load booking state:', e);
+    // Clear potentially corrupted data
+    clearBookingState();
+    return null;
+  }
+}
+
+function clearBookingState(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(BOOKING_STATE_KEY);
+  } catch (e) {
+    console.warn('Failed to clear booking state:', e);
+  }
+}
+
 export default function BookingPage() {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Global error handler to catch and log pattern matching errors
+  useEffect(() => {
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    // Override console.error to catch pattern errors
+    console.error = (...args) => {
+      const errorMessage = args.join(' ');
+      if (errorMessage.includes('pattern') || errorMessage.includes('SyntaxError')) {
+        console.group('🔍 Pattern Error Detected');
+        console.error('Error:', ...args);
+        console.trace('Stack trace:');
+        console.groupEnd();
+      }
+      originalError.apply(console, args);
+    };
+    
+    // Catch unhandled errors
+    const handleError = (event: ErrorEvent) => {
+      if (event.message?.includes('pattern') || event.message?.includes('SyntaxError')) {
+        console.group('🔍 Unhandled Pattern Error');
+        console.error('Message:', event.message);
+        console.error('File:', event.filename);
+        console.error('Line:', event.lineno);
+        console.error('Column:', event.colno);
+        console.error('Error object:', event.error);
+        console.trace('Stack trace:');
+        console.groupEnd();
+      }
+    };
+    
+    // Catch unhandled promise rejections
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      const message = typeof reason === 'string' ? reason : reason?.message || String(reason);
+      if (message?.includes('pattern') || message?.includes('SyntaxError')) {
+        console.group('🔍 Unhandled Promise Rejection (Pattern Error)');
+        console.error('Reason:', reason);
+        console.trace('Stack trace:');
+        console.groupEnd();
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    
+    return () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
+  
+  // Initialize with default values to prevent hydration mismatch
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
   // Step 1
@@ -139,6 +327,56 @@ export default function BookingPage() {
   const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
   const [hasAutofilled, setHasAutofilled] = useState(false);
   const emailLookupCounterRef = useRef(0);
+  const previousServiceIdRef = useRef<string | undefined>(undefined);
+  const isRestoringRef = useRef(false);
+  const savedAddonsRef = useRef<AddonSelections | null>(null);
+  
+  // Load state from localStorage after mount (client-side only)
+  useEffect(() => {
+    setIsMounted(true);
+    const savedState = loadBookingState();
+    if (savedState) {
+      // Set flag to prevent saving during restore
+      isRestoringRef.current = true;
+      
+      // Set previousServiceIdRef BEFORE setting serviceId to prevent clearing policy responses
+      if (savedState.serviceId) {
+        previousServiceIdRef.current = savedState.serviceId;
+      }
+      
+      // Store saved addons in ref to restore after services load
+      if (savedState.selectedAddons) {
+        savedAddonsRef.current = savedState.selectedAddons;
+      }
+      
+      // Restore state in order - set serviceId first, then policy responses
+      if (savedState.step) setStep(savedState.step);
+      if (savedState.serviceId) setServiceId(savedState.serviceId);
+      if (savedState.locationId) setLocationId(savedState.locationId);
+      if (savedState.date) setDate(savedState.date);
+      if (savedState.monthCursor) {
+        setMonthCursor(new Date(savedState.monthCursor));
+      }
+      if (savedState.selectedSlot) setSelectedSlot(savedState.selectedSlot);
+      // Restore policy responses after serviceId is set (so they don't get cleared)
+      if (savedState.policyResponses && Object.keys(savedState.policyResponses).length > 0) {
+        // Use setTimeout to ensure this runs after the serviceId useEffect
+        setTimeout(() => {
+          setPolicyResponses(savedState.policyResponses!);
+        }, 0);
+      }
+      // Don't restore addons here - will restore after services load
+      if (savedState.clientEmail) setClientEmail(savedState.clientEmail);
+      if (savedState.contactDefaults) setContactDefaults(savedState.contactDefaults);
+      if (savedState.emailChecked !== undefined) setEmailChecked(savedState.emailChecked);
+      if (savedState.isLoggedIn !== undefined) setIsLoggedIn(savedState.isLoggedIn);
+      
+      // Clear restore flag after a delay to allow all state updates to complete
+      setTimeout(() => {
+        isRestoringRef.current = false;
+      }, 100);
+    }
+  }, []);
 
   useEffect(() => {
     // Load basic data for step 1 and 2
@@ -186,8 +424,12 @@ export default function BookingPage() {
   }, [serviceId, locationId, date]);
 
   useEffect(() => {
-    setPolicyResponses({});
-    setPolicyErrors({});
+    // Only clear policy responses if serviceId actually changed (not on initial mount/restore)
+    if (previousServiceIdRef.current !== undefined && previousServiceIdRef.current !== serviceId) {
+      setPolicyResponses({});
+      setPolicyErrors({});
+    }
+    previousServiceIdRef.current = serviceId;
   }, [serviceId]);
 
   // Safety check: if we're on step 3 but service has no addons, skip to step 4
@@ -202,6 +444,26 @@ export default function BookingPage() {
       setSelectedAddons({});
       return;
     }
+    
+    // If we have saved addons from localStorage, restore them first
+    if (savedAddonsRef.current) {
+      const savedAddons = savedAddonsRef.current;
+      const next: AddonSelections = {};
+      selectedService.addons.forEach((addon) => {
+        if (addon.isRequired) {
+          next[addon.id] = true;
+        } else {
+          // Restore saved selection if it exists, otherwise use current
+          next[addon.id] = Boolean(savedAddons[addon.id]);
+        }
+      });
+      setSelectedAddons(next);
+      // Clear the ref so we don't restore again
+      savedAddonsRef.current = null;
+      return;
+    }
+    
+    // Normal behavior: preserve existing selections
     setSelectedAddons((prev) => {
       const next: AddonSelections = {};
       selectedService.addons.forEach((addon) => {
@@ -220,6 +482,61 @@ export default function BookingPage() {
     heatmapRangesRef.current = [];
     setHeatmap({});
   }, [serviceId, locationId]);
+
+  // Save booking state to localStorage - use debounce to prevent infinite loops
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isSavingRef = useRef(false);
+
+  // Debounced save effect - only runs when primitive values change
+  useEffect(() => {
+    // Skip until mounted and state is loaded
+    if (!isMounted) {
+      return;
+    }
+
+    // Skip if we're currently restoring state from localStorage
+    if (isRestoringRef.current) {
+      return;
+    }
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Debounce the save operation - closure will capture current values
+    saveTimeoutRef.current = setTimeout(() => {
+      // Double-check we're not restoring
+      if (isRestoringRef.current || isSavingRef.current) return;
+      isSavingRef.current = true;
+      try {
+        saveBookingState({
+          step,
+          serviceId,
+          locationId,
+          date,
+          selectedSlot,
+          policyResponses,
+          selectedAddons,
+          clientEmail,
+          contactDefaults,
+          emailChecked,
+          isLoggedIn,
+          monthCursor: monthCursor.toISOString(),
+        });
+      } catch (error) {
+        console.error('Error saving booking state:', error);
+      } finally {
+        isSavingRef.current = false;
+      }
+    }, 500); // 500ms debounce
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [isMounted, step, serviceId, locationId, date, selectedSlot, policyResponses, selectedAddons, clientEmail, contactDefaults, emailChecked, isLoggedIn, monthCursor]);
 
   // Load day heatmap for calendar covering the full 6x7 grid (includes prev/next month spillover)
   useEffect(() => {
@@ -489,12 +806,45 @@ export default function BookingPage() {
         } catch {}
       }
 
+      // Clear booking state after successful booking
+      clearBookingState();
+
       // Redirect to confirmation page
       router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
     } catch (e: unknown) {
       setErrorMsg((e as Error)?.message || 'Boeking is niet gelukt');
     } finally {
       setFinalizing(false);
+    }
+  };
+
+  const handleStartOver = () => {
+    if (confirm('Weet u zeker dat u opnieuw wilt beginnen? Alle ingevulde gegevens worden gewist.')) {
+      clearBookingState();
+      setStep(1);
+      setServiceId('');
+      setLocationId('');
+      setDate('');
+      setSelectedSlot(null);
+      setPolicyResponses({});
+      setPolicyErrors({});
+      setSelectedAddons({});
+      setClientEmail('');
+      setContactDefaults({
+        firstName: '',
+        lastName: '',
+        phone: undefined,
+        address: undefined,
+      });
+      setEmailChecked(null);
+      setIsLoggedIn(false);
+      setPassword('');
+      setErrorMsg('');
+      // Reset month cursor to current month
+      const d = new Date();
+      d.setDate(1);
+      d.setHours(0,0,0,0);
+      setMonthCursor(d);
     }
   };
 
@@ -695,7 +1045,36 @@ export default function BookingPage() {
         );
       }
       case 'date_time': {
-        const value = typeof policyResponses[field.id] === 'string' ? (policyResponses[field.id] as string) : '';
+        // Convert ISO datetime to datetime-local format (YYYY-MM-DDTHH:mm)
+        const rawValue = typeof policyResponses[field.id] === 'string' ? (policyResponses[field.id] as string) : '';
+        let value = '';
+        if (rawValue) {
+          try {
+            // If it's already in datetime-local format, use it as-is
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(rawValue)) {
+              value = rawValue;
+              console.log('🔍 datetime-local: Using value as-is', { fieldId: field.id, value });
+            } else {
+              // If it's an ISO string, convert to datetime-local format
+              const date = new Date(rawValue);
+              if (!isNaN(date.getTime())) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                console.log('🔍 datetime-local: Converted ISO to datetime-local', { fieldId: field.id, rawValue, value });
+              } else {
+                console.warn('🔍 datetime-local: Invalid date', { fieldId: field.id, rawValue });
+              }
+            }
+          } catch (error) {
+            // If conversion fails, use empty string
+            console.error('🔍 datetime-local: Conversion error', { fieldId: field.id, rawValue, error });
+            value = '';
+          }
+        }
         return (
           <div key={field.id} className="space-y-2">
             <label className="block text-xs font-bold">
@@ -707,7 +1086,23 @@ export default function BookingPage() {
               type="datetime-local"
               className="border rounded px-3 py-2 w-full"
               value={value}
-              onChange={(e) => updatePolicyResponse(field.id, e.target.value)}
+              onInvalid={(e) => {
+                const target = e.target as HTMLInputElement;
+                console.error('🔍 datetime-local input invalid:', {
+                  fieldId: field.id,
+                  value: target.value,
+                  rawValue,
+                  validity: target.validity,
+                  validationMessage: target.validationMessage,
+                });
+              }}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                if (newValue && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(newValue)) {
+                  console.warn('🔍 datetime-local: Invalid format on change', { fieldId: field.id, value: newValue });
+                }
+                updatePolicyResponse(field.id, newValue);
+              }}
             />
             {error && <p className="text-xs text-red-600">{error}</p>}
           </div>
@@ -759,8 +1154,18 @@ export default function BookingPage() {
         <CardHeader className="relative pb-6">
           <div className="flex items-start justify-between">
             <h1 className="text-lg font-bold text-gray-900">Book Your Appointment</h1>
-            <div className="text-right">
-              <div className="text-xs text-gray-500 font-medium">STEP {currentStepNumber}/{totalSteps}</div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleStartOver}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Start Over
+              </Button>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 font-medium">STEP {currentStepNumber}/{totalSteps}</div>
+              </div>
             </div>
           </div>
           
@@ -1147,7 +1552,26 @@ function toISODate(d: Date): string {
 }
 
 function parseISODate(iso: string): Date {
-  return new Date(`${iso}T00:00:00`);
+  try {
+    if (!iso || typeof iso !== 'string') {
+      console.warn('parseISODate: Invalid input', { iso, type: typeof iso });
+      return new Date();
+    }
+    // Validate ISO date format (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      console.warn('parseISODate: Invalid date format', { iso });
+      return new Date();
+    }
+    const date = new Date(`${iso}T00:00:00`);
+    if (isNaN(date.getTime())) {
+      console.warn('parseISODate: Invalid date result', { iso, result: date });
+      return new Date();
+    }
+    return date;
+  } catch (error) {
+    console.error('parseISODate: Error parsing date', { iso, error });
+    return new Date();
+  }
 }
 
 function normalizePolicyFields(rawFields: RawPolicyField[] | null | undefined): PolicyField[] {
@@ -1624,6 +2048,21 @@ function CheckoutForm({
               <Input
                 type="date"
                 {...dueDateField}
+                onInvalid={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  console.error('🔍 Date input invalid (dueDate):', {
+                    value: target.value,
+                    validity: target.validity,
+                    validationMessage: target.validationMessage,
+                  });
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                    console.warn('🔍 Invalid date format (dueDate):', value);
+                  }
+                  dueDateField.onChange(e);
+                }}
               />
               {errors.dueDate && <div className="text-xs text-red-600 mt-1">{errors.dueDate.message}</div>}
             </div>
@@ -1632,6 +2071,21 @@ function CheckoutForm({
               <Input
                 type="date"
                 {...birthDateField}
+                onInvalid={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  console.error('🔍 Date input invalid (birthDate):', {
+                    value: target.value,
+                    validity: target.validity,
+                    validationMessage: target.validationMessage,
+                  });
+                }}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                    console.warn('🔍 Invalid date format (birthDate):', value);
+                  }
+                  birthDateField.onChange(e);
+                }}
               />
               {errors.birthDate && <div className="text-xs text-red-600 mt-1">{errors.birthDate.message}</div>}
             </div>
