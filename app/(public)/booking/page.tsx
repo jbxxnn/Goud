@@ -326,10 +326,14 @@ export default function BookingPage() {
   });
   const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
   const [hasAutofilled, setHasAutofilled] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
   const emailLookupCounterRef = useRef(0);
   const previousServiceIdRef = useRef<string | undefined>(undefined);
   const isRestoringRef = useRef(false);
   const savedAddonsRef = useRef<AddonSelections | null>(null);
+  
+  // Calculate if details form should be shown
+  const showDetailsForm = emailChecked?.exists === false || isLoggedIn;
   
   // Load state from localStorage after mount (client-side only)
   useEffect(() => {
@@ -370,6 +374,29 @@ export default function BookingPage() {
       if (savedState.contactDefaults) setContactDefaults(savedState.contactDefaults);
       if (savedState.emailChecked !== undefined) setEmailChecked(savedState.emailChecked);
       if (savedState.isLoggedIn !== undefined) setIsLoggedIn(savedState.isLoggedIn);
+      
+      // If user is logged in but we don't have contact defaults, fetch and autofill
+      if (savedState.isLoggedIn && savedState.clientEmail && (!savedState.contactDefaults || (!savedState.contactDefaults.firstName && !savedState.contactDefaults.lastName))) {
+        setTimeout(async () => {
+          try {
+            const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(savedState.clientEmail!)}`);
+            const payload = await response.json();
+            const user = payload?.user;
+            if (user) {
+              setContactDefaults({
+                firstName: user.first_name || '',
+                lastName: user.last_name || '',
+                phone: user.phone || undefined,
+                address: user.address || undefined,
+              });
+              setContactDefaultsVersion((prev) => prev + 1);
+              setHasAutofilled(true);
+            }
+          } catch (error) {
+            console.error('Error fetching user details on restore:', error);
+          }
+        }, 100);
+      }
       
       // Clear restore flag after a delay to allow all state updates to complete
       setTimeout(() => {
@@ -438,6 +465,58 @@ export default function BookingPage() {
       setStep(4);
     }
   }, [step, hasAddons]);
+
+  // Autofill user details when reaching step 4 if logged in and details not already filled
+  useEffect(() => {
+    if (step === 4 && !hasAutofilled) {
+      const checkAndAutofill = async () => {
+        // Check if user has active session
+        let emailToUse = clientEmail;
+        let shouldAutofill = isLoggedIn;
+        
+        if (!emailToUse || !shouldAutofill) {
+          try {
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.email) {
+              emailToUse = session.user.email;
+              shouldAutofill = true;
+              // Update state if we found a session
+              if (!isLoggedIn) {
+                setIsLoggedIn(true);
+                setClientEmail(emailToUse);
+                setEmailChecked({ exists: true });
+              }
+            }
+          } catch (error) {
+            console.error('Error checking session:', error);
+          }
+        }
+        
+        if (shouldAutofill && emailToUse) {
+          try {
+            const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(emailToUse)}`);
+            const payload = await response.json();
+            const user = payload?.user;
+            if (user) {
+              setContactDefaults({
+                firstName: user.first_name || '',
+                lastName: user.last_name || '',
+                phone: user.phone || undefined,
+                address: user.address || undefined,
+              });
+              setContactDefaultsVersion((prev) => prev + 1);
+              setHasAutofilled(true);
+            }
+          } catch (error) {
+            console.error('Error fetching user details on step 4:', error);
+          }
+        }
+      };
+      checkAndAutofill();
+    }
+  }, [step, isLoggedIn, clientEmail, hasAutofilled]);
 
   useEffect(() => {
     if (!selectedService) {
@@ -721,6 +800,25 @@ export default function BookingPage() {
       setIsLoggedIn(true);
       setPassword('');
       setErrorMsg('');
+      
+      // Fetch and autofill user details after successful login
+      try {
+        const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(emailForLogin)}`);
+        const payload = await response.json();
+        const user = payload?.user;
+        if (user) {
+          setContactDefaults({
+            firstName: user.first_name || '',
+            lastName: user.last_name || '',
+            phone: user.phone || undefined,
+            address: user.address || undefined,
+          });
+          setContactDefaultsVersion((prev) => prev + 1);
+          setHasAutofilled(true);
+        }
+      } catch (error) {
+        console.error('Error fetching user details after login:', error);
+      }
     } catch (e: unknown) {
       const message = (e as Error)?.message || 'Inloggen mislukt';
       setErrorMsg(message);
@@ -782,14 +880,17 @@ export default function BookingPage() {
         throw new Error(data.error || 'Boeking is niet gelukt');
       }
 
+      // Ensure session is refreshed after booking for logged-in users
       if (emailChecked?.exists === true && isLoggedIn) {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
+        // Refresh the session to ensure it's up to date
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session) {
           console.warn('Session not found after booking - user may need to log in again');
+        } else {
+          // Session exists and should persist across redirect
+          console.log('User session confirmed after booking');
         }
       }
 
@@ -818,8 +919,23 @@ export default function BookingPage() {
     }
   };
 
-  const handleStartOver = () => {
+  const handleStartOver = async () => {
     if (confirm('Weet u zeker dat u opnieuw wilt beginnen? Alle ingevulde gegevens worden gewist.')) {
+      // Check if user has an active session before resetting login state
+      let hasActiveSession = false;
+      let sessionEmail = '';
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        hasActiveSession = !!session;
+        if (session?.user?.email) {
+          sessionEmail = session.user.email;
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+      
       clearBookingState();
       setStep(1);
       setServiceId('');
@@ -829,15 +945,54 @@ export default function BookingPage() {
       setPolicyResponses({});
       setPolicyErrors({});
       setSelectedAddons({});
-      setClientEmail('');
-      setContactDefaults({
-        firstName: '',
-        lastName: '',
-        phone: undefined,
-        address: undefined,
-      });
-      setEmailChecked(null);
-      setIsLoggedIn(false);
+      
+      // If user has active session, preserve login state and email
+      if (hasActiveSession && sessionEmail) {
+        setClientEmail(sessionEmail);
+        setEmailChecked({ exists: true });
+        setIsLoggedIn(true);
+        // Fetch and autofill user details
+        try {
+          const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(sessionEmail)}`);
+          const payload = await response.json();
+          const user = payload?.user;
+          if (user) {
+            setContactDefaults({
+              firstName: user.first_name || '',
+              lastName: user.last_name || '',
+              phone: user.phone || undefined,
+              address: user.address || undefined,
+            });
+            setContactDefaultsVersion((prev) => prev + 1);
+            setHasAutofilled(true);
+          } else {
+            setContactDefaults({
+              firstName: '',
+              lastName: '',
+              phone: undefined,
+              address: undefined,
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+          setContactDefaults({
+            firstName: '',
+            lastName: '',
+            phone: undefined,
+            address: undefined,
+          });
+        }
+      } else {
+        setClientEmail('');
+        setEmailChecked(null);
+        setIsLoggedIn(false);
+        setContactDefaults({
+          firstName: '',
+          lastName: '',
+          phone: undefined,
+          address: undefined,
+        });
+      }
       setPassword('');
       setErrorMsg('');
       // Reset month cursor to current month
@@ -1445,6 +1600,7 @@ export default function BookingPage() {
             onSubmit={handleBookingSubmit}
             finalizing={finalizing}
             errorMsg={errorMsg}
+            onValidationChange={setIsFormValid}
           />
               <div className="flex justify-between pt-2">
                 <Button
@@ -1456,6 +1612,16 @@ export default function BookingPage() {
                 >
                   Back
                 </Button>
+                {showDetailsForm && (
+                  <Button
+                    type="submit"
+                    form="checkout-form"
+                    disabled={finalizing || !isFormValid}
+                    className="h-11 px-8 bg-secondary-foreground hover:bg-secondary-foreground/90 text-white rounded-md font-medium"
+                  >
+                    {finalizing ? 'Bezig met verwerken…' : 'Boeking afronden'}
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -1842,6 +2008,7 @@ function CheckoutForm({
   onSubmit,
   finalizing,
   errorMsg,
+  onValidationChange,
 }: {
   currentEmail: string;
   contactDefaults: Omit<BookingContactInput, 'clientEmail'>;
@@ -1855,6 +2022,7 @@ function CheckoutForm({
   onSubmit: (values: BookingContactInput) => void | Promise<void>;
   finalizing: boolean;
   errorMsg: string;
+  onValidationChange?: (isValid: boolean) => void;
 }) {
   const [midwives, setMidwives] = useState<Array<{ id: string; first_name: string | null; last_name: string | null; practice_name: string | null }>>([]);
   const {
@@ -1925,6 +2093,13 @@ function CheckoutForm({
     }
   }, [contactDefaults, contactDefaultsVersion, getValues, reset]);
 
+  // Notify parent of validation state changes
+  useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange(isValid);
+    }
+  }, [isValid, onValidationChange]);
+
   const showLoginForm = emailChecked?.exists === true && !isLoggedIn;
   const showDetailsForm = emailChecked?.exists === false || isLoggedIn;
 
@@ -1943,7 +2118,7 @@ function CheckoutForm({
   const notesField = register('notes');
 
   return (
-    <form className="space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form id="checkout-form" className="space-y-3" onSubmit={handleSubmit(onSubmit)} noValidate>
       <div className="grid md:grid-cols-2 gap-3">
 
 
@@ -1951,7 +2126,7 @@ function CheckoutForm({
           <label className="block text-sm mb-1">E-mailadres</label>
           <input
             type="email"
-            className="border rounded px-3 py-2 w-full"
+            className="border rounded px-3 py-2 w-full placeholder:text-xs text-xs"
             placeholder="jij@example.com"
             {...emailField}
             onChange={(e) => {
@@ -1977,7 +2152,7 @@ function CheckoutForm({
             <label className="block text-sm mb-1">Wachtwoord</label>
             <input
               type="password"
-              className="border rounded px-3 py-2 w-full"
+              className="border rounded px-3 py-2 w-full placeholder:text-xs text-xs"
               value={password}
               onChange={(e) => onPasswordChange(e.target.value)}
               placeholder="Voer uw wachtwoord in"
@@ -2011,7 +2186,7 @@ function CheckoutForm({
             <div>
               <label className="block text-sm mb-1">Voornaam</label>
               <input
-                className="border rounded px-3 py-2 w-full"
+                className="border rounded px-3 py-2 w-full placeholder:text-xs text-xs"
                 placeholder="Uw voornaam"
                 {...firstNameField}
               />
@@ -2020,7 +2195,7 @@ function CheckoutForm({
             <div>
               <label className="block text-sm mb-1">Achternaam</label>
               <input
-                className="border rounded px-3 py-2 w-full"
+                className="border rounded px-3 py-2 w-full placeholder:text-xs text-xs"
                 placeholder="Uw achternaam"
                 {...lastNameField}
               />
@@ -2029,7 +2204,7 @@ function CheckoutForm({
             <div>
               <label className="block text-sm mb-1">Telefoon</label>
               <input
-                className="border rounded px-3 py-2 w-full"
+                className="border rounded px-3 py-2 w-full placeholder:text-xs text-xs"
                 placeholder="Optioneel"
                 {...phoneField}
               />
@@ -2039,6 +2214,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Adres</label>
               <Input
                 placeholder="Optioneel"
+                className="placeholder:text-xs text-xs"
                 {...addressField}
               />
               {errors.address && <div className="text-xs text-red-600 mt-1">{errors.address.message}</div>}
@@ -2047,6 +2223,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Uitgerekende datum</label>
               <Input
                 type="date"
+                className="placeholder:text-xs text-xs"
                 {...dueDateField}
                 onInvalid={(e) => {
                   const target = e.target as HTMLInputElement;
@@ -2070,6 +2247,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Geboortedatum</label>
               <Input
                 type="date"
+                className="placeholder:text-xs text-xs"
                 {...birthDateField}
                 onInvalid={(e) => {
                   const target = e.target as HTMLInputElement;
@@ -2128,6 +2306,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Straatnaam</label>
               <Input
                 placeholder="Optioneel"
+                className="placeholder:text-xs text-xs"
                 {...streetNameField}
               />
               {errors.streetName && <div className="text-xs text-red-600 mt-1">{errors.streetName.message}</div>}
@@ -2136,6 +2315,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Huisnummer</label>
               <Input
                 placeholder="Optioneel"
+                className="placeholder:text-xs text-xs"
                 {...houseNumberField}
               />
               {errors.houseNumber && <div className="text-xs text-red-600 mt-1">{errors.houseNumber.message}</div>}
@@ -2144,6 +2324,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Postcode</label>
               <Input
                 placeholder="Optioneel"
+                className="placeholder:text-xs text-xs"
                 {...postalCodeField}
               />
               {errors.postalCode && <div className="text-xs text-red-600 mt-1">{errors.postalCode.message}</div>}
@@ -2152,6 +2333,7 @@ function CheckoutForm({
               <label className="block text-sm mb-1">Woonplaats</label>
               <Input
                 placeholder="Optioneel"
+                className="placeholder:text-xs text-xs"
                 {...cityField}
               />
               {errors.city && <div className="text-xs text-red-600 mt-1">{errors.city.message}</div>}
@@ -2161,6 +2343,7 @@ function CheckoutForm({
               <Textarea
                 placeholder="Optioneel"
                 rows={3}
+                className="placeholder:text-xs text-xs"
                 {...notesField}
               />
               {errors.notes && <div className="text-xs text-red-600 mt-1">{errors.notes.message}</div>}
@@ -2169,13 +2352,6 @@ function CheckoutForm({
         )}
       </div>
       {errorMsg && <div className="text-sm text-red-600">{errorMsg}</div>}
-      {showDetailsForm && (
-        <div className="flex justify-end">
-          <Button type="submit" disabled={finalizing || !isValid}>
-            {finalizing ? 'Bezig met verwerken…' : 'Boeking afronden'}
-          </Button>
-        </div>
-      )}
     </form>
   );
 }
