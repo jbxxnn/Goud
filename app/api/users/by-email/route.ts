@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceSupabase();
     const { data, error } = await supabase
       .from('users')
-      .select('id, email, first_name, last_name, phone, address')
+        .select('id, email, first_name, last_name, phone, address, postal_code, house_number, street_name, city, birth_date, midwife_id')
       .ilike('email', email)
       .limit(1)
       .maybeSingle();

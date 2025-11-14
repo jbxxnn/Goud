@@ -271,16 +271,16 @@ export default function BookingsClient({
           />
         </div>
         {!clientId && (
-          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <label className="text-sm font-medium">Search:</label>
-            <Input
-              type="text"
-              placeholder="Client name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
-          </div>
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <label className="text-sm font-medium">Search:</label>
+          <Input
+            type="text"
+            placeholder="Client name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
         )}
       </div>
 

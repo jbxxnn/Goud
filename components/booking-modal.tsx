@@ -299,9 +299,9 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
             if (answers.length === 0) return null;
             
             return (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Policy Responses</h3>
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Policy Responses</h3>
-                <div className="space-y-2">
                   {answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
                     // Handle both fieldId and field_id formats
                     const fieldId = answer.fieldId || answer.field_id;
@@ -357,12 +357,12 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       <div key={fieldId || index} className="p-3 bg-muted rounded-md text-sm">
                         <div className="font-medium mb-1">{questionText}</div>
                         <div className="text-muted-foreground">{answerText}</div>
-                        {answer.priceEurCents && answer.priceEurCents > 0 && (
-                          <div className="text-muted-foreground mt-1">
-                            Additional Cost: {formatEuroCents(answer.priceEurCents)}
-                          </div>
-                        )}
+                    {answer.priceEurCents && answer.priceEurCents > 0 && (
+                      <div className="text-muted-foreground mt-1">
+                        Additional Cost: {formatEuroCents(answer.priceEurCents)}
                       </div>
+                    )}
+                  </div>
                     );
                   })}
                 </div>

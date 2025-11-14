@@ -9,6 +9,13 @@ export interface User {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
+  address: string | null;
+  postal_code: string | null;
+  house_number: string | null;
+  street_name: string | null;
+  city: string | null;
+  birth_date: string | null;
+  midwife_id: string | null;
   created_at: string;
   updated_at: string;
   last_login: string | null;
@@ -26,6 +33,13 @@ export interface UpdateUserRequest {
   first_name?: string;
   last_name?: string;
   phone?: string;
+  address?: string;
+  postal_code?: string;
+  house_number?: string;
+  street_name?: string;
+  city?: string;
+  birth_date?: string;
+  midwife_id?: string;
   role?: UserRole;
 }
 

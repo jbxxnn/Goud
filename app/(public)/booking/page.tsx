@@ -323,6 +323,14 @@ export default function BookingPage() {
     lastName: '',
     phone: undefined,
     address: undefined,
+    postalCode: undefined,
+    houseNumber: undefined,
+    streetName: undefined,
+    city: undefined,
+    birthDate: undefined,
+    midwifeId: undefined,
+    dueDate: undefined,
+    notes: undefined,
   });
   const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
   const [hasAutofilled, setHasAutofilled] = useState(false);
@@ -335,6 +343,60 @@ export default function BookingPage() {
   // Calculate if details form should be shown
   const showDetailsForm = emailChecked?.exists === false || isLoggedIn;
   
+  // Check if user is already logged in when page loads
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          // User is logged in - autofill email and mark as logged in
+          const userEmail = session.user.email;
+          setClientEmail(userEmail);
+          setIsLoggedIn(true);
+          setEmailChecked({ exists: true });
+          
+          // Fetch and autofill user details (only if not already autofilled)
+          try {
+            const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(userEmail)}`);
+            const payload = await response.json();
+            const user = payload?.user;
+            if (user) {
+              setContactDefaults((prev) => {
+                // Only update if we don't already have data
+                if (prev.firstName || prev.lastName) {
+                  return prev;
+                }
+                return {
+                  firstName: user.first_name || '',
+                  lastName: user.last_name || '',
+                  phone: user.phone || undefined,
+                  address: user.address || undefined,
+                  postalCode: user.postal_code || undefined,
+                  houseNumber: user.house_number || undefined,
+                  streetName: user.street_name || undefined,
+                  city: user.city || undefined,
+                  birthDate: user.birth_date || undefined,
+                  midwifeId: user.midwife_id || undefined,
+                  dueDate: prev.dueDate,
+                  notes: prev.notes,
+                };
+              });
+              setContactDefaultsVersion((prev) => prev + 1);
+              setHasAutofilled(true);
+            }
+          } catch (error) {
+            console.error('Error fetching user details on page load:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing session:', error);
+      }
+    };
+    checkExistingSession();
+  }, []); // Only run once on mount
+
   // Load state from localStorage after mount (client-side only)
   useEffect(() => {
     setIsMounted(true);
@@ -388,6 +450,12 @@ export default function BookingPage() {
                 lastName: user.last_name || '',
                 phone: user.phone || undefined,
                 address: user.address || undefined,
+                postalCode: user.postal_code || undefined,
+                houseNumber: user.house_number || undefined,
+                streetName: user.street_name || undefined,
+                city: user.city || undefined,
+                birthDate: user.birth_date || undefined,
+                midwifeId: user.midwife_id || undefined,
               });
               setContactDefaultsVersion((prev) => prev + 1);
               setHasAutofilled(true);
@@ -505,6 +573,12 @@ export default function BookingPage() {
                 lastName: user.last_name || '',
                 phone: user.phone || undefined,
                 address: user.address || undefined,
+                postalCode: user.postal_code || undefined,
+                houseNumber: user.house_number || undefined,
+                streetName: user.street_name || undefined,
+                city: user.city || undefined,
+                birthDate: user.birth_date || undefined,
+                midwifeId: user.midwife_id || undefined,
               });
               setContactDefaultsVersion((prev) => prev + 1);
               setHasAutofilled(true);
@@ -711,6 +785,14 @@ export default function BookingPage() {
         lastName: '',
         phone: undefined,
         address: undefined,
+        postalCode: undefined,
+        houseNumber: undefined,
+        streetName: undefined,
+        city: undefined,
+        birthDate: undefined,
+        midwifeId: undefined,
+        dueDate: undefined,
+        notes: undefined,
       });
       setContactDefaultsVersion((prev) => prev + 1);
       setHasAutofilled(false);
@@ -752,6 +834,12 @@ export default function BookingPage() {
               lastName: user.last_name || '',
               phone: user.phone || undefined,
               address: user.address || undefined,
+              postalCode: user.postal_code || undefined,
+              houseNumber: user.house_number || undefined,
+              streetName: user.street_name || undefined,
+              city: user.city || undefined,
+              birthDate: user.birth_date || undefined,
+              midwifeId: user.midwife_id || undefined,
             });
             setContactDefaultsVersion((prev) => prev + 1);
             setHasAutofilled(true);
@@ -962,6 +1050,12 @@ export default function BookingPage() {
               lastName: user.last_name || '',
               phone: user.phone || undefined,
               address: user.address || undefined,
+              postalCode: user.postal_code || undefined,
+              houseNumber: user.house_number || undefined,
+              streetName: user.street_name || undefined,
+              city: user.city || undefined,
+              birthDate: user.birth_date || undefined,
+              midwifeId: user.midwife_id || undefined,
             });
             setContactDefaultsVersion((prev) => prev + 1);
             setHasAutofilled(true);
@@ -971,6 +1065,14 @@ export default function BookingPage() {
               lastName: '',
               phone: undefined,
               address: undefined,
+              postalCode: undefined,
+              houseNumber: undefined,
+              streetName: undefined,
+              city: undefined,
+              birthDate: undefined,
+              midwifeId: undefined,
+              dueDate: undefined,
+              notes: undefined,
             });
           }
         } catch (error) {
@@ -980,6 +1082,14 @@ export default function BookingPage() {
             lastName: '',
             phone: undefined,
             address: undefined,
+            postalCode: undefined,
+            houseNumber: undefined,
+            streetName: undefined,
+            city: undefined,
+            birthDate: undefined,
+            midwifeId: undefined,
+            dueDate: undefined,
+            notes: undefined,
           });
         }
       } else {
@@ -991,6 +1101,14 @@ export default function BookingPage() {
           lastName: '',
           phone: undefined,
           address: undefined,
+          postalCode: undefined,
+          houseNumber: undefined,
+          streetName: undefined,
+          city: undefined,
+          birthDate: undefined,
+          midwifeId: undefined,
+          dueDate: undefined,
+          notes: undefined,
         });
       }
       setPassword('');
@@ -2033,6 +2151,7 @@ function CheckoutForm({
     trigger,
     getValues,
     watch,
+    setValue,
   } = useForm<BookingContactInput>({
     resolver: zodResolver(bookingContactSchema),
     mode: 'onChange',
@@ -2110,7 +2229,6 @@ function CheckoutForm({
   const addressField = register('address');
   const dueDateField = register('dueDate');
   const birthDateField = register('birthDate');
-  const midwifeIdField = register('midwifeId');
   const houseNumberField = register('houseNumber');
   const postalCodeField = register('postalCode');
   const streetNameField = register('streetName');
@@ -2270,23 +2388,14 @@ function CheckoutForm({
             <div>
               <label className="block text-sm mb-1">Je eigen verloskundige</label>
               <Select 
-                value={watch('midwifeId') || undefined} 
+                value={watch('midwifeId') || ''} 
                 onValueChange={(value) => {
-                  midwifeIdField.onChange({ target: { value: value || '' } });
-                  midwifeIdField.onBlur({ target: { value: value || '' } });
+                  // Set the value directly - if empty string, zod will transform it to undefined
+                  setValue('midwifeId', value || '', { shouldValidate: true });
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecteer verloskundige (optioneel)">
-                    {watch('midwifeId') && midwives.find(m => m.id === watch('midwifeId')) 
-                      ? (() => {
-                          const midwife = midwives.find(m => m.id === watch('midwifeId'));
-                          const name = [midwife?.first_name, midwife?.last_name].filter(Boolean).join(' ');
-                          const practice = midwife?.practice_name;
-                          return practice ? `${name} (${practice})` : name;
-                        })()
-                      : undefined}
-                  </SelectValue>
+                  <SelectValue placeholder="Selecteer verloskundige (optioneel)" />
                 </SelectTrigger>
                 <SelectContent>
                   {midwives.map((m) => {

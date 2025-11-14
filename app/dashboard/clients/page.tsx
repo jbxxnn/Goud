@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import MidwivesClient from './midwives-client';
+import ClientsClient from './clients-client';
 
-export default async function MidwivesPage() {
+export default async function ClientsPage() {
   // Get the server-side Supabase client
   const supabase = await createClient();
   
@@ -32,8 +32,8 @@ export default async function MidwivesPage() {
   }
 
   return (
-    <MidwivesClient 
-      initialMidwives={[]}
+    <ClientsClient 
+      initialClients={[]}
       initialPagination={{
         page: 1,
         totalPages: 1
@@ -41,6 +41,3 @@ export default async function MidwivesPage() {
     />
   );
 }
-
-
-

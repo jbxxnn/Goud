@@ -196,15 +196,15 @@ export const createBookingColumns = (
             </Button>
           ) : (
             canDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDelete(booking)}
-                className="h-8 w-8 text-destructive hover:text-destructive"
-                title="Delete"
-              >
-                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-              </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(booking)}
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              title="Delete"
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+            </Button>
             )
           )}
         </div>

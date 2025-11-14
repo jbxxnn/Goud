@@ -50,8 +50,8 @@ export default async function ProtectedLayout({
       <SidebarInset>
         <header className="flex h-14 items-center justify-between gap-2 border-b bg-background px-4 relative z-50">
           <div className="flex items-center gap-2">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="mx-2 h-6" />
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="mx-2 h-6" />
           </div>
           <div className="flex items-center relative z-[100]">
             <ProfileDropdown data={profileData} />

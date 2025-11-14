@@ -34,3 +34,4 @@ comment on table public.midwives is 'Client''s own midwives (verloskundigen)';
 comment on column public.midwives.practice_name is 'Name of the midwife practice';
 
 
+

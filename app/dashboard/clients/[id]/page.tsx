@@ -1,9 +1,13 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import MidwivesClient from './midwives-client';
+import ClientDetailClient from './client-detail-client';
 
-export default async function MidwivesPage() {
-  // Get the server-side Supabase client
+export default async function ClientDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const supabase = await createClient();
   
   // Get the current user (server-side authenticated)
@@ -31,16 +35,18 @@ export default async function MidwivesPage() {
     redirect('/dashboard');
   }
 
-  return (
-    <MidwivesClient 
-      initialMidwives={[]}
-      initialPagination={{
-        page: 1,
-        totalPages: 1
-      }}
-    />
-  );
+  // Fetch the client data
+  const { data: client, error: clientError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .eq('role', 'client')
+    .single();
+
+  if (clientError || !client) {
+    redirect('/dashboard/clients');
+  }
+
+  return <ClientDetailClient clientId={id} initialClient={client} />;
 }
-
-
 

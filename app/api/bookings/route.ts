@@ -65,6 +65,16 @@ export async function POST(req: NextRequest) {
         if (lastName !== undefined && lastName !== '') updates.last_name = lastName;
         if (phone !== undefined && phone !== '') updates.phone = phone;
         if (address !== undefined && address !== '') updates.address = address;
+        if (postalCode !== undefined && postalCode !== '') updates.postal_code = postalCode;
+        if (houseNumber !== undefined && houseNumber !== '') updates.house_number = houseNumber;
+        if (streetName !== undefined && streetName !== '') updates.street_name = streetName;
+        if (city !== undefined && city !== '') updates.city = city;
+        if (birthDate !== undefined && birthDate !== '') updates.birth_date = birthDate;
+        // midwifeId is a UUID string (validated by zod), so check if it's provided
+        // Check explicitly for undefined, null, and empty string to handle all cases
+        if (midwifeId !== undefined && midwifeId !== null && midwifeId !== '' && typeof midwifeId === 'string') {
+          updates.midwife_id = midwifeId.trim();
+        }
         if (Object.keys(updates).length > 0) {
           await supabase.from('users').update(updates).eq('id', existing.id);
         }
@@ -73,7 +83,16 @@ export async function POST(req: NextRequest) {
         resolvedClientId = user.id;
         await getServiceSupabase()
           .from('users')
-          .update({ phone: phone ?? null, address: address ?? null })
+          .update({ 
+            phone: phone ?? null, 
+            address: address ?? null,
+            postal_code: postalCode ?? null,
+            house_number: houseNumber ?? null,
+            street_name: streetName ?? null,
+            city: city ?? null,
+            birth_date: birthDate ?? null,
+            midwife_id: (midwifeId && typeof midwifeId === 'string' && midwifeId.trim() !== '') ? midwifeId.trim() : null,
+          })
           .eq('id', user.id);
       }
     }

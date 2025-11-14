@@ -40,7 +40,7 @@ const allMenuItems: MenuItem[] = [
     roles: ['admin'], // Admin only
   },
   {
-    title: "Staff",
+      title: "Staff",
     url: "/dashboard/staff",
     icon: <HugeiconsIcon icon={UserGroup03Icon} />,
     roles: ['admin'], // Admin only
@@ -67,6 +67,12 @@ const allMenuItems: MenuItem[] = [
     title: "Bookings",
     url: "/dashboard/bookings",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
+    roles: ['admin'], // Admin only
+  },
+  {
+    title: "Clients",
+    url: "/dashboard/clients",
+    icon: <HugeiconsIcon icon={UserIcon} />,
     roles: ['admin'], // Admin only
   },
   {
