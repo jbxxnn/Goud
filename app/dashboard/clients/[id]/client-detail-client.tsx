@@ -23,7 +23,7 @@ import {
   CalendarCheckInIcon,
   CoinsEuroIcon,
 } from '@hugeicons/core-free-icons';
-import { User, UpdateUserRequest } from '@/lib/types/user';
+import { User, UpdateUserRequest, UserRole } from '@/lib/types/user';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { Midwife } from '@/lib/types/midwife';
 import { formatEuroCents } from '@/lib/currency/format';
@@ -39,6 +39,8 @@ interface MidwifeResponse {
   success: boolean;
   data: Midwife[];
 }
+
+const ROLE_OPTIONS: UserRole[] = ['client', 'staff', 'midwife', 'admin'];
 
 export default function ClientDetailClient({ 
   clientId, 
@@ -72,6 +74,7 @@ export default function ClientDetailClient({
       city: client.city || '',
       birth_date: client.birth_date || '',
       midwife_id: client.midwife_id || '',
+      role: client.role,
     },
   });
 
@@ -132,6 +135,7 @@ export default function ClientDetailClient({
         city: client.city || '',
         birth_date: client.birth_date || '',
         midwife_id: client.midwife_id || '',
+        role: client.role,
       });
     }
   }, [isEditModalOpen, client, reset]);
@@ -151,6 +155,7 @@ export default function ClientDetailClient({
         city: data.city || undefined,
         birth_date: data.birth_date || undefined,
         midwife_id: data.midwife_id || undefined,
+        role: data.role || undefined,
       };
       const response = await fetch(`/api/users/${clientId}`, {
         method: 'PUT',
@@ -591,6 +596,26 @@ export default function ClientDetailClient({
                   />
                   <p className="text-xs text-muted-foreground mt-1">E-mail kan niet worden gewijzigd</p>
                 </div>
+              </div>
+
+              {/* Role Field */}
+              <div>
+                <Label htmlFor="role" className="text-sm font-semibold mb-2">Rol</Label>
+                <Select
+                  value={watch('role') || client.role}
+                  onValueChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Selecteer rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Address Fields */}

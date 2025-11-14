@@ -40,6 +40,7 @@ interface DataTableProps<TData, TValue> {
   emptyMessage?: string
   showSearchBar?: boolean
   showPagination?: boolean
+  showColumnToggle?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -50,6 +51,7 @@ export function DataTable<TData, TValue>({
   emptyMessage = "No results found.",
   showSearchBar = true,
   showPagination = true,
+  showColumnToggle = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -88,6 +90,7 @@ export function DataTable<TData, TValue>({
             className="max-w-sm"
           />
         )}
+        {showColumnToggle && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -116,9 +119,10 @@ export function DataTable<TData, TValue>({
               })}
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
-      <div className="rounded-md border bg-card">
-        <Table>
+      <div className="rounded-[18px] border border-[#e7e1d9] bg-card">
+        <Table containerClassName="overflow-hidden rounded-[18px]">
           <TableHeader className="bg-border">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

@@ -35,12 +35,11 @@ export default async function ClientDetailPage({
     redirect('/dashboard');
   }
 
-  // Fetch the client data
+  // Fetch the user data (allow viewing any role)
   const { data: client, error: clientError } = await supabase
     .from('users')
     .select('*')
     .eq('id', id)
-    .eq('role', 'client')
     .single();
 
   if (clientError || !client) {

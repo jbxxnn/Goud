@@ -66,6 +66,9 @@ export default function ClientsClient({
   const [totalPages, setTotalPages] = useState(initialPagination.totalPages);
   const [total, setTotal] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const roleOptions = ['client', 'staff', 'midwife', 'admin'] as const;
+  type RoleOption = (typeof roleOptions)[number];
+  const [selectedRole, setSelectedRole] = useState<RoleOption>('client');
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [comparisonStats, setComparisonStats] = useState<ClientStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -135,8 +138,11 @@ export default function ClientsClient({
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        role: 'client', // Only fetch clients
       });
+
+      if (selectedRole) {
+        params.append('role', selectedRole);
+      }
 
       if (searchQuery) {
         params.append('search', searchQuery);
@@ -162,7 +168,7 @@ export default function ClientsClient({
     } finally {
       setLoading(false);
     }
-  }, [page, limit, searchQuery]);
+  }, [page, limit, searchQuery, selectedRole]);
 
   // View client details
   const handleView = (client: User) => {
@@ -172,7 +178,7 @@ export default function ClientsClient({
   // Reset to page 1 when limit changes
   useEffect(() => {
     setPage(1);
-  }, [limit]);
+  }, [limit, selectedRole]);
 
   // Load data when filters change
   useEffect(() => {
@@ -190,6 +196,8 @@ export default function ClientsClient({
         ? `${format(dateRange.from, 'LLL dd, yyyy')} - ${format(dateRange.to, 'LLL dd, yyyy')}`
         : format(dateRange.from, 'LLL dd, yyyy')
       : 'Select date range';
+
+  const roleLabel = selectedRole ? `${selectedRole}s` : 'users';
 
   const currentStats: ClientStats =
     stats ?? {
@@ -278,12 +286,29 @@ export default function ClientsClient({
   return (
     <div className="space-y-6 p-6 bg-white" style={{ borderRadius: '0.5rem' }}>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-lg font-semibold tracking-tight">Clients</h1>
-            <p className="text-muted-foreground text-sm">Manage all client accounts</p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h1 className="text-md font-semibold tracking-tight">Clients</h1>
+              <p className="text-muted-foreground text-xs">Manage all client accounts</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Select
+                  value={selectedRole}
+                  onValueChange={(value) => setSelectedRole(value as RoleOption)}
+                >
+                  <SelectTrigger className="w-full sm:w-40 h-11 rounded-2xl border border-[#e7e1d9] bg-white text-sm">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             <div className="relative flex-1 min-w-[240px]">
               <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
@@ -361,16 +386,16 @@ export default function ClientsClient({
           {analyticsCards.map((card) => (
             <Card
               key={card.label}
-              className={`rounded-[18px] border border-[#efe7dd] bg-white transition-opacity ${
+              className={`border border-muted bg-white transition-opacity ${
                 statsLoading ? 'opacity-60' : 'opacity-100'
               }`}
-              style={{ borderRadius: '0.2rem' }}
+              style={{ borderRadius: '0.7rem' }}
             >
-              <CardContent className="p-5 space-y-4">
-                <div className="flex items-start justify-between">
+              <CardContent className="p-0">
+                <div className="flex items-start justify-between pt-4 px-4">
                   <div>
-                    <p className="text-sm font-medium text-[#7b6d5c]">{card.label}</p>
-                    <p className="text-[32px] font-semibold tracking-tight mt-3">
+                    <p className="text-sm font-medium text-primary">{card.label}</p>
+                    <p className="text-[32px] font-semibold tracking-tight mt-2">
                       {statsLoading ? (
                         <span className="inline-flex h-8 w-20 animate-pulse rounded bg-[#f4ede4]" />
                       ) : (
@@ -390,7 +415,7 @@ export default function ClientsClient({
                     {card.changeText}
                   </span>
                 </div>
-                <div className="text-xs text-muted-foreground border-t border-[#f1ebe3] pt-3">
+                <div className="bg-muted text-xs text-muted-foreground border-t border-muted p-3" style={{ borderRadius: '0 0 0.7rem 0.7rem' }}>
                   From {formattedRange}
                 </div>
               </CardContent>
@@ -415,16 +440,25 @@ export default function ClientsClient({
               <div className="rounded-full bg-muted p-3 mb-4">
                 <HugeiconsIcon icon={UserIcon} className="h-6 w-6 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium mb-2">No clients found</h3>
-              <p className="text-muted-foreground">
-                There are no clients matching your criteria
+              <h3 className="text-sm font-medium mb-2">
+                {selectedRole ? `No ${selectedRole}s found` : 'No users found'}
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                {selectedRole
+                  ? `There are no ${selectedRole}s matching your criteria`
+                  : 'There are no users matching your criteria'}
               </p>
             </div>
           ) : (
             <DataTable
               columns={createClientColumns({ onView: handleView })}
               data={clients}
-              emptyMessage="No clients to display."
+              emptyMessage={
+                selectedRole
+                  ? `No ${selectedRole}s to display.`
+                  : 'No users to display.'
+              }
+              showColumnToggle={false}
             />
           )}
         </div>
@@ -453,9 +487,12 @@ export default function ClientsClient({
               </Select>
               <span className="text-sm text-muted-foreground whitespace-nowrap">
                 {total > 0 ? (
-                  <>Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} clients</>
+                  <>
+                    Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total}{' '}
+                    {roleLabel}
+                  </>
                 ) : (
-                  <>No clients found</>
+                  <>No {roleLabel} found</>
                 )}
               </span>
             </div>
