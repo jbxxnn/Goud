@@ -152,9 +152,10 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
         // Fetch users (for user_id selection)
         const usersResponse = await fetch('/api/users');
         const usersData = await usersResponse.json();
-        console.log('Users API response:', usersData);
         if (usersData.success) {
-          const usersList = usersData.data || [];
+          const usersList = (usersData.data || []).filter(
+            (user) => user.role !== 'staff' && user.role !== 'midwife' && user.role !== 'admin'
+          );
           setUsers(usersList);
           setFilteredUsers(usersList);
         } else {

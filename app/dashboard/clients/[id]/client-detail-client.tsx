@@ -40,7 +40,7 @@ interface MidwifeResponse {
   data: Midwife[];
 }
 
-const ROLE_OPTIONS: UserRole[] = ['client', 'staff', 'midwife', 'admin'];
+const ROLE_OPTIONS: UserRole[] = ['client', 'midwife', 'admin'];
 
 export default function ClientDetailClient({ 
   clientId, 
@@ -616,6 +616,13 @@ export default function ClientDetailClient({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Wil je iemand als staff toewijzen? Ga naar{' '}
+                  <a href="/dashboard/staff" className="text-primary underline">
+                    /dashboard/staff
+                  </a>
+                  .
+                </p>
               </div>
 
               {/* Address Fields */}

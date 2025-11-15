@@ -33,6 +33,76 @@ export default function StaffClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
 
+  const ensureUserRoleIsStaff = useCallback(async (userId: string) => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'staff' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update user role');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      toast.error('User role not updated', {
+        description: errorMessage,
+      });
+    }
+  }, []);
+
+  const syncUserProfileFields = useCallback(
+    async (
+      userId: string,
+      fields: { first_name?: string; last_name?: string; phone?: string }
+    ) => {
+      if (!userId) return;
+
+      const payload: Record<string, string | null> = {};
+
+      if (fields.first_name !== undefined) {
+        payload.first_name = fields.first_name?.trim() ? fields.first_name : null;
+      }
+      if (fields.last_name !== undefined) {
+        payload.last_name = fields.last_name?.trim() ? fields.last_name : null;
+      }
+      if (fields.phone !== undefined) {
+        payload.phone = fields.phone?.trim() ? fields.phone : null;
+      }
+
+      if (Object.keys(payload).length === 0) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to sync user profile');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        toast.error('User profile not updated', {
+          description: errorMessage,
+        });
+      }
+    },
+    []
+  );
+
   // Fetch staff
   const fetchStaff = useCallback(async () => {
     try {
@@ -193,6 +263,24 @@ export default function StaffClient({
       // Refresh staff
       await fetchStaff();
       
+      const userIdForSync = editingStaff
+        ? editingStaff.user_id
+        : 'user_id' in data
+          ? data.user_id
+          : undefined;
+
+      if (!editingStaff && 'user_id' in data && data.user_id) {
+        await ensureUserRoleIsStaff(data.user_id);
+      }
+
+      if (userIdForSync) {
+        await syncUserProfileFields(userIdForSync, {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+        });
+      }
+
       // Show success toast
       const staffName = data.first_name && data.last_name 
         ? `${data.first_name} ${data.last_name}` 
