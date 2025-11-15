@@ -224,7 +224,7 @@ export default function BookingsClient({
   }, [fetchBookings]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -243,7 +243,7 @@ export default function BookingsClient({
             title="Status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-md px-3 py-1.5 text-sm h-9"
+            className="border rounded-md px-3 py-1.5 text-sm h-11"
             style={{ borderRadius: '0.2rem' }}
           >
             <option value="all">All</option>
@@ -317,6 +317,7 @@ export default function BookingsClient({
               )}
               data={bookings}
               emptyMessage="No bookings to display."
+              showColumnToggle={false}
             />
           )}
         </div>

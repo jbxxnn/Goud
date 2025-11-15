@@ -306,7 +306,7 @@ export default function StaffClient({
   }, [fetchStaff]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -359,6 +359,7 @@ export default function StaffClient({
               searchKey="first_name"
               searchPlaceholder="Search staff..."
               emptyMessage="No staff records found."
+              showColumnToggle={false}
             />
           )}
         </div>

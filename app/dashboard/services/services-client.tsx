@@ -206,7 +206,7 @@ export default function ServicesClient({
   }, [fetchServices]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -259,6 +259,7 @@ export default function ServicesClient({
               searchKey="name"
               searchPlaceholder="Search services..."
               emptyMessage="No services found. Add a new service to get started."
+              showColumnToggle={false}
             />
           )}
         </div>

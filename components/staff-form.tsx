@@ -154,7 +154,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
         const usersData = await usersResponse.json();
         if (usersData.success) {
           const usersList = (usersData.data || []).filter(
-            (user) => user.role !== 'staff' && user.role !== 'midwife' && user.role !== 'admin'
+            (user: User) => user.role !== 'staff' && user.role !== 'midwife' && user.role !== 'admin'
           );
           setUsers(usersList);
           setFilteredUsers(usersList);
@@ -411,7 +411,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={locationDropdownOpen}
-                className="w-full justify-between mt-1 bg-card h-9 border border-border active:bg-card hover:bg-card"
+                className="w-full justify-between mt-1 bg-card h-11 border border-border active:bg-card hover:bg-card"
                 style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">
@@ -482,7 +482,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 variant="outline"
                 role="combobox"
                 aria-expanded={serviceDropdownOpen}
-                className="w-full justify-between mt-1 bg-card h-9 border border-border active:bg-card hover:bg-card"
+                className="w-full justify-between mt-1 bg-card h-11 border border-border active:bg-card hover:bg-card"
                 style={{ borderRadius: '0.2rem' }}
               >
                 <span className="text-muted-foreground">

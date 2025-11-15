@@ -210,7 +210,7 @@ export default function MidwivesClient({
   }, [fetchMidwives]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -263,6 +263,7 @@ export default function MidwivesClient({
               searchKey="first_name"
               searchPlaceholder="Search midwives..."
               emptyMessage="No midwife records found."
+              showColumnToggle={false}
             />
           )}
         </div>

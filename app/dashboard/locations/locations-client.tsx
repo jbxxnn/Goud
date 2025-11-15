@@ -191,7 +191,7 @@ export default function LocationsClient({
   }, [fetchLocations]);
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -225,6 +225,7 @@ export default function LocationsClient({
               searchKey="name"
               searchPlaceholder="Search locations..."
               emptyMessage="No locations found. Add a new location to get started."
+              showColumnToggle={false}
             />
           )}
         </div>
