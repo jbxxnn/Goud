@@ -15,6 +15,8 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon} from '@hugeicons/core-free-icons';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 
 type UserRole = 'admin' | 'staff' | 'midwife' | 'client';
 
@@ -116,7 +118,11 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            <Link href="/">
+              <Image src="/Goudecho.png" alt="Logo" width={100} height={100} className="pointer-events-cursor" />
+            </Link>
+          </SidebarGroupLabel>
           <SidebarGroupContent className="mt-12">
             <SidebarMenu>
               {items.map((item) => {
