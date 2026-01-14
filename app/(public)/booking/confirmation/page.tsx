@@ -10,18 +10,18 @@ import { CheckmarkCircle03Icon, Calendar02Icon, DashboardSquare02Icon } from '@h
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('nl-NL', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  return date.toLocaleDateString('nl-NL', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 };
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('nl-NL', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return date.toLocaleTimeString('nl-NL', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -56,7 +56,7 @@ function BookingConfirmationContent() {
         setIsLoggedIn(false);
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -71,24 +71,24 @@ function BookingConfirmationContent() {
       try {
         const response = await fetch(`/api/bookings/${bookingId}`);
         const data = await response.json();
-        
+
         if (!response.ok || !data.booking) {
           throw new Error(data.error || 'Kon boekingsgegevens niet laden');
         }
-        
+
         setBooking(data.booking);
-        
+
         // Fetch policy fields for the service
         if (data.booking.service_id) {
           try {
             const policyResponse = await fetch(`/api/services/${data.booking.service_id}`);
             const policyData = await policyResponse.json();
-            
+
             // The API returns { success: true, data: {...} } or { service: {...} }
             const service = policyData.data || policyData.service;
             if (service?.policy_fields && Array.isArray(service.policy_fields)) {
               const fieldsMap: Record<string, PolicyField> = {};
-              service.policy_fields.forEach((field: PolicyField & { 
+              service.policy_fields.forEach((field: PolicyField & {
                 service_policy_field_choices?: Array<{ id: string; title: string; price?: number }>;
                 choices?: Array<{ id: string; title: string; price?: number }>;
               }) => {
@@ -121,13 +121,13 @@ function BookingConfirmationContent() {
 
   const generateCalendarLink = () => {
     if (!booking) return '';
-    
+
     const start = new Date(booking.start_time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const end = new Date(booking.end_time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const serviceName = booking.services?.name || 'Afspraak';
     const location = booking.locations?.name || '';
     const description = `Service: ${serviceName}${location ? `\\nLocatie: ${location}` : ''}`;
-    
+
     const params = new URLSearchParams({
       action: 'TEMPLATE',
       text: serviceName,
@@ -135,19 +135,19 @@ function BookingConfirmationContent() {
       details: description,
       location: location,
     });
-    
+
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   };
 
   const downloadICal = () => {
     if (!booking) return;
-    
+
     const start = new Date(booking.start_time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const end = new Date(booking.end_time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const serviceName = booking.services?.name || 'Afspraak';
     const location = booking.locations?.name || '';
     const description = `Service: ${serviceName}${location ? `\\nLocatie: ${location}` : ''}`;
-    
+
     const icalContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -162,7 +162,7 @@ function BookingConfirmationContent() {
       'END:VEVENT',
       'END:VCALENDAR',
     ].join('\r\n');
-    
+
     const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -198,7 +198,7 @@ function BookingConfirmationContent() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Fout</h1>
           <p className="text-gray-600 mb-8 text-lg leading-relaxed">{error || 'Kon boekingsgegevens niet laden'}</p>
-          <Button 
+          <Button
             onClick={() => router.push('/booking')}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-6 text-base shadow-lg"
           >
@@ -213,7 +213,7 @@ function BookingConfirmationContent() {
   const service = booking.services;
   const location = booking.locations;
   const staff = booking.staff;
-  
+
   const addonsTotal = (booking.addons || []).reduce((sum, addon) => sum + (addon.price_eur_cents * addon.quantity), 0);
   const policyTotal = (() => {
     if (!booking.policy_answers || !Array.isArray(booking.policy_answers)) return 0;
@@ -232,7 +232,7 @@ function BookingConfirmationContent() {
     <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         {/* Success Header */}
-        <div className="text-center mb-10">
+        {/* <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center rounded-full bg-primary/10 mb-6">
             <HugeiconsIcon icon={CheckmarkCircle03Icon} className="w-10 h-10 text-primary" />
           </div>
@@ -241,26 +241,18 @@ function BookingConfirmationContent() {
             {dayName} {headerDate}
           </h1>
           <div className="text-lg text-gray-600 font-medium">{headerTime}</div>
-        </div>
+        </div> */}
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button
-              onClick={() => window.open(generateCalendarLink(), '_blank')}
-              variant="outline"
-              className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
-            >
-              Toevoegen aan agenda
-            </Button>
-            <Button
-              onClick={downloadICal}
-              variant="outline"
-              className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
-            >
-              Download iCal
-            </Button>
-          </div>
+
         {/* Main Card */}
-        <div className="bg-white max-w-lg w-full mx-auto rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+        <div className="flex flex-col max-w-lg w-full rounded-t-2xl mx-auto py-4 px-2 gap-1 items-center justify-center bg-primary">
+          <div className="text-sm font-medium text-primary-foreground">Boeking Bevestigd</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary-foreground">
+            {dayName} {headerDate}
+          </h1>
+          <div className="text-lg text-primary-foreground font-medium">{headerTime}</div>
+        </div>
+        <div className="bg-white max-w-lg w-full mx-auto rounded-b-2xl shadow-sm border border-gray-200/60 overflow-hidden">
           {/* Booking Details Section */}
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-20 justify-center">
@@ -299,7 +291,7 @@ function BookingConfirmationContent() {
                 </div>
               )}
             </div>
-           
+
           </div>
 
           {/* Price Breakdown */}
@@ -312,21 +304,21 @@ function BookingConfirmationContent() {
                 <span className="text-gray-600">Basis Service</span>
                 <span className="font-semibold text-gray-900">{formatEuroCents(basePrice)}</span>
               </div>
-              
+
               {policyTotal > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Servicebeleid</span>
                   <span className="font-semibold text-gray-900">{formatEuroCents(policyTotal)}</span>
                 </div>
               )}
-              
+
               {addonsTotal > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">Add-ons</span>
                   <span className="font-semibold text-gray-900">{formatEuroCents(addonsTotal)}</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
                 <span className="text-base font-semibold text-gray-900">Totaal</span>
                 <span className="text-xl font-bold text-primary">{formatEuroCents(booking.price_eur_cents)}</span>
@@ -365,7 +357,7 @@ function BookingConfirmationContent() {
                 {(() => {
                   // Handle both array and object formats
                   let answers: Array<{ fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }> = [];
-                  
+
                   if (Array.isArray(booking.policy_answers)) {
                     answers = booking.policy_answers;
                   } else if (typeof booking.policy_answers === 'object' && booking.policy_answers !== null) {
@@ -387,19 +379,19 @@ function BookingConfirmationContent() {
                       };
                     });
                   }
-                  
+
                   if (answers.length === 0) return null;
-                  
+
                   return answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
                     // Handle both fieldId and field_id formats
                     const fieldId = answer.fieldId || answer.field_id;
                     const field = fieldId ? policyFields[fieldId] : null;
                     const questionText = field?.title || fieldId || 'Onbekend veld';
-                    
+
                     // Format the answer value
                     let answerText = 'N/A';
                     const rawValue = answer.value;
-                    
+
                     if (rawValue !== undefined && rawValue !== null) {
                       if (Array.isArray(rawValue)) {
                         // Handle array of values (for multi_choice fields)
@@ -440,7 +432,7 @@ function BookingConfirmationContent() {
                         answerText = String(rawValue);
                       }
                     }
-                    
+
                     return (
                       <div key={fieldId || index} className="py-2">
                         <div className="text-xs font-medium text-gray-500 mb-1">{questionText}</div>
@@ -487,29 +479,45 @@ function BookingConfirmationContent() {
 
           {/* Status */}
           <div className="p-6 bg-gray-50/50 flex items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 justify-between">
-             <Button
-              onClick={() => router.push('/booking')}
-              variant={isLoggedIn ? "outline" : "default"}
-              className={`flex-1 h-11 font-semibold ${
-                isLoggedIn 
-                  ? 'border-gray-300 hover:bg-gray-50' 
-                  : 'bg-primary hover:bg-primary/90 text-white'
-              }`}
-            >
-              Nieuwe Boeking
-            </Button>
-            {isLoggedIn && (
+            <div className="flex flex-col sm:flex-row gap-3 justify-between">
               <Button
-                onClick={() => router.push('/dashboard')}
-                className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold h-11"
+                onClick={() => router.push('/booking')}
+                variant={isLoggedIn ? "outline" : "default"}
+                className={`flex-1 h-auto px-8 font-semibold  ${isLoggedIn
+                  ? 'border-gray-300 hover:bg-gray-50'
+                  : 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg transition-all duration-300 ease-in-out'
+                  }`}
+                style={{ borderRadius: '1rem' }}
               >
-                <HugeiconsIcon icon={DashboardSquare02Icon} className="w-4 h-4 mr-2" />
-                Naar Dashboard
+                Nieuwe Boeking
               </Button>
-            )}
+              {isLoggedIn && (
+                <Button
+                  onClick={() => router.push('/dashboard')}
+                  className="h-auto px-8 bg-primary shadow-lg hover:bg-secondary-foreground text-white font-medium hover:shadow-lg transition-all duration-300 ease-in-out" style={{ borderRadius: '1rem' }}
+                >
+                  {/* <HugeiconsIcon icon={DashboardSquare02Icon} className="w-4 h-4 mr-2" /> */}
+                  Naar Dashboard
+                </Button>
+              )}
+            </div>
           </div>
-          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            onClick={() => window.open(generateCalendarLink(), '_blank')}
+            variant="outline"
+            className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
+          >
+            Toevoegen aan agenda
+          </Button>
+          <Button
+            onClick={downloadICal}
+            variant="outline"
+            className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
+          >
+            Download iCal
+          </Button>
         </div>
 
         {/* Booking ID */}

@@ -20,6 +20,7 @@ export type CreateBookingInput = {
   city?: string;
   policyAnswers?: BookingPolicyAnswer[] | null;
   addons?: BookingAddonSelection[] | null;
+  createdBy?: string;
 };
 
 export async function createBooking(input: CreateBookingInput) {
@@ -68,6 +69,7 @@ export async function createBooking(input: CreateBookingInput) {
   if (start < minStartAllowed) throw new Error('Lead time not satisfied');
 
   // Attempt insert; unique index on (shift_id, start_time, end_time) prevents double-booking
+
   const { data: booking, error: insertErr } = await supabase
     .from('bookings')
     .insert({
@@ -90,6 +92,7 @@ export async function createBooking(input: CreateBookingInput) {
       street_name: input.streetName || null,
       city: input.city || null,
       policy_answers: input.policyAnswers && input.policyAnswers.length > 0 ? input.policyAnswers : null,
+      created_by: input.createdBy || null,
     })
     .select('*')
     .single();

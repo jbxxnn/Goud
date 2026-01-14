@@ -45,55 +45,94 @@ export async function POST(req: NextRequest) {
       priceEurCents,
       policyAnswers,
       addons,
+      midwifeClientEmail,
     } = parsed.data;
+
+    // Resolve created_by:
+    // 1. If midwifeClientEmail provided, look up that user's ID (midwife booking for client)
+    // 2. Otherwise use the currently logged-in user's ID
+    let createdByUserId: string | undefined;
+
+    if (midwifeClientEmail) {
+      const supabase = getServiceSupabase();
+      const { data: cwUser } = await supabase
+        .from('users')
+        .select('id')
+        .ilike('email', midwifeClientEmail)
+        .maybeSingle();
+
+      if (cwUser?.id) {
+        createdByUserId = cwUser.id;
+      } else {
+        // User not found, create new account for client
+        const newUser = await createUserAndProfile({
+          email: midwifeClientEmail,
+          firstName: firstName,
+          lastName: lastName,
+        });
+        createdByUserId = newUser.id;
+      }
+    }
+
+    if (!createdByUserId) {
+      const authHeader = req.headers.get('Authorization');
+      const token = authHeader?.replace('Bearer ', '') || '';
+      const sessionResponse = await getServiceSupabase().auth.getUser(token);
+      createdByUserId = sessionResponse.data.user?.id;
+    }
 
     // Resolve client id: use provided or find/create by email
     let resolvedClientId = clientId as string | undefined;
     if (!resolvedClientId && clientEmail) {
       const supabase = getServiceSupabase();
+      // Logic for resolving client_id (Booking Owner)
+      // Note: If this is a midwife booking, clientEmail is the midwife's email, so resolvedClientId = Midwife ID.
+      // If regular booking, clientEmail is user's email, resolvedClientId = User ID.
       const { data: existing } = await supabase
         .from('users')
         .select('id')
         .ilike('email', clientEmail)
         .limit(1)
         .maybeSingle();
+
       if (existing?.id) {
         resolvedClientId = existing.id;
-        // Update only fields that are provided (non-empty) to allow users to update their info during checkout
-        const updates: Record<string, string | null> = {};
-        if (firstName !== undefined && firstName !== '') updates.first_name = firstName;
-        if (lastName !== undefined && lastName !== '') updates.last_name = lastName;
-        if (phone !== undefined && phone !== '') updates.phone = phone;
-        if (address !== undefined && address !== '') updates.address = address;
-        if (postalCode !== undefined && postalCode !== '') updates.postal_code = postalCode;
-        if (houseNumber !== undefined && houseNumber !== '') updates.house_number = houseNumber;
-        if (streetName !== undefined && streetName !== '') updates.street_name = streetName;
-        if (city !== undefined && city !== '') updates.city = city;
-        if (birthDate !== undefined && birthDate !== '') updates.birth_date = birthDate;
-        // midwifeId is a UUID string (validated by zod), so check if it's provided
-        // Check explicitly for undefined, null, and empty string to handle all cases
-        if (midwifeId !== undefined && midwifeId !== null && midwifeId !== '' && typeof midwifeId === 'string') {
-          updates.midwife_id = midwifeId.trim();
-        }
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('users').update(updates).eq('id', existing.id);
-        }
       } else {
+        // Fallback if no user exists for clientEmail (unlikely for logged-in user, but possible)
         const user = await createUserAndProfile({ email: clientEmail, firstName, lastName });
         resolvedClientId = user.id;
-        await getServiceSupabase()
-          .from('users')
-          .update({ 
-            phone: phone ?? null, 
-            address: address ?? null,
-            postal_code: postalCode ?? null,
-            house_number: houseNumber ?? null,
-            street_name: streetName ?? null,
-            city: city ?? null,
-            birth_date: birthDate ?? null,
-            midwife_id: (midwifeId && typeof midwifeId === 'string' && midwifeId.trim() !== '') ? midwifeId.trim() : null,
-          })
-          .eq('id', user.id);
+      }
+    }
+
+    // UPDATE PROFILE DATA LOGIC
+    // We update the profile of whoever the "Target" is.
+    // If midwifeClientEmail is present -> Target is createdByUserId (The Client).
+    // If NOT present -> Target is resolvedClientId (The User booking for themselves).
+
+    const targetUpdateUserId = midwifeClientEmail ? createdByUserId : resolvedClientId;
+
+    if (targetUpdateUserId) {
+      const supabase = getServiceSupabase();
+      const updates: Record<string, string | null> = {};
+      if (firstName !== undefined && firstName !== '') updates.first_name = firstName;
+      if (lastName !== undefined && lastName !== '') updates.last_name = lastName;
+      if (phone !== undefined && phone !== '') updates.phone = phone;
+      if (address !== undefined && address !== '') updates.address = address;
+      if (postalCode !== undefined && postalCode !== '') updates.postal_code = postalCode;
+      if (houseNumber !== undefined && houseNumber !== '') updates.house_number = houseNumber;
+      if (streetName !== undefined && streetName !== '') updates.street_name = streetName;
+      if (city !== undefined && city !== '') updates.city = city;
+      if (birthDate !== undefined && birthDate !== '') updates.birth_date = birthDate;
+
+      // midwifeId logic:
+      // If midwife is booking (midwifeClientEmail present), we might want to set the client's midwife_id to THIS midwife.
+      // Assuming 'midwifeId' in payload is the selected midwife from dropdown.
+      if (midwifeId !== undefined && midwifeId !== null && midwifeId !== '' && typeof midwifeId === 'string') {
+        updates.midwife_id = midwifeId.trim();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('users').update(updates).eq('id', targetUpdateUserId);
       }
     }
 
@@ -116,6 +155,7 @@ export async function POST(req: NextRequest) {
       city,
       policyAnswers,
       addons,
+      createdBy: createdByUserId,
     });
 
     return NextResponse.json({ booking });
@@ -145,11 +185,11 @@ export async function GET(req: NextRequest) {
         .from('users')
         .select('id')
         .or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
-      
+
       if (userSearchError) {
         return NextResponse.json({ error: 'Failed to search users' }, { status: 500 });
       }
-      
+
       matchingUserIds = matchingUsers?.map(u => u.id) || [];
       if (matchingUserIds.length === 0) {
         // No matching users, return empty result
@@ -233,7 +273,7 @@ export async function GET(req: NextRequest) {
       quantity: number;
       price_eur_cents: number;
     }>> = {};
-    
+
     if (bookingIds.length > 0) {
       const { data: addonsData } = await supabase
         .from('booking_addons')
@@ -249,14 +289,14 @@ export async function GET(req: NextRequest) {
           )
         `)
         .in('booking_id', bookingIds);
-      
+
       // Group addons by booking_id
       for (const addon of addonsData || []) {
         if (!addon.booking_id) continue;
-        const serviceAddon = Array.isArray(addon.service_addons) 
-          ? addon.service_addons[0] 
+        const serviceAddon = Array.isArray(addon.service_addons)
+          ? addon.service_addons[0]
           : addon.service_addons;
-        
+
         if (!addonsMap[addon.booking_id]) {
           addonsMap[addon.booking_id] = [];
         }

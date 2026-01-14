@@ -3,7 +3,8 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
-
+import { ArrowMoveDownRightIcon, ArrowExpand01Icon, ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "@/lib/utils"
 
 const Select = SelectPrimitive.Root
@@ -19,16 +20,31 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-11 w-full items-center justify-between rounded-sm border border-border bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-      "ring-0 focus:ring-0 focus:ring-offset-0 focus:border-border focus-visible:border-border focus-visible:ring-0 focus-visible:ring-offset-0",
+      "group flex h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-base shadow-md ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 hover:bg-white hover:border hover:border-accent focus:bg-white transition-all duration-200",
       className
     )}
-    style={{ borderRadius: '0.2rem' }}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <div className="relative h-6 w-6">
+        {/* <span className="absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out group-data-[state=open]:scale-0 group-data-[state=open]:opacity-0 group-data-[state=open]:rotate-90">
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
+            size={24}
+            color="gray"
+            strokeWidth={1.5}
+          />
+        </span>
+        <span className="absolute inset-0 flex items-center justify-center scale-0 opacity-0 -rotate-90 transition-all duration-300 ease-in-out group-data-[state=open]:scale-100 group-data-[state=open]:opacity-100 group-data-[state=open]:rotate-0">
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            size={24}
+            color="gray"
+            strokeWidth={1.5}
+          />
+        </span> */}
+      </div>
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -77,11 +93,14 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "relative z-50 max-h-96 min-w-[4rem] overflow-hidden border border-gray-50 bg-popover text-popover-foreground shadow-md duration-300 ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         position === "popper" &&
-          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+        "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
         className
       )}
+      style={{
+        borderRadius: "1rem",
+      }}
       position={position}
       {...props}
     >
@@ -90,7 +109,7 @@ const SelectContent = React.forwardRef<
         className={cn(
           "p-1",
           position === "popper" &&
-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
+          "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
       >
         {children}
@@ -120,9 +139,12 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
+    style={{
+      borderRadius: "0.5rem",
+    }}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
@@ -150,13 +172,13 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
 export {
   Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
   SelectContent,
-  SelectLabel,
+  SelectGroup,
   SelectItem,
-  SelectSeparator,
-  SelectScrollUpButton,
+  SelectLabel,
   SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
 }

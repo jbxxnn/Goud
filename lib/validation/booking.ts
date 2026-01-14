@@ -65,6 +65,7 @@ export const bookingContactSchema = z.object({
   streetName: optionalText('Straatnaam', 255).optional(),
   city: optionalText('Woonplaats', 100).optional(),
   notes: optionalText('Notities', 500).optional(),
+  midwifeClientEmail: emailSchema.optional().or(z.literal('')),
 });
 
 export type BookingContactInput = z.infer<typeof bookingContactSchema>;
