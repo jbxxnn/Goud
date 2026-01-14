@@ -9,11 +9,11 @@ import { HugeiconsIcon } from '@hugeicons/react';
 // import { TrendingUp } from 'lucide-react';
 import {
   CalendarCheckInIcon,
-//   ClockIcon,
+  //   ClockIcon,
   CoinsEuroIcon,
   InformationCircleIcon,
   Loading03Icon,
-//   UserIcon,
+  //   UserIcon,
 } from '@hugeicons/core-free-icons';
 import {
   ResponsiveContainer,
@@ -112,32 +112,32 @@ const metricConfig: Array<{
   prefix?: string;
   icon: typeof CoinsEuroIcon;
 }> = [
-  {
-    key: 'revenue',
-    label: 'Total revenue',
-    helper: 'vs previous period',
-    prefix: '€',
-    icon: CoinsEuroIcon,
-  },
-  {
-    key: 'clients',
-    label: 'Total clients',
-    helper: 'vs previous period',
-    icon: InformationCircleIcon,
-  },
-  {
-    key: 'appointmentsToday',
-    label: 'Appointments today',
-    helper: 'vs yesterday',
-    icon: CalendarCheckInIcon,
-  },
-//   {
-//     key: 'activeStaff',
-//     label: 'Active staff',
-//     helper: 'vs previous period',
-//     icon: UserIcon,
-//   },
-];
+    {
+      key: 'revenue',
+      label: 'Total revenue',
+      helper: 'vs previous period',
+      prefix: '€',
+      icon: CoinsEuroIcon,
+    },
+    {
+      key: 'clients',
+      label: 'Total clients',
+      helper: 'vs previous period',
+      icon: InformationCircleIcon,
+    },
+    {
+      key: 'appointmentsToday',
+      label: 'Appointments today',
+      helper: 'vs yesterday',
+      icon: CalendarCheckInIcon,
+    },
+    //   {
+    //     key: 'activeStaff',
+    //     label: 'Active staff',
+    //     helper: 'vs previous period',
+    //     icon: UserIcon,
+    //   },
+  ];
 
 // const rangeOptions: Array<{ key: 'week' | 'month' | 'year'; label: string }> = [
 //   { key: 'week', label: 'Week' },
@@ -161,7 +161,7 @@ const formatDelta = (value?: number) => {
   return `${prefix}${rounded}%`;
 };
 
-const statusBadgeVariant = (status: BookingStatus) => {
+const statusBadgeVariant = (status: BookingStatus | string) => {
   switch (status) {
     case 'confirmed':
       return 'default';
@@ -177,9 +177,9 @@ const statusBadgeVariant = (status: BookingStatus) => {
 export default function DashboardClient() {
   const [insights, setInsights] = useState<DashboardInsights | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(true);
-  const [insightsRange, 
+  const [insightsRange,
     // setInsightsRange
-] = useState<'week' | 'month' | 'year'>('week');
+  ] = useState<'week' | 'month' | 'year'>('week');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [upcomingAppointments, setUpcomingAppointments] = useState<Booking[]>([]);
   const [appointmentsCount, setAppointmentsCount] = useState(0);
@@ -318,10 +318,10 @@ export default function DashboardClient() {
     [insights?.serviceDistribution]
   );
   const activeService = serviceDistribution[activeServiceIndex];
-//   const totalServiceBookings = useMemo(
-//     () => serviceDistribution.reduce((sum, entry) => sum + entry.value, 0),
-//     [serviceDistribution]
-//   );
+  //   const totalServiceBookings = useMemo(
+  //     () => serviceDistribution.reduce((sum, entry) => sum + entry.value, 0),
+  //     [serviceDistribution]
+  //   );
 
   const formatClientName = (booking: Booking) => {
     if (booking.users?.first_name && booking.users?.last_name) {
@@ -371,10 +371,10 @@ export default function DashboardClient() {
                     <div className="flex items-center justify-between p-4 pb-0">
                       <div>
 
-                      <div className="flex items-center gap-2">
-                        <HugeiconsIcon icon={config.icon} className="h-3 w-3 text-primary" />
-                        <p className="text-xs text-muted-foreground">{config.label}</p>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <HugeiconsIcon icon={config.icon} className="h-3 w-3 text-primary" />
+                          <p className="text-xs text-muted-foreground">{config.label}</p>
+                        </div>
                         <p className="mt-2 text-3xl font-semibold">{formattedValue}</p>
                       </div>
                     </div>
@@ -510,8 +510,8 @@ export default function DashboardClient() {
                     {insights?.range === 'week'
                       ? 'Last 7 days'
                       : insights?.range === 'month'
-                      ? 'Last 6 weeks'
-                      : 'Year to date'}
+                        ? 'Last 6 weeks'
+                        : 'Year to date'}
                   </span>
                 </div>
                 <div className="mt-6 h-[240px]">
@@ -540,7 +540,7 @@ export default function DashboardClient() {
                         <Tooltip
                           formatter={(value: number | string) => formatEuro(value as number)}
                           contentStyle={{ borderRadius: 5, borderColor: '#f2ebe0', backgroundColor: '#F6EAE4', fontSize: 12 }}
-                          
+
                         />
                         <Line
                           type="monotone"
@@ -800,9 +800,9 @@ export default function DashboardClient() {
                     <div key={booking.id} className="flex gap-3">
                       <div className="flex-1 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
                         <div className="flex items-center justify-between">
-                        <div className="w-10 text-xs font-semibold text-muted-foreground">
-                        {formatTime(booking.start_time)}
-                      </div>
+                          <div className="w-10 text-xs font-semibold text-muted-foreground">
+                            {formatTime(booking.start_time)}
+                          </div>
                           <div>
                             <p className="text-sm font-semibold">
                               {booking.services?.name || 'Unknown service'}
@@ -843,7 +843,7 @@ export default function DashboardClient() {
                     >
                       <div className="flex items-center justify-between text-sm">
                         <p className="font-medium">{item.message}</p>
-                            {/* <Badge variant={statusBadgeVariant(item.status)} className="text-xs capitalize">
+                        {/* <Badge variant={statusBadgeVariant(item.status)} className="text-xs capitalize">
                             {item.status}
                             </Badge> */}
                       </div>

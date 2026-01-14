@@ -62,14 +62,18 @@ export type BookingState = {
   timestamp: number; // to detect stale data
 };
 
+export type BookingStatus = 'confirmed' | 'pending' | 'cancelled';
 
 export interface Booking {
   id: string;
   created_at: string;
+  updated_at: string; // Added updated_at
   start_time: string;
   end_time: string;
-  status: string;
+  status: BookingStatus | string; // Keep string for safety against DB values not matching exactly yet
+  payment_status: string; // Added payment_status
   price_eur_cents: number;
+  notes: string | null; // Added notes
   service_id: string;
   location_id: string;
   staff_id: string | null;
@@ -111,5 +115,29 @@ export interface Booking {
   }> | Record<string, any> | null;
 }
 
+export interface RecentBookingSummary {
+  id: string;
+  clientName: string;
+  clientEmail?: string;
+  serviceName: string;
+  serviceCode?: string;
+  staffName?: string;
+  locationName?: string;
+  startTime: string;
+  status: BookingStatus | string;
+}
+
 export const BOOKING_STATE_KEY = 'goudecho_booking_state';
 export const STATE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+export interface BookingsResponse {
+  success: boolean;
+  data?: Booking[];
+  error?: string;
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
+}
