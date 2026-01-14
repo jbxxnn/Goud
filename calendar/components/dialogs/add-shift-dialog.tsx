@@ -43,9 +43,12 @@ interface ShiftFormData {
   max_concurrent_bookings: { [key: string]: number | null };
 }
 
+import { useTranslations } from 'next-intl';
+
 export function AddShiftDialog({ children, startDate, startTime, onShiftCreated }: IProps) {
+  const t = useTranslations('Shifts.dialog.add');
   const { isOpen, onClose, onToggle } = useDisclosure();
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -85,7 +88,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
         // Get cache version from localStorage (updated on mutations) or use timestamp
         const { getStaffAssignmentsCacheVersion } = await import('@/lib/utils/cache-invalidation');
         const cacheVersion = getStaffAssignmentsCacheVersion();
-        
+
         // Fetch all data in parallel - single API call for staff with assignments
         // Add cache version to bust cache when mutations occur
         const [staffResponse, locationsResponse, servicesResponse] = await Promise.all([
@@ -105,16 +108,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
         if (staffData.success) {
           const staffList = staffData.data || [];
           setStaff(staffList);
-          
+
           // Build staff-location and staff-service mappings from the single response
           const locationMapping: { [key: string]: string[] } = {};
           const serviceMapping: { [key: string]: string[] } = {};
-          
+
           for (const member of staffList) {
             locationMapping[member.id] = member.location_ids || [];
             serviceMapping[member.id] = member.service_ids || [];
           }
-          
+
           setStaffLocationMap(locationMapping);
           setStaffServiceMap(serviceMapping);
         }
@@ -148,7 +151,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     if (isOpen && startDate && startTime) {
       const start = new Date(startDate);
       start.setHours(startTime.hour, startTime.minute, 0, 0);
-      
+
       const end = new Date(start);
       end.setHours(start.getHours() + 1); // Default 1 hour duration
 
@@ -157,7 +160,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     } else if (isOpen && startDate) {
       const start = new Date(startDate);
       start.setHours(9, 0, 0, 0); // Default 9 AM
-      
+
       const end = new Date(start);
       end.setHours(17, 0, 0, 0); // Default 5 PM
 
@@ -214,7 +217,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
       if (!result.success) {
         if (result.conflicts) {
-          alert(`Shift conflicts detected:\n${result.conflicts.map((c: any) => c.message).join('\n')}`);
+          alert(`${t('conflicts')}:\n${result.conflicts.map((c: any) => c.message).join('\n')}`);
         } else {
           throw new Error(result.error || 'Failed to save shift');
         }
@@ -225,7 +228,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       onClose();
       reset();
       setSelectedServices([]);
-      
+
       if (onShiftCreated) {
         onShiftCreated();
       }
@@ -263,13 +266,13 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   // Handle staff selection change
   const handleStaffChange = (staffId: string) => {
     setValue('staff_id', staffId);
-    
+
     // If location is selected but not in staff's locations, clear it
     const currentLocation = watch('location_id');
     if (currentLocation && !staffLocationMap[staffId]?.includes(currentLocation)) {
       setValue('location_id', '');
     }
-    
+
     // Auto-select all services that this staff member can perform
     const staffServices = staffServiceMap[staffId] || [];
     setSelectedServices(staffServices);
@@ -278,7 +281,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   // Handle location selection change
   const handleLocationChange = (locationId: string) => {
     setValue('location_id', locationId);
-    
+
     // If staff is selected but not assigned to this location, clear it
     const currentStaff = watch('staff_id');
     if (currentStaff && !staffLocationMap[currentStaff]?.includes(locationId)) {
@@ -300,23 +303,23 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     <Dialog open={isOpen} onOpenChange={onToggle}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] rounded-xl">
         <DialogHeader>
-          <DialogTitle>Add New Shift</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
           <form id="shift-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Staff Selection */}
             <div>
-              <Label htmlFor="staff_id">Staff Member *</Label>
+              <Label htmlFor="staff_id">{t('staffMember')}</Label>
               <Select
                 value={watch('staff_id')}
                 onValueChange={handleStaffChange}
                 disabled={isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Loading..." : "Select staff member"} />
+                  <SelectValue placeholder={isLoading ? t('loadingStaff') : t('selectStaff')} />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoading ? (
@@ -325,7 +328,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     </div>
                   ) : filteredStaff.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      {watch('location_id') 
+                      {watch('location_id')
                         ? 'No staff assigned to this location'
                         : 'No staff available'}
                     </div>
@@ -350,25 +353,25 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
             {/* Location Selection */}
             <div>
-              <Label htmlFor="location_id">Location *</Label>
+              <Label htmlFor="location_id">{t('location')}</Label>
               <Select
                 value={watch('location_id')}
                 onValueChange={handleLocationChange}
                 disabled={isLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={isLoading ? "Loading..." : "Select location"} />
+                  <SelectValue placeholder={isLoading ? t('loadingLocations') : t('selectLocation')} />
                 </SelectTrigger>
                 <SelectContent>
                   {isLoading ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      Loading locations...
+                      {t('loadingLocations')}
                     </div>
                   ) : filteredLocations.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      {watch('staff_id') 
-                        ? 'Selected staff is not assigned to any locations'
-                        : 'No locations available'}
+                      {watch('staff_id')
+                        ? t('noLocationStaff')
+                        : t('noLocationAvailable')}
                     </div>
                   ) : (
                     filteredLocations.map((l) => (
@@ -392,11 +395,11 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             {/* Date and Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="start_time">Start Time *</Label>
+                <Label htmlFor="start_time">{t('startTime')}</Label>
                 <Input
                   id="start_time"
                   type="datetime-local"
-                  {...register('start_time', { required: 'Start time is required' })}
+                  {...register('start_time', { required: t('startTime') + ' is required' })}
                 />
                 {errors.start_time && (
                   <p className="text-sm text-destructive mt-1">{errors.start_time.message}</p>
@@ -404,11 +407,11 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               </div>
 
               <div>
-                <Label htmlFor="end_time">End Time *</Label>
+                <Label htmlFor="end_time">{t('endTime')}</Label>
                 <Input
                   id="end_time"
                   type="datetime-local"
-                  {...register('end_time', { required: 'End time is required' })}
+                  {...register('end_time', { required: t('endTime') + ' is required' })}
                 />
                 {errors.end_time && (
                   <p className="text-sm text-destructive mt-1">{errors.end_time.message}</p>
@@ -424,31 +427,31 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                   checked={watch('is_recurring')}
                   onCheckedChange={(checked) => setValue('is_recurring', checked)}
                 />
-                <Label htmlFor="is_recurring">Recurring Shift</Label>
+                <Label htmlFor="is_recurring">{t('recurring')}</Label>
               </div>
 
               {watch('is_recurring') && (
                 <div className="space-y-3 pl-6 border-l-2 border-muted">
                   <div>
-                    <Label htmlFor="recurrence_frequency">Frequency *</Label>
+                    <Label htmlFor="recurrence_frequency">{t('frequency')}</Label>
                     <Select
                       value={watch('recurrence_frequency')}
                       onValueChange={(value) => setValue('recurrence_frequency', value as any)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
+                        <SelectValue placeholder={t('frequency')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="DAILY">Daily</SelectItem>
-                        <SelectItem value="WEEKLY">Weekly</SelectItem>
-                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                        <SelectItem value="DAILY">{t('daily')}</SelectItem>
+                        <SelectItem value="WEEKLY">{t('weekly')}</SelectItem>
+                        <SelectItem value="MONTHLY">{t('monthly')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {watch('recurrence_frequency') === 'WEEKLY' && (
                     <div>
-                      <Label>Days of Week</Label>
+                      <Label>{t('daysOfWeek')}</Label>
                       <div className="grid grid-cols-4 gap-2 mt-2">
                         {weekDays.map((day) => (
                           <div key={day.value} className="flex items-center space-x-2">
@@ -475,14 +478,14 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                   )}
 
                   <div>
-                    <Label htmlFor="recurrence_until">Repeat Until</Label>
+                    <Label htmlFor="recurrence_until">{t('repeatUntil')}</Label>
                     <Input
                       id="recurrence_until"
                       type="date"
                       {...register('recurrence_until')}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
-                      Leave empty to repeat indefinitely
+                      {t('repeatIndefinitely')}
                     </p>
                   </div>
                 </div>
@@ -492,7 +495,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             {/* Services */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Services *</Label>
+                <Label>{t('services')}</Label>
                 {watch('staff_id') && filteredServices.length > 0 && (
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -501,7 +504,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                       onCheckedChange={setShowServices}
                     />
                     <Label htmlFor="show-services" className="text-xs font-normal cursor-pointer">
-                      Customize services
+                      {t('customizeServices')}
                     </Label>
                   </div>
                 )}
@@ -509,13 +512,13 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
               {!watch('staff_id') && (
                 <p className="text-xs text-muted-foreground mb-2">
-                  Select a staff member first
+                  {t('selectStaffFirst')}
                 </p>
               )}
 
               {watch('staff_id') && filteredServices.length === 0 && (
                 <p className="text-xs text-amber-600 mb-2">
-                  Selected staff member is not qualified for any services
+                  {t('noQualifiedServices')}
                 </p>
               )}
 
@@ -523,13 +526,13 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                 <div className="border rounded-lg p-3 bg-muted/30">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} selected
+                      {t('servicesSelected', { count: selectedServices.length, s: selectedServices.length !== 1 ? 's' : '' })}
                     </span>
                     <span>•</span>
-                    <span>All staff services included</span>
+                    <span>{t('allServicesIncluded')}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Toggle "Customize services" to view and modify
+                    {t('toggleCustomize')}
                   </p>
                 </div>
               )}
@@ -538,16 +541,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                 <div className="mt-2 space-y-2 border rounded-lg p-3 max-h-48 overflow-y-auto">
                   {!watch('staff_id') ? (
                     <div className="py-4 text-center text-sm text-muted-foreground">
-                      Please select a staff member to see their qualified services
+                      {t('viewQualified')}
                     </div>
                   ) : filteredServices.length === 0 ? (
                     <div className="py-4 text-center text-sm text-muted-foreground">
-                      This staff member has no service qualifications assigned
+                      {t('noQualifications')}
                     </div>
                   ) : (
                     <>
                       <p className="text-xs text-muted-foreground mb-2">
-                        Showing {selectedServices.length} of {filteredServices.length} services selected
+                        {t('showingServices', { count: selectedServices.length, total: filteredServices.length })}
                       </p>
                       {filteredServices.map((service) => (
                         <div key={service.id} className="flex items-start space-x-2">
@@ -564,7 +567,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                               <Input
                                 type="number"
                                 min="1"
-                                placeholder="Max bookings (optional)"
+                                placeholder={t('maxBookings')}
                                 value={watch(`max_concurrent_bookings.${service.id}`) || ''}
                                 onChange={(e) => {
                                   const value = e.target.value ? parseInt(e.target.value) : null;
@@ -585,7 +588,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             {/* Priority */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="priority">{t('priority')}</Label>
                 <Input
                   id="priority"
                   type="number"
@@ -597,11 +600,11 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
             {/* Notes */}
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea
                 id="notes"
                 {...register('notes')}
-                placeholder="Optional notes"
+                placeholder={t('optionalNotes')}
                 rows={2}
               />
             </div>
@@ -611,16 +614,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t('cancel')}
             </Button>
           </DialogClose>
 
-          <Button 
-            form="shift-form" 
-            type="submit" 
+          <Button
+            form="shift-form"
+            type="submit"
             disabled={isSubmitting || selectedServices.length === 0}
           >
-            {isSubmitting ? 'Creating...' : 'Create Shift'}
+            {isSubmitting ? t('creating') : t('create')}
           </Button>
         </DialogFooter>
       </DialogContent>

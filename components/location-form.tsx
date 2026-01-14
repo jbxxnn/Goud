@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, 
-    // useEffect 
-    } from 'react';
-    // import { toast } from 'sonner';
+import {
+  useState,
+  // useEffect 
+} from 'react';
+// import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +36,12 @@ const generateLocationCode = (name: string): string => {
   return lettersOnly.slice(0, 3);
 };
 
+import { useTranslations } from 'next-intl';
+
 export function LocationForm({ location, onSave, onCancel, loading = false }: LocationFormProps) {
+  const t = useTranslations('Locations.form');
+  const tCommon = useTranslations('Common');
+
   const initialLocationCode =
     location?.locationCode ??
     generateLocationCode(location?.name ?? '');
@@ -61,25 +67,25 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
     const newErrors: Record<string, string> = {};
 
     if (!data.name.trim()) {
-      newErrors.name = 'Location name is required';
+      newErrors.name = t('validation.nameRequired');
     }
 
     if (!data.locationCode.trim()) {
-      newErrors.locationCode = 'Location code is required';
+      newErrors.locationCode = t('validation.codeRequired');
     } else if (!/^[A-Z]{3}$/.test(data.locationCode.trim())) {
-      newErrors.locationCode = 'Location code must be exactly 3 letters';
+      newErrors.locationCode = t('validation.codeLength');
     }
 
     if (!data.address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = t('validation.addressRequired');
     }
 
     if (data.phone && !validatePhoneNumber(data.phone)) {
-      newErrors.phone = 'Invalid phone number format';
+      newErrors.phone = t('validation.phoneInvalid');
     }
 
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = t('validation.emailInvalid');
     }
 
     setErrors(newErrors);
@@ -89,7 +95,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const userProvidedCode = formData.locationCode.trim();
     const sanitizedUserCode = userProvidedCode
       ? userProvidedCode.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3)
@@ -167,51 +173,51 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
         <div className="flex-1 overflow-y-auto space-y-12 pb-10">
           {/* Basic Information */}
           <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name" className="text-xs font-semibold mb-2">Location Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="e.g., Downtown Clinic"
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive mt-1">{errors.name}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name" className="text-xs font-semibold mb-2">{t('name')}</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder={t('namePlaceholder')}
+                  className={errors.name ? 'border-destructive' : ''}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                )}
+              </div>
 
-            <div>
-              <Label htmlFor="locationCode" className="text-xs font-semibold mb-2">Location Code *</Label>
-              <Input
-                id="locationCode"
-                value={formData.locationCode}
-                onChange={(e) => handleInputChange('locationCode', e.target.value)}
-                placeholder="Automatically generated from name"
-                className={errors.locationCode ? 'border-destructive' : ''}
-              />
-              {/* <p className="text-xs text-muted-foreground mt-1">
+              <div>
+                <Label htmlFor="locationCode" className="text-xs font-semibold mb-2">{t('code')}</Label>
+                <Input
+                  id="locationCode"
+                  value={formData.locationCode}
+                  onChange={(e) => handleInputChange('locationCode', e.target.value)}
+                  placeholder={t('codePlaceholder')}
+                  className={errors.locationCode ? 'border-destructive' : ''}
+                />
+                {/* <p className="text-xs text-muted-foreground mt-1">
                 Defaults to the first three letters of the name if left blank.
               </p> */}
-              {errors.locationCode && (
-                <p className="text-sm text-destructive mt-1">{errors.locationCode}</p>
-              )}
-            </div>
+                {errors.locationCode && (
+                  <p className="text-sm text-destructive mt-1">{errors.locationCode}</p>
+                )}
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="address" className="text-xs font-semibold mb-2">Address *</Label>
+              <Label htmlFor="address" className="text-xs font-semibold mb-2">{t('address')}</Label>
               <div className="relative">
-                <HugeiconsIcon 
-                  icon={Location03Icon} 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                <HugeiconsIcon
+                  icon={Location03Icon}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
                 />
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="e.g., 123 Main Street, Suite 100"
+                  placeholder={t('addressPlaceholder')}
                   className={`pl-10 ${errors.address ? 'border-destructive' : ''}`}
                 />
               </div>
@@ -222,17 +228,17 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone" className="text-xs font-semibold mb-2">Phone Number</Label>
+                <Label htmlFor="phone" className="text-xs font-semibold mb-2">{t('phone')}</Label>
                 <div className="relative">
-                  <HugeiconsIcon 
-                    icon={CallIcon} 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                  <HugeiconsIcon
+                    icon={CallIcon}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
                   />
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    placeholder="e.g., (555) 123-4567"
+                    placeholder={t('phonePlaceholder')}
                     className={`pl-10 ${errors.phone ? 'border-destructive' : ''}`}
                   />
                 </div>
@@ -242,18 +248,18 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-xs font-semibold mb-2">Email</Label>
+                <Label htmlFor="email" className="text-xs font-semibold mb-2">{t('email')}</Label>
                 <div className="relative">
-                  <HugeiconsIcon 
-                    icon={MailIcon} 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+                  <HugeiconsIcon
+                    icon={MailIcon}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
                   />
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="e.g., info@clinic.com"
+                    placeholder={t('emailPlaceholder')}
                     className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
                   />
                 </div>
@@ -265,7 +271,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="color" className="text-xs font-semibold mb-2">Color</Label>
+                <Label htmlFor="color" className="text-xs font-semibold mb-2">{t('color')}</Label>
                 <div className="flex items-center gap-2">
                   <input
                     id="color"
@@ -292,7 +298,7 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
                   checked={formData.is_active}
                   onCheckedChange={(checked) => handleInputChange('is_active', checked)}
                 />
-                <Label htmlFor="is_active" className="cursor-pointer text-xs font-semibold">Active Location</Label>
+                <Label htmlFor="is_active" className="cursor-pointer text-xs font-semibold">{t('active')}</Label>
               </div>
             </div>
           </div>
@@ -304,19 +310,19 @@ export function LocationForm({ location, onSave, onCancel, loading = false }: Lo
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="text-sm text-muted-foreground">
               {location
-                ? 'Review the details before saving.'
+                ? t('hint.review')
                 : isFormComplete()
-                  ? 'Ready to create this location.'
-                  : 'Fill in the required fields: name, address, and code.'}
+                  ? t('hint.ready')
+                  : t('hint.incomplete')}
             </div>
             <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : location ? 'Update Location' : 'Create Location'}
-            </Button>
-          </div>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                {tCommon('cancel')}
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? tCommon('saving') : location ? tCommon('update') : tCommon('create')}
+              </Button>
+            </div>
           </div>
         </div>
       </form>

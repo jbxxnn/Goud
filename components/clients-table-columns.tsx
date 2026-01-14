@@ -3,8 +3,8 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { 
-  EyeIcon, 
+import {
+  EyeIcon,
   UserIcon,
   CallIcon,
   MailIcon,
@@ -13,15 +13,17 @@ import { User, getUserDisplayName } from '@/lib/types/user';
 
 interface ClientActionsProps {
   onView: (client: User) => void;
+  t: any;
 }
 
 export function createClientColumns({
   onView,
+  t
 }: ClientActionsProps): ColumnDef<User>[] {
   return [
     {
       accessorKey: 'first_name',
-      header: 'Client',
+      header: t('columns.client'),
       cell: ({ row }) => {
         const client = row.original;
         return (
@@ -45,7 +47,7 @@ export function createClientColumns({
     },
     {
       accessorKey: 'email',
-      header: 'Contact',
+      header: t('columns.contact'),
       cell: ({ row }) => {
         const client = row.original;
         return (
@@ -66,15 +68,15 @@ export function createClientColumns({
     },
     {
       accessorKey: 'created_at',
-      header: 'Member Since',
+      header: t('columns.memberSince'),
       cell: ({ row }) => {
         const date = new Date(row.getValue('created_at'));
         return (
           <div className="text-sm">
-            {date.toLocaleDateString('nl-NL', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            {date.toLocaleDateString('nl-NL', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             })}
           </div>
         );
@@ -82,19 +84,19 @@ export function createClientColumns({
     },
     {
       accessorKey: 'last_login',
-      header: 'Last Login',
+      header: t('columns.lastLogin'),
       cell: ({ row }) => {
         const lastLogin = row.getValue('last_login') as string | null;
         if (!lastLogin) {
-          return <span className="text-sm text-muted-foreground">Never</span>;
+          return <span className="text-sm text-muted-foreground">{t('cells.never')}</span>;
         }
         const date = new Date(lastLogin);
         return (
           <div className="text-sm">
-            {date.toLocaleDateString('nl-NL', { 
-              year: 'numeric', 
-              month: 'short', 
-              day: 'numeric' 
+            {date.toLocaleDateString('nl-NL', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
             })}
           </div>
         );
@@ -102,7 +104,7 @@ export function createClientColumns({
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('columns.actions'),
       cell: ({ row }) => {
         const client = row.original;
         return (
@@ -112,7 +114,7 @@ export function createClientColumns({
               size="icon"
               onClick={() => onView(client)}
               className="h-8 w-8"
-              title="View Details"
+              title={t('cells.viewDetails')}
             >
               <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
             </Button>

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { 
-  EditIcon, 
-  Delete02Icon, 
-  EyeIcon, 
+import {
+  EditIcon,
+  Delete02Icon,
+  EyeIcon,
   UserIcon,
   CallIcon,
   MailIcon,
@@ -23,16 +23,19 @@ interface MidwifeActionsProps {
   onView: (midwife: Midwife) => void;
 }
 
-export function createMidwifeColumns({
-  onEdit,
-  onDelete,
-  onToggleActive,
-  onView
-}: MidwifeActionsProps): ColumnDef<Midwife>[] {
+export function createMidwifeColumns(
+  t: (key: string) => string,
+  {
+    onEdit,
+    onDelete,
+    onToggleActive,
+    onView
+  }: MidwifeActionsProps
+): ColumnDef<Midwife>[] {
   return [
     {
       accessorKey: 'first_name',
-      header: 'Name',
+      header: t('table.name'),
       cell: ({ row }) => {
         const midwife = row.original;
         return (
@@ -59,7 +62,7 @@ export function createMidwifeColumns({
     },
     {
       accessorKey: 'contact',
-      header: 'Contact',
+      header: t('table.contact'),
       cell: ({ row }) => {
         const midwife = row.original;
         return (
@@ -77,7 +80,7 @@ export function createMidwifeColumns({
               </div>
             )}
             {!midwife.email && !midwife.phone && (
-              <span className="text-xs text-muted-foreground">No contact info</span>
+              <span className="text-xs text-muted-foreground">{t('table.noContact')}</span>
             )}
           </div>
         );
@@ -85,7 +88,7 @@ export function createMidwifeColumns({
     },
     {
       accessorKey: 'is_active',
-      header: 'Status',
+      header: t('table.status'),
       cell: ({ row }) => {
         const midwife = row.original;
         const isActive = midwife.is_active;
@@ -102,7 +105,7 @@ export function createMidwifeColumns({
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('table.actions'),
       cell: ({ row }) => {
         const midwife = row.original;
 

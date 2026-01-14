@@ -35,19 +35,19 @@ export function DateNavigator({ view, events }: IProps) {
         <span className="text-lg font-semibold">
           {month} {year}
         </span>
-        <Badge className="px-1.5 bg-secondary-foreground text-white border-border">
+        <Badge className="px-1.5 bg-primary text-white border-border">
           {eventCount} events
         </Badge>
       </div>
 
       <div className="flex items-center gap-2">
-        <Button onClick={handlePrevious} className="bg-secondary-foreground hover:bg-secondary-foreground/80 text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
+        <Button onClick={handlePrevious} className="bg-primary hover:bg-secondary-foreground text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
           <HugeiconsIcon icon={ArrowLeft01Icon} size={24} />
         </Button>
 
         <p className="text-sm text-muted-foreground">{rangeText(view, selectedDate)}</p>
 
-        <Button onClick={handleNext} className="bg-secondary-foreground hover:bg-secondary-foreground/80 text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
+        <Button onClick={handleNext} className="bg-primary hover:bg-secondary-foreground text-sidebar-primary-foreground rounded-md !p-1 h-auto" style={{ borderRadius: '8rem' }}>
           <HugeiconsIcon icon={ArrowRight01Icon} size={24} />
         </Button>
       </div>

@@ -1,0 +1,949 @@
+{
+    "HomePage": {
+        "title": "Goud Echo",
+        "description": "De snelste manier om een afspraak te maken bij Goud Echo"
+    },
+    "Navigation": {
+        "home": "Home",
+        "booking": "Afspraak maken",
+        "dashboard": "Dashboard"
+    },
+    "AdminDashboard": {
+        "metrics": {
+            "revenue": {
+                "label": "Totale omzet",
+                "helper": "t.o.v. vorige periode"
+            },
+            "clients": {
+                "label": "Totaal klanten",
+                "helper": "t.o.v. vorige periode"
+            },
+            "appointmentsToday": {
+                "label": "Afspraken vandaag",
+                "helper": "t.o.v. gisteren"
+            }
+        },
+        "charts": {
+            "allBookings": {
+                "title": "Boekingsoverzicht",
+                "subtitle": "per status"
+            },
+            "revenue": {
+                "title": "Omzet",
+                "subtitle": "Inkomsten vs terugbetalingen",
+                "lastSevenDays": "Laatste 7 dagen",
+                "lastSixWeeks": "Laatste 6 weken",
+                "yearToDate": "Dit jaar",
+                "legend": {
+                    "income": "Inkomsten",
+                    "refunds": "Terugbetalingen"
+                }
+            },
+            "services": {
+                "title": "Afspraakoverzicht",
+                "subtitle": "Per dienst",
+                "bookings": "boekingen",
+                "noData": "Geen data"
+            }
+        },
+        "reports": {
+            "title": "Rapportage",
+            "subtitle": "Operationeel",
+            "pendingConfirmations": "Wachtend op bevestiging",
+            "cancellations": "Annuleringen deze periode",
+            "refundedPayments": "Terugbetaald",
+            "confirmedToday": "Vandaag bevestigd",
+            "details": {
+                "followUp": "Vereist opvolging",
+                "processed": "Verwerkt deze periode",
+                "ready": "Klaar voor check-in"
+            }
+        },
+        "recentBookings": {
+            "title": "Patiënt afspraak",
+            "subtitle": "Laatste boekingen",
+            "viewAll": "Bekijk alles",
+            "empty": "Geen recente boekingen.",
+            "unknownService": "Onbekende dienst",
+            "table": {
+                "client": "Cliënt",
+                "service": "Dienst",
+                "staff": "Medewerker",
+                "location": "Locatie",
+                "scheduled": "Gepland",
+                "status": "Status"
+            }
+        },
+        "activity": {
+            "title": "Recente activiteit",
+            "subtitle": "Vandaag",
+            "viewAll": "Bekijk alles",
+            "empty": "Nog geen activiteit."
+        },
+        "schedule": {
+            "appointmentsOn": "{count} afspraken op {date}",
+            "noAppointments": "Geen afspraken gepland"
+        }
+    },
+    "Locations": {
+        "title": "Locaties",
+        "subtitle": "Beheer klinieklocaties en hun informatie.",
+        "addLocation": "Locatie toevoegen",
+        "table": {
+            "searchPlaceholder": "Zoek locaties...",
+            "empty": "Geen locaties gevonden. Voeg een nieuwe locatie toe om te beginnen.",
+            "code": "Code",
+            "name": "Naam",
+            "address": "Adres",
+            "phone": "Telefoon",
+            "email": "E-mail",
+            "status": "Status",
+            "actions": "Acties"
+        },
+        "deleteDialog": {
+            "title": "Locatie verwijderen",
+            "description": "Weet u zeker dat u deze locatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        },
+        "toasts": {
+            "loadError": "Kan locaties niet laden",
+            "deleteSuccess": "Locatie verwijderd",
+            "deleteError": "Kan locatie niet verwijderen",
+            "deletedDescription": "{name} is succesvol verwijderd.",
+            "updateSuccess": "Locatie bijgewerkt",
+            "createSuccess": "Locatie aangemaakt",
+            "saveError": "Kan locatie niet opslaan",
+            "savedDescription": "{name} is succesvol {action}.",
+            "statusChanged": "Locatie {status}",
+            "statusDescription": "{name} is {status}."
+        },
+        "form": {
+            "name": "Locatienaam *",
+            "namePlaceholder": "bijv. Centrum Kliniek",
+            "code": "Locatiecode *",
+            "codePlaceholder": "Automatisch gegenereerd o.b.v. naam",
+            "address": "Adres *",
+            "addressPlaceholder": "bijv. Hoofdstraat 123",
+            "phone": "Telefoonnummer",
+            "phonePlaceholder": "bijv. 06 12345678",
+            "email": "E-mail",
+            "emailPlaceholder": "bijv. info@kliniek.nl",
+            "color": "Kleur",
+            "active": "Actieve locatie",
+            "validation": {
+                "nameRequired": "Locatienaam is verplicht",
+                "codeRequired": "Locatiecode is verplicht",
+                "codeLength": "Locatiecode moet exact 3 letters zijn",
+                "addressRequired": "Adres is verplicht",
+                "phoneInvalid": "Ongeldig telefoonnummer",
+                "emailInvalid": "Ongeldig e-mailadres"
+            },
+            "hint": {
+                "review": "Controleer de details voordat u opslaat.",
+                "ready": "Klaar om deze locatie aan te maken.",
+                "incomplete": "Vul de verplichte velden in: naam, adres en code."
+            }
+        },
+        "modal": {
+            "editTitle": "Locatie bewerken",
+            "addTitle": "Nieuwe locatie toevoegen"
+        }
+    },
+    "Staff": {
+        "title": "Personeel",
+        "subtitle": "Beheer personeel, kwalificaties en locatietoewijzingen",
+        "addStaff": "Personeel toevoegen",
+        "table": {
+            "name": "Naam",
+            "contact": "Contact",
+            "role": "Rol",
+            "hireDate": "Datum indiensttreding",
+            "status": "Status",
+            "actions": "Acties",
+            "notSet": "Niet ingesteld",
+            "searchPlaceholder": "Zoek personeel...",
+            "empty": "Geen personeel gevonden."
+        },
+        "form": {
+            "userAccount": "Gebruikersaccount *",
+            "userPlaceholder": "Selecteer een gebruikersaccount",
+            "userSearchPlaceholder": "Zoek gebruikers op naam of e-mail...",
+            "userHint": "Het selecteren van een gebruiker vult onderstaande velden automatisch in",
+            "firstName": "Voornaam *",
+            "lastName": "Achternaam *",
+            "email": "E-mail *",
+            "phone": "Telefoon",
+            "hireDate": "Datum indiensttreding",
+            "role": "Rol *",
+            "bio": "Bio",
+            "bioPlaceholder": "Korte bio over de medewerker",
+            "locations": "Locatietoewijzingen",
+            "locationsPlaceholder": "Selecteer locaties...",
+            "services": "Dienstkwalificaties",
+            "servicesPlaceholder": "Selecteer diensten...",
+            "active": "Actief personeelslid",
+            "activeHint": "Alleen actief personeel is beschikbaar voor planning",
+            "reviewHint": "Controleer en update personeelsgegevens",
+            "createHint": "Vul de verplichte velden in om dit personeelslid toe te voegen",
+            "validation": {
+                "firstNameRequired": "Voornaam is verplicht",
+                "lastNameRequired": "Achternaam is verplicht",
+                "emailRequired": "E-mail is verplicht",
+                "emailInvalid": "Ongeldig e-mailadres"
+            },
+            "roles": {
+                "technician": "Technicus",
+                "supervisor": "Leidinggevende",
+                "manager": "Manager",
+                "admin": "Beheerder"
+            },
+            "noUsers": "Geen gebruikers gevonden die aan de zoekopdracht voldoen",
+            "noUsersAvailable": "Geen gebruikers beschikbaar",
+            "noLocations": "Geen locaties gevonden.",
+            "noServices": "Geen diensten gevonden."
+        },
+        "modal": {
+            "viewTitle": "Bekijk personeel",
+            "editTitle": "Bewerk personeel",
+            "addTitle": "Nieuw personeel toevoegen"
+        },
+        "toasts": {
+            "loadError": "Kan personeel niet laden",
+            "deleteSuccess": "Personeel verwijderd",
+            "deleteError": "Kan personeel niet verwijderen",
+            "deletedDescription": "{name} is succesvol verwijderd.",
+            "updateSuccess": "Personeel bijgewerkt",
+            "createSuccess": "Personeel aangemaakt",
+            "saveError": "Kan personeel niet opslaan",
+            "savedDescription": "{name} is succesvol {action}.",
+            "statusChanged": "Personeel {status}",
+            "statusDescription": "{name} is {status}.",
+            "roleUpdateError": "Gebruikersrol niet bijgewerkt",
+            "profileUpdateError": "Gebruikersprofiel niet bijgewerkt"
+        },
+        "deleteDialog": {
+            "title": "Verwijder personeel",
+            "description": "Weet u zeker dat u dit personeelslid wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        },
+        "empty": {
+            "title": "Geen personeel gevonden",
+            "description": "Begin met het toevoegen van uw eerste personeelslid"
+        }
+    },
+    "Midwives": {
+        "title": "Verloskundigen",
+        "subtitle": "Beheer verloskundigen voor boekingsreferenties",
+        "addMidwife": "Verloskundige toevoegen",
+        "table": {
+            "name": "Naam",
+            "contact": "Contact",
+            "status": "Status",
+            "actions": "Acties",
+            "searchPlaceholder": "Zoek verloskundigen...",
+            "empty": "Geen verloskundigen gevonden.",
+            "noContact": "Geen contactinfo"
+        },
+        "form": {
+            "firstName": "Voornaam *",
+            "firstNamePlaceholder": "Vul voornaam in",
+            "lastName": "Achternaam *",
+            "lastNamePlaceholder": "Vul achternaam in",
+            "practiceName": "Praktijknaam",
+            "practicePlaceholder": "Vul praktijknaam in (optioneel)",
+            "email": "E-mail",
+            "emailPlaceholder": "Vul e-mail in (optioneel)",
+            "phone": "Telefoon",
+            "phonePlaceholder": "Vul telefoonnummer in (optioneel)",
+            "active": "Actief",
+            "activeHint": "Inactieve verloskundigen verschijnen niet in boekingsformulieren",
+            "validation": {
+                "firstNameRequired": "Voornaam is verplicht",
+                "firstNameLength": "Voornaam moet minder dan 100 tekens zijn",
+                "lastNameRequired": "Achternaam is verplicht",
+                "lastNameLength": "Achternaam moet minder dan 100 tekens zijn",
+                "practiceLength": "Praktijknaam moet minder dan 255 tekens zijn",
+                "emailInvalid": "Ongeldig e-mailadres",
+                "phoneLength": "Telefoonnummer moet minder dan 32 tekens zijn"
+            }
+        },
+        "modal": {
+            "viewTitle": "Bekijk verloskundige",
+            "editTitle": "Bewerk verloskundige",
+            "addTitle": "Nieuwe verloskundige toevoegen"
+        },
+        "view": {
+            "basicInfo": "Basisinformatie",
+            "contactInfo": "Contactinformatie",
+            "metadata": "Metadata",
+            "created": "Aangemaakt",
+            "lastUpdated": "Laatst bijgewerkt",
+            "practice": "Praktijk",
+            "status": "Status",
+            "active": "Actief",
+            "inactive": "Inactief",
+            "name": "Naam",
+            "email": "E-mail",
+            "phone": "Telefoon"
+        },
+        "toasts": {
+            "loadError": "Kan verloskundigen niet laden",
+            "deleteSuccess": "Verloskundige verwijderd",
+            "deleteError": "Kan verloskundige niet verwijderen",
+            "deletedDescription": "{name} is succesvol verwijderd.",
+            "updateSuccess": "Verloskundige bijgewerkt",
+            "createSuccess": "Verloskundige aangemaakt",
+            "saveError": "Kan verloskundige niet opslaan",
+            "savedDescription": "{name} is succesvol {action}.",
+            "statusChanged": "Verloskundige {status}",
+            "statusDescription": "{name} is {status}."
+        },
+        "deleteDialog": {
+            "title": "Verwijder verloskundige",
+            "description": "Weet u zeker dat u deze verloskundige wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        },
+        "empty": {
+            "title": "Geen verloskundigen gevonden",
+            "description": "Begin met het toevoegen van uw eerste verloskundige"
+        }
+    },
+    "Shifts": {
+        "title": "Dienstenbeheer",
+        "description": "Beheer personeelsroosters en beschikbaarheid",
+        "errors": {
+            "fetchShifts": "Ophalen van diensten mislukt",
+            "fetchStaff": "Ophalen van personeel mislukt",
+            "fetchLocations": "Ophalen van locaties mislukt",
+            "generic": "Er is een fout opgetreden"
+        },
+        "empty": {
+            "noStaffTitle": "Geen personeelsleden gevonden",
+            "noStaffDescription": "Voeg personeelsleden toe om diensten aan te maken"
+        },
+        "header": {
+            "viewByDay": "Dagweergave",
+            "viewByWeek": "Weekweergave",
+            "viewByMonth": "Maandweergave",
+            "viewByYear": "Jaarweergave",
+            "viewByAgenda": "Agendaweergave",
+            "addShift": "Dienst toevoegen"
+        },
+        "settings": {
+            "title": "Kalenderinstellingen",
+            "timeSettings": "Tijdinstellingen",
+            "workingHours": "Werktijden",
+            "workingHoursDescription": "Stel de werktijden in voor elke dag van de week",
+            "visibleHours": "Zichtbare uren",
+            "visibleHoursDescription": "Beheer welke uren zichtbaar zijn in de kalender",
+            "apply": "Toepassen",
+            "success": "Instellingen succesvol bijgewerkt",
+            "error": "Instellingen bijwerken mislukt",
+            "partialError": "Sommige instellingen konden niet worden bijgewerkt",
+            "workingHoursError": "Werktijden bijwerken mislukt",
+            "visibleHoursError": "Zichtbare uren bijwerken mislukt"
+        },
+        "workingHoursInput": {
+            "title": "Werktijden wijzigen",
+            "tooltip": "Dit past een gestippelde achtergrond toe op de uurcellen die buiten de werktijden vallen — alleen voor week- en dagweergaven.",
+            "from": "Van",
+            "to": "Tot",
+            "closed": "Gesloten",
+            "days": {
+                "sunday": "Zondag",
+                "monday": "Maandag",
+                "tuesday": "Dinsdag",
+                "wednesday": "Woensdag",
+                "thursday": "Donderdag",
+                "friday": "Vrijdag",
+                "saturday": "Zaterdag"
+            }
+        },
+        "visibleHoursInput": {
+            "title": "Zichtbare uren wijzigen",
+            "tooltip": "Als een afspraak buiten de opgegeven zichtbare uren valt, worden de zichtbare uren automatisch aangepast om die afspraak op te nemen.",
+            "from": "Van",
+            "to": "Tot"
+        },
+        "dialog": {
+            "add": {
+                "title": "Nieuwe dienst toevoegen",
+                "staffMember": "Personeelslid *",
+                "selectStaff": "Selecteer personeelslid",
+                "loadingStaff": "Personeel laden...",
+                "noStaffAssigned": "Geen personeel toegewezen aan deze locatie",
+                "noStaffAvailable": "Geen personeel beschikbaar",
+                "location": "Locatie *",
+                "selectLocation": "Selecteer locatie",
+                "loadingLocations": "Locaties laden...",
+                "noLocationStaff": "Geselecteerd personeelslid is niet aan locaties toegewezen",
+                "noLocationAvailable": "Geen locaties beschikbaar",
+                "startTime": "Begintijd *",
+                "endTime": "Eindtijd *",
+                "recurring": "Herhalende dienst",
+                "frequency": "Frequentie *",
+                "daily": "Dagelijks",
+                "weekly": "Wekelijks",
+                "monthly": "Maandelijks",
+                "daysOfWeek": "Dagen van de week",
+                "repeatUntil": "Herhalen tot",
+                "repeatIndefinitely": "Laat leeg om oneindig te herhalen",
+                "services": "Diensten *",
+                "customizeServices": "Diensten aanpassen",
+                "selectStaffFirst": "Selecteer eerst een personeelslid",
+                "noQualifiedServices": "Geselecteerd personeelslid heeft geen kwalificaties",
+                "servicesSelected": "{count} dienst(en) geselecteerd",
+                "allServicesIncluded": "Alle personeelsdiensten inbegrepen",
+                "toggleCustomize": "Schakel 'Diensten aanpassen' in om te wijzigen",
+                "viewQualified": "Selecteer een personeelslid om kwalificaties te zien",
+                "noQualifications": "Dit personeelslid heeft geen dienstkwalificaties",
+                "showingServices": "Toont {count} van {total} geselecteerde diensten",
+                "maxBookings": "Max. boekingen (optioneel)",
+                "priority": "Prioriteit",
+                "notes": "Notities",
+                "optionalNotes": "Optionele notities",
+                "creating": "Aanmaken...",
+                "create": "Dienst aanmaken",
+                "cancel": "Annuleren",
+                "conflicts": "Dienstconflicten gedetecteerd"
+            },
+            "details": {
+                "staffMember": "Personeelslid",
+                "startTime": "Begintijd",
+                "endTime": "Eindtijd",
+                "location": "Locatie",
+                "services": "Diensten",
+                "notes": "Notities",
+                "delete": "Verwijderen",
+                "edit": "Bewerken",
+                "loading": "Dienst details laden...",
+                "loadError": "Laden van dienst details mislukt",
+                "deleteSuccess": "Dienst verwijderd",
+                "deleteSuccessDesc": "De dienst is succesvol verwijderd.",
+                "deleteError": "Verwijderen van dienst mislukt",
+                "confirmDeleteTitle": "Dienst verwijderen",
+                "confirmDeleteDesc": "Weet u zeker dat u deze dienst wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+                "itemDate": "Dienst op {date}"
+            }
+        }
+    },
+    "Calendar": {
+        "dialog": {
+            "add": {
+                "title": "Nieuw evenement toevoegen",
+                "warning": "Dit formulier is alleen voor demonstratiedoeleinden en maakt niet echt een evenement aan.",
+                "create": "Evenement aanmaken"
+            },
+            "edit": {
+                "title": "Evenement bewerken",
+                "warning": "Dit formulier werkt alleen lokaal voor demonstratiedoeleinden.",
+                "save": "Wijzigingen opslaan"
+            },
+            "common": {
+                "responsible": "Verantwoordelijke",
+                "title": "Titel",
+                "titlePlaceholder": "Voer een titel in",
+                "description": "Beschrijving",
+                "startDate": "Begindatum",
+                "startTime": "Begintijd",
+                "endDate": "Einddatum",
+                "endTime": "Eindtijd",
+                "color": "Kleur",
+                "selectOption": "Selecteer een optie",
+                "selectDate": "Selecteer een datum",
+                "colors": {
+                    "blue": "Blauw",
+                    "green": "Groen",
+                    "red": "Rood",
+                    "yellow": "Geel",
+                    "purple": "Paars",
+                    "orange": "Oranje",
+                    "gray": "Grijs"
+                }
+            }
+        }
+    },
+    "Services": {
+        "title": "Diensten",
+        "description": "Beheer echodiensten en hun configuraties",
+        "addService": "Dienst toevoegen",
+        "searchPlaceholder": "Zoek diensten...",
+        "noServices": "Geen diensten gevonden",
+        "noServicesEmpty": "Geen diensten gevonden. Voeg een nieuwe dienst toe om te beginnen.",
+        "getStarted": "Begin met het aanmaken van je eerste dienst",
+        "table": {
+            "code": "Code",
+            "name": "Naam dienst",
+            "duration": "Duur",
+            "bufferTime": "Buffertijd",
+            "leadTime": "Doorlooptijd",
+            "price": "Prijs",
+            "sale": "Aanbieding",
+            "status": "Status",
+            "actions": "Acties",
+            "none": "Geen",
+            "active": "Actief",
+            "inactive": "Inactief",
+            "edit": "Dienst bewerken",
+            "delete": "Dienst verwijderen"
+        },
+        "form": {
+            "name": "Naam dienst *",
+            "code": "Code dienst *",
+            "description": "Beschrijving",
+            "duration": "Duur (minuten) *",
+            "bufferTime": "Buffertijd (minuten)",
+            "leadTime": "Doorlooptijd (uren)",
+            "rescheduleCutoff": "Verplaatsingstermijn (uren)",
+            "instructions": "Instructies",
+            "price": "Prijs (€) *",
+            "salePrice": "Actieprijs (€)",
+            "cancelCutoff": "Annuleringstermijn (uren)",
+            "schedulingWindow": "Planningsvenster (weken)",
+            "category": "Categorie",
+            "assignedStaff": "Toegewezen personeel",
+            "customFields": "Aangepaste velden",
+            "activeService": "Actieve dienst",
+            "tabs": {
+                "details": "Details",
+                "pricing": "Prijzen",
+                "advanced": "Geavanceerd",
+                "policy": "Beleid",
+                "staff": "Personeel",
+                "addons": "Extra's"
+            },
+            "placeholders": {
+                "name": "bijv. 2D Echo Basis",
+                "description": "Basis 2D echo controle",
+                "instructions": "Speciale instructies...",
+                "code": "Automatisch gegenereerd op basis van naam",
+                "category": "Selecteer een categorie",
+                "newCategory": "Nieuwe categorienaam",
+                "selectStaff": "Selecteer personeelsleden...",
+                "searchStaff": "Zoek personeel...",
+                "fieldType": "Selecteer veldtype om toe te voegen"
+            },
+            "addons": {
+                "title": "Dienst extra's",
+                "subtitle": "Beheer optionele extra's die klanten kunnen selecteren bij het boeken",
+                "add": "Extra toevoegen",
+                "new": "Nieuwe extra",
+                "edit": "Extra bewerken",
+                "name": "Naam *",
+                "namePlaceholder": "bijv. Extra fotoafdrukken",
+                "description": "Beschrijving",
+                "descriptionPlaceholder": "Optionele beschrijving van de extra",
+                "price": "Prijs (€) *",
+                "required": "Verplicht (automatisch toegevoegd)",
+                "requiredBadge": "Verplicht",
+                "active": "Actief",
+                "inactive": "Inactief",
+                "update": "Extra bijwerken",
+                "create": "Extra aanmaken",
+                "loadError": "Ophalen van extra's mislukt",
+                "loading": "Extra's laden...",
+                "listEmpty": "Nog geen extra's",
+                "listEmptyHint": "Klik op \"Extra toevoegen\" om er een aan te maken",
+                "deleteConfirm": "Weet je zeker dat je deze extra wilt verwijderen?",
+                "serviceIdRequired": "Dienst ID is vereist",
+                "addonNameRequired": "Naam van extra is vereist",
+                "updateSuccess": "Extra succesvol bijgewerkt",
+                "updateError": "Bijwerken van extra mislukt",
+                "createSuccess": "Extra succesvol aangemaakt",
+                "createError": "Aanmaken van extra mislukt",
+                "saveError": "Opslaan van extra mislukt",
+                "deleteSuccess": "Extra succesvol verwijderd",
+                "deleteError": "Verwijderen van extra mislukt",
+                "saveServiceFirst": "Sla de dienst eerst op om extra's te beheren"
+            },
+            "validation": {
+                "codeRequired": "Dienstcode is vereist",
+                "codePattern": "Dienstcode moet uit precies 3 letters of cijfers bestaan",
+                "nameRequired": "Dienstnaam is verplicht",
+                "durationRequired": "Duur is verplicht",
+                "durationMin": "Duur moet minimaal 1 minuut zijn",
+                "priceRequired": "Prijs is verplicht",
+                "priceNegative": "Prijs mag niet negatief zijn",
+                "salePriceNegative": "Actieprijs mag niet negatief zijn",
+                "schedulingWindowRequired": "Planningsvenster is verplicht",
+                "schedulingWindowMin": "Planningsvenster moet minimaal 1 week zijn",
+                "rescheduleCutoffNegative": "Verplaatsingstermijn mag niet negatief zijn",
+                "cancelCutoffNegative": "Annuleringstermijn mag niet negatief zijn"
+            },
+            "labels": {
+                "addCategory": "+ Nieuwe categorie toevoegen",
+                "add": "Toevoegen",
+                "activeService": "Actieve Dienst",
+                "enableRescheduleCutoff": "Verplaatsingstermijn inschakelen",
+                "enableCancelCutoff": "Annuleringstermijn inschakelen",
+                "addPolicyField": "Beleidsveld toevoegen",
+                "fieldType": "Veldtype",
+                "policyFields": "Beleidsvelden",
+                "assignStaff": "Personeel toewijzen aan dienst",
+                "selectStaff": "Selecteer personeelsleden"
+            },
+            "hints": {
+                "codeHelp": "Standaard de eerste drie tekens van de naam indien leeg.",
+                "activeHelp": "Alleen actieve diensten zijn beschikbaar voor boeking",
+                "priceHelp": "Basisprijs voor deze dienst",
+                "salePriceHelp": "Optionele actieprijs",
+                "bufferTimeHelp": "Extra tijd tussen afspraken",
+                "leadTimeHelp": "Minimale tijd van tevoren boeken",
+                "schedulingWindowHelp": "Hoeveel weken van tevoren geboekt kan worden",
+                "rescheduleCutoffHelp": "Uren voor afspraak wanneer verplaatsen niet meer is toegestaan",
+                "cancelCutoffHelp": "Uren voor afspraak wanneer annuleren niet meer is toegestaan",
+                "fieldTypeHelp": "Selecteer een veldtype om aan het formulier toe te voegen",
+                "dragReorder": "Sleep om te herschikken • Klik om uit te klappen",
+                "noPolicyFields": "Nog geen beleidsvelden toegevoegd",
+                "noPolicyFieldsHelp": "Voeg aangepaste velden toe die patiënten invullen bij het boeken",
+                "noPolicyFieldsHelp2": "Selecteer hierboven een veldtype om te beginnen",
+                "noStaffFound": "Geen personeel gevonden.",
+                "selectStaffHelp": "Selecteer personeelsleden die gekwalificeerd zijn om deze dienst uit te voeren",
+                "noStaffAssigned": "Nog geen personeel toegewezen",
+                "noStaffAssignedHelp": "Wijs personeelsleden toe die gekwalificeerd zijn om deze dienst uit te voeren",
+                "noStaffAssignedHelp2": "Gebruik het keuzemenu hierboven om personeel te selecteren"
+            },
+            "fields": {
+                "title": "Veldtitel *",
+                "titlePlaceholder": "bijv. Geslachtsbepaling opties",
+                "description": "Beschrijving",
+                "descriptionPlaceholder": "Optionele beschrijving",
+                "required": "Verplicht veld",
+                "choices": "Keuzes",
+                "choiceTitle": "Titel keuze",
+                "remove": "Verwijderen",
+                "addChoice": "Keuze toevoegen"
+            },
+            "status": {
+                "update": "Werk je dienstgegevens bij",
+                "ready": "Klaar om dienst aan te maken",
+                "incomplete": "Voltooi verplichte velden: Naam, Duur en Prijs",
+                "progress": "Voortgang"
+            },
+            "buttons": {
+                "update": "Dienst bijwerken",
+                "create": "Dienst aanmaken"
+            }
+        },
+        "modal": {
+            "viewTitle": "Dienst bekijken",
+            "editTitle": "Dienst bewerken",
+            "addTitle": "Nieuwe dienst toevoegen"
+        },
+        "view": {
+            "code": "Code",
+            "durationTiming": "Duur & Planning",
+            "duration": "Duur",
+            "bufferTime": "Buffertijd",
+            "leadTime": "Doorlooptijd",
+            "schedulingWindow": "Planningsvenster",
+            "pricing": "Prijzen",
+            "price": "Prijs",
+            "salePrice": "Actieprijs",
+            "advancedSettings": "Geavanceerde instellingen",
+            "rescheduleCutoff": "Verplaatsingstermijn",
+            "cancelCutoff": "Annuleringstermijn",
+            "instructions": "Instructies",
+            "policyFields": "Beleidsvelden",
+            "category": "Categorie",
+            "assignedStaff": "Toegewezen personeel",
+            "unknownCategory": "Onbekende categorie",
+            "hoursBefore": "u van tevoren",
+            "weeks": "weken",
+            "active": "Actief",
+            "inactive": "Inactief",
+            "required": "Verplicht",
+            "choices": "Keuzes",
+            "title": "Titel"
+        },
+        "notifications": {
+            "loadError": "Diensten laden mislukt",
+            "deleteError": "Dienst verwijderen mislukt",
+            "deleteSuccess": "Dienst verwijderd",
+            "deleteDescription": "{name} is succesvol verwijderd.",
+            "activated": "Dienst geactiveerd",
+            "deactivated": "Dienst gedeactiveerd",
+            "activatedDescription": "{name} is geactiveerd.",
+            "deactivatedDescription": "{name} is gedeactiveerd.",
+            "updateError": "Dienst bijwerken mislukt",
+            "updateSuccess": "Dienst bijgewerkt",
+            "updatedDescription": "{name} is succesvol bijgewerkt.",
+            "createSuccess": "Dienst aangemaakt",
+            "createdDescription": "{name} is succesvol aangemaakt.",
+            "saveError": "Dienst opslaan mislukt"
+        },
+        "dialog": {
+            "deleteTitle": "Dienst verwijderen",
+            "deleteDescription": "Weet je zeker dat je deze dienst wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        }
+    },
+    "Booking": {
+        "flow": {
+            "reset": "Reset",
+            "resetTitle": "Opnieuw beginnen?",
+            "resetDescription": "Weet u zeker dat u opnieuw wilt beginnen? Alle ingevulde gegevens worden gewist.",
+            "back": "Terug",
+            "confirmReset": "Opnieuw beginnen",
+            "service": "Dienst",
+            "location": "Locatie",
+            "dateTime": "Datum & Tijd",
+            "others": "Overige",
+            "totalDue": "Totaal te betalen",
+            "datetime": {
+                "title": "Locatie, Datum & Tijd",
+                "subtitle": "Kies uw locatie, datum en tijdslot.",
+                "locationPlaceholder": "Kies locatie"
+            },
+            "time": {
+                "available": "Beschikbare tijden",
+                "noSlots": "Geen tijden beschikbaar voor gekozen datum.",
+                "morning": "Ochtend",
+                "afternoon": "Middag",
+                "evening": "Avond"
+            },
+            "addons": {
+                "title": "Selecteer add-ons",
+                "subtitle": "Kies eventuele extra diensten die u wilt toevoegen.",
+                "selectServiceFirst": "Selecteer eerst een dienst om beschikbare add-ons te zien.",
+                "requiredAddon": "Deze add-on is verplicht en automatisch toegevoegd."
+            },
+            "review": {
+                "title": "Controleren & afrekenen",
+                "subtitle": "Controleer uw gegevens en rond uw afspraak af.",
+                "completeBooking": "Boeking afronden",
+                "processing": "Bezig met verwerken…",
+                "errors": {
+                    "emailRequired": "E-mailadres is verplicht",
+                    "passwordRequired": "Voer uw wachtwoord in om door te gaan",
+                    "loginFailed": "Inloggen mislukt",
+                    "loginSessionFailed": "Inloggen mislukt: geen sessie aangemaakt",
+                    "incompleteSelection": "Selecteer eerst service, locatie en tijd",
+                    "loginRequired": "Log in om door te gaan",
+                    "bookingFailed": "Boeking is niet gelukt"
+                }
+            },
+            "form": {
+                "processingDetails": "Bezig met verwerken van uw gegevens...",
+                "email": "E-mailadres",
+                "emailPlaceholder": "jij@voorbeeld.nl",
+                "notYouLogout": "Niet u? Log uit",
+                "accountFound": "Account gevonden. Log in om door te gaan.",
+                "loggedIn": "U bent ingelogd.",
+                "accountCreationNotice": "We maken een account voor u aan met dit e-mailadres (zonder wachtwoord).",
+                "password": "Wachtwoord",
+                "passwordPlaceholder": "Voer uw wachtwoord in",
+                "loggingIn": "Bezig met inloggen…",
+                "loginContinue": "Inloggen en doorgaan",
+                "bookingForClient": "Deze boeking is voor een klant",
+                "clientEmailPlaceholder": "E-mailadres van de klant",
+                "firstName": "Voornaam",
+                "firstNamePlaceholder": "Uw voornaam",
+                "lastName": "Achternaam",
+                "lastNamePlaceholder": "Uw achternaam",
+                "phone": "Telefoon",
+                "optional": "Optioneel",
+                "street": "Straatnaam",
+                "streetPlaceholder": "Straat",
+                "houseNumber": "Huisnummer",
+                "houseNumberPlaceholder": "Nr",
+                "postalCode": "Postcode",
+                "postalCodePlaceholder": "1234 AB",
+                "city": "Stad",
+                "cityPlaceholder": "Stad",
+                "dueDate": "Uitgerekende datum",
+                "selectDate": "Selecteer datum",
+                "birthDate": "Geboortedatum",
+                "midwife": "Je eigen verloskundige",
+                "midwifePlaceholder": "Selecteer verloskundige (optioneel)",
+                "unknownMidwife": "Onbekende verloskundige",
+                "otherMidwife": "Anders / Niet in lijst",
+                "notes": "Opmerkingen",
+                "notesPlaceholder": "Bijzonderheden of vragen? (Optioneel)"
+            },
+            "selectService": "Selecteer dienst",
+            "selectServiceSubtitle": "Kies een dienst om verder te gaan.",
+            "servicePlaceholder": "Selecteer diensten",
+            "servicePolicy": "Servicebeleid",
+            "currentTotal": "Actuele totaalprijs",
+            "continue": "Doorgaan",
+            "errors": {
+                "policy": {
+                    "confirmCheckBox": "Bevestig dit beleid om door te gaan.",
+                    "makeChoice": "Maak minstens één keuze.",
+                    "validNumber": "Voer een geldig nummer in.",
+                    "selectDateTime": "Selecteer een datum en tijd.",
+                    "uploadUnavailable": "Uploaden via dit formulier is nog niet beschikbaar. Neem contact op.",
+                    "required": "Dit veld is verplicht."
+                }
+            },
+            "noOptions": "Geen opties beschikbaar.",
+            "uploadSoon": "Uploaden via dit formulier wordt binnenkort ondersteund. Neem contact op met de kliniek als dit verplicht is."
+        },
+        "confirmation": {
+            "title": "Boeking Bevestigd",
+            "errorTitle": "Fout",
+            "errorNoId": "Geen boekings-ID gevonden",
+            "errorLoad": "Kon boekingsgegevens niet laden",
+            "backToBookings": "Terug naar boekingen",
+            "newBooking": "Nieuwe Boeking",
+            "toDashboard": "Naar Dashboard",
+            "addToCalendar": "Toevoegen aan agenda",
+            "downloadICal": "Download iCal",
+            "bookingNumber": "Boekingsnummer",
+            "yourDetails": "Uw Gegevens",
+            "name": "Naam",
+            "email": "E-mail",
+            "phone": "Telefoon",
+            "service": "Service",
+            "location": "Locatie",
+            "staff": "Medewerker",
+            "priceBreakdown": "Prijsopgave",
+            "baseService": "Basis Service",
+            "servicePolicy": "Servicebeleid",
+            "addons": "Add-ons",
+            "total": "Totaal",
+            "selectedAddons": "Gekozen Add-ons",
+            "quantity": "Aantal",
+            "policyAnswers": "Servicebeleid Antwoorden",
+            "extraCost": "Extra kosten",
+            "yes": "Ja",
+            "no": "Nee",
+            "unknownField": "Onbekend veld",
+            "na": "N/v.t."
+        }
+    },
+    "Bookings": {
+        "title": "Boekingen",
+        "description": "Beheer alle afspraken en boekingen",
+        "filters": {
+            "status": "Status",
+            "all": "Alles",
+            "pending": "In afwachting",
+            "confirmed": "Bevestigd",
+            "cancelled": "Geannuleerd",
+            "from": "Van",
+            "to": "Tot",
+            "search": "Zoeken",
+            "searchPlaceholder": "Klantnaam of e-mail..."
+        },
+        "table": {
+            "emptyTitle": "Geen boekingen gevonden",
+            "emptyDescription": "Er zijn geen boekingen die aan je criteria voldoen",
+            "emptyMessage": "Geen boekingen om weer te geven"
+        },
+        "pagination": {
+            "itemsPerPage": "Items per pagina",
+            "showing": "Toont {start} tot {end} van {total} boekingen",
+            "noBookings": "Geen boekingen gevonden",
+            "previous": "Vorige",
+            "next": "Volgende"
+        },
+        "toasts": {
+            "loadError": "Boekingen laden mislukt",
+            "cancelSuccess": "Boeking geannuleerd",
+            "cancelSuccessDesc": "De boeking is succesvol geannuleerd.",
+            "cancelError": "Annuleren van boeking mislukt",
+            "deleteSuccess": "Boeking verwijderd",
+            "deleteSuccessDesc": "De boeking is permanent verwijderd.",
+            "deleteError": "Verwijderen van boeking mislukt"
+        },
+        "dialog": {
+            "deleteTitle": "Boeking verwijderen",
+            "cancelTitle": "Boeking annuleren",
+            "deleteDescription": "Weet je zeker dat je deze boeking permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+            "cancelDescription": "Weet je zeker dat je deze afspraak wilt annuleren? De boeking wordt als geannuleerd gemarkeerd.",
+            "deleteConfirm": "Verwijderen",
+            "cancelConfirm": "Afspraak annuleren"
+        },
+        "columns": {
+            "client": "Klant",
+            "dateTime": "Datum & Tijd",
+            "service": "Dienst",
+            "location": "Locatie",
+            "staff": "Personeel",
+            "status": "Status",
+            "actions": "Acties"
+        },
+        "cells": {
+            "na": "N.v.t.",
+            "unknown": "Onbekend",
+            "unassigned": "Niet toegewezen",
+            "view": "Bekijk details",
+            "cancel": "Annuleren",
+            "delete": "Verwijderen"
+        }
+    },
+    "BookingStatus": {
+        "confirmed": "Bevestigd",
+        "pending": "In afwachting",
+        "cancelled": "Geannuleerd"
+    },
+    "Table": {
+        "searchPlaceholder": "Zoeken...",
+        "emptyMessage": "Geen resultaten gevonden.",
+        "columns": "Kolommen",
+        "selectedRows": "{selected} van {total} rij(en) geselecteerd.",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "itemsPerPage": "Items per pagina",
+        "showing": "Toont {start} tot {end} van {total} resultaten"
+    },
+    "Clients": {
+        "title": "Cliënten",
+        "description": "Beheer alle cliëntaccounts",
+        "filters": {
+            "selectRole": "Selecteer rol",
+            "searchPlaceholder": "Zoek cliënten...",
+            "dateRange": "Selecteer periode",
+            "allTime": "Alles",
+            "export": "Exporteren"
+        },
+        "analytics": {
+            "totalClients": "Totaal Cliënten",
+            "withBookings": "Met Boekingen",
+            "totalRevenue": "Totale Omzet",
+            "from": "Van"
+        },
+        "roles": {
+            "client": "cliënt",
+            "staff": "personeel",
+            "midwife": "verloskundige",
+            "admin": "beheerder",
+            "users": "gebruikers",
+            "plural": {
+                "client": "cliënten",
+                "staff": "personeel",
+                "midwife": "verloskundigen",
+                "admin": "beheerders",
+                "users": "gebruikers"
+            }
+        },
+        "table": {
+            "emptyTitle": "Geen {role} gevonden",
+            "emptyDescription": "Er zijn geen {role} die voldoen aan je criteria",
+            "emptyMessage": "Geen {role} om weer te geven"
+        },
+        "toasts": {
+            "loadError": "Laden van cliënten mislukt"
+        },
+        "columns": {
+            "client": "Cliënt",
+            "contact": "Contact",
+            "memberSince": "Lid Sinds",
+            "lastLogin": "Laatste Login",
+            "actions": "Acties"
+        },
+        "cells": {
+            "never": "Nooit",
+            "viewDetails": "Bekijk Details"
+        }
+    },
+    "Common": {
+        "save": "Opslaan",
+        "saving": "Opslaan...",
+        "cancel": "Annuleren",
+        "delete": "Verwijderen",
+        "edit": "Bewerken",
+        "update": "Bijwerken",
+        "create": "Aanmaken",
+        "actions": "Acties",
+        "close": "Sluiten"
+    }
+}

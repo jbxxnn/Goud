@@ -1,0 +1,949 @@
+{
+    "HomePage": {
+        "title": "Goud Echo",
+        "description": "The fastest way to book an appointment at Goud Echo"
+    },
+    "Navigation": {
+        "home": "Home",
+        "booking": "Book Appointment",
+        "dashboard": "Dashboard"
+    },
+    "AdminDashboard": {
+        "metrics": {
+            "revenue": {
+                "label": "Total revenue",
+                "helper": "vs previous period"
+            },
+            "clients": {
+                "label": "Total clients",
+                "helper": "vs previous period"
+            },
+            "appointmentsToday": {
+                "label": "Appointments today",
+                "helper": "vs yesterday"
+            }
+        },
+        "charts": {
+            "allBookings": {
+                "title": "Bookings overview",
+                "subtitle": "by status"
+            },
+            "revenue": {
+                "title": "Revenue",
+                "subtitle": "Income vs refunds",
+                "lastSevenDays": "Last 7 days",
+                "lastSixWeeks": "Last 6 weeks",
+                "yearToDate": "Year to date",
+                "legend": {
+                    "income": "Income",
+                    "refunds": "Refunds"
+                }
+            },
+            "services": {
+                "title": "Appointment overview",
+                "subtitle": "By service",
+                "bookings": "bookings",
+                "noData": "No data"
+            }
+        },
+        "reports": {
+            "title": "Report",
+            "subtitle": "Operations",
+            "pendingConfirmations": "Pending confirmations",
+            "cancellations": "Cancellations this range",
+            "refundedPayments": "Refunded payments",
+            "confirmedToday": "Confirmed today",
+            "details": {
+                "followUp": "Needs follow-up",
+                "processed": "Processed this period",
+                "ready": "Ready to check in"
+            }
+        },
+        "recentBookings": {
+            "title": "Patient appointment",
+            "subtitle": "Latest bookings",
+            "viewAll": "View all",
+            "empty": "No recent bookings.",
+            "unknownService": "Unknown service",
+            "table": {
+                "client": "Client",
+                "service": "Service",
+                "staff": "Staff",
+                "location": "Location",
+                "scheduled": "Scheduled",
+                "status": "Status"
+            }
+        },
+        "activity": {
+            "title": "Recent activity",
+            "subtitle": "Today",
+            "viewAll": "View all",
+            "empty": "No activity yet."
+        },
+        "schedule": {
+            "appointmentsOn": "{count} appointments on {date}",
+            "noAppointments": "No appointments scheduled"
+        }
+    },
+    "Locations": {
+        "title": "Locations",
+        "subtitle": "Manage clinic locations and their information.",
+        "addLocation": "Add Location",
+        "table": {
+            "searchPlaceholder": "Search locations...",
+            "empty": "No locations found. Add a new location to get started.",
+            "code": "Code",
+            "name": "Name",
+            "address": "Address",
+            "phone": "Phone",
+            "email": "Email",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "deleteDialog": {
+            "title": "Delete Location",
+            "description": "Are you sure you want to delete this location? This action cannot be undone."
+        },
+        "toasts": {
+            "loadError": "Failed to load locations",
+            "deleteSuccess": "Location deleted",
+            "deleteError": "Failed to delete location",
+            "deletedDescription": "{name} has been deleted successfully.",
+            "updateSuccess": "Location updated",
+            "createSuccess": "Location created",
+            "saveError": "Failed to save location",
+            "savedDescription": "{name} has been {action} successfully.",
+            "statusChanged": "Location {status}",
+            "statusDescription": "{name} has been {status}."
+        },
+        "form": {
+            "name": "Location Name *",
+            "namePlaceholder": "e.g., Downtown Clinic",
+            "code": "Location Code *",
+            "codePlaceholder": "Automatically generated from name",
+            "address": "Address *",
+            "addressPlaceholder": "e.g., 123 Main Street, Suite 100",
+            "phone": "Phone Number",
+            "phonePlaceholder": "e.g., (555) 123-4567",
+            "email": "Email",
+            "emailPlaceholder": "e.g., info@clinic.com",
+            "color": "Color",
+            "active": "Active Location",
+            "validation": {
+                "nameRequired": "Location name is required",
+                "codeRequired": "Location code is required",
+                "codeLength": "Location code must be exactly 3 letters",
+                "addressRequired": "Address is required",
+                "phoneInvalid": "Invalid phone number format",
+                "emailInvalid": "Invalid email format"
+            },
+            "hint": {
+                "review": "Review the details before saving.",
+                "ready": "Ready to create this location.",
+                "incomplete": "Fill in the required fields: name, address, and code."
+            }
+        },
+        "modal": {
+            "editTitle": "Edit Location",
+            "addTitle": "Add New Location"
+        }
+    },
+    "Staff": {
+        "title": "Staff",
+        "subtitle": "Manage clinic staff, their qualifications, and location assignments",
+        "addStaff": "Add Staff",
+        "table": {
+            "name": "Name",
+            "contact": "Contact",
+            "role": "Role",
+            "hireDate": "Hire Date",
+            "status": "Status",
+            "actions": "Actions",
+            "notSet": "Not set",
+            "searchPlaceholder": "Search staff...",
+            "empty": "No staff records found."
+        },
+        "form": {
+            "userAccount": "User Account *",
+            "userPlaceholder": "Select a user account",
+            "userSearchPlaceholder": "Search users by name or email...",
+            "userHint": "Selecting a user will auto-fill the fields below",
+            "firstName": "First Name *",
+            "lastName": "Last Name *",
+            "email": "Email *",
+            "phone": "Phone",
+            "hireDate": "Hire Date",
+            "role": "Role *",
+            "bio": "Bio",
+            "bioPlaceholder": "Brief bio about the staff member",
+            "locations": "Location Assignments",
+            "locationsPlaceholder": "Select locations...",
+            "services": "Service Qualifications",
+            "servicesPlaceholder": "Select services...",
+            "active": "Active Staff Member",
+            "activeHint": "Only active staff are available for scheduling",
+            "reviewHint": "Review and update staff details",
+            "createHint": "Complete required fields to add this staff member",
+            "validation": {
+                "firstNameRequired": "First name is required",
+                "lastNameRequired": "Last name is required",
+                "emailRequired": "Email is required",
+                "emailInvalid": "Invalid email address"
+            },
+            "roles": {
+                "technician": "Technician",
+                "supervisor": "Supervisor",
+                "manager": "Manager",
+                "admin": "Administrator"
+            },
+            "noUsers": "No users found matching your search",
+            "noUsersAvailable": "No users available",
+            "noLocations": "No locations found.",
+            "noServices": "No services found."
+        },
+        "modal": {
+            "viewTitle": "View Staff",
+            "editTitle": "Edit Staff",
+            "addTitle": "Add New Staff"
+        },
+        "toasts": {
+            "loadError": "Failed to load staff",
+            "deleteSuccess": "Staff deleted",
+            "deleteError": "Failed to delete staff",
+            "deletedDescription": "{name} has been deleted successfully.",
+            "updateSuccess": "Staff updated",
+            "createSuccess": "Staff created",
+            "saveError": "Failed to save staff",
+            "savedDescription": "{name} has been {action} successfully.",
+            "statusChanged": "Staff {status}",
+            "statusDescription": "{name} has been {status}.",
+            "roleUpdateError": "User role not updated",
+            "profileUpdateError": "User profile not updated"
+        },
+        "deleteDialog": {
+            "title": "Delete Staff",
+            "description": "Are you sure you want to delete this staff member? This action cannot be undone."
+        },
+        "empty": {
+            "title": "No staff found",
+            "description": "Get started by adding your first staff member"
+        }
+    },
+    "Midwives": {
+        "title": "Midwives",
+        "subtitle": "Manage client midwives (verloskundigen) for booking references",
+        "addMidwife": "Add Midwife",
+        "table": {
+            "name": "Name",
+            "contact": "Contact",
+            "status": "Status",
+            "actions": "Actions",
+            "searchPlaceholder": "Search midwives...",
+            "empty": "No midwife records found.",
+            "noContact": "No contact info"
+        },
+        "form": {
+            "firstName": "First Name *",
+            "firstNamePlaceholder": "Enter first name",
+            "lastName": "Last Name *",
+            "lastNamePlaceholder": "Enter last name",
+            "practiceName": "Practice Name",
+            "practicePlaceholder": "Enter practice name (optional)",
+            "email": "Email",
+            "emailPlaceholder": "Enter email (optional)",
+            "phone": "Phone",
+            "phonePlaceholder": "Enter phone (optional)",
+            "active": "Active",
+            "activeHint": "Inactive midwives will not appear in booking forms",
+            "validation": {
+                "firstNameRequired": "First name is required",
+                "firstNameLength": "First name must be less than 100 characters",
+                "lastNameRequired": "Last name is required",
+                "lastNameLength": "Last name must be less than 100 characters",
+                "practiceLength": "Practice name must be less than 255 characters",
+                "emailInvalid": "Invalid email address",
+                "phoneLength": "Phone must be less than 32 characters"
+            }
+        },
+        "modal": {
+            "viewTitle": "View Midwife",
+            "editTitle": "Edit Midwife",
+            "addTitle": "Add New Midwife"
+        },
+        "view": {
+            "basicInfo": "Basic Information",
+            "contactInfo": "Contact Information",
+            "metadata": "Metadata",
+            "created": "Created",
+            "lastUpdated": "Last Updated",
+            "practice": "Practice",
+            "status": "Status",
+            "active": "Active",
+            "inactive": "Inactive",
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone"
+        },
+        "toasts": {
+            "loadError": "Failed to load midwives",
+            "deleteSuccess": "Midwife deleted",
+            "deleteError": "Failed to delete midwife",
+            "deletedDescription": "{name} has been deleted successfully.",
+            "updateSuccess": "Midwife updated",
+            "createSuccess": "Midwife created",
+            "saveError": "Failed to save midwife",
+            "savedDescription": "{name} has been {action} successfully.",
+            "statusChanged": "Midwife {status}",
+            "statusDescription": "{name} has been {status}."
+        },
+        "deleteDialog": {
+            "title": "Delete Midwife",
+            "description": "Are you sure you want to delete this midwife? This action cannot be undone."
+        },
+        "empty": {
+            "title": "No midwives found",
+            "description": "Get started by adding your first midwife"
+        }
+    },
+    "Shifts": {
+        "title": "Shift Management",
+        "description": "Manage staff schedules and availability",
+        "errors": {
+            "fetchShifts": "Failed to fetch shifts",
+            "fetchStaff": "Failed to fetch staff",
+            "fetchLocations": "Failed to fetch locations",
+            "generic": "An error occurred"
+        },
+        "empty": {
+            "noStaffTitle": "No staff members found",
+            "noStaffDescription": "Add staff members to start creating shifts"
+        },
+        "header": {
+            "viewByDay": "View by day",
+            "viewByWeek": "View by week",
+            "viewByMonth": "View by month",
+            "viewByYear": "View by year",
+            "viewByAgenda": "View by agenda",
+            "addShift": "Add Shift"
+        },
+        "settings": {
+            "title": "Calendar Settings",
+            "timeSettings": "Time Settings",
+            "workingHours": "Working Hours",
+            "workingHoursDescription": "Set the working hours for each day of the week",
+            "visibleHours": "Visible Hours",
+            "visibleHoursDescription": "Control which hours are visible in the calendar",
+            "apply": "Apply",
+            "success": "Settings updated successfully",
+            "error": "Failed to update settings",
+            "partialError": "Failed to update some settings",
+            "workingHoursError": "Failed to update working hours",
+            "visibleHoursError": "Failed to update visible hours"
+        },
+        "workingHoursInput": {
+            "title": "Change working hours",
+            "tooltip": "This will apply a dashed background to the hour cells that fall outside the working hours — only for week and day views.",
+            "from": "From",
+            "to": "To",
+            "closed": "Closed",
+            "days": {
+                "sunday": "Sunday",
+                "monday": "Monday",
+                "tuesday": "Tuesday",
+                "wednesday": "Wednesday",
+                "thursday": "Thursday",
+                "friday": "Friday",
+                "saturday": "Saturday"
+            }
+        },
+        "visibleHoursInput": {
+            "title": "Change visible hours",
+            "tooltip": "If an event falls outside the specified visible hours, the visible hours will automatically adjust to include that event.",
+            "from": "From",
+            "to": "To"
+        },
+        "dialog": {
+            "add": {
+                "title": "Add New Shift",
+                "staffMember": "Staff Member *",
+                "selectStaff": "Select staff member",
+                "loadingStaff": "Loading staff...",
+                "noStaffAssigned": "No staff assigned to this location",
+                "noStaffAvailable": "No staff available",
+                "location": "Location *",
+                "selectLocation": "Select location",
+                "loadingLocations": "Loading locations...",
+                "noLocationStaff": "Selected staff is not assigned to any locations",
+                "noLocationAvailable": "No locations available",
+                "startTime": "Start Time *",
+                "endTime": "End Time *",
+                "recurring": "Recurring Shift",
+                "frequency": "Frequency *",
+                "daily": "Daily",
+                "weekly": "Weekly",
+                "monthly": "Monthly",
+                "daysOfWeek": "Days of Week",
+                "repeatUntil": "Repeat Until",
+                "repeatIndefinitely": "Leave empty to repeat indefinitely",
+                "services": "Services *",
+                "customizeServices": "Customize services",
+                "selectStaffFirst": "Select a staff member first",
+                "noQualifiedServices": "Selected staff member is not qualified for any services",
+                "servicesSelected": "{count} service{s} selected",
+                "allServicesIncluded": "All staff services included",
+                "toggleCustomize": "Toggle \"Customize services\" to view and modify",
+                "viewQualified": "Please select a staff member to see their qualified services",
+                "noQualifications": "This staff member has no service qualifications assigned",
+                "showingServices": "Showing {count} of {total} services selected",
+                "maxBookings": "Max bookings (optional)",
+                "priority": "Priority",
+                "notes": "Notes",
+                "optionalNotes": "Optional notes",
+                "creating": "Creating...",
+                "create": "Create Shift",
+                "cancel": "Cancel",
+                "conflicts": "Shift conflicts detected"
+            },
+            "details": {
+                "staffMember": "Staff Member",
+                "startTime": "Start Time",
+                "endTime": "End Time",
+                "location": "Location",
+                "services": "Services",
+                "notes": "Notes",
+                "delete": "Delete",
+                "edit": "Edit",
+                "loading": "Loading shift details...",
+                "loadError": "Failed to load shift details",
+                "deleteSuccess": "Shift deleted",
+                "deleteSuccessDesc": "The shift has been deleted successfully.",
+                "deleteError": "Failed to delete shift",
+                "confirmDeleteTitle": "Delete Shift",
+                "confirmDeleteDesc": "Are you sure you want to delete this shift? This action cannot be undone.",
+                "itemDate": "Shift on {date}"
+            }
+        }
+    },
+    "Calendar": {
+        "dialog": {
+            "add": {
+                "title": "Add New Event",
+                "warning": "This form is for demonstration purposes only and will not actually create an event. In a real application, submit the form to the backend API to save the event.",
+                "create": "Create Event"
+            },
+            "edit": {
+                "title": "Edit Event",
+                "warning": "This form only updates the current event state locally for demonstration purposes. If you move an event after editing, some inconsistencies may occur. In a real application, you should submit this form to a backend API to persist the changes.",
+                "save": "Save changes"
+            },
+            "common": {
+                "responsible": "Responsible",
+                "title": "Title",
+                "titlePlaceholder": "Enter a title",
+                "description": "Description",
+                "startDate": "Start Date",
+                "startTime": "Start Time",
+                "endDate": "End Date",
+                "endTime": "End Time",
+                "color": "Color",
+                "selectOption": "Select an option",
+                "selectDate": "Select a date",
+                "colors": {
+                    "blue": "Blue",
+                    "green": "Green",
+                    "red": "Red",
+                    "yellow": "Yellow",
+                    "purple": "Purple",
+                    "orange": "Orange",
+                    "gray": "Gray"
+                }
+            }
+        }
+    },
+    "Services": {
+        "title": "Services",
+        "description": "Manage ultrasound services and their configurations",
+        "addService": "Add Service",
+        "searchPlaceholder": "Search services...",
+        "noServices": "No services found",
+        "noServicesEmpty": "No services found. Add a new service to get started.",
+        "getStarted": "Get started by creating your first service",
+        "table": {
+            "code": "Code",
+            "name": "Service Name",
+            "duration": "Duration",
+            "bufferTime": "Buffer Time",
+            "leadTime": "Lead Time",
+            "price": "Price",
+            "sale": "Sale",
+            "status": "Status",
+            "actions": "Actions",
+            "none": "None",
+            "active": "Active",
+            "inactive": "Inactive",
+            "edit": "Edit service",
+            "delete": "Delete service"
+        },
+        "form": {
+            "name": "Service Name *",
+            "code": "Service Code *",
+            "description": "Description",
+            "duration": "Duration (minutes) *",
+            "bufferTime": "Buffer Time (minutes)",
+            "leadTime": "Lead Time (hours)",
+            "rescheduleCutoff": "Reschedule Cutoff (hours)",
+            "instructions": "Instructions",
+            "price": "Price (€) *",
+            "salePrice": "Sale Price (€)",
+            "cancelCutoff": "Cancel Cutoff (hours)",
+            "schedulingWindow": "Scheduling Window (weeks)",
+            "category": "Category",
+            "assignedStaff": "Assigned Staff",
+            "customFields": "Custom Fields",
+            "activeService": "Active Service",
+            "tabs": {
+                "details": "Details",
+                "pricing": "Pricing",
+                "advanced": "Advanced",
+                "policy": "Policy",
+                "staff": "Staff",
+                "addons": "Add-ons"
+            },
+            "placeholders": {
+                "name": "e.g. 2D Echo Basic",
+                "description": "Basic 2D ultrasound check",
+                "instructions": "Special instructions...",
+                "code": "Automatically generated from name",
+                "category": "Select a category",
+                "newCategory": "New category name",
+                "selectStaff": "Select staff members...",
+                "searchStaff": "Search staff...",
+                "fieldType": "Select field type to add"
+            },
+            "addons": {
+                "title": "Service Add-ons",
+                "subtitle": "Manage optional add-ons that customers can select when booking this service",
+                "add": "Add Add-on",
+                "new": "New Add-on",
+                "edit": "Edit Add-on",
+                "name": "Name *",
+                "namePlaceholder": "e.g., Extra Photo Prints",
+                "description": "Description",
+                "descriptionPlaceholder": "Optional description of the add-on",
+                "price": "Price (€) *",
+                "required": "Required (automatically added)",
+                "requiredBadge": "Required",
+                "active": "Active",
+                "inactive": "Inactive",
+                "update": "Update Add-on",
+                "create": "Create Add-on",
+                "loadError": "Failed to load add-ons",
+                "loading": "Loading add-ons...",
+                "listEmpty": "No add-ons yet",
+                "listEmptyHint": "Click \"Add Add-on\" to create one",
+                "deleteConfirm": "Are you sure you want to delete this add-on?",
+                "serviceIdRequired": "Service ID is required",
+                "addonNameRequired": "Add-on name is required",
+                "updateSuccess": "Add-on updated successfully",
+                "updateError": "Failed to update add-on",
+                "createSuccess": "Add-on created successfully",
+                "createError": "Failed to create add-on",
+                "saveError": "Failed to save add-on",
+                "deleteSuccess": "Add-on deleted successfully",
+                "deleteError": "Failed to delete add-on",
+                "saveServiceFirst": "Please save the service first to manage add-ons"
+            },
+            "validation": {
+                "codeRequired": "Service code is required",
+                "codePattern": "Service code must be exactly 3 letters or numbers",
+                "nameRequired": "Service name is required",
+                "durationRequired": "Duration is required",
+                "durationMin": "Duration must be at least 1 minute",
+                "priceRequired": "Service price is required",
+                "priceNegative": "Price cannot be negative",
+                "salePriceNegative": "Sale price cannot be negative",
+                "schedulingWindowRequired": "Scheduling window is required",
+                "schedulingWindowMin": "Scheduling window must be at least 1 week",
+                "rescheduleCutoffNegative": "Reschedule cutoff cannot be negative",
+                "cancelCutoffNegative": "Cancel cutoff cannot be negative"
+            },
+            "labels": {
+                "addCategory": "+ Add New Category",
+                "add": "Add",
+                "activeService": "Active Service",
+                "enableRescheduleCutoff": "Enable Reschedule Cutoff",
+                "enableCancelCutoff": "Enable Cancel Cutoff",
+                "addPolicyField": "Add Policy Field",
+                "fieldType": "Field Type",
+                "policyFields": "Policy Fields",
+                "assignStaff": "Assign Staff to Service",
+                "selectStaff": "Select Staff Members"
+            },
+            "hints": {
+                "codeHelp": "Defaults to the first three characters of the name if left blank.",
+                "activeHelp": "Only active services are available for booking",
+                "priceHelp": "Base price for this service",
+                "salePriceHelp": "Optional discounted price",
+                "bufferTimeHelp": "Extra time between appointments",
+                "leadTimeHelp": "Minimum advance booking time",
+                "schedulingWindowHelp": "How many weeks in advance can be booked",
+                "rescheduleCutoffHelp": "Hours before appointment when rescheduling is no longer allowed",
+                "cancelCutoffHelp": "Hours before appointment when cancellation is no longer allowed",
+                "fieldTypeHelp": "Select a field type to add it to the form",
+                "dragReorder": "Drag to reorder • Click to expand/collapse",
+                "noPolicyFields": "No policy fields added yet",
+                "noPolicyFieldsHelp": "Add custom fields that patients will fill out when booking this service",
+                "noPolicyFieldsHelp2": "Select a field type above to get started",
+                "noStaffFound": "No staff found.",
+                "selectStaffHelp": "Select staff members who are qualified to perform this service",
+                "noStaffAssigned": "No staff assigned yet",
+                "noStaffAssignedHelp": "Assign staff members who are qualified to perform this service",
+                "noStaffAssignedHelp2": "Use the dropdown above to select staff members"
+            },
+            "fields": {
+                "title": "Field Title *",
+                "titlePlaceholder": "e.g., Gender Reveal Options",
+                "description": "Description",
+                "descriptionPlaceholder": "Optional description",
+                "required": "Required Field",
+                "choices": "Choices",
+                "choiceTitle": "Choice title",
+                "remove": "Remove",
+                "addChoice": "Add Choice"
+            },
+            "status": {
+                "update": "Update your service details",
+                "ready": "Ready to create service",
+                "incomplete": "Complete required fields: Name, Duration, and Price",
+                "progress": "Progress"
+            },
+            "buttons": {
+                "update": "Update Service",
+                "create": "Create Service"
+            }
+        },
+        "modal": {
+            "viewTitle": "View Service",
+            "editTitle": "Edit Service",
+            "addTitle": "Add New Service"
+        },
+        "view": {
+            "code": "Code",
+            "durationTiming": "Duration & Timing",
+            "duration": "Duration",
+            "bufferTime": "Buffer Time",
+            "leadTime": "Lead Time",
+            "schedulingWindow": "Scheduling Window",
+            "pricing": "Pricing",
+            "price": "Price",
+            "salePrice": "Sale Price",
+            "advancedSettings": "Advanced Settings",
+            "rescheduleCutoff": "Reschedule Cutoff",
+            "cancelCutoff": "Cancel Cutoff",
+            "instructions": "Instructions",
+            "policyFields": "Policy Fields",
+            "category": "Category",
+            "assignedStaff": "Assigned Staff",
+            "unknownCategory": "Unknown Category",
+            "hoursBefore": "h before",
+            "weeks": "weeks",
+            "active": "Active",
+            "inactive": "Inactive",
+            "required": "Required",
+            "choices": "Choices",
+            "title": "Title"
+        },
+        "notifications": {
+            "loadError": "Failed to load services",
+            "deleteError": "Failed to delete service",
+            "deleteSuccess": "Service deleted",
+            "deleteDescription": "{name} has been deleted successfully.",
+            "activated": "Service activated",
+            "deactivated": "Service deactivated",
+            "activatedDescription": "{name} has been activated.",
+            "deactivatedDescription": "{name} has been deactivated.",
+            "updateError": "Failed to update service",
+            "updateSuccess": "Service updated",
+            "updatedDescription": "{name} has been updated successfully.",
+            "createSuccess": "Service created",
+            "createdDescription": "{name} has been created successfully.",
+            "saveError": "Failed to save service"
+        },
+        "dialog": {
+            "deleteTitle": "Delete Service",
+            "deleteDescription": "Are you sure you want to delete this service? This action cannot be undone."
+        }
+    },
+    "Booking": {
+        "flow": {
+            "reset": "Reset",
+            "resetTitle": "Start over?",
+            "resetDescription": "Are you sure you want to start over? All entered data will be cleared.",
+            "back": "Back",
+            "confirmReset": "Start over",
+            "service": "Service",
+            "location": "Location",
+            "dateTime": "Date & Time",
+            "others": "Others",
+            "totalDue": "Total Due",
+            "datetime": {
+                "title": "Location, Date & Time",
+                "subtitle": "Choose your location, date and time slot.",
+                "locationPlaceholder": "Choose location"
+            },
+            "time": {
+                "available": "Available Times",
+                "noSlots": "No slots available for chosen date.",
+                "morning": "Morning",
+                "afternoon": "Afternoon",
+                "evening": "Evening"
+            },
+            "addons": {
+                "title": "Select add-ons",
+                "subtitle": "Choose any additional services you'd like to include.",
+                "selectServiceFirst": "Select a service first to see available add-ons.",
+                "requiredAddon": "This add-on is required and automatically added."
+            },
+            "review": {
+                "title": "Review & checkout",
+                "subtitle": "Review your booking details and complete your appointment.",
+                "completeBooking": "Complete booking",
+                "processing": "Processing...",
+                "errors": {
+                    "emailRequired": "Email is required",
+                    "passwordRequired": "Enter your password to continue",
+                    "loginFailed": "Login failed",
+                    "loginSessionFailed": "Login failed: no session created",
+                    "incompleteSelection": "Select service, location and time first",
+                    "loginRequired": "Log in to continue",
+                    "bookingFailed": "Booking failed"
+                }
+            },
+            "form": {
+                "processingDetails": "Processing your details...",
+                "email": "Email address",
+                "emailPlaceholder": "you@example.com",
+                "notYouLogout": "Not you? Log out",
+                "accountFound": "Account found. Log in to continue.",
+                "loggedIn": "You are logged in.",
+                "accountCreationNotice": "We'll create an account for you with this email (no password).",
+                "password": "Password",
+                "passwordPlaceholder": "Enter your password",
+                "loggingIn": "Logging in...",
+                "loginContinue": "Login and continue",
+                "bookingForClient": "This booking is for a client",
+                "clientEmailPlaceholder": "Client's email address",
+                "firstName": "First name",
+                "firstNamePlaceholder": "Your first name",
+                "lastName": "Last name",
+                "lastNamePlaceholder": "Your last name",
+                "phone": "Phone",
+                "optional": "Optional",
+                "street": "Street name",
+                "streetPlaceholder": "Street",
+                "houseNumber": "House number",
+                "houseNumberPlaceholder": "Nr",
+                "postalCode": "Postal code",
+                "postalCodePlaceholder": "1234 AB",
+                "city": "City",
+                "cityPlaceholder": "City",
+                "dueDate": "Due date",
+                "selectDate": "Select date",
+                "birthDate": "Birth date",
+                "midwife": "Your own midwife",
+                "midwifePlaceholder": "Select midwife (optional)",
+                "unknownMidwife": "Unknown midwife",
+                "otherMidwife": "Other / Not in list",
+                "notes": "Notes",
+                "notesPlaceholder": "Details or questions? (Optional)"
+            },
+            "selectService": "Select service",
+            "selectServiceSubtitle": "Choose a service to continue.",
+            "servicePlaceholder": "Select services",
+            "servicePolicy": "Service Policy",
+            "currentTotal": "Current total",
+            "continue": "Continue",
+            "errors": {
+                "policy": {
+                    "confirmCheckBox": "Confirm this policy to continue.",
+                    "makeChoice": "Make at least one choice.",
+                    "validNumber": "Enter a valid number.",
+                    "selectDateTime": "Select a date and time.",
+                    "uploadUnavailable": "Uploading via this form is not yet available. Please contact us.",
+                    "required": "This field is required."
+                }
+            },
+            "noOptions": "No options available.",
+            "uploadSoon": "Uploading via this form will be supported soon. Contact the clinic if this is mandatory."
+        },
+        "confirmation": {
+            "title": "Booking Confirmed",
+            "errorTitle": "Error",
+            "errorNoId": "No booking ID found",
+            "errorLoad": "Could not load booking details",
+            "backToBookings": "Back to bookings",
+            "newBooking": "New Booking",
+            "toDashboard": "To Dashboard",
+            "addToCalendar": "Add to calendar",
+            "downloadICal": "Download iCal",
+            "bookingNumber": "Booking number",
+            "yourDetails": "Your Details",
+            "name": "Name",
+            "email": "Email",
+            "phone": "Phone",
+            "service": "Service",
+            "location": "Location",
+            "staff": "Staff",
+            "priceBreakdown": "Price Breakdown",
+            "baseService": "Base Service",
+            "servicePolicy": "Service Policy",
+            "addons": "Add-ons",
+            "total": "Total",
+            "selectedAddons": "Selected Add-ons",
+            "quantity": "Quantity",
+            "policyAnswers": "Policy Answers",
+            "extraCost": "Extra cost",
+            "yes": "Yes",
+            "no": "No",
+            "unknownField": "Unknown field",
+            "na": "N/A"
+        }
+    },
+    "Bookings": {
+        "title": "Bookings",
+        "description": "Manage all appointments and bookings",
+        "filters": {
+            "status": "Status",
+            "all": "All",
+            "pending": "Pending",
+            "confirmed": "Confirmed",
+            "cancelled": "Cancelled",
+            "from": "From",
+            "to": "To",
+            "search": "Search",
+            "searchPlaceholder": "Client name or email..."
+        },
+        "table": {
+            "emptyTitle": "No bookings found",
+            "emptyDescription": "There are no bookings matching your criteria",
+            "emptyMessage": "No bookings to display"
+        },
+        "pagination": {
+            "itemsPerPage": "Items per page",
+            "showing": "Showing {start} to {end} of {total} bookings",
+            "noBookings": "No bookings found",
+            "previous": "Previous",
+            "next": "Next"
+        },
+        "toasts": {
+            "loadError": "Failed to load bookings",
+            "cancelSuccess": "Booking cancelled",
+            "cancelSuccessDesc": "The booking has been cancelled successfully.",
+            "cancelError": "Failed to cancel booking",
+            "deleteSuccess": "Booking deleted",
+            "deleteSuccessDesc": "The booking has been permanently deleted.",
+            "deleteError": "Failed to delete booking"
+        },
+        "dialog": {
+            "deleteTitle": "Delete Booking",
+            "cancelTitle": "Cancel Booking",
+            "deleteDescription": "Are you sure you want to permanently delete this booking? This action cannot be undone.",
+            "cancelDescription": "Are you sure you want to cancel this appointment? The booking will be marked as cancelled.",
+            "deleteConfirm": "Delete",
+            "cancelConfirm": "Cancel Appointment"
+        },
+        "columns": {
+            "client": "Client",
+            "dateTime": "Date & Time",
+            "service": "Service",
+            "location": "Location",
+            "staff": "Staff",
+            "status": "Status",
+            "actions": "Actions"
+        },
+        "cells": {
+            "na": "N/A",
+            "unknown": "Unknown",
+            "unassigned": "Unassigned",
+            "view": "View details",
+            "cancel": "Cancel",
+            "delete": "Delete"
+        }
+    },
+    "BookingStatus": {
+        "confirmed": "Confirmed",
+        "pending": "Pending",
+        "cancelled": "Cancelled"
+    },
+    "Table": {
+        "searchPlaceholder": "Search...",
+        "emptyMessage": "No results found.",
+        "columns": "Columns",
+        "selectedRows": "{selected} of {total} row(s) selected.",
+        "previous": "Previous",
+        "next": "Next",
+        "itemsPerPage": "Items per page",
+        "showing": "Showing {start} to {end} of {total} results"
+    },
+    "Clients": {
+        "title": "Clients",
+        "description": "Manage all client accounts",
+        "filters": {
+            "selectRole": "Select role",
+            "searchPlaceholder": "Search clients...",
+            "dateRange": "Select date range",
+            "allTime": "All time",
+            "export": "Export"
+        },
+        "analytics": {
+            "totalClients": "Total Clients",
+            "withBookings": "With Bookings",
+            "totalRevenue": "Total Revenue",
+            "from": "From"
+        },
+        "roles": {
+            "client": "client",
+            "staff": "staff",
+            "midwife": "midwife",
+            "admin": "admin",
+            "users": "users",
+            "plural": {
+                "client": "clients",
+                "staff": "staff",
+                "midwife": "midwives",
+                "admin": "admins",
+                "users": "users"
+            }
+        },
+        "table": {
+            "emptyTitle": "No {role} found",
+            "emptyDescription": "There are no {role} matching your criteria",
+            "emptyMessage": "No {role} to display"
+        },
+        "toasts": {
+            "loadError": "Failed to load clients"
+        },
+        "columns": {
+            "client": "Client",
+            "contact": "Contact",
+            "memberSince": "Member Since",
+            "lastLogin": "Last Login",
+            "actions": "Actions"
+        },
+        "cells": {
+            "never": "Never",
+            "viewDetails": "View Details"
+        }
+    },
+    "Common": {
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "update": "Update",
+        "create": "Create",
+        "actions": "Actions",
+        "close": "Close"
+    }
+}

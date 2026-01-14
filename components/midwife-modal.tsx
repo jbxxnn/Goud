@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ interface MidwifeModalProps {
 }
 
 export default function MidwifeModal({ isOpen, onClose, onSave, midwife, isViewMode = false }: MidwifeModalProps) {
+  const t = useTranslations('Midwives.modal');
+  const tCommon = useTranslations('Common');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSave = async (data: CreateMidwifeRequest | UpdateMidwifeRequest) => {
@@ -32,7 +35,7 @@ export default function MidwifeModal({ isOpen, onClose, onSave, midwife, isViewM
       <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>
-            {isViewMode ? 'View Midwife' : midwife ? 'Edit Midwife' : 'Add New Midwife'}
+            {isViewMode ? t('viewTitle') : midwife ? t('editTitle') : t('addTitle')}
           </SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
@@ -48,16 +51,16 @@ export default function MidwifeModal({ isOpen, onClose, onSave, midwife, isViewM
           )}
         </div>
         {!isViewMode && (
-          <SheetFooter className="px-6 py-4 border-t">
+          <SheetFooter className="px-6 py-4 border-t flex flex-col gap-3 md:flex-row md:items-center md:justify-start">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               form="midwife-form"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : midwife ? 'Update Midwife' : 'Create Midwife'}
+              {isSubmitting ? tCommon('saving') : midwife ? tCommon('update') : tCommon('create')}
             </Button>
           </SheetFooter>
         )}

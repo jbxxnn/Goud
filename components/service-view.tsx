@@ -7,16 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { 
-  Time04Icon, 
-//   ClockIcon, 
+import {
+  Time04Icon,
+  //   ClockIcon, 
   CoinsEuroIcon,
   CalendarIcon,
   SettingsIcon,
   FileEmpty02Icon,
   CheckmarkCircle01Icon,
   UserIcon,
-//   XCircleIcon
+  //   XCircleIcon
 } from '@hugeicons/core-free-icons';
 
 interface ServiceViewProps {
@@ -41,7 +41,10 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
+import { useTranslations } from 'next-intl';
+
 export default function ServiceView({ service }: ServiceViewProps) {
+  const t = useTranslations('Services.view');
   const [assignedStaff, setAssignedStaff] = useState<Staff[]>([]);
 
   // Fetch staff details when service has staff_ids
@@ -74,7 +77,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <h2 className="text-2xl font-bold">{service.name}</h2>
           {service.serviceCode && (
             <p className="text-sm font-mono uppercase tracking-wide text-muted-foreground mt-1">
-              Code: {service.serviceCode}
+              {t('code')}: {service.serviceCode}
             </p>
           )}
           {service.description && (
@@ -82,7 +85,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
           )}
         </div>
         <Badge variant={service.is_active ? "default" : "secondary"}>
-          {service.is_active ? "Active" : "Inactive"}
+          {service.is_active ? t('active') : t('inactive')}
         </Badge>
       </div>
 
@@ -94,27 +97,27 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={Time04Icon} className="h-5 w-5" />
-              Duration & Timing
+              {t('durationTiming')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Duration:</span>
+              <span className="text-sm text-muted-foreground">{t('duration')}:</span>
               <span className="font-bold text-xs">{formatDuration(service.duration)}</span>
             </div>
             {service.buffer_time > 0 && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Buffer Time:</span>
+                <span className="text-sm text-muted-foreground">{t('bufferTime')}:</span>
                 <span className="font-bold text-xs">+{formatDuration(service.buffer_time)}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Lead Time:</span>
-              <span className="font-bold text-xs">{service.lead_time}h before</span>
+              <span className="text-sm text-muted-foreground">{t('leadTime')}:</span>
+              <span className="font-bold text-xs">{service.lead_time}{t('hoursBefore')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Scheduling Window:</span>
-              <span className="font-bold text-xs">{service.scheduling_window} weeks</span>
+              <span className="text-sm text-muted-foreground">{t('schedulingWindow')}:</span>
+              <span className="font-bold text-xs">{service.scheduling_window} {t('weeks')}</span>
             </div>
           </CardContent>
         </Card>
@@ -123,17 +126,17 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={CoinsEuroIcon} className="h-5 w-5" />
-              Pricing
+              {t('pricing')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Price:</span>
+              <span className="text-sm text-muted-foreground">{t('price')}:</span>
               <span className="font-bold text-xs">{formatPrice(service.price)}</span>
             </div>
             {service.sale_price && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Sale Price:</span>
+                <span className="text-sm text-muted-foreground">{t('salePrice')}:</span>
                 <span className="font-bold text-xs text-green-600">{formatPrice(service.sale_price)}</span>
               </div>
             )}
@@ -146,19 +149,19 @@ export default function ServiceView({ service }: ServiceViewProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <HugeiconsIcon icon={SettingsIcon} className="h-5 w-5" />
-            Advanced Settings
+            {t('advancedSettings')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Reschedule Cutoff:</span>
-              <span className="font-bold text-xs">{service.reschedule_cutoff}h before</span>
+              <span className="text-sm text-muted-foreground">{t('rescheduleCutoff')}:</span>
+              <span className="font-bold text-xs">{service.reschedule_cutoff}{t('hoursBefore')}</span>
             </div>
             {service.cancel_cutoff && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Cancel Cutoff:</span>
-                <span className="font-bold text-xs">{service.cancel_cutoff}h before</span>
+                <span className="text-sm text-muted-foreground">{t('cancelCutoff')}:</span>
+                <span className="font-bold text-xs">{service.cancel_cutoff}{t('hoursBefore')}</span>
               </div>
             )}
           </div>
@@ -171,7 +174,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={FileEmpty02Icon} className="h-5 w-5" />
-              Instructions
+              {t('instructions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -186,7 +189,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={CheckmarkCircle01Icon} className="h-5 w-5" />
-              Policy Fields ({service.policy_fields.length})
+              {t('policyFields')} ({service.policy_fields.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -202,7 +205,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
                     </h4>
                     {field.is_required && (
                       <Badge variant="outline" className="text-xs">
-                        Required
+                        {t('required')}
                       </Badge>
                     )}
                   </div>
@@ -211,16 +214,16 @@ export default function ServiceView({ service }: ServiceViewProps) {
                   )}
                   {field.field_type === 'multi_choice' && field.choices && field.choices.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Choices:</p>
+                      <p className="text-xs text-muted-foreground">{t('choices')}:</p>
                       <div className="space-y-2">
                         {field.choices.map((choice) => (
                           <div key={choice.id} className="flex items-center justify-between bg-muted/50 rounded-md p-2">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-muted-foreground">Title:</span>
+                              <span className="text-xs font-medium text-muted-foreground">{t('title')}:</span>
                               <span className="text-sm font-medium">{choice.title}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-muted-foreground">Price:</span>
+                              <span className="text-xs font-medium text-muted-foreground">{t('price')}:</span>
                               <span className="text-sm font-bold">{formatPrice(choice.price)}</span>
                             </div>
                           </div>
@@ -241,12 +244,12 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={CalendarIcon} className="h-5 w-5" />
-              Category
+              {t('category')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Badge variant="outline">
-              {service.service_categories?.name || 'Unknown Category'}
+              {service.service_categories?.name || t('unknownCategory')}
             </Badge>
           </CardContent>
         </Card>
@@ -258,7 +261,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <HugeiconsIcon icon={UserIcon} className="h-5 w-5" />
-              Assigned Staff ({assignedStaff.length})
+              {t('assignedStaff')} ({assignedStaff.length})
             </CardTitle>
           </CardHeader>
           <CardContent>

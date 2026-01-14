@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, FocusEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,13 +71,13 @@ const generateServiceCode = (name: string): string => {
 };
 
 // Sortable Field Component
-function SortableField({ 
-  field, 
-  index, 
-  isExpanded, 
-  onToggleExpand, 
-  onUpdate, 
-  onRemove 
+function SortableField({
+  field,
+  index,
+  isExpanded,
+  onToggleExpand,
+  onUpdate,
+  onRemove
 }: {
   field: ServicePolicyField;
   index: number;
@@ -85,6 +86,9 @@ function SortableField({
   onUpdate: (field: ServicePolicyField) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations('Services.form.fields');
+  const tCommon = useTranslations('Common');
+
   const {
     attributes,
     listeners,
@@ -146,33 +150,33 @@ function SortableField({
             size="sm"
             onClick={onRemove}
           >
-            Remove
+            {tCommon('delete')}
           </Button>
         </div>
       </div>
-      
+
       {isExpanded && (
         <div className="px-4 pb-4 border-t">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
             {/* Field Title */}
             <div>
-              <Label htmlFor={`field_title_${index}`}>Field Title *</Label>
+              <Label htmlFor={`field_title_${index}`}>{t('title')}</Label>
               <Input
                 id={`field_title_${index}`}
                 value={field.title}
                 onChange={(e) => onUpdate({ ...field, title: e.target.value })}
-                placeholder="e.g., Gender Reveal Options"
+                placeholder={t('titlePlaceholder')}
               />
             </div>
 
             {/* Field Description */}
             <div>
-              <Label htmlFor={`field_description_${index}`}>Description</Label>
+              <Label htmlFor={`field_description_${index}`}>{t('description')}</Label>
               <Input
                 id={`field_description_${index}`}
                 value={field.description || ''}
                 onChange={(e) => onUpdate({ ...field, description: e.target.value })}
-                placeholder="Optional description"
+                placeholder={t('descriptionPlaceholder')}
               />
             </div>
 
@@ -183,18 +187,18 @@ function SortableField({
                 checked={field.is_required}
                 onCheckedChange={(checked) => onUpdate({ ...field, is_required: checked })}
               />
-              <Label htmlFor={`field_required_${index}`}>Required Field</Label>
+              <Label htmlFor={`field_required_${index}`}>{t('required')}</Label>
             </div>
 
             {/* Multi Choice Options */}
             {field.field_type === 'multi_choice' && (
               <div className="md:col-span-2">
-                <Label>Choices</Label>
+                <Label>{t('choices')}</Label>
                 <div className="space-y-2 mt-2">
                   {field.choices?.map((choice, choiceIndex) => (
                     <div key={choice.id} className="flex items-center gap-2">
                       <Input
-                        placeholder="Choice title"
+                        placeholder={t('choiceTitle')}
                         value={choice.title}
                         onChange={(e) => {
                           const newChoices = [...(field.choices || [])];
@@ -227,7 +231,7 @@ function SortableField({
                           onUpdate({ ...field, choices: newChoices });
                         }}
                       >
-                        Remove
+                        {t('remove')}
                       </Button>
                     </div>
                   ))}
@@ -247,7 +251,7 @@ function SortableField({
                       onUpdate({ ...field, choices: newChoices });
                     }}
                   >
-                    Add Choice
+                    {t('addChoice')}
                   </Button>
                 </div>
               </div>
@@ -261,6 +265,8 @@ function SortableField({
 
 // Addons Manager Component
 function AddonsManager({ serviceId }: { serviceId?: string }) {
+  const t = useTranslations('Services.form.addons');
+  const tCommon = useTranslations('Common');
   const [addons, setAddons] = useState<ServiceAddon[]>([]);
   const [loading, setLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -283,16 +289,16 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
       setLoading(true);
       const response = await fetch(`/api/services/${serviceId}/addons`);
       const data = await response.json();
-      
+
       if (data.success) {
         setAddons(data.data || []);
       } else {
-        toast.error('Failed to load add-ons', {
+        toast.error(t('loadError'), {
           description: data.error || 'Unknown error',
         });
       }
     } catch (error) {
-      toast.error('Failed to load add-ons', {
+      toast.error(t('loadError'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -336,12 +342,12 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 
   const handleSave = async () => {
     if (!serviceId) {
-      toast.error('Service ID is required');
+      toast.error(t('serviceIdRequired'));
       return;
     }
 
     if (!formData.name.trim()) {
-      toast.error('Add-on name is required');
+      toast.error(t('addonNameRequired'));
       return;
     }
 
@@ -365,11 +371,11 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 
         const data = await response.json();
         if (data.success) {
-          toast.success('Add-on updated successfully');
+          toast.success(t('updateSuccess'));
           resetForm();
           fetchAddons();
         } else {
-          toast.error('Failed to update add-on', {
+          toast.error(t('updateError'), {
             description: data.error || 'Unknown error',
           });
         }
@@ -383,24 +389,24 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 
         const data = await response.json();
         if (data.success) {
-          toast.success('Add-on created successfully');
+          toast.success(t('createSuccess'));
           resetForm();
           fetchAddons();
         } else {
-          toast.error('Failed to create add-on', {
+          toast.error(t('createError'), {
             description: data.error || 'Unknown error',
           });
         }
       }
     } catch (error) {
-      toast.error('Failed to save add-on', {
+      toast.error(t('saveError'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this add-on?')) {
+    if (!confirm(t('deleteConfirm'))) {
       return;
     }
 
@@ -411,15 +417,15 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Add-on deleted successfully');
+        toast.success(t('deleteSuccess'));
         fetchAddons();
       } else {
-        toast.error('Failed to delete add-on', {
+        toast.error(t('deleteError'), {
           description: data.error || 'Unknown error',
         });
       }
     } catch (error) {
-      toast.error('Failed to delete add-on', {
+      toast.error(t('deleteError'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -428,7 +434,7 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
   if (!serviceId) {
     return (
       <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-        <p className="text-sm">Please save the service first to manage add-ons</p>
+        <p className="text-sm">{t('saveServiceFirst')}</p>
       </div>
     );
   }
@@ -437,14 +443,14 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Service Add-ons</h3>
+          <h3 className="text-lg font-medium">{t('title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Manage optional add-ons that customers can select when booking this service
+            {t('subtitle')}
           </p>
         </div>
         <Button type="button" onClick={handleAdd} size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Add Add-on
+          {t('add')}
         </Button>
       </div>
 
@@ -452,36 +458,36 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
       {(isAdding || editingId) && (
         <div className="border rounded-lg p-4 bg-muted/50 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium">{editingId ? 'Edit Add-on' : 'New Add-on'}</h4>
+            <h4 className="font-medium">{editingId ? t('edit') : t('new')}</h4>
             <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <Label htmlFor="addon-name">Name *</Label>
+              <Label htmlFor="addon-name">{t('name')}</Label>
               <Input
                 id="addon-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Extra Photo Prints"
+                placeholder={t('namePlaceholder')}
               />
             </div>
-            
+
             <div className="md:col-span-2">
-              <Label htmlFor="addon-description">Description</Label>
+              <Label htmlFor="addon-description">{t('description')}</Label>
               <Textarea
                 id="addon-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Optional description of the add-on"
+                placeholder={t('descriptionPlaceholder')}
                 rows={3}
               />
             </div>
-            
+
             <div>
-              <Label htmlFor="addon-price">Price (€) *</Label>
+              <Label htmlFor="addon-price">{t('price')}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">€</span>
                 <Input
@@ -496,7 +502,7 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center gap-6 pt-6">
               <div className="flex items-center gap-2">
                 <Switch
@@ -505,10 +511,10 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
                   onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
                 />
                 <Label htmlFor="addon-required" className="cursor-pointer">
-                  Required (automatically added)
+                  {t('required')}
                 </Label>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="addon-active"
@@ -516,18 +522,18 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
                 <Label htmlFor="addon-active" className="cursor-pointer">
-                  Active
+                  {t('active')}
                 </Label>
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={resetForm}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="button" onClick={handleSave}>
-              {editingId ? 'Update' : 'Create'} Add-on
+              {editingId ? t('update') : t('create')}
             </Button>
           </div>
         </div>
@@ -536,12 +542,12 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
       {/* Addons List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-sm text-muted-foreground">Loading add-ons...</div>
+          <div className="text-sm text-muted-foreground">{t('loading')}</div>
         </div>
       ) : addons.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-          <p className="text-sm">No add-ons yet</p>
-          <p className="text-xs mt-1">Click "Add Add-on" to create one</p>
+          <p className="text-sm">{t('listEmpty')}</p>
+          <p className="text-xs mt-1">{t('listEmptyHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -554,10 +560,10 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{addon.name}</span>
                   {addon.is_required && (
-                    <Badge variant="secondary" className="text-xs">Required</Badge>
+                    <Badge variant="secondary" className="text-xs">{t('requiredBadge')}</Badge>
                   )}
                   {!addon.is_active && (
-                    <Badge variant="outline" className="text-xs">Inactive</Badge>
+                    <Badge variant="outline" className="text-xs">{t('inactive')}</Badge>
                   )}
                 </div>
                 {addon.description && (
@@ -592,6 +598,8 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 }
 
 export default function ServiceForm({ service, onSave, onCancel, isViewMode = false }: ServiceFormProps) {
+  const t = useTranslations('Services.form');
+  const tCommon = useTranslations('Common');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -600,14 +608,14 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const [staff, setStaff] = useState<Staff[]>([]);
   const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
   const [hasCustomServiceCode, setHasCustomServiceCode] = useState(false);
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  
+
   const {
     register,
     handleSubmit,
@@ -712,7 +720,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         console.error('Failed to fetch data:', error);
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -739,11 +747,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   // Drag and drop handlers
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     if (active.id !== over?.id) {
       const oldIndex = watch('policy_fields').findIndex((field) => field.id === active.id);
       const newIndex = watch('policy_fields').findIndex((field) => field.id === over?.id);
-      
+
       const newFields = arrayMove(watch('policy_fields'), oldIndex, newIndex);
       setValue('policy_fields', newFields);
     }
@@ -811,11 +819,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const isFormComplete = () => {
     const formData = watch();
     return (
-      formData.name && 
+      formData.name &&
       formData.name.trim() !== '' &&
-      formData.duration && 
+      formData.duration &&
       formData.duration > 0 &&
-      formData.price !== undefined && 
+      formData.price !== undefined &&
       formData.price >= 0
     );
   };
@@ -845,622 +853,622 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto">
           <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-6" style={{ borderRadius: '0.5rem' }}>
-          <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
-            Details
-            {watch('name') && watch('duration') && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-            )}
-          </TabsTrigger>
-            <TabsTrigger value="pricing" style={{ borderRadius: '0.5rem' }} className="relative">
-              Pricing
-              {watch('price') !== undefined && watch('price') >= 0 && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-              )}
-            </TabsTrigger>
-          <TabsTrigger value="advanced" style={{ borderRadius: '0.5rem' }} className="relative">
-            Advanced
-            {watch('buffer_time') !== undefined && watch('lead_time') !== undefined && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="policy" style={{ borderRadius: '0.5rem' }} className="relative">
-            Policy
-            {watch('policy_fields') && watch('policy_fields').length > 0 && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="staff" style={{ borderRadius: '0.5rem' }} className="relative">
-            Staff
-            {watch('staff_ids') && watch('staff_ids').length > 0 && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="addons" style={{ borderRadius: '0.5rem' }} className="relative">
-            Add-ons
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Details Tab */}
-      <TabsContent value="details" className="space-y-4 min-h-0 mt-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Service Name */}
-        <div className="md:col-span-2 mb-4">
-          <Label htmlFor="name" className="text-sm font-medium mb-2">Service Name *</Label>
-          <Input
-            id="name"
-            disabled={getDisabledState()}
-            {...register('name', { required: 'Service name is required' })}
-            placeholder="e.g., 12-Week Ultrasound"
-          />
-          {errors.name && (
-            <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
-          )}
-        </div>
+            <TabsList className="grid w-full grid-cols-6" style={{ borderRadius: '0.5rem' }}>
+              <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.details')}
+                {watch('name') && watch('duration') && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="pricing" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.pricing')}
+                {watch('price') !== undefined && watch('price') >= 0 && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="advanced" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.advanced')}
+                {watch('buffer_time') !== undefined && watch('lead_time') !== undefined && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="policy" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.policy')}
+                {watch('policy_fields') && watch('policy_fields').length > 0 && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="staff" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.staff')}
+                {watch('staff_ids') && watch('staff_ids').length > 0 && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="addons" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.addons')}
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Service Code */}
-        <div className="md:col-span-2 mb-4">
-          <Label htmlFor="serviceCode" className="text-sm font-medium mb-2">Service Code *</Label>
-          <Input
-            id="serviceCode"
-            name="serviceCode"
-            disabled={getDisabledState()}
-            value={watch('serviceCode')}
-            onChange={(e) => handleServiceCodeChange(e.target.value)}
-            onFocus={handleServiceCodeFocus}
-            onBlur={handleServiceCodeBlur}
-            ref={serviceCodeRegister.ref}
-            placeholder="Automatically generated from name"
-            className={errors.serviceCode ? 'border-destructive' : ''}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Defaults to the first three characters of the name if left blank.
-          </p>
-          {errors.serviceCode && (
-            <p className="text-sm text-destructive mt-1">{errors.serviceCode.message}</p>
-          )}
-        </div>
+            {/* Details Tab */}
+            <TabsContent value="details" className="space-y-4 min-h-0 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Service Name */}
+                <div className="md:col-span-2 mb-4">
+                  <Label htmlFor="name" className="text-sm font-medium mb-2">{t('name')}</Label>
+                  <Input
+                    id="name"
+                    disabled={getDisabledState()}
+                    {...register('name', { required: t('validation.nameRequired') })}
+                    placeholder={t('placeholders.name')}
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+                  )}
+                </div>
 
-        {/* Description */}
-        <div className="md:col-span-2 mb-4">
-          <Label htmlFor="description" className="text-sm font-medium mb-2">Description</Label>
-          <Textarea
-            id="description"
-            {...register('description')}
-            placeholder="Brief description of the service"
-            rows={3}
-          />
-        </div>
+                {/* Service Code */}
+                <div className="md:col-span-2 mb-4">
+                  <Label htmlFor="serviceCode" className="text-sm font-medium mb-2">{t('code')}</Label>
+                  <Input
+                    id="serviceCode"
+                    name="serviceCode"
+                    disabled={getDisabledState()}
+                    value={watch('serviceCode')}
+                    onChange={(e) => handleServiceCodeChange(e.target.value)}
+                    onFocus={handleServiceCodeFocus}
+                    onBlur={handleServiceCodeBlur}
+                    ref={serviceCodeRegister.ref}
+                    placeholder={t('placeholders.code')}
+                    className={errors.serviceCode ? 'border-destructive' : ''}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('hints.codeHelp')}
+                  </p>
+                  {errors.serviceCode && (
+                    <p className="text-sm text-destructive mt-1">{errors.serviceCode.message}</p>
+                  )}
+                </div>
 
-            {/* Duration */}
-            <div className="mb-4">
-              <Label htmlFor="duration" className="text-sm font-medium mb-2">Duration (minutes) *</Label>
-              <Input
-                id="duration"
-                type="number"
-                min="1"
-                {...register('duration', { 
-                  required: 'Duration is required',
-                  min: { value: 1, message: 'Duration must be at least 1 minute' }
-                })}
-              />
-              {errors.duration && (
-                <p className="text-sm text-destructive mt-1">{errors.duration.message}</p>
-              )}
-            </div>
+                {/* Description */}
+                <div className="md:col-span-2 mb-4">
+                  <Label htmlFor="description" className="text-sm font-medium mb-2">{t('description')}</Label>
+                  <Textarea
+                    id="description"
+                    {...register('description')}
+                    placeholder={t('placeholders.description')}
+                    rows={3}
+                  />
+                </div>
 
-            {/* Category */}
-            <div className="mb-4">
-              <Label htmlFor="category" className="text-sm font-medium mb-2">Category</Label>
-              <div className="space-y-2">
-                <Select
-                  key={watch('category_id')} // Force re-render when value changes
-                  value={watch('category_id') || ''}
-                  onValueChange={(value) => {
-                    if (value === 'new') {
-                      setShowNewCategoryInput(true);
-                    } else {
-                      setValue('category_id', value || null);
-                      setShowNewCategoryInput(false);
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new">+ Add New Category</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {showNewCategoryInput && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="New category name"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={async () => {
-                        if (newCategoryName.trim()) {
-                          try {
-                            // Create category via API
-                            const response = await fetch('/api/service-categories', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({
-                                name: newCategoryName.trim(),
-                                description: null,
-                              }),
-                            });
+                {/* Duration */}
+                <div className="mb-4">
+                  <Label htmlFor="duration" className="text-sm font-medium mb-2">{t('duration')}</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min="1"
+                    {...register('duration', {
+                      required: t('validation.durationRequired'),
+                      min: { value: 1, message: t('validation.durationMin') }
+                    })}
+                  />
+                  {errors.duration && (
+                    <p className="text-sm text-destructive mt-1">{errors.duration.message}</p>
+                  )}
+                </div>
 
-                            if (response.ok) {
-                              const result = await response.json();
-                              const newCategory = result.data;
-                              
-                              // Add to local state
-                              setCategories(prev => [...prev, newCategory]);
-                              // Auto-select the new category with a small delay
-                              setTimeout(() => {
-                                setValue('category_id', newCategory.id);
-                              }, 100);
-                              setNewCategoryName('');
-                              setShowNewCategoryInput(false);
-                            } else {
-                              console.error('Failed to create category');
-                            }
-                          } catch (error) {
-                            console.error('Error creating category:', error);
-                          }
+                {/* Category */}
+                <div className="mb-4">
+                  <Label htmlFor="category" className="text-sm font-medium mb-2">{t('category')}</Label>
+                  <div className="space-y-2">
+                    <Select
+                      key={watch('category_id')} // Force re-render when value changes
+                      value={watch('category_id') || ''}
+                      onValueChange={(value) => {
+                        if (value === 'new') {
+                          setShowNewCategoryInput(true);
+                        } else {
+                          setValue('category_id', value || null);
+                          setShowNewCategoryInput(false);
                         }
                       }}
                     >
-                      Add
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowNewCategoryInput(false);
-                        setNewCategoryName('');
-                      }}
-                    >
-                      Cancel
-                    </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('placeholders.category')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="new">{t('labels.addCategory')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {showNewCategoryInput && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder={t('placeholders.newCategory')}
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={async () => {
+                            if (newCategoryName.trim()) {
+                              try {
+                                // Create category via API
+                                const response = await fetch('/api/service-categories', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                  body: JSON.stringify({
+                                    name: newCategoryName.trim(),
+                                    description: null,
+                                  }),
+                                });
+
+                                if (response.ok) {
+                                  const result = await response.json();
+                                  const newCategory = result.data;
+
+                                  // Add to local state
+                                  setCategories(prev => [...prev, newCategory]);
+                                  // Auto-select the new category with a small delay
+                                  setTimeout(() => {
+                                    setValue('category_id', newCategory.id);
+                                  }, 100);
+                                  setNewCategoryName('');
+                                  setShowNewCategoryInput(false);
+                                } else {
+                                  console.error('Failed to create category');
+                                }
+                              } catch (error) {
+                                console.error('Error creating category:', error);
+                              }
+                            }
+                          }}
+                        >
+                          {t('labels.add')}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowNewCategoryInput(false);
+                            setNewCategoryName('');
+                          }}
+                        >
+                          {tCommon('cancel')}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="md:col-span-2 mb-4">
-              <Label htmlFor="instructions" className="text-sm font-medium mb-2">Instructions</Label>
-              <Textarea
-                id="instructions"
-                {...register('instructions')}
-                placeholder="Special instructions for this service"
-                rows={3}
-              />
-            </div>
-
-            {/* Active Status */}
-            <div className="md:col-span-2 mb-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_active"
-                  checked={watch('is_active')}
-                  onCheckedChange={(checked) => {
-                    setValue('is_active', checked);
-                  }}
-                />
-                <Label htmlFor="is_active" className="text-sm font-medium mb-2">Active Service</Label>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Only active services are available for booking
-              </p>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Pricing Tab */}
-        <TabsContent value="pricing" className="space-y-4 min-h-0 mt-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Service Price */}
-            <div className="mb-4">
-              <Label htmlFor="price" className="text-sm font-medium mb-2">Service Price (€) *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('price', { 
-                  required: 'Service price is required',
-                  min: { value: 0, message: 'Price cannot be negative' }
-                })}
-                placeholder="0.00"
-              />
-              {errors.price && (
-                <p className="text-sm text-destructive mt-1">{errors.price.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Base price for this service
-              </p>
-            </div>
-
-            {/* Sale Price */}
-            <div className="mb-4">
-              <Label htmlFor="sale_price" className="text-sm font-medium mb-2">Sale Price (€)</Label>
-              <Input
-                id="sale_price"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('sale_price', { 
-                  min: { value: 0, message: 'Sale price cannot be negative' }
-                })}
-                placeholder="0.00"
-              />
-              {errors.sale_price && (
-                <p className="text-sm text-destructive mt-1">{errors.sale_price.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Optional discounted price
-              </p>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Advanced Tab */}
-        <TabsContent value="advanced" className="space-y-4 min-h-0 mt-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Buffer Time */}
-        <div className="mb-4">
-          <Label htmlFor="buffer_time" className="text-sm font-medium mb-2">Buffer Time (minutes)</Label>
-          <Input
-            id="buffer_time"
-            type="number"
-            min="0"
-            {...register('buffer_time', { 
-              min: { value: 0, message: 'Buffer time cannot be negative' }
-            })}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Extra time between appointments
-          </p>
-        </div>
-
-        {/* Lead Time */}
-        <div className="mb-4">
-          <Label htmlFor="lead_time" className="text-sm font-medium mb-2">Lead Time (hours)</Label>
-          <Input
-            id="lead_time"
-            type="number"
-            min="0"
-            {...register('lead_time', { 
-              min: { value: 0, message: 'Lead time cannot be negative' }
-            })}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Minimum advance booking time
-          </p>
-        </div>
-
-            {/* Scheduling Window */}
-            <div className="mb-4">
-              <Label htmlFor="scheduling_window" className="text-sm font-medium mb-2">Scheduling Window (weeks)</Label>
-              <Input
-                id="scheduling_window"
-                type="number"
-                min="1"
-                {...register('scheduling_window', { 
-                  required: 'Scheduling window is required',
-                  min: { value: 1, message: 'Scheduling window must be at least 1 week' }
-                })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                How many weeks in advance can be booked
-              </p>
-            </div>
-
-            {/* Reschedule Cutoff Switch */}
-            <div className="md:col-span-2 mb-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Switch
-                  id="enable_reschedule_cutoff"
-                  checked={watch('reschedule_cutoff') > 0}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setValue('reschedule_cutoff', 24);
-                    } else {
-                      setValue('reschedule_cutoff', 0);
-                    }
-                  }}
-                />
-                <Label htmlFor="enable_reschedule_cutoff" className="text-sm font-medium mb-2">Enable Reschedule Cutoff</Label>
-              </div>
-              
-              {watch('reschedule_cutoff') > 0 && (
-        <div className="mb-4">
-          <Label htmlFor="reschedule_cutoff" className="text-sm font-medium mb-2">Reschedule Cutoff (hours)</Label>
-          <Input
-            id="reschedule_cutoff"
-            type="number"
-            min="0"
-            {...register('reschedule_cutoff', { 
-              min: { value: 0, message: 'Reschedule cutoff cannot be negative' }
-            })}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Hours before appointment when rescheduling is no longer allowed
-          </p>
                 </div>
-              )}
-        </div>
 
-            {/* Cancel Cutoff Switch */}
-        <div className="md:col-span-2 mb-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Switch
-                  id="enable_cancel_cutoff"
-                  checked={watch('cancel_cutoff') !== null && watch('cancel_cutoff')! > 0}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setValue('cancel_cutoff', 24);
-                    } else {
-                      setValue('cancel_cutoff', null);
-                    }
-                  }}
-                />
-                <Label htmlFor="enable_cancel_cutoff" className="text-sm font-medium mb-2">Enable Cancel Cutoff</Label>
+                {/* Instructions */}
+                <div className="md:col-span-2 mb-4">
+                  <Label htmlFor="instructions" className="text-sm font-medium mb-2">{t('instructions')}</Label>
+                  <Textarea
+                    id="instructions"
+                    {...register('instructions')}
+                    placeholder={t('placeholders.instructions')}
+                    rows={3}
+                  />
+                </div>
+
+                {/* Active Status */}
+                <div className="md:col-span-2 mb-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_active"
+                      checked={watch('is_active')}
+                      onCheckedChange={(checked) => {
+                        setValue('is_active', checked);
+                      }}
+                    />
+                    <Label htmlFor="is_active" className="text-sm font-medium mb-2">{t('labels.activeService')}</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('hints.activeHelp')}
+                  </p>
+                </div>
               </div>
-              
-              {watch('cancel_cutoff') !== null && watch('cancel_cutoff')! > 0 && (
+            </TabsContent>
+
+            {/* Pricing Tab */}
+            <TabsContent value="pricing" className="space-y-4 min-h-0 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Service Price */}
                 <div className="mb-4">
-                  <Label htmlFor="cancel_cutoff" className="text-sm font-medium mb-2">Cancel Cutoff (hours)</Label>
+                  <Label htmlFor="price" className="text-sm font-medium mb-2">{t('price')}</Label>
                   <Input
-                    id="cancel_cutoff"
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register('price', {
+                      required: t('validation.priceRequired'),
+                      min: { value: 0, message: t('validation.priceNegative') }
+                    })}
+                    placeholder="0.00"
+                  />
+                  {errors.price && (
+                    <p className="text-sm text-destructive mt-1">{errors.price.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('hints.priceHelp')}
+                  </p>
+                </div>
+
+                {/* Sale Price */}
+                <div className="mb-4">
+                  <Label htmlFor="sale_price" className="text-sm font-medium mb-2">{t('salePrice')}</Label>
+                  <Input
+                    id="sale_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register('sale_price', {
+                      min: { value: 0, message: t('validation.salePriceNegative') }
+                    })}
+                    placeholder="0.00"
+                  />
+                  {errors.sale_price && (
+                    <p className="text-sm text-destructive mt-1">{errors.sale_price.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('hints.salePriceHelp')}
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Advanced Tab */}
+            <TabsContent value="advanced" className="space-y-4 min-h-0 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Buffer Time */}
+                <div className="mb-4">
+                  <Label htmlFor="buffer_time" className="text-sm font-medium mb-2">{t('bufferTime')}</Label>
+                  <Input
+                    id="buffer_time"
                     type="number"
                     min="0"
-                    {...register('cancel_cutoff', { 
-                      min: { value: 0, message: 'Cancel cutoff cannot be negative' }
+                    {...register('buffer_time', {
+                      min: { value: 0, message: 'Buffer time cannot be negative' }
                     })}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hours before appointment when cancellation is no longer allowed
+                    {t('hints.bufferTimeHelp')}
                   </p>
                 </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
 
-        {/* Policy Tab */}
-        <TabsContent value="policy" className="space-y-4 min-h-0 mt-12">
-          <div className="space-y-6">
-            {/* Add New Field */}
-            <div className="border rounded-lg p-4 bg-muted/50">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Add Policy Field</h3>
-                <div className="text-sm text-muted-foreground">
-                  {watch('policy_fields').length} field{watch('policy_fields').length !== 1 ? 's' : ''} added
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="field_type" className="text-sm font-medium mb-2">Field Type</Label>
-                  <Select 
-                    value=""
-                    onValueChange={(value: string) => {
-                      const newField: ServicePolicyField = {
-                        id: `temp_${Date.now()}`,
-                        service_id: service?.id || '',
-                        field_type: value as ServicePolicyField['field_type'],
-                        title: '',
-                        description: null,
-                        is_required: false,
-                        order: watch('policy_fields').length,
-                        choices: value === 'multi_choice' ? [] : undefined,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      };
-                      setValue('policy_fields', [...watch('policy_fields'), newField]);
-                    }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select field type to add" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="multi_choice">Multi Choice</SelectItem>
-                      <SelectItem value="text_input">Text Input</SelectItem>
-                      <SelectItem value="number_input">Number Input</SelectItem>
-                      <SelectItem value="date_time">Date/Time</SelectItem>
-                      <SelectItem value="checkbox">Checkbox</SelectItem>
-                      <SelectItem value="file_upload">File Upload</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Lead Time */}
+                <div className="mb-4">
+                  <Label htmlFor="lead_time" className="text-sm font-medium mb-2">{t('leadTime')}</Label>
+                  <Input
+                    id="lead_time"
+                    type="number"
+                    min="0"
+                    {...register('lead_time', {
+                      min: { value: 0, message: 'Lead time cannot be negative' }
+                    })}
+                  />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Select a field type to add it to the form
+                    {t('hints.leadTimeHelp')}
                   </p>
                 </div>
-              </div>
-            </div>
 
-            {/* Policy Fields List */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Policy Fields</h3>
-                {watch('policy_fields').length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Drag to reorder • Click to expand/collapse
+                {/* Scheduling Window */}
+                <div className="mb-4">
+                  <Label htmlFor="scheduling_window" className="text-sm font-medium mb-2">{t('schedulingWindow')}</Label>
+                  <Input
+                    id="scheduling_window"
+                    type="number"
+                    min="1"
+                    {...register('scheduling_window', {
+                      required: t('validation.schedulingWindowRequired'),
+                      min: { value: 1, message: t('validation.schedulingWindowMin') }
+                    })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t('hints.schedulingWindowHelp')}
+                  </p>
+                </div>
+
+                {/* Reschedule Cutoff Switch */}
+                <div className="md:col-span-2 mb-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="enable_reschedule_cutoff"
+                      checked={watch('reschedule_cutoff') > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setValue('reschedule_cutoff', 24);
+                        } else {
+                          setValue('reschedule_cutoff', 0);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="enable_reschedule_cutoff" className="text-sm font-medium mb-2">{t('labels.enableRescheduleCutoff')}</Label>
                   </div>
-                )}
-              </div>
-              
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={watch('policy_fields').map(field => field.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-3">
-                    {watch('policy_fields').map((field, index) => (
-                      <SortableField
-                        key={field.id}
-                        field={field}
-                        index={index}
-                        isExpanded={expandedFields.has(field.id)}
-                        onToggleExpand={() => toggleFieldExpand(field.id)}
-                        onUpdate={(updatedField) => handleFieldUpdate(index, updatedField)}
-                        onRemove={() => handleFieldRemove(index)}
+
+                  {watch('reschedule_cutoff') > 0 && (
+                    <div className="mb-4">
+                      <Label htmlFor="reschedule_cutoff" className="text-sm font-medium mb-2">{t('rescheduleCutoff')}</Label>
+                      <Input
+                        id="reschedule_cutoff"
+                        type="number"
+                        min="0"
+                        {...register('reschedule_cutoff', {
+                          min: { value: 0, message: t('validation.rescheduleCutoffNegative') }
+                        })}
                       />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-
-              {watch('policy_fields').length === 0 && (
-                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                  <div className="space-y-2">
-                    <p className="text-lg font-medium">No policy fields added yet</p>
-                    <p className="text-sm">Add custom fields that patients will fill out when booking this service</p>
-                    <p className="text-xs">Select a field type above to get started</p>
-                  </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.rescheduleCutoffHelp')}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
 
-        {/* Staff Tab */}
-        <TabsContent value="staff" className="space-y-4 min-h-0 mt-12">
-          <div className="space-y-6">
-            {/* Staff Assignment Section */}
-            <div className="border rounded-lg p-4 bg-muted/50">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Assign Staff to Service</h3>
-                <div className="text-sm text-muted-foreground">
-                  {watch('staff_ids').length} staff member{watch('staff_ids').length !== 1 ? 's' : ''} assigned
+                {/* Cancel Cutoff Switch */}
+                <div className="md:col-span-2 mb-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="enable_cancel_cutoff"
+                      checked={watch('cancel_cutoff') !== null && watch('cancel_cutoff')! > 0}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setValue('cancel_cutoff', 24);
+                        } else {
+                          setValue('cancel_cutoff', null);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="enable_cancel_cutoff" className="text-sm font-medium mb-2">{t('labels.enableCancelCutoff')}</Label>
+                  </div>
+
+                  {watch('cancel_cutoff') !== null && watch('cancel_cutoff')! > 0 && (
+                    <div className="mb-4">
+                      <Label htmlFor="cancel_cutoff" className="text-sm font-medium mb-2">{t('cancelCutoff')}</Label>
+                      <Input
+                        id="cancel_cutoff"
+                        type="number"
+                        min="0"
+                        {...register('cancel_cutoff', {
+                          min: { value: 0, message: t('validation.cancelCutoffNegative') }
+                        })}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.cancelCutoffHelp')}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium mb-2">Select Staff Members</Label>
-                  <Popover open={staffDropdownOpen} onOpenChange={setStaffDropdownOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={staffDropdownOpen}
-                        className="w-full justify-between mt-1 bg-card border border-border active:bg-card hover:bg-card"
-                        style={{ borderRadius: '0.2rem' }}
-                        disabled={getDisabledState()}
-                      >
-                        <span className="text-muted-foreground">
-                          {selectedStaff.length === 0
-                            ? 'Select staff members...'
-                            : `${selectedStaff.length} staff member${selectedStaff.length !== 1 ? 's' : ''} selected`}
-                        </span>
-                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search staff..." />
-                        <CommandList>
-                          <CommandEmpty>No staff found.</CommandEmpty>
-                          <CommandGroup>
-                            {staff.map((staffMember) => (
-                              <CommandItem
-                                key={staffMember.id}
-                                value={`${staffMember.first_name} ${staffMember.last_name}`}
-                                onSelect={() => toggleStaff(staffMember.id)}
-                              >
-                                <div className="flex items-center gap-2 flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={watch('staff_ids').includes(staffMember.id)}
-                                    onChange={() => {}}
-                                    className="rounded"
-                                    aria-label={`Select ${staffMember.first_name} ${staffMember.last_name}`}
-                                  />
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-medium">
-                                      {staffMember.first_name} {staffMember.last_name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {staffMember.email}
-                                    </span>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select staff members who are qualified to perform this service
-                  </p>
+            </TabsContent>
+
+            {/* Policy Tab */}
+            <TabsContent value="policy" className="space-y-4 min-h-0 mt-12">
+              <div className="space-y-6">
+                {/* Add New Field */}
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">{t('labels.addPolicyField')}</h3>
+                    <div className="text-sm text-muted-foreground">
+                      {watch('policy_fields').length} field{watch('policy_fields').length !== 1 ? 's' : ''} added
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="field_type" className="text-sm font-medium mb-2">{t('labels.fieldType')}</Label>
+                      <Select
+                        value=""
+                        onValueChange={(value: string) => {
+                          const newField: ServicePolicyField = {
+                            id: `temp_${Date.now()}`,
+                            service_id: service?.id || '',
+                            field_type: value as ServicePolicyField['field_type'],
+                            title: '',
+                            description: null,
+                            is_required: false,
+                            order: watch('policy_fields').length,
+                            choices: value === 'multi_choice' ? [] : undefined,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                          };
+                          setValue('policy_fields', [...watch('policy_fields'), newField]);
+                        }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('placeholders.fieldType')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="multi_choice">Multi Choice</SelectItem>
+                          <SelectItem value="text_input">Text Input</SelectItem>
+                          <SelectItem value="number_input">Number Input</SelectItem>
+                          <SelectItem value="date_time">Date/Time</SelectItem>
+                          <SelectItem value="checkbox">Checkbox</SelectItem>
+                          <SelectItem value="file_upload">File Upload</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.fieldTypeHelp')}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Selected Staff as Badges */}
-                {selectedStaff.length > 0 && (
-                  <div>
-                    <Label className="text-sm font-medium mb-2">Assigned Staff</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedStaff.map((staffMember) => (
-                        <Badge key={staffMember.id} variant="secondary" className="gap-1 py-2 px-3">
-                          <span>{staffMember.first_name} {staffMember.last_name}</span>
-                          <span className="text-xs text-muted-foreground">({staffMember.role})</span>
-                          {!getDisabledState() && (
-                            <button
-                              type="button"
-                              onClick={() => removeStaff(staffMember.id)}
-                              className="ml-1 rounded-full hover:bg-muted-foreground/20"
-                              aria-label={`Remove ${staffMember.first_name} ${staffMember.last_name}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
+                {/* Policy Fields List */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">{t('labels.policyFields')}</h3>
+                    {watch('policy_fields').length > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        {t('hints.dragReorder')}
+                      </div>
+                    )}
+                  </div>
+
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={watch('policy_fields').map(field => field.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-3">
+                        {watch('policy_fields').map((field, index) => (
+                          <SortableField
+                            key={field.id}
+                            field={field}
+                            index={index}
+                            isExpanded={expandedFields.has(field.id)}
+                            onToggleExpand={() => toggleFieldExpand(field.id)}
+                            onUpdate={(updatedField) => handleFieldUpdate(index, updatedField)}
+                            onRemove={() => handleFieldRemove(index)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+
+                  {watch('policy_fields').length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <div className="space-y-2">
+                        <p className="text-lg font-medium">{t('hints.noPolicyFields')}</p>
+                        <p className="text-sm">{t('hints.noPolicyFieldsHelp')}</p>
+                        <p className="text-xs">{t('hints.noPolicyFieldsHelp2')}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Staff Tab */}
+            <TabsContent value="staff" className="space-y-4 min-h-0 mt-12">
+              <div className="space-y-6">
+                {/* Staff Assignment Section */}
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium">{t('labels.assignStaff')}</h3>
+                    <div className="text-sm text-muted-foreground">
+                      {watch('staff_ids').length} staff member{watch('staff_ids').length !== 1 ? 's' : ''} assigned
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium mb-2">{t('labels.selectStaff')}</Label>
+                      <Popover open={staffDropdownOpen} onOpenChange={setStaffDropdownOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={staffDropdownOpen}
+                            className="w-full justify-between mt-1 bg-card border border-border active:bg-card hover:bg-card"
+                            style={{ borderRadius: '0.2rem' }}
+                            disabled={getDisabledState()}
+                          >
+                            <span className="text-muted-foreground">
+                              {selectedStaff.length === 0
+                                ? t('placeholders.selectStaff')
+                                : `${selectedStaff.length} staff member${selectedStaff.length !== 1 ? 's' : ''} selected`}
+                            </span>
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
+                          <Command>
+                            <CommandInput placeholder={t('placeholders.searchStaff')} />
+                            <CommandList>
+                              <CommandEmpty>{t('hints.noStaffFound')}</CommandEmpty>
+                              <CommandGroup>
+                                {staff.map((staffMember) => (
+                                  <CommandItem
+                                    key={staffMember.id}
+                                    value={`${staffMember.first_name} ${staffMember.last_name}`}
+                                    onSelect={() => toggleStaff(staffMember.id)}
+                                  >
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={watch('staff_ids').includes(staffMember.id)}
+                                        onChange={() => { }}
+                                        className="rounded"
+                                        aria-label={`Select ${staffMember.first_name} ${staffMember.last_name}`}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-medium">
+                                          {staffMember.first_name} {staffMember.last_name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {staffMember.email}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.selectStaffHelp')}
+                      </p>
+                    </div>
+
+                    {/* Selected Staff as Badges */}
+                    {selectedStaff.length > 0 && (
+                      <div>
+                        <Label className="text-sm font-medium mb-2">{t('labels.assignedStaff')}</Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedStaff.map((staffMember) => (
+                            <Badge key={staffMember.id} variant="secondary" className="gap-1 py-2 px-3">
+                              <span>{staffMember.first_name} {staffMember.last_name}</span>
+                              <span className="text-xs text-muted-foreground">({staffMember.role})</span>
+                              {!getDisabledState() && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeStaff(staffMember.id)}
+                                  className="ml-1 rounded-full hover:bg-muted-foreground/20"
+                                  aria-label={`Remove ${staffMember.first_name} ${staffMember.last_name}`}
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Empty State */}
+                {watch('staff_ids').length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <div className="space-y-2">
+                      <p className="text-lg font-medium">{t('hints.noStaffAssigned')}</p>
+                      <p className="text-sm">{t('hints.noStaffAssignedHelp')}</p>
+                      <p className="text-xs">{t('hints.noStaffAssignedHelp2')}</p>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
+            </TabsContent>
 
-            {/* Empty State */}
-            {watch('staff_ids').length === 0 && (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                <div className="space-y-2">
-                  <p className="text-lg font-medium">No staff assigned yet</p>
-                  <p className="text-sm">Assign staff members who are qualified to perform this service</p>
-                  <p className="text-xs">Use the dropdown above to select staff members</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Add-ons Tab */}
-        <TabsContent value="addons" className="space-y-4 min-h-0 mt-12">
-          <AddonsManager serviceId={service?.id} />
-        </TabsContent>
+            {/* Add-ons Tab */}
+            <TabsContent value="addons" className="space-y-4 min-h-0 mt-12">
+              <AddonsManager serviceId={service?.id} />
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -1470,16 +1478,16 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="text-sm text-muted-foreground">
-                  {service 
-                    ? 'Update your service details' 
-                    : isFormComplete() 
-                      ? 'Ready to create service' 
-                      : 'Complete required fields: Name, Duration, and Price'
+                  {service
+                    ? t('status.update')
+                    : isFormComplete()
+                      ? t('status.ready')
+                      : t('status.incomplete')
                   }
                 </div>
                 {!service && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>Progress:</span>
+                    <span>{t('status.progress')}:</span>
                     <div className="flex gap-1">
                       {[
                         { key: 'details', condition: watch('name') && watch('duration') },
@@ -1499,25 +1507,25 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting || (!service && !isFormComplete())} 
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (!service && !isFormComplete())}
                   className="min-w-[120px]"
                 >
-                  {isSubmitting ? 'Saving...' : service ? 'Update Service' : 'Create Service'}
+                  {isSubmitting ? tCommon('saving') : service ? t('buttons.update') : t('buttons.create')}
                 </Button>
               </div>
             </div>
           </div>
         )}
-        
+
         {/* View Mode Actions - Fixed at Bottom */}
         {isViewMode && (
           <div className="py-4 border-t bg-background mt-auto flex justify-end">
             <Button type="button" variant="outline" onClick={onCancel}>
-              Close
+              {tCommon('close')}
             </Button>
           </div>
         )}

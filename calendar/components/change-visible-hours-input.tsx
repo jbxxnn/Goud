@@ -9,11 +9,14 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 
 import type { TimeValue } from "react-aria-components";
 
+import { useTranslations } from 'next-intl';
+
 interface ChangeVisibleHoursInputProps {
   onSaveHandlerReady?: (handler: () => Promise<void>) => void;
 }
 
 export function ChangeVisibleHoursInput({ onSaveHandlerReady }: ChangeVisibleHoursInputProps = {}) {
+  const t = useTranslations('Shifts.visibleHoursInput');
   const { visibleHours, setVisibleHours } = useCalendar();
 
   const [from, setFrom] = useState<{ hour: number; minute: number }>({ hour: visibleHours.from, minute: 0 });
@@ -40,7 +43,7 @@ export function ChangeVisibleHoursInput({ onSaveHandlerReady }: ChangeVisibleHou
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold">Change visible hours</p>
+        <p className="text-sm font-semibold">{t('title')}</p>
 
         <TooltipProvider delayDuration={100}>
           <Tooltip>
@@ -49,16 +52,16 @@ export function ChangeVisibleHoursInput({ onSaveHandlerReady }: ChangeVisibleHou
             </TooltipTrigger>
 
             <TooltipContent className="max-w-80 text-center">
-              <p>If an event falls outside the specified visible hours, the visible hours will automatically adjust to include that event.</p>
+              <p>{t('tooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
 
       <div className="flex items-center gap-4">
-        <p>From</p>
+        <p>{t('from')}</p>
         <TimeInput id="start-time" hourCycle={12} granularity="hour" value={from as TimeValue} onChange={setFrom as (value: TimeValue | null) => void} />
-        <p>To</p>
+        <p>{t('to')}</p>
         <TimeInput id="end-time" hourCycle={12} granularity="hour" value={to as TimeValue} onChange={setTo as (value: TimeValue | null) => void} />
       </div>
     </div>

@@ -22,6 +22,8 @@ interface DeleteConfirmationDialogProps {
   confirmButtonVariant?: 'default' | 'destructive';
 }
 
+import { useTranslations } from 'next-intl';
+
 export function DeleteConfirmationDialog({
   isOpen,
   onClose,
@@ -29,10 +31,11 @@ export function DeleteConfirmationDialog({
   title,
   description,
   itemName,
-  confirmButtonText = 'Delete',
+  confirmButtonText,
   confirmButtonVariant = 'destructive',
 }: DeleteConfirmationDialogProps) {
-  const buttonClassName = confirmButtonVariant === 'destructive' 
+  const t = useTranslations('Common');
+  const buttonClassName = confirmButtonVariant === 'destructive'
     ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
     : 'bg-secondary-foreground hover:bg-secondary-foreground/90';
 
@@ -49,12 +52,12 @@ export function DeleteConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose}>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className={buttonClassName}
           >
-            {confirmButtonText}
+            {confirmButtonText || t('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

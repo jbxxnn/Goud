@@ -13,7 +13,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon} from '@hugeicons/core-free-icons';
+import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -38,11 +38,11 @@ const allMenuItems: MenuItem[] = [
   {
     title: "Locations",
     url: "/dashboard/locations",
-    icon: <HugeiconsIcon icon={Building03Icon}  />,
+    icon: <HugeiconsIcon icon={Building03Icon} />,
     roles: ['admin'], // Admin only
   },
   {
-      title: "Staff",
+    title: "Staff",
     url: "/dashboard/staff",
     icon: <HugeiconsIcon icon={UserGroup03Icon} />,
     roles: ['admin'], // Admin only
@@ -103,7 +103,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
   const pathname = usePathname();
-  
+
   // Filter menu items based on user role
   const items = allMenuItems.filter(item => {
     // If roles are not specified, default to admin only
@@ -126,14 +126,23 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
           <SidebarGroupContent className="mt-12">
             <SidebarMenu>
               {items.map((item) => {
-                const isActive = pathname === item.url;
+                // Normalize pathname by removing locale prefix (en or nl)
+                const normalizedPath = pathname.replace(/^\/(?:en|nl)/, '') || '/';
+
+                // Determine active state:
+                // For the main dashboard, require an exact match to avoid highlighting it for all children.
+                // For other items, allow sub-path matching (e.g. /dashboard/clients matches /dashboard/clients/new).
+                const isActive = item.url === '/dashboard'
+                  ? normalizedPath === item.url
+                  : normalizedPath.startsWith(item.url);
+
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                    tooltip={item.title}
-                      asChild 
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      asChild
                       isActive={isActive}
-                      className={isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}
+                      className={isActive ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
                       style={{ borderRadius: "0.2rem" }}
                     >
                       <a href={item.url} className="min-h-10 ">

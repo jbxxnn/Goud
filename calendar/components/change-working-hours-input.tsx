@@ -11,15 +11,16 @@ import type { TimeValue } from "react-aria-components";
 import { TooltipContent } from "@/components/ui/tooltip";
 import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useTranslations } from 'next-intl';
 
 const DAYS_OF_WEEK = [
-  { index: 0, name: "Sunday" },
-  { index: 1, name: "Monday" },
-  { index: 2, name: "Tuesday" },
-  { index: 3, name: "Wednesday" },
-  { index: 4, name: "Thursday" },
-  { index: 5, name: "Friday" },
-  { index: 6, name: "Saturday" },
+  { index: 0, key: "sunday" },
+  { index: 1, key: "monday" },
+  { index: 2, key: "tuesday" },
+  { index: 3, key: "wednesday" },
+  { index: 4, key: "thursday" },
+  { index: 5, key: "friday" },
+  { index: 6, key: "saturday" },
 ];
 
 interface ChangeWorkingHoursInputProps {
@@ -27,6 +28,7 @@ interface ChangeWorkingHoursInputProps {
 }
 
 export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHoursInputProps = {}) {
+  const t = useTranslations('Shifts.workingHoursInput');
   const { workingHours, setWorkingHours } = useCalendar();
 
   const [localWorkingHours, setLocalWorkingHours] = useState({ ...workingHours });
@@ -84,7 +86,7 @@ export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHou
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-semibold">Change working hours</p>
+        <p className="text-sm font-semibold">{t('title')}</p>
 
         <TooltipProvider delayDuration={100}>
           <Tooltip>
@@ -93,7 +95,7 @@ export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHou
             </TooltipTrigger>
 
             <TooltipContent className="max-w-80 text-center">
-              <p>This will apply a dashed background to the hour cells that fall outside the working hours — only for week and day views.</p>
+              <p>{t('tooltip')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -107,15 +109,15 @@ export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHou
             <div key={day.index} className="flex items-center gap-4">
               <div className="flex w-40 items-center gap-2">
                 <Switch checked={isDayActive} onCheckedChange={() => handleToggleDay(day.index)} />
-                <span className="text-sm font-medium">{day.name}</span>
+                <span className="text-sm font-medium">{t(`days.${day.key}`)}</span>
               </div>
 
               {isDayActive ? (
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span>From</span>
+                    <span>{t('from')}</span>
                     <TimeInput
-                      id={`${day.name.toLowerCase()}-from`}
+                      id={`${day.key}-from`}
                       hourCycle={12}
                       granularity="hour"
                       value={{ hour: localWorkingHours[day.index].from, minute: 0 } as TimeValue}
@@ -124,9 +126,9 @@ export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHou
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span>To</span>
+                    <span>{t('to')}</span>
                     <TimeInput
-                      id={`${day.name.toLowerCase()}-to`}
+                      id={`${day.key}-to`}
                       hourCycle={12}
                       granularity="hour"
                       value={{ hour: localWorkingHours[day.index].to, minute: 0 } as TimeValue}
@@ -137,7 +139,7 @@ export function ChangeWorkingHoursInput({ onSaveHandlerReady }: ChangeWorkingHou
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Moon className="size-4" />
-                  <span>Closed</span>
+                  <span>{t('closed')}</span>
                 </div>
               )}
             </div>

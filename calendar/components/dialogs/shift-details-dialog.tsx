@@ -12,6 +12,7 @@ import { ShiftWithDetails } from "@/lib/types/shift";
 import { toast } from "sonner";
 
 import type { IEvent } from "@/calendar/interfaces";
+import { useTranslations } from 'next-intl';
 
 interface IProps {
   event: IEvent;
@@ -21,6 +22,7 @@ interface IProps {
 }
 
 export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpdated }: IProps) {
+  const t = useTranslations('Shifts.dialog.details');
   const [shift, setShift] = useState<ShiftWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -44,11 +46,11 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
       if (data.success && data.data) {
         setShift(data.data);
       } else {
-        toast.error('Failed to load shift details');
+        toast.error(t('loadError'));
       }
     } catch (error) {
       console.error('Error fetching shift:', error);
-      toast.error('Failed to load shift details');
+      toast.error(t('loadError'));
     } finally {
       setLoading(false);
     }
@@ -69,19 +71,19 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
         throw new Error(result.error || 'Failed to delete shift');
       }
 
-      toast.success('Shift deleted', {
-        description: 'The shift has been deleted successfully.',
+      toast.success(t('deleteSuccess'), {
+        description: t('deleteSuccessDesc'),
       });
 
       setShowDeleteDialog(false);
       setIsDialogOpen(false);
-      
+
       if (onShiftDeleted) {
         onShiftDeleted();
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete shift';
-      toast.error('Failed to delete shift', {
+      const errorMessage = err instanceof Error ? err.message : t('deleteError');
+      toast.error(t('deleteError'), {
         description: errorMessage,
       });
     } finally {
@@ -119,14 +121,14 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
 
           {loading ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Loading shift details...
+              {t('loading')}
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-start gap-2">
                 <User className="mt-1 size-4 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Staff Member</p>
+                  <p className="text-sm font-medium">{t('staffMember')}</p>
                   <p className="text-sm text-muted-foreground">{event.user.name}</p>
                 </div>
               </div>
@@ -134,7 +136,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
               <div className="flex items-start gap-2">
                 <Calendar className="mt-1 size-4 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Start Time</p>
+                  <p className="text-sm font-medium">{t('startTime')}</p>
                   <p className="text-sm text-muted-foreground">{format(startDate, "MMM d, yyyy h:mm a")}</p>
                 </div>
               </div>
@@ -142,7 +144,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
               <div className="flex items-start gap-2">
                 <Clock className="mt-1 size-4 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">End Time</p>
+                  <p className="text-sm font-medium">{t('endTime')}</p>
                   <p className="text-sm text-muted-foreground">{format(endDate, "MMM d, yyyy h:mm a")}</p>
                 </div>
               </div>
@@ -152,7 +154,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
                   <div className="flex items-start gap-2">
                     <Text className="mt-1 size-4 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm font-medium">{t('location')}</p>
                       <p className="text-sm text-muted-foreground">{shift.location_name}</p>
                     </div>
                   </div>
@@ -161,7 +163,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
                     <div className="flex items-start gap-2">
                       <Text className="mt-1 size-4 shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Services</p>
+                        <p className="text-sm font-medium">{t('services')}</p>
                         <p className="text-sm text-muted-foreground">
                           {shift.services.map(s => s.service_name).join(', ')}
                         </p>
@@ -173,7 +175,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
                     <div className="flex items-start gap-2">
                       <Text className="mt-1 size-4 shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Notes</p>
+                        <p className="text-sm font-medium">{t('notes')}</p>
                         <p className="text-sm text-muted-foreground">{shift.notes}</p>
                       </div>
                     </div>
@@ -184,22 +186,22 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
           )}
 
           <DialogFooter className="flex gap-2">
-            <Button 
-              type="button" 
-              variant="destructive" 
+            <Button
+              type="button"
+              variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
               disabled={loading || !shift}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              {t('delete')}
             </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={handleEdit}
               disabled={loading || !shift}
             >
-              Edit
+              {t('edit')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -226,10 +228,10 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
         isOpen={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDelete}
-        title="Delete Shift"
-        description="Are you sure you want to delete this shift? This action cannot be undone."
-        itemName={shift ? `Shift on ${format(parseISO(shift.start_time), "MMM d, yyyy")}` : undefined}
-        confirmButtonText={isDeleting ? 'Deleting...' : 'Delete'}
+        title={t('confirmDeleteTitle')}
+        description={t('confirmDeleteDesc')}
+        itemName={shift ? t('itemDate', { date: format(parseISO(shift.start_time), "MMM d, yyyy") }) : undefined}
+        confirmButtonText={isDeleting ? 'Deleting...' : t('delete')}
       />
     </>
   );

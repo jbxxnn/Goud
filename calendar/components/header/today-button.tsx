@@ -10,11 +10,11 @@ export function TodayButton() {
 
   return (
     <button
-      className="flex size-14 flex-col items-start bg-card overflow-hidden rounded-lg border border-secondary-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      className="flex size-14 flex-col items-start bg-card overflow-hidden rounded-lg border border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       onClick={handleClick}
       style={{ borderRadius: '0.3rem' }}
     >
-      <p className="flex h-6 w-full items-center justify-center bg-secondary-foreground text-center text-xs font-semibold text-primary-foreground">
+      <p className="flex h-6 w-full items-center justify-center bg-primary text-center text-xs font-semibold text-primary-foreground">
         {formatDate(today, "MMM").toUpperCase()}
       </p>
       <p className="flex w-full items-center justify-center text-lg font-bold">{today.getDate()}</p>

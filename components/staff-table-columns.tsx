@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { 
-  EditIcon, 
-  Delete02Icon, 
-  EyeIcon, 
+import {
+  EditIcon,
+  Delete02Icon,
+  EyeIcon,
   UserIcon,
   CallIcon,
   MailIcon,
@@ -23,16 +23,19 @@ interface StaffActionsProps {
   onView: (staff: Staff) => void;
 }
 
-export function createStaffColumns({
-  onEdit,
-  onDelete,
-  onToggleActive,
-  onView
-}: StaffActionsProps): ColumnDef<Staff>[] {
+export function createStaffColumns(
+  t: (key: string) => string,
+  {
+    onEdit,
+    onDelete,
+    onToggleActive,
+    onView
+  }: StaffActionsProps
+): ColumnDef<Staff>[] {
   return [
     {
       accessorKey: 'first_name',
-      header: 'Name',
+      header: t('table.name'),
       cell: ({ row }) => {
         const staff = row.original;
         return (
@@ -53,7 +56,7 @@ export function createStaffColumns({
     },
     {
       accessorKey: 'email',
-      header: 'Contact',
+      header: t('table.contact'),
       cell: ({ row }) => {
         const staff = row.original;
         return (
@@ -74,7 +77,7 @@ export function createStaffColumns({
     },
     {
       accessorKey: 'role',
-      header: 'Role',
+      header: t('table.role'),
       cell: ({ row }) => {
         const role = row.getValue('role') as string;
         return (
@@ -86,11 +89,11 @@ export function createStaffColumns({
     },
     {
       accessorKey: 'hire_date',
-      header: 'Hire Date',
+      header: t('table.hireDate'),
       cell: ({ row }) => {
         const hireDate = row.getValue('hire_date') as string;
         if (!hireDate) {
-          return <span className="text-xs text-muted-foreground">Not set</span>;
+          return <span className="text-xs text-muted-foreground">{t('table.notSet')}</span>;
         }
         return (
           <div className="flex items-center space-x-2 text-xs">
@@ -102,7 +105,7 @@ export function createStaffColumns({
     },
     {
       accessorKey: 'is_active',
-      header: 'Status',
+      header: t('table.status'),
       cell: ({ row }) => {
         const staff = row.original;
         const isActive = staff.is_active;
@@ -122,7 +125,7 @@ export function createStaffColumns({
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('table.actions'),
       cell: ({ row }) => {
         const staff = row.original;
 

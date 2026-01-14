@@ -11,10 +11,10 @@ const formatDateTime = (value: string) => {
   return format(date, 'dd MMM yyyy · HH:mm');
 };
 
-export const recentBookingsColumns: ColumnDef<RecentBookingSummary>[] = [
+export const getRecentBookingsColumns = (t: (key: string) => string, tRoot: (key: string) => string): ColumnDef<RecentBookingSummary>[] => [
   {
     accessorKey: 'clientName',
-    header: 'Client',
+    header: t('recentBookings.table.client'),
     cell: ({ row }) => {
       const booking = row.original;
       return (
@@ -29,7 +29,7 @@ export const recentBookingsColumns: ColumnDef<RecentBookingSummary>[] = [
   },
   {
     accessorKey: 'serviceName',
-    header: 'Service',
+    header: t('recentBookings.table.service'),
     cell: ({ row }) => {
       const booking = row.original;
       return (
@@ -46,7 +46,7 @@ export const recentBookingsColumns: ColumnDef<RecentBookingSummary>[] = [
   },
   {
     accessorKey: 'staffName',
-    header: 'Staff',
+    header: t('recentBookings.table.staff'),
     cell: ({ row }) => {
       const staff = row.original.staffName;
       return <span className="text-sm text-muted-foreground">{staff ?? '—'}</span>;
@@ -54,7 +54,7 @@ export const recentBookingsColumns: ColumnDef<RecentBookingSummary>[] = [
   },
   {
     accessorKey: 'locationName',
-    header: 'Location',
+    header: t('recentBookings.table.location'),
     cell: ({ row }) => {
       const location = row.original.locationName;
       return <span className="text-sm text-muted-foreground">{location ?? '—'}</span>;
@@ -62,27 +62,27 @@ export const recentBookingsColumns: ColumnDef<RecentBookingSummary>[] = [
   },
   {
     accessorKey: 'startTime',
-    header: 'Scheduled',
+    header: t('recentBookings.table.scheduled'),
     cell: ({ row }) => {
       return <span className="text-sm text-muted-foreground">{formatDateTime(row.original.startTime)}</span>;
     },
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: t('recentBookings.table.status'),
     cell: ({ row }) => {
       const status = row.original.status;
       const variant =
         status === 'confirmed'
           ? 'default'
           : status === 'pending'
-          ? 'outline'
-          : status === 'cancelled'
-          ? 'destructive'
-          : 'secondary';
+            ? 'outline'
+            : status === 'cancelled'
+              ? 'destructive'
+              : 'secondary';
       return (
         <Badge variant={variant} className="capitalize">
-          {status}
+          {tRoot(`BookingStatus.${status}`)}
         </Badge>
       );
     },

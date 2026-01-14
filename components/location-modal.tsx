@@ -12,7 +12,10 @@ interface LocationModalProps {
   onSave: (data: CreateLocationRequest | UpdateLocationRequest) => Promise<void>;
 }
 
+import { useTranslations } from 'next-intl';
+
 export function LocationModal({ isOpen, onClose, location, onSave }: LocationModalProps) {
+  const t = useTranslations('Locations.modal');
   const [loading, setLoading] = useState(false);
 
   const handleSave = async (data: CreateLocationRequest | UpdateLocationRequest) => {
@@ -33,7 +36,7 @@ export function LocationModal({ isOpen, onClose, location, onSave }: LocationMod
       <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>
-            {location ? 'Edit Location' : 'Add New Location'}
+            {location ? t('editTitle') : t('addTitle')}
           </SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-hidden flex flex-col">

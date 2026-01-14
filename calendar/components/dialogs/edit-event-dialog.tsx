@@ -24,6 +24,7 @@ import { eventSchema } from "@/calendar/schemas";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TimeValue } from "react-aria-components";
 import type { TEventFormData } from "@/calendar/schemas";
+import { useTranslations } from 'next-intl';
 
 interface IProps {
   children: React.ReactNode;
@@ -31,6 +32,8 @@ interface IProps {
 }
 
 export function EditEventDialog({ children, event }: IProps) {
+  const t = useTranslations('Calendar.dialog.edit');
+  const tCommon = useTranslations('Calendar.dialog.common');
   const { isOpen, onClose, onToggle } = useDisclosure();
 
   const { users } = useCalendar();
@@ -81,11 +84,10 @@ export function EditEventDialog({ children, event }: IProps) {
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Event</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
             <AlertTriangle className="mr-1 inline-block size-4 text-yellow-500" />
-            This form only updates the current event state locally for demonstration purposes. If you move an event after editing, some inconsistencies may
-            occur. In a real application, you should submit this form to a backend API to persist the changes.
+            {t('warning')}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,11 +98,11 @@ export function EditEventDialog({ children, event }: IProps) {
               name="user"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Responsible</FormLabel>
+                  <FormLabel>{tCommon('responsible')}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger data-invalid={fieldState.invalid}>
-                        <SelectValue placeholder="Select an option" />
+                        <SelectValue placeholder={tCommon('selectOption')} />
                       </SelectTrigger>
 
                       <SelectContent>
@@ -129,10 +131,10 @@ export function EditEventDialog({ children, event }: IProps) {
               name="title"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel htmlFor="title">Title</FormLabel>
+                  <FormLabel htmlFor="title">{tCommon('title')}</FormLabel>
 
                   <FormControl>
-                    <Input id="title" placeholder="Enter a title" data-invalid={fieldState.invalid} {...field} />
+                    <Input id="title" placeholder={tCommon('titlePlaceholder')} data-invalid={fieldState.invalid} {...field} />
                   </FormControl>
 
                   <FormMessage />
@@ -146,14 +148,14 @@ export function EditEventDialog({ children, event }: IProps) {
                 name="startDate"
                 render={({ field, fieldState }) => (
                   <FormItem className="flex-1">
-                    <FormLabel htmlFor="startDate">Start Date</FormLabel>
+                    <FormLabel htmlFor="startDate">{tCommon('startDate')}</FormLabel>
 
                     <FormControl>
                       <SingleDayPicker
                         id="startDate"
                         value={field.value}
                         onSelect={date => field.onChange(date as Date)}
-                        placeholder="Select a date"
+                        placeholder={tCommon('selectDate')}
                         data-invalid={fieldState.invalid}
                       />
                     </FormControl>
@@ -168,7 +170,7 @@ export function EditEventDialog({ children, event }: IProps) {
                 name="startTime"
                 render={({ field, fieldState }) => (
                   <FormItem className="flex-1">
-                    <FormLabel>Start Time</FormLabel>
+                    <FormLabel>{tCommon('startTime')}</FormLabel>
 
                     <FormControl>
                       <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
@@ -186,12 +188,12 @@ export function EditEventDialog({ children, event }: IProps) {
                 name="endDate"
                 render={({ field, fieldState }) => (
                   <FormItem className="flex-1">
-                    <FormLabel>End Date</FormLabel>
+                    <FormLabel>{tCommon('endDate')}</FormLabel>
                     <FormControl>
                       <SingleDayPicker
                         value={field.value}
                         onSelect={date => field.onChange(date as Date)}
-                        placeholder="Select a date"
+                        placeholder={tCommon('selectDate')}
                         data-invalid={fieldState.invalid}
                       />
                     </FormControl>
@@ -205,7 +207,7 @@ export function EditEventDialog({ children, event }: IProps) {
                 name="endTime"
                 render={({ field, fieldState }) => (
                   <FormItem className="flex-1">
-                    <FormLabel>End Time</FormLabel>
+                    <FormLabel>{tCommon('endTime')}</FormLabel>
                     <FormControl>
                       <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
                     </FormControl>
@@ -220,60 +222,60 @@ export function EditEventDialog({ children, event }: IProps) {
               name="color"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Color</FormLabel>
+                  <FormLabel>{tCommon('color')}</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger data-invalid={fieldState.invalid}>
-                        <SelectValue placeholder="Select an option" />
+                        <SelectValue placeholder={tCommon('selectOption')} />
                       </SelectTrigger>
 
                       <SelectContent>
                         <SelectItem value="blue">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-blue-600" />
-                            Blue
+                            {tCommon('colors.blue')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="green">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-green-600" />
-                            Green
+                            {tCommon('colors.green')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="red">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-red-600" />
-                            Red
+                            {tCommon('colors.red')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="yellow">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-yellow-600" />
-                            Yellow
+                            {tCommon('colors.yellow')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="purple">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-purple-600" />
-                            Purple
+                            {tCommon('colors.purple')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="orange">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-orange-600" />
-                            Orange
+                            {tCommon('colors.orange')}
                           </div>
                         </SelectItem>
 
                         <SelectItem value="gray">
                           <div className="flex items-center gap-2">
                             <div className="size-3.5 rounded-full bg-neutral-600" />
-                            Gray
+                            {tCommon('colors.gray')}
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -289,7 +291,7 @@ export function EditEventDialog({ children, event }: IProps) {
               name="description"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{tCommon('description')}</FormLabel>
 
                   <FormControl>
                     <Textarea {...field} value={field.value} data-invalid={fieldState.invalid} />
@@ -305,12 +307,12 @@ export function EditEventDialog({ children, event }: IProps) {
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
-              Cancel
+              {t('add.cancel', { fallback: 'Cancel' })}
             </Button>
           </DialogClose>
 
           <Button form="event-form" type="submit">
-            Save changes
+            {t('save')}
           </Button>
         </DialogFooter>
       </DialogContent>

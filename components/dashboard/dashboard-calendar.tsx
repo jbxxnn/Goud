@@ -105,7 +105,7 @@ export function DashboardCalendar({
         key={key}
         onClick={() => handleSelect(date)}
         className={cn(
-          'relative flex h-8 w-full flex-col items-center justify-center text-sm font-medium transition-colors',
+          'relative flex h-9 w-full flex-col items-center justify-center text-sm font-medium transition-colors',
           'hover:bg-primary/10 hover:text-primary',
           selectedDate && 'text-card font-semibold bg-primary hover:text-card',
           isToday && 'text-card font-semibold',
@@ -113,6 +113,7 @@ export function DashboardCalendar({
           outside && 'text-gray-300',
           !outside && !selectedDate && 'text-secondary-foreground'
         )}
+        style={{ borderRadius: '50%' }}
       >
         <span>{date.getDate()}</span>
         {hasEvents && (
@@ -129,22 +130,22 @@ export function DashboardCalendar({
           {format(currentMonth, 'MMMM yyyy')}
         </div>
         <div className="flex items-center gap-2">
-        <button
-          type="button"
-          aria-label="Previous month"
-          onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-          className="rounded-full border border-muted-foreground/30 p-1 text-muted-foreground transition-colors hover:text-primary"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="Next month"
-          onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-          className="rounded-full border border-muted-foreground/30 p-1 text-muted-foreground transition-colors hover:text-primary"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            aria-label="Previous month"
+            onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
+            className="rounded-full border border-muted-foreground/30 p-1 text-muted-foreground transition-colors hover:text-primary"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next month"
+            onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
+            className="rounded-full border border-muted-foreground/30 p-1 text-muted-foreground transition-colors hover:text-primary"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
