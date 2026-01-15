@@ -812,6 +812,10 @@
     "Bookings": {
         "title": "Boekingen",
         "description": "Beheer alle afspraken en boekingen",
+        "views": {
+            "list": "Lijstweergave",
+            "calendar": "Kalenderweergave"
+        },
         "filters": {
             "status": "Status",
             "all": "Alles",
@@ -873,7 +877,9 @@
     "BookingStatus": {
         "confirmed": "Bevestigd",
         "pending": "In afwachting",
-        "cancelled": "Geannuleerd"
+        "cancelled": "Geannuleerd",
+        "ongoing": "Bezig",
+        "completed": "Voltooid"
     },
     "Table": {
         "searchPlaceholder": "Zoeken...",

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { format, parseISO } from "date-fns";
@@ -7,6 +8,9 @@ import { Clock, Text, User } from "lucide-react";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
+import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
+
 
 import type { IEvent } from "@/calendar/interfaces";
 import type { VariantProps } from "class-variance-authority";
@@ -50,7 +54,7 @@ interface IProps {
 }
 
 export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated }: IProps) {
-  const { badgeVariant } = useCalendar();
+  const { badgeVariant, entityType } = useCalendar();
 
   const startDate = parseISO(event.startDate);
   const endDate = parseISO(event.endDate);
@@ -66,45 +70,57 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
     }
   };
 
-  return (
-    <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
-      <div role="button" tabIndex={0} className={agendaEventCardClasses} onKeyDown={handleKeyDown}>
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-1.5">
-            {["mixed", "dot"].includes(badgeVariant) && (
-              <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
-                <circle cx="4" cy="4" r="4" />
-              </svg>
+  const CardContent = (
+    <div role="button" tabIndex={0} className={agendaEventCardClasses} onKeyDown={handleKeyDown}>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5">
+          {["mixed", "dot"].includes(badgeVariant) && (
+            <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+              <circle cx="4" cy="4" r="4" />
+            </svg>
+          )}
+
+          <p className="font-medium">
+            {eventCurrentDay && eventTotalDays && (
+              <span className="mr-1 text-xs">
+                Day {eventCurrentDay} of {eventTotalDays} •{" "}
+              </span>
             )}
+            {event.title}
+          </p>
+        </div>
 
-            <p className="font-medium">
-              {eventCurrentDay && eventTotalDays && (
-                <span className="mr-1 text-xs">
-                  Day {eventCurrentDay} of {eventTotalDays} •{" "}
-                </span>
-              )}
-              {event.title}
-            </p>
-          </div>
+        <div className="mt-1 flex items-center gap-1">
+          <User className="size-3 shrink-0" />
+          <p className="text-xs text-foreground">{event.user.name}</p>
+        </div>
 
-          <div className="mt-1 flex items-center gap-1">
-            <User className="size-3 shrink-0" />
-            <p className="text-xs text-foreground">{event.user.name}</p>
-          </div>
+        <div className="flex items-center gap-1">
+          <Clock className="size-3 shrink-0" />
+          <p className="text-xs text-foreground">
+            {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
+          </p>
+        </div>
 
-          <div className="flex items-center gap-1">
-            <Clock className="size-3 shrink-0" />
-            <p className="text-xs text-foreground">
-              {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Text className="size-3 shrink-0" />
-            <p className="text-xs text-foreground">{event.description}</p>
-          </div>
+        <div className="flex items-center gap-1">
+          <Text className="size-3 shrink-0" />
+          <p className="text-xs text-foreground">{event.description}</p>
         </div>
       </div>
-    </ShiftDetailsDialog>
+    </div>
+  );
+
+  return (
+    <DraggableEvent event={event}>
+      {entityType === 'booking' ? (
+        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+          {CardContent}
+        </BookingDetailsDialog>
+      ) : (
+        <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+          {CardContent}
+        </ShiftDetailsDialog>
+      )}
+    </DraggableEvent>
   );
 }

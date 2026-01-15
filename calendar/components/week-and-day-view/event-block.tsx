@@ -5,6 +5,7 @@ import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
+import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
 
 import { cn } from "@/lib/utils";
 
@@ -69,25 +70,48 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
 
   return (
     <DraggableEvent event={event}>
-      <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
-        <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
-          <div className="flex items-center gap-1.5 truncate">
-            {["mixed", "dot"].includes(badgeVariant) && (
-              <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
-                <circle cx="4" cy="4" r="4" />
-              </svg>
+      {/* Conditional wrapper based on entityType */}
+      {useCalendar().entityType === 'booking' ? (
+        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
+            <div className="flex items-center gap-1.5 truncate">
+              {["mixed", "dot"].includes(badgeVariant) && (
+                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                  <circle cx="4" cy="4" r="4" />
+                </svg>
+              )}
+
+              <p className="truncate font-semibold">{event.title}</p>
+            </div>
+
+            {durationInMinutes > 25 && (
+              <p>
+                {format(start, "h:mm a")} - {format(end, "h:mm a")}
+              </p>
             )}
-
-            <p className="truncate font-semibold">{event.title}</p>
           </div>
+        </BookingDetailsDialog>
+      ) : (
+        <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
+            <div className="flex items-center gap-1.5 truncate">
+              {["mixed", "dot"].includes(badgeVariant) && (
+                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                  <circle cx="4" cy="4" r="4" />
+                </svg>
+              )}
 
-          {durationInMinutes > 25 && (
-            <p>
-              {format(start, "h:mm a")} - {format(end, "h:mm a")}
-            </p>
-          )}
-        </div>
-      </ShiftDetailsDialog>
+              <p className="truncate font-semibold">{event.title}</p>
+            </div>
+
+            {durationInMinutes > 25 && (
+              <p>
+                {format(start, "h:mm a")} - {format(end, "h:mm a")}
+              </p>
+            )}
+          </div>
+        </ShiftDetailsDialog>
+      )}
     </DraggableEvent>
   );
 }

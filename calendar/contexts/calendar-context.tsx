@@ -22,6 +22,7 @@ interface ICalendarContext {
   events: IEvent[];
   setLocalEvents: Dispatch<SetStateAction<IEvent[]>>;
   isSaving: boolean;
+  entityType: 'shift' | 'booking';
 }
 
 const CalendarContext = createContext({} as ICalendarContext);
@@ -43,9 +44,10 @@ interface CalendarProviderProps {
   users: IUser[];
   events: IEvent[];
   initialSettings?: Record<string, unknown> | null;
+  entityType?: 'shift' | 'booking';
 }
 
-export function CalendarProvider({ children, users, events, initialSettings }: CalendarProviderProps) {
+export function CalendarProvider({ children, users, events, initialSettings, entityType = 'shift' }: CalendarProviderProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -93,7 +95,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   // Initialize selectedDate from URL or current date
   const [selectedDate, setSelectedDateState] = useState<Date>(getInitialDate());
   const selectedDateRef = useRef<Date>(selectedDate);
-  
+
   // Sync selectedDate from URL when URL changes (e.g., browser back/forward)
   useEffect(() => {
     const dateParam = searchParams.get('date');
@@ -116,7 +118,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   useEffect(() => {
     const dateStr = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     const currentDateParam = searchParams.get('date');
-    
+
     // Only update URL if it's different to avoid unnecessary navigation
     if (currentDateParam !== dateStr) {
       const params = new URLSearchParams(searchParams.toString());
@@ -125,7 +127,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]); // Only depend on selectedDate, not searchParams to avoid loops
-  
+
   // Update both ref and state when selectedDate changes
   const setSelectedDate = (date: Date | undefined) => {
     if (!date) return;
@@ -208,7 +210,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   const handleSetBadgeVariant = async (variant: TBadgeVariant) => {
     setBadgeVariant(variant);
     if (isInitialLoad) return; // Skip save during initial load
-    
+
     setIsSaving(true);
     try {
       const response = await fetch('/api/calendar-settings', {
@@ -216,7 +218,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ badge_variant: variant }),
       });
-      
+
       if (response.ok) {
         // Success notification will be handled by component using toast
       } else {
@@ -233,7 +235,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   const handleSetVisibleHours = async (hours: TVisibleHours) => {
     setVisibleHours(hours);
     if (isInitialLoad) return; // Skip save during initial load
-    
+
     setIsSaving(true);
     try {
       const response = await fetch('/api/calendar-settings', {
@@ -241,7 +243,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ visible_hours: hours }),
       });
-      
+
       if (response.ok) {
         // Success notification will be handled by component using toast
       } else {
@@ -258,7 +260,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
   const handleSetWorkingHours = async (hours: TWorkingHours) => {
     setWorkingHours(hours);
     if (isInitialLoad) return; // Skip save during initial load
-    
+
     setIsSaving(true);
     try {
       const response = await fetch('/api/calendar-settings', {
@@ -266,7 +268,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ working_hours: hours }),
       });
-      
+
       if (response.ok) {
         // Success notification will be handled by component using toast
       } else {
@@ -298,6 +300,7 @@ export function CalendarProvider({ children, users, events, initialSettings }: C
         events: localEvents,
         setLocalEvents,
         isSaving,
+        entityType,
       }}
     >
       {children}

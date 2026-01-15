@@ -62,7 +62,7 @@ export type BookingState = {
   timestamp: number; // to detect stale data
 };
 
-export type BookingStatus = 'confirmed' | 'pending' | 'cancelled';
+export type BookingStatus = 'confirmed' | 'pending' | 'cancelled' | 'ongoing' | 'completed';
 
 export interface Booking {
   id: string;

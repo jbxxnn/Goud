@@ -3,8 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Loading03Icon, CalendarIcon } from '@hugeicons/core-free-icons';
+import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '@hugeicons/core-free-icons';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
+import { bookingToCalendarEvent } from '@/lib/utils/booking-mapper';
+import { CalendarProvider } from '@/calendar/contexts/calendar-context';
+import { BookingCalendarContainer } from '@/components/booking-calendar-container';
+import { CalendarSettings } from '@/components/calendar-settings';
+import { IEvent } from '@/calendar/interfaces';
+import { TCalendarView } from '@/calendar/types';
 import { DataTable } from '@/components/ui/data-table';
 import { createBookingColumns } from '@/components/bookings-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -34,12 +40,15 @@ export default function BookingsClient({
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(initialPagination.page);
-  const [limit, setLimit] = useState<number>(10);
+  const [limit, setLimit] = useState<number>(100);
   const [totalPages, setTotalPages] = useState(initialPagination.totalPages);
   const [total, setTotal] = useState<number>(0);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
+  const [calendarView, setCalendarView] = useState<TCalendarView>('month');
+  const [calendarEvents, setCalendarEvents] = useState<IEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -91,6 +100,12 @@ export default function BookingsClient({
         setTotalPages(data.pagination.total_pages);
         setTotal(data.pagination.total);
       }
+
+      // Update calendar events whenever bookings change
+      if (data.data) {
+        const events = data.data.map(booking => bookingToCalendarEvent(booking));
+        setCalendarEvents(events);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('toasts.loadError');
       toast.error(t('toasts.loadError'), {
@@ -99,7 +114,7 @@ export default function BookingsClient({
     } finally {
       setLoading(false);
     }
-  }, [page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId]);
+  }, [page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId, viewMode]); // Added viewMode to refresh when switching views logic if needed, though fetch is manual mostly or effect based
 
   // Cancel booking
   const handleCancel = async (booking: Booking) => {
@@ -227,10 +242,50 @@ export default function BookingsClient({
     setPage(1);
   }, [limit]);
 
-  // Load data when filters change
+  useEffect(() => {
+    // If we are in calendar mode, we might want to fetch more items or a specific range
+    // For now, let's just stick to standard fetch. 
+    // Ideally for calendar we should fetch by date range, but we are reusing the list API for now.
+    // If the list is paginated, the calendar will only show the current page.
+    // TODO: Ideally update fetchBookings to handle 'calendar' mode by fetching a larger range or all for the month.
+    if (viewMode === 'calendar') {
+      setLimit(100); // Temporary hack to get more items for calendar
+    } else {
+      setLimit(10);
+    }
+  }, [viewMode]);
+
   useEffect(() => {
     fetchBookings();
   }, [fetchBookings]);
+
+  // Extract users for the calendar filter (staff)
+  const calendarUsers = bookings
+    .map(b => b.staff)
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .map(s => ({
+      id: s.first_name, // Using first name as ID temporarily because booking.staff object doesn't have ID, only names? Wait, booking.staff_id exists but the expanded object might not have it.
+      // Let's check booking type. Booking has staff_id. The expanded object `staff` has `first_name` and `last_name`.
+      // We need the ID for the user select to work with the event user ID.
+      // The event user ID is set to `booking.staff_id` in the mapper.
+      // So we need `booking.staff_id` here.
+      // But we are iterating over `bookings` and `b.staff` object doesn't have ID.
+      // We can use `b.staff_id` paired with `b.staff` details.
+    }))
+  // We need unique users.
+
+  const uniqueStaffMap = new Map();
+  bookings.forEach(b => {
+    if (b.staff_id && b.staff) {
+      uniqueStaffMap.set(b.staff_id, {
+        id: b.staff_id,
+        name: `${b.staff.first_name} ${b.staff.last_name}`,
+        picturePath: null
+      });
+    }
+  });
+
+  const calendarUsersList = Array.from(uniqueStaffMap.values());
 
   return (
     <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
@@ -242,106 +297,148 @@ export default function BookingsClient({
             {t('description')}
           </p>
         </div>
+
+        <div className="flex items-center bg-muted rounded-lg p-1 border">
+          <Button
+            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 h-8"
+            onClick={() => setViewMode('table')}
+          >
+            <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
+            {t('views.list')}
+          </Button>
+          <Button
+            variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 h-8"
+            onClick={() => setViewMode('calendar')}
+          >
+            <HugeiconsIcon icon={ViewIcon} size={16} />
+            {t('views.calendar')}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">{t('filters.status')}:</label>
-          <select
-            title="Status"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border rounded-md px-3 py-1.5 text-sm h-11"
-            style={{ borderRadius: '0.2rem' }}
-          >
-            <option value="all">{t('filters.all')}</option>
-            <option value="pending">{t('filters.pending')}</option>
-            <option value="confirmed">{t('filters.confirmed')}</option>
-            <option value="cancelled">{t('filters.cancelled')}</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">{t('filters.from')}:</label>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-40"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium">{t('filters.to')}:</label>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-40"
-          />
-        </div>
-        {!clientId && (
-          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <label className="text-sm font-medium">{t('filters.search')}:</label>
-            <Input
-              type="text"
-              placeholder={t('filters.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
-          </div>
+        {viewMode === 'table' && (
+          <>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{t('filters.status')}:</label>
+              <select
+                title="Status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="border rounded-md px-3 py-1.5 text-sm h-11"
+                style={{ borderRadius: '0.2rem' }}
+              >
+                <option value="all">{t('filters.all')}</option>
+                <option value="pending">{t('filters.pending')}</option>
+                <option value="confirmed">{t('filters.confirmed')}</option>
+                <option value="cancelled">{t('filters.cancelled')}</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{t('filters.from')}:</label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{t('filters.to')}:</label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            {!clientId && (
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <label className="text-sm font-medium">{t('filters.search')}:</label>
+                <Input
+                  type="text"
+                  placeholder={t('filters.searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Bookings Table */}
       <div>
-        <div className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
+        {viewMode === 'table' ? (
+          <div className="p-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3">
+                  <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
               </div>
-            </div>
-          ) : bookings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-3 mb-4">
-                <HugeiconsIcon icon={CalendarIcon} className="h-6 w-6 text-muted-foreground" />
+            ) : bookings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-3 mb-4">
+                  <HugeiconsIcon icon={CalendarIcon} className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">{t('table.emptyTitle')}</h3>
+                <p className="text-muted-foreground">
+                  {t('table.emptyDescription')}
+                </p>
               </div>
-              <h3 className="text-lg font-medium mb-2">{t('table.emptyTitle')}</h3>
-              <p className="text-muted-foreground">
-                {t('table.emptyDescription')}
-              </p>
-            </div>
-          ) : (
-            <DataTable
-              columns={createBookingColumns(
-                (key: string) => {
-                  // Helper to try Bookings keys first, then fallback to common/status if needed
-                  // This allows using generic keys like 'confirmed' directly or 'columns.client'
-                  if (key.startsWith('columns.') || key.startsWith('cells.')) return t(key);
-                  // For status keys
-                  if (['pending', 'confirmed', 'cancelled'].includes(key)) return tStatus(key);
-                  // Fallback or other keys
-                  return t(key);
-                },
-                handleView,
-                handleCancel,
-                handleDelete,
-                !clientId, // Only allow delete if not a client (i.e., admin)
-                // (booking) => {
-                //   setReschedulingBooking(booking);
-                //   setIsRescheduleModalOpen(true);
-                // }
-              )}
-              data={bookings}
-              emptyMessage={t('table.emptyMessage')}
-              showColumnToggle={false}
-            />
-          )}
-        </div>
+            ) : (
+              <DataTable
+                columns={createBookingColumns(
+                  (key: string) => {
+                    // Helper to try Bookings keys first, then fallback to common/status if needed
+                    // This allows using generic keys like 'confirmed' directly or 'columns.client'
+                    if (key.startsWith('columns.') || key.startsWith('cells.')) return t(key);
+                    // For status keys
+                    if (['pending', 'confirmed', 'cancelled', 'ongoing', 'completed'].includes(key)) return tStatus(key);
+                    // Fallback or other keys
+                    return t(key);
+                  },
+                  handleView,
+                  handleCancel,
+                  handleDelete,
+                  !clientId, // Only allow delete if not a client (i.e., admin)
+                  // (booking) => {
+                  //   setReschedulingBooking(booking);
+                  //   setIsRescheduleModalOpen(true);
+                  // }
+                )}
+                data={bookings}
+                emptyMessage={t('table.emptyMessage')}
+                showColumnToggle={false}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="bg-background">
+            <CalendarProvider
+              users={calendarUsersList}
+              events={calendarEvents}
+              initialSettings={{}} // You might want to persist settings
+              entityType="booking"
+            >
+              <BookingCalendarContainer
+                view={calendarView}
+                onViewChange={setCalendarView}
+              />
+              <CalendarSettings />
+            </CalendarProvider>
+          </div>
+        )}
 
         {/* Pagination Controls */}
-        {totalPages > 0 && (
+        {totalPages > 0 && viewMode === 'table' && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-4">
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground whitespace-nowrap">{t('pagination.itemsPerPage')}:</label>

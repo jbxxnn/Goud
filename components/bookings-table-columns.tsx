@@ -13,12 +13,14 @@ import {
 import { Booking, BookingStatus } from '@/lib/types/booking';
 
 const getStatusBadge = (status: BookingStatus, t: any) => {
-  const variants: Record<BookingStatus, { variant: 'default' | 'secondary' | 'destructive', label: string }> = {
+  const variants: Record<BookingStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
     pending: { variant: 'secondary', label: t('pending') },
     confirmed: { variant: 'default', label: t('confirmed') },
     cancelled: { variant: 'destructive', label: t('cancelled') },
+    ongoing: { variant: 'outline', label: t('ongoing') },
+    completed: { variant: 'outline', label: t('completed') },
   };
-  const config = variants[status];
+  const config = variants[status] || { variant: 'secondary', label: status || 'Unknown' };
   return <Badge variant={config.variant}>{config.label}</Badge>;
 };
 

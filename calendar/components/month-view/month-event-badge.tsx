@@ -5,6 +5,7 @@ import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
+import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
 
 import { cn } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ interface IProps extends Omit<VariantProps<typeof eventBadgeVariants>, "color" |
 }
 
 export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated }: IProps) {
-  const { badgeVariant } = useCalendar();
+  const { badgeVariant, entityType } = useCalendar();
 
   const itemStart = startOfDay(parseISO(event.startDate));
   const itemEnd = endOfDay(parseISO(event.endDate));
@@ -95,32 +96,42 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
     }
   };
 
+  const BadgeContent = (
+    <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown}>
+      <div className="flex items-center gap-1.5 truncate">
+        {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
+          <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+            <circle cx="4" cy="4" r="4" />
+          </svg>
+        )}
+
+        {renderBadgeText && (
+          <p className="flex-1 truncate font-semibold">
+            {eventCurrentDay && (
+              <span className="text-xs">
+                Day {eventCurrentDay} of {eventTotalDays} •{" "}
+              </span>
+            )}
+            {event.title}
+          </p>
+        )}
+      </div>
+
+      {renderBadgeText && <span>{format(new Date(event.startDate), "h:mm a")}</span>}
+    </div>
+  );
+
   return (
     <DraggableEvent event={event}>
-      <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
-        <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown}>
-          <div className="flex items-center gap-1.5 truncate">
-            {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
-              <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
-                <circle cx="4" cy="4" r="4" />
-              </svg>
-            )}
-
-            {renderBadgeText && (
-              <p className="flex-1 truncate font-semibold">
-                {eventCurrentDay && (
-                  <span className="text-xs">
-                    Day {eventCurrentDay} of {eventTotalDays} •{" "}
-                  </span>
-                )}
-                {event.title}
-              </p>
-            )}
-          </div>
-
-          {renderBadgeText && <span>{format(new Date(event.startDate), "h:mm a")}</span>}
-        </div>
-      </ShiftDetailsDialog>
+      {entityType === 'booking' ? (
+        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+          {BadgeContent}
+        </BookingDetailsDialog>
+      ) : (
+        <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+          {BadgeContent}
+        </ShiftDetailsDialog>
+      )}
     </DraggableEvent>
   );
 }

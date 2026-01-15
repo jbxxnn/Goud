@@ -812,6 +812,10 @@
     "Bookings": {
         "title": "Bookings",
         "description": "Manage all appointments and bookings",
+        "views": {
+            "list": "List view",
+            "calendar": "Calendar view"
+        },
         "filters": {
             "status": "Status",
             "all": "All",
@@ -873,7 +877,9 @@
     "BookingStatus": {
         "confirmed": "Confirmed",
         "pending": "Pending",
-        "cancelled": "Cancelled"
+        "cancelled": "Cancelled",
+        "ongoing": "Ongoing",
+        "completed": "Completed"
     },
     "Table": {
         "searchPlaceholder": "Search...",
