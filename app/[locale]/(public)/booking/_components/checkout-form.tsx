@@ -196,7 +196,7 @@ export function CheckoutForm({
             )}
             <form id="checkout-form" className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
                 <div className="grid md:grid-cols-2 gap-4">
-                    <div className="col-span-2 space-y-2">
+                    <div className="md:col-span-2 space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('email')}</label>
                         <div className="relative">
                             <Input
@@ -252,7 +252,7 @@ export function CheckoutForm({
                     </div>
 
                     {showLoginForm && (
-                        <div className="col-span-2 space-y-4 pt-2">
+                        <div className="md:col-span-2 space-y-4 pt-2">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('password')}</label>
                                 <Input
@@ -284,12 +284,12 @@ export function CheckoutForm({
                         </div>
                     )}
 
-                    <Separator className="w-full col-span-2 my-2" />
+                    <Separator className="w-full md:col-span-2 my-2" />
 
                     {showDetailsForm && (
                         <>
                             {userRole === 'midwife' && (
-                                <div className="space-y-4 col-span-2 pt-2 pb-2">
+                                <div className="space-y-4 md:col-span-2 pt-2 pb-2">
                                     <div className="flex items-center space-x-2">
                                         <Switch
                                             checked={isBookingForClient}
@@ -331,7 +331,7 @@ export function CheckoutForm({
                                 />
                                 {errors.lastName && <div className="text-xs text-red-600 font-medium ml-1">{errors.lastName.message}</div>}
                             </div>
-                            <div className="space-y-2 col-span-2">
+                            <div className="space-y-2 md:col-span-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('phone')}</label>
                                 <Input
                                     className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
@@ -342,7 +342,7 @@ export function CheckoutForm({
                             </div>
 
                             {/* Address fields */}
-                            <div className="col-span-2 grid grid-cols-2 gap-4">
+                            <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('street')}</label>
                                     <Input placeholder={t('streetPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...streetNameField} />
@@ -446,7 +446,7 @@ export function CheckoutForm({
                                 {errors.birthDate && <div className="text-xs text-red-600 font-medium ml-1">{errors.birthDate.message}</div>}
                             </div>
 
-                            <div className="col-span-2 space-y-2">
+                            <div className="md:col-span-2 space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('midwife')}</label>
                                 <Select
                                     value={watch('midwifeId') || ''}
@@ -468,7 +468,7 @@ export function CheckoutForm({
                                 {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{errors.midwifeId.message}</div>}
                             </div>
 
-                            <div className="col-span-2 space-y-2">
+                            <div className="md:col-span-2 space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('notes')}</label>
                                 <textarea
                                     className="flex w-full rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 min-h-[120px] transition-all duration-200"
