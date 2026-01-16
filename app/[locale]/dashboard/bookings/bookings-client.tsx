@@ -298,16 +298,7 @@ export default function BookingsClient({
           </p>
         </div>
 
-        <div className="flex items-center bg-muted rounded-lg p-1 border">
-          <Button
-            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="gap-2 h-8"
-            onClick={() => setViewMode('table')}
-          >
-            <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
-            {t('views.list')}
-          </Button>
+        <div className="flex items-center bg-accent rounded-full p-1 border">
           <Button
             variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
             size="sm"
@@ -316,6 +307,15 @@ export default function BookingsClient({
           >
             <HugeiconsIcon icon={ViewIcon} size={16} />
             {t('views.calendar')}
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="gap-2 h-8"
+            onClick={() => setViewMode('table')}
+          >
+            <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
+            {t('views.list')}
           </Button>
         </div>
       </div>

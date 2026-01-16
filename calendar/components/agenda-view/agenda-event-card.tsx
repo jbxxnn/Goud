@@ -8,7 +8,8 @@ import { Clock, Text, User } from "lucide-react";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
-import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+// import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+import { BookingSheetTrigger } from "@/calendar/components/booking-sheet-trigger";
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
 
 
@@ -113,9 +114,9 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
   return (
     <DraggableEvent event={event}>
       {entityType === 'booking' ? (
-        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+        <BookingSheetTrigger event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
           {CardContent}
-        </BookingDetailsDialog>
+        </BookingSheetTrigger>
       ) : (
         <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
           {CardContent}

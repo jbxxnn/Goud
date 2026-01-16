@@ -5,7 +5,8 @@ import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
-import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+// import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+import { BookingSheetTrigger } from "@/calendar/components/booking-sheet-trigger";
 
 import { cn } from "@/lib/utils";
 
@@ -124,9 +125,9 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
   return (
     <DraggableEvent event={event}>
       {entityType === 'booking' ? (
-        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+        <BookingSheetTrigger event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
           {BadgeContent}
-        </BookingDetailsDialog>
+        </BookingSheetTrigger>
       ) : (
         <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
           {BadgeContent}

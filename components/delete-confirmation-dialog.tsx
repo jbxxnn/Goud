@@ -41,7 +41,7 @@ export function DeleteConfirmationDialog({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
+      <AlertDialogContent style={{ borderRadius: '1rem' }}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -52,10 +52,11 @@ export function DeleteConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>{t('cancel')}</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose} style={{ borderRadius: '1rem' }}>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className={buttonClassName}
+            style={{ borderRadius: '1rem' }}
           >
             {confirmButtonText || t('delete')}
           </AlertDialogAction>

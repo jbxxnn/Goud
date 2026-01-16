@@ -5,7 +5,7 @@ import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { DraggableEvent } from "@/calendar/components/dnd/draggable-event";
 import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-dialog";
-import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
+import { BookingSheetTrigger } from "@/calendar/components/booking-sheet-trigger";
 
 import { cn } from "@/lib/utils";
 
@@ -72,7 +72,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
     <DraggableEvent event={event}>
       {/* Conditional wrapper based on entityType */}
       {useCalendar().entityType === 'booking' ? (
-        <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+        <BookingSheetTrigger event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
           <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
             <div className="flex items-center gap-1.5 truncate">
               {["mixed", "dot"].includes(badgeVariant) && (
@@ -90,7 +90,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
               </p>
             )}
           </div>
-        </BookingDetailsDialog>
+        </BookingSheetTrigger>
       ) : (
         <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
           <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
