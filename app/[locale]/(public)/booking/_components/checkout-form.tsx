@@ -195,7 +195,7 @@ export function CheckoutForm({
                 </div>
             )}
             <form id="checkout-form" className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2 space-y-2">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('email')}</label>
                         <div className="relative">

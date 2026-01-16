@@ -92,7 +92,7 @@ export function BookingFlow() {
 
             {/* this is the left card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
-                <CardHeader className="relative pb-6 pt-8 px-8">
+                <CardHeader className="relative pb-6 pt-8 px-4 md:px-8">
                     <div className="flex items-start justify-between">
                         {/* <div>
                             <h1 className="text-2xl font-poppins font-bold text-gray-900 tracking-tight">Your Booking</h1>
@@ -147,7 +147,7 @@ export function BookingFlow() {
 
 
                 </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-4">
+                <CardContent className="p-4 md:p-8 pt-0 space-y-4">
 
                     {/* Service Summary */}
                     {(loadingServices || serviceId) ? (
@@ -338,7 +338,7 @@ export function BookingFlow() {
             {/* this is the right card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
-                <CardContent className="space-y-6 pt-12">
+                <CardContent className="space-y-6 pt-12 px-4 md:px-6">
                     {step === 1 && (
                         <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
                             <StepService />
