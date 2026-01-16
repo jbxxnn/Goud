@@ -50,7 +50,7 @@ export function EditEventDialog({ children, event }: IProps) {
       startTime: { hour: parseISO(event.startDate).getHours(), minute: parseISO(event.startDate).getMinutes() },
       endDate: parseISO(event.endDate),
       endTime: { hour: parseISO(event.endDate).getHours(), minute: parseISO(event.endDate).getMinutes() },
-      color: event.color,
+      color: event.color as TEventFormData["color"],
     },
   });
 

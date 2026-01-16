@@ -22,5 +22,5 @@ const eventBulletVariants = cva("size-2 rounded-full", {
 });
 
 export function EventBullet({ color, className }: { color: TEventColor; className: string }) {
-  return <div className={cn(eventBulletVariants({ color, className }))} />;
+  return <div className={cn(eventBulletVariants({ color: color as any, className }))} />;
 }

@@ -87,11 +87,11 @@ export function BookingFlow() {
     }, [selectedAddOnItems, selectedService, policyResponses]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-start justify-center p-4 gap-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col-reverse lg:flex-row items-stretch lg:items-start justify-center p-4 gap-6">
 
 
             {/* this is the left card */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl sticky top-18">
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
                         {/* <div>
