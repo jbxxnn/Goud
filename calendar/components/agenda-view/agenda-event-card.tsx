@@ -60,7 +60,10 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
   const startDate = parseISO(event.startDate);
   const endDate = parseISO(event.endDate);
 
-  const color = (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof agendaEventCardVariants>["color"];
+  const isCustomColor = event.color.startsWith('#');
+  const color = isCustomColor
+    ? 'gray'
+    : (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof agendaEventCardVariants>["color"];
 
   const agendaEventCardClasses = agendaEventCardVariants({ color });
 
@@ -71,12 +74,18 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
     }
   };
 
+  const customStyle = isCustomColor ? {
+    borderColor: event.color,
+    backgroundColor: badgeVariant !== 'dot' ? `${event.color}33` : undefined,
+    color: badgeVariant !== 'dot' ? event.color : undefined,
+  } : undefined;
+
   const CardContent = (
-    <div role="button" tabIndex={0} className={agendaEventCardClasses} onKeyDown={handleKeyDown}>
+    <div role="button" tabIndex={0} className={agendaEventCardClasses} style={customStyle} onKeyDown={handleKeyDown}>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-1.5">
           {["mixed", "dot"].includes(badgeVariant) && (
-            <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+            <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={{ fill: isCustomColor ? event.color : undefined }}>
               <circle cx="4" cy="4" r="4" />
             </svg>
           )}

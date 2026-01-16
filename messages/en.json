@@ -863,6 +863,7 @@
             "location": "Location",
             "staff": "Staff",
             "status": "Status",
+            "payment": "Payment",
             "actions": "Actions"
         },
         "cells": {

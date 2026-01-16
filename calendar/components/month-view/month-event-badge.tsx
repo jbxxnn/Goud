@@ -86,7 +86,10 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
   const renderBadgeText = ["first", "none"].includes(position);
 
-  const color = (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof eventBadgeVariants>["color"];
+  const isCustomColor = event.color.startsWith('#');
+  const color = isCustomColor
+    ? 'gray'
+    : (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof eventBadgeVariants>["color"];
 
   const eventBadgeClasses = cn(eventBadgeVariants({ color, multiDayPosition: position, className }));
 
@@ -97,11 +100,17 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
     }
   };
 
+  const customStyle = isCustomColor ? {
+    borderColor: event.color,
+    backgroundColor: badgeVariant !== 'dot' ? `${event.color}33` : undefined,
+    color: badgeVariant !== 'dot' ? event.color : undefined,
+  } : undefined;
+
   const BadgeContent = (
-    <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown}>
+    <div role="button" tabIndex={0} className={eventBadgeClasses} style={customStyle} onKeyDown={handleKeyDown}>
       <div className="flex items-center gap-1.5 truncate">
         {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
-          <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+          <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={{ fill: isCustomColor ? event.color : undefined }}>
             <circle cx="4" cy="4" r="4" />
           </svg>
         )}

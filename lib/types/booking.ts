@@ -87,6 +87,7 @@ export interface Booking {
   locations: {
     name: string;
     address?: string;
+    color?: string;
   } | null;
   staff: {
     first_name: string;

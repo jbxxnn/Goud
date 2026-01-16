@@ -13,15 +13,25 @@ import {
 import { Booking, BookingStatus } from '@/lib/types/booking';
 
 const getStatusBadge = (status: BookingStatus, t: any) => {
-  const variants: Record<BookingStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
+  const variants: Record<BookingStatus, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
     pending: { variant: 'secondary', label: t('pending') },
     confirmed: { variant: 'default', label: t('confirmed') },
     cancelled: { variant: 'destructive', label: t('cancelled') },
-    ongoing: { variant: 'outline', label: t('ongoing') },
-    completed: { variant: 'outline', label: t('completed') },
+    ongoing: { variant: 'secondary', label: t('ongoing'), className: 'bg-accent text-accent-foreground hover:bg-accent/80' },
+    completed: { variant: 'default', label: t('completed'), className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
   };
   const config = variants[status] || { variant: 'secondary', label: status || 'Unknown' };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+};
+
+const getPaymentBadge = (status: string, t: any) => {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
+    unpaid: { variant: 'secondary', label: 'Unpaid' },
+    paid: { variant: 'default', label: 'Paid', className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+    refunded: { variant: 'secondary', label: 'Refunded', className: 'bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90' },
+  };
+  const config = variants[status] || { variant: 'secondary', label: status || 'Unknown' };
+  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
 const formatDate = (dateString: string) => {
@@ -160,6 +170,16 @@ export const createBookingColumns = (
         const status = row.getValue('status') as BookingStatus;
         return getStatusBadge(status, t);
       },
+    },
+    {
+      accessorKey: 'payment_status',
+      header: t('columns.payment') || 'Payment',
+      cell: ({ row }) => {
+        const status = row.getValue('payment_status') as string;
+        return getPaymentBadge(status || 'unpaid', t);
+      },
+      enableSorting: true,
+      enableHiding: true,
     },
     {
       id: 'actions',

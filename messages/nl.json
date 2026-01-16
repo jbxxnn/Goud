@@ -863,6 +863,7 @@
             "location": "Locatie",
             "staff": "Personeel",
             "status": "Status",
+            "payment": "Betaling",
             "actions": "Acties"
         },
         "cells": {

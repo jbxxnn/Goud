@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Pencil, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 
@@ -57,23 +58,25 @@ const formatDuration = (minutes: number) => {
 };
 
 const getStatusBadge = (status: string) => {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive', label: string }> = {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
     pending: { variant: 'secondary', label: 'Pending' },
     confirmed: { variant: 'default', label: 'Confirmed' },
     cancelled: { variant: 'destructive', label: 'Cancelled' },
+    ongoing: { variant: 'secondary', label: 'Ongoing', className: 'bg-accent text-accent-foreground hover:bg-accent/80' },
+    completed: { variant: 'default', label: 'Completed', className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
 const getPaymentBadge = (status: string) => {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive', label: string }> = {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
     unpaid: { variant: 'secondary', label: 'Unpaid' },
-    paid: { variant: 'default', label: 'Paid' },
-    refunded: { variant: 'destructive', label: 'Refunded' },
+    paid: { variant: 'default', label: 'Paid', className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+    refunded: { variant: 'secondary', label: 'Refunded', className: 'bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90' },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
 export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete }: BookingModalProps) {
@@ -136,10 +139,82 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
         </SheetHeader>
 
         {!booking ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <p>Loading details...</p>
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            {/* Status & Payment Skeleton */}
+            <div className="flex items-center gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Status</div>
+                <Skeleton className="h-5 w-20" style={{ borderRadius: "0.5rem" }} />
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground mb-1">Payment</div>
+                <Skeleton className="h-5 w-16" style={{ borderRadius: "0.5rem" }} />
+              </div>
+            </div>
+
+            {/* Client Information Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40 mb-4" style={{ borderRadius: '0.5rem' }} /> {/* Header */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Name</div>
+                  <Skeleton className="h-5 w-32" style={{ borderRadius: "0.5rem" }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Email</div>
+                  <Skeleton className="h-5 w-48" style={{ borderRadius: "0.5rem" }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Phone</div>
+                  <Skeleton className="h-5 w-32" style={{ borderRadius: "0.5rem" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Appointment Details Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40 mb-4" style={{ borderRadius: '0.5rem' }} /> {/* Header */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Date</div>
+                  <Skeleton className="h-5 w-24" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Time</div>
+                  <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Service</div>
+                  <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Duration</div>
+                  <Skeleton className="h-5 w-24" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Location</div>
+                  <Skeleton className="h-5 w-40" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Staff</div>
+                  <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Price Breakdown Skeleton */}
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40 mb-4" style={{ borderRadius: '0.5rem' }} /> {/* Header */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" style={{ borderRadius: '0.5rem' }} />
+                  <Skeleton className="h-4 w-16" style={{ borderRadius: '0.5rem' }} />
+                </div>
+                <div className="flex justify-between mt-2 pt-2 border-t">
+                  <Skeleton className="h-5 w-16" style={{ borderRadius: '0.5rem' }} />
+                  <Skeleton className="h-5 w-20" style={{ borderRadius: '0.5rem' }} />
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -385,7 +460,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">Notes</h3>
-                  {!isEditingNotes && (
+                  {!isEditingNotes && ['confirmed', 'ongoing'].includes(booking.status) && (
                     <Button
                       type="button"
                       variant="ghost"

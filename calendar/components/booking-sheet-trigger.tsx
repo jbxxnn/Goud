@@ -184,40 +184,37 @@ export function BookingSheetTrigger({ event, children, onBookingDeleted, onBooki
             </Slot>
 
             {/* The Sheet (BookingModal) */}
-            {booking && (
-                <BookingModal
-                    isOpen={isSheetOpen}
-                    onClose={() => setIsSheetOpen(false)}
-                    booking={booking}
-                    onUpdate={(updated) => {
-                        setBooking(updated);
-                        if (onBookingUpdated) onBookingUpdated();
-                    }}
-                    onDelete={(bookingToDelete) => {
-                        // Check if cancelled. If so, hard delete.
-                        // But logic for 'cancelled' check is inside BookingModal?
-                        // BookingModal logic:
-                        // if (booking.status === 'cancelled') -> Call onDelete
-                        // if (booking.status !== 'cancelled') -> Call onCancel
-
-                        // But wait, BookingModal prop onCancel is for cancelling logic.
-                        // BookingModal prop onDelete is for hard delete logic.
-
-                        setIsDeleteMode(true);
-                        setShowDeleteDialog(true);
-                    }}
-                    onCancel={() => {
-                        // Soft delete / cancel
-                        setIsDeleteMode(false);
-                        setShowDeleteDialog(true);
-                    }}
-                    onReschedule={() => {
-                        setReschedulingBooking(booking);
-                        setIsRescheduleModalOpen(true);
-                    }}
-                    onComplete={handleComplete}
-                />
-            )}
+            {/* The Sheet (BookingModal) */}
+            <BookingModal
+                isOpen={isSheetOpen}
+                onClose={() => setIsSheetOpen(false)}
+                booking={booking}
+                onUpdate={(updated) => {
+                    setBooking(updated);
+                    if (onBookingUpdated) onBookingUpdated();
+                }}
+                onDelete={(bookingToDelete) => {
+                    // Check if cancelled. If so, hard delete.
+                    // But logic for 'cancelled' check is inside BookingModal?
+                    // BookingModal logic:
+                    // if (booking.status === 'cancelled') -> Call onDelete
+                    // if (booking.status !== 'cancelled') -> Call onCancel
+                    // But wait, BookingModal prop onCancel is for cancelling logic.
+                    // BookingModal prop onDelete is for hard delete logic.
+                    setIsDeleteMode(true);
+                    setShowDeleteDialog(true);
+                }}
+                onCancel={() => {
+                    // Soft delete / cancel
+                    setIsDeleteMode(false);
+                    setShowDeleteDialog(true);
+                }}
+                onReschedule={() => {
+                    setReschedulingBooking(booking);
+                    setIsRescheduleModalOpen(true);
+                }}
+                onComplete={handleComplete}
+            />
 
             <BookingRescheduleModal
                 isOpen={isRescheduleModalOpen}

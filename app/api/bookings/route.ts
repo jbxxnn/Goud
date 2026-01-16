@@ -210,13 +210,6 @@ export async function GET(req: NextRequest) {
       .from('bookings')
       .select(`
         *,
-        users:users!client_id (
-          id,
-          email,
-          first_name,
-          last_name,
-          phone
-        ),
         services:services!service_id (
           id,
           name,
@@ -224,7 +217,8 @@ export async function GET(req: NextRequest) {
         ),
         locations:locations!location_id (
           id,
-          name
+          name,
+          color
         ),
         staff:staff!staff_id (
           id,
@@ -236,12 +230,12 @@ export async function GET(req: NextRequest) {
 
     // If clientId provided, filter by client
     if (clientId) {
-      query = query.eq('client_id', clientId);
+      query = query.eq('created_by', clientId);
     }
 
     // If search provided, filter by matching user IDs
     if (matchingUserIds !== null && matchingUserIds.length > 0) {
-      query = query.in('client_id', matchingUserIds);
+      query = query.in('created_by', matchingUserIds);
     }
 
     // Filter by status if provided
@@ -318,11 +312,33 @@ export async function GET(req: NextRequest) {
       addons: addonsMap[booking.id] || [],
     }));
 
+    // Manual fetch for 'users' (client info) via created_by
+    const userIds = [...new Set((data || []).map(b => b.created_by).filter(Boolean))] as string[];
+    let usersMap: Record<string, any> = {};
+
+    if (userIds.length > 0) {
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, email, first_name, last_name, phone')
+        .in('id', userIds);
+
+      if (usersData) {
+        usersData.forEach(u => {
+          usersMap[u.id] = u;
+        });
+      }
+    }
+
+    const bookingsFinal = bookingsWithAddons.map(b => ({
+      ...b,
+      users: usersMap[b.created_by] || null
+    }));
+
     const totalPages = count ? Math.ceil(count / limit) : 0;
 
     return NextResponse.json({
       success: true,
-      data: bookingsWithAddons,
+      data: bookingsFinal,
       pagination: {
         page,
         limit,

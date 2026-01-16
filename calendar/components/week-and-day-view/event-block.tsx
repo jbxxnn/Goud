@@ -57,7 +57,10 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
   const durationInMinutes = differenceInMinutes(end, start);
   const heightInPixels = (durationInMinutes / 60) * 96 - 8;
 
-  const color = (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
+  const isCustomColor = event.color.startsWith('#');
+  const color = isCustomColor
+    ? 'gray'
+    : (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
 
   const calendarWeekEventCardClasses = cn(calendarWeekEventCardVariants({ color, className }), durationInMinutes < 35 && "py-0 justify-center");
 
@@ -68,15 +71,24 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
     }
   };
 
+  const customStyle: React.CSSProperties = {
+    height: `${heightInPixels}px`,
+    ...(isCustomColor ? {
+      borderColor: event.color,
+      backgroundColor: badgeVariant !== 'dot' ? `${event.color}33` : undefined,
+      color: badgeVariant !== 'dot' ? event.color : undefined,
+    } : {})
+  };
+
   return (
     <DraggableEvent event={event}>
       {/* Conditional wrapper based on entityType */}
       {useCalendar().entityType === 'booking' ? (
         <BookingSheetTrigger event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
-          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
+          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={customStyle} onKeyDown={handleKeyDown}>
             <div className="flex items-center gap-1.5 truncate">
               {["mixed", "dot"].includes(badgeVariant) && (
-                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={{ fill: isCustomColor ? event.color : undefined }}>
                   <circle cx="4" cy="4" r="4" />
                 </svg>
               )}
@@ -93,10 +105,10 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated }:
         </BookingSheetTrigger>
       ) : (
         <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
-          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={{ height: `${heightInPixels}px` }} onKeyDown={handleKeyDown}>
+          <div role="button" tabIndex={0} className={calendarWeekEventCardClasses} style={customStyle} onKeyDown={handleKeyDown}>
             <div className="flex items-center gap-1.5 truncate">
               {["mixed", "dot"].includes(badgeVariant) && (
-                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={{ fill: isCustomColor ? event.color : undefined }}>
                   <circle cx="4" cy="4" r="4" />
                 </svg>
               )}
