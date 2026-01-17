@@ -174,6 +174,7 @@ export async function GET(req: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const search = searchParams.get('search');
+    const staffId = searchParams.get('staffId');
 
     const supabase = getServiceSupabase();
 
@@ -210,17 +211,17 @@ export async function GET(req: NextRequest) {
       .from('bookings')
       .select(`
         *,
-        services:services!service_id (
+        services (
           id,
           name,
           duration
         ),
-        locations:locations!location_id (
+        locations (
           id,
           name,
           color
         ),
-        staff:staff!staff_id (
+        staff (
           id,
           first_name,
           last_name
@@ -238,9 +239,19 @@ export async function GET(req: NextRequest) {
       query = query.in('created_by', matchingUserIds);
     }
 
+    // Filter by staffId if provided
+    if (staffId) {
+      query = query.eq('staff_id', staffId);
+    }
+
     // Filter by status if provided
     if (status) {
-      query = query.eq('status', status);
+      if (status.includes(',')) {
+        const statuses = status.split(',').map(s => s.trim());
+        query = query.in('status', statuses);
+      } else {
+        query = query.eq('status', status);
+      }
     }
 
     // Filter by date range if provided
@@ -256,7 +267,10 @@ export async function GET(req: NextRequest) {
     const to = from + limit - 1;
     const { data, error, count } = await query.range(from, to);
 
-    if (error) return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
+    if (error) {
+      console.error('Supabase Query Error:', error);
+      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+    }
 
     // Fetch add-ons for all bookings
     const bookingIds = (data || []).map((b) => b.id);

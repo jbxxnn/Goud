@@ -27,295 +27,295 @@ import type { TEventFormData } from "@/calendar/schemas";
 import { useTranslations } from 'next-intl';
 
 interface IProps {
-  children: React.ReactNode;
-  event: IEvent;
+    children: React.ReactNode;
+    event: IEvent;
 }
 
 export function EditEventDialog({ children, event }: IProps) {
-  const t = useTranslations('Calendar.dialog.edit');
-  const tCommon = useTranslations('Calendar.dialog.common');
-  const { isOpen, onClose, onToggle } = useDisclosure();
+    const t = useTranslations('Calendar.dialog.edit');
+    const tCommon = useTranslations('Calendar.dialog.common');
+    const { isOpen, onClose, onToggle } = useDisclosure();
 
-  const { users } = useCalendar();
+    const { users } = useCalendar();
 
-  const { updateEvent } = useUpdateEvent();
+    const { updateEvent } = useUpdateEvent();
 
-  const form = useForm<TEventFormData>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      user: event.user.id,
-      title: event.title,
-      description: event.description,
-      startDate: parseISO(event.startDate),
-      startTime: { hour: parseISO(event.startDate).getHours(), minute: parseISO(event.startDate).getMinutes() },
-      endDate: parseISO(event.endDate),
-      endTime: { hour: parseISO(event.endDate).getHours(), minute: parseISO(event.endDate).getMinutes() },
-      color: event.color as TEventFormData["color"],
-    },
-  });
-
-  const onSubmit = (values: TEventFormData) => {
-    const user = users.find(user => user.id === values.user);
-
-    if (!user) throw new Error("User not found");
-
-    const startDateTime = new Date(values.startDate);
-    startDateTime.setHours(values.startTime.hour, values.startTime.minute);
-
-    const endDateTime = new Date(values.endDate);
-    endDateTime.setHours(values.endTime.hour, values.endTime.minute);
-
-    updateEvent({
-      ...event,
-      user,
-      title: values.title,
-      color: values.color,
-      description: values.description,
-      startDate: startDateTime.toISOString(),
-      endDate: endDateTime.toISOString(),
+    const form = useForm<TEventFormData>({
+        resolver: zodResolver(eventSchema),
+        defaultValues: {
+            user: event.user.id,
+            title: event.title,
+            description: event.description,
+            startDate: parseISO(event.startDate),
+            startTime: { hour: parseISO(event.startDate).getHours(), minute: parseISO(event.startDate).getMinutes() },
+            endDate: parseISO(event.endDate),
+            endTime: { hour: parseISO(event.endDate).getHours(), minute: parseISO(event.endDate).getMinutes() },
+            color: event.color,
+        },
     });
 
-    onClose();
-  };
+    const onSubmit = (values: TEventFormData) => {
+        const user = users.find(user => user.id === values.user);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onToggle}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+        if (!user) throw new Error("User not found");
 
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-          <DialogDescription>
-            <AlertTriangle className="mr-1 inline-block size-4 text-yellow-500" />
-            {t('warning')}
-          </DialogDescription>
-        </DialogHeader>
+        const startDateTime = new Date(values.startDate);
+        startDateTime.setHours(values.startTime.hour, values.startTime.minute);
 
-        <Form {...form}>
-          <form id="event-form" onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField
-              control={form.control}
-              name="user"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>{tCommon('responsible')}</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger data-invalid={fieldState.invalid}>
-                        <SelectValue placeholder={tCommon('selectOption')} />
-                      </SelectTrigger>
+        const endDateTime = new Date(values.endDate);
+        endDateTime.setHours(values.endTime.hour, values.endTime.minute);
 
-                      <SelectContent>
-                        {users.map(user => (
-                          <SelectItem key={user.id} value={user.id} className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <Avatar key={user.id} className="size-6">
-                                <AvatarImage src={user.picturePath ?? undefined} alt={user.name} />
-                                <AvatarFallback className="text-xxs">{user.name[0]}</AvatarFallback>
-                              </Avatar>
+        updateEvent({
+            ...event,
+            user,
+            title: values.title,
+            color: values.color,
+            description: values.description,
+            startDate: startDateTime.toISOString(),
+            endDate: endDateTime.toISOString(),
+        });
 
-                              <p className="truncate">{user.name}</p>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        onClose();
+    };
 
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel htmlFor="title">{tCommon('title')}</FormLabel>
+    return (
+        <Dialog open={isOpen} onOpenChange={onToggle}>
+            <DialogTrigger asChild>{children}</DialogTrigger>
 
-                  <FormControl>
-                    <Input id="title" placeholder={tCommon('titlePlaceholder')} data-invalid={fieldState.invalid} {...field} />
-                  </FormControl>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{t('title')}</DialogTitle>
+                    <DialogDescription>
+                        <AlertTriangle className="mr-1 inline-block size-4 text-yellow-500" />
+                        {t('warning')}
+                    </DialogDescription>
+                </DialogHeader>
 
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <Form {...form}>
+                    <form id="event-form" onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="user"
+                            render={({ field, fieldState }) => (
+                                <FormItem>
+                                    <FormLabel>{tCommon('responsible')}</FormLabel>
+                                    <FormControl>
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <SelectTrigger data-invalid={fieldState.invalid}>
+                                                <SelectValue placeholder={tCommon('selectOption')} />
+                                            </SelectTrigger>
 
-            <div className="flex items-start gap-2">
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field, fieldState }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel htmlFor="startDate">{tCommon('startDate')}</FormLabel>
+                                            <SelectContent>
+                                                {users.map(user => (
+                                                    <SelectItem key={user.id} value={user.id} className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Avatar key={user.id} className="size-6">
+                                                                <AvatarImage src={user.picturePath ?? undefined} alt={user.name} />
+                                                                <AvatarFallback className="text-xxs">{user.name[0]}</AvatarFallback>
+                                                            </Avatar>
 
-                    <FormControl>
-                      <SingleDayPicker
-                        id="startDate"
-                        value={field.value}
-                        onSelect={date => field.onChange(date as Date)}
-                        placeholder={tCommon('selectDate')}
-                        data-invalid={fieldState.invalid}
-                      />
-                    </FormControl>
+                                                            <p className="truncate">{user.name}</p>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field, fieldState }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="title">{tCommon('title')}</FormLabel>
 
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field, fieldState }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>{tCommon('startTime')}</FormLabel>
+                                    <FormControl>
+                                        <Input id="title" placeholder={tCommon('titlePlaceholder')} data-invalid={fieldState.invalid} {...field} />
+                                    </FormControl>
 
-                    <FormControl>
-                      <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
-                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                        <div className="flex items-start gap-2">
+                            <FormField
+                                control={form.control}
+                                name="startDate"
+                                render={({ field, fieldState }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel htmlFor="startDate">{tCommon('startDate')}</FormLabel>
 
-            <div className="flex items-start gap-2">
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field, fieldState }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>{tCommon('endDate')}</FormLabel>
-                    <FormControl>
-                      <SingleDayPicker
-                        value={field.value}
-                        onSelect={date => field.onChange(date as Date)}
-                        placeholder={tCommon('selectDate')}
-                        data-invalid={fieldState.invalid}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                                        <FormControl>
+                                            <SingleDayPicker
+                                                id="startDate"
+                                                value={field.value}
+                                                onSelect={date => field.onChange(date as Date)}
+                                                placeholder={tCommon('selectDate')}
+                                                data-invalid={fieldState.invalid}
+                                            />
+                                        </FormControl>
 
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field, fieldState }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>{tCommon('endTime')}</FormLabel>
-                    <FormControl>
-                      <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>{tCommon('color')}</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger data-invalid={fieldState.invalid}>
-                        <SelectValue placeholder={tCommon('selectOption')} />
-                      </SelectTrigger>
+                            <FormField
+                                control={form.control}
+                                name="startTime"
+                                render={({ field, fieldState }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>{tCommon('startTime')}</FormLabel>
 
-                      <SelectContent>
-                        <SelectItem value="blue">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-blue-600" />
-                            {tCommon('colors.blue')}
-                          </div>
-                        </SelectItem>
+                                        <FormControl>
+                                            <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
+                                        </FormControl>
 
-                        <SelectItem value="green">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-green-600" />
-                            {tCommon('colors.green')}
-                          </div>
-                        </SelectItem>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-                        <SelectItem value="red">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-red-600" />
-                            {tCommon('colors.red')}
-                          </div>
-                        </SelectItem>
+                        <div className="flex items-start gap-2">
+                            <FormField
+                                control={form.control}
+                                name="endDate"
+                                render={({ field, fieldState }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>{tCommon('endDate')}</FormLabel>
+                                        <FormControl>
+                                            <SingleDayPicker
+                                                value={field.value}
+                                                onSelect={date => field.onChange(date as Date)}
+                                                placeholder={tCommon('selectDate')}
+                                                data-invalid={fieldState.invalid}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <SelectItem value="yellow">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-yellow-600" />
-                            {tCommon('colors.yellow')}
-                          </div>
-                        </SelectItem>
+                            <FormField
+                                control={form.control}
+                                name="endTime"
+                                render={({ field, fieldState }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>{tCommon('endTime')}</FormLabel>
+                                        <FormControl>
+                                            <TimeInput value={field.value as TimeValue} onChange={field.onChange} hourCycle={12} data-invalid={fieldState.invalid} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
-                        <SelectItem value="purple">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-purple-600" />
-                            {tCommon('colors.purple')}
-                          </div>
-                        </SelectItem>
+                        <FormField
+                            control={form.control}
+                            name="color"
+                            render={({ field, fieldState }) => (
+                                <FormItem>
+                                    <FormLabel>{tCommon('color')}</FormLabel>
+                                    <FormControl>
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <SelectTrigger data-invalid={fieldState.invalid}>
+                                                <SelectValue placeholder={tCommon('selectOption')} />
+                                            </SelectTrigger>
 
-                        <SelectItem value="orange">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-orange-600" />
-                            {tCommon('colors.orange')}
-                          </div>
-                        </SelectItem>
+                                            <SelectContent>
+                                                <SelectItem value="blue">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-blue-600" />
+                                                        {tCommon('colors.blue')}
+                                                    </div>
+                                                </SelectItem>
 
-                        <SelectItem value="gray">
-                          <div className="flex items-center gap-2">
-                            <div className="size-3.5 rounded-full bg-neutral-600" />
-                            {tCommon('colors.gray')}
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                                                <SelectItem value="green">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-green-600" />
+                                                        {tCommon('colors.green')}
+                                                    </div>
+                                                </SelectItem>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel>{tCommon('description')}</FormLabel>
+                                                <SelectItem value="red">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-red-600" />
+                                                        {tCommon('colors.red')}
+                                                    </div>
+                                                </SelectItem>
 
-                  <FormControl>
-                    <Textarea {...field} value={field.value} data-invalid={fieldState.invalid} />
-                  </FormControl>
+                                                <SelectItem value="yellow">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-yellow-600" />
+                                                        {tCommon('colors.yellow')}
+                                                    </div>
+                                                </SelectItem>
 
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
+                                                <SelectItem value="purple">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-purple-600" />
+                                                        {tCommon('colors.purple')}
+                                                    </div>
+                                                </SelectItem>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline">
-              {t('add.cancel', { fallback: 'Cancel' })}
-            </Button>
-          </DialogClose>
+                                                <SelectItem value="orange">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-orange-600" />
+                                                        {tCommon('colors.orange')}
+                                                    </div>
+                                                </SelectItem>
 
-          <Button form="event-form" type="submit">
-            {t('save')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+                                                <SelectItem value="gray">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="size-3.5 rounded-full bg-neutral-600" />
+                                                        {tCommon('colors.gray')}
+                                                    </div>
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field, fieldState }) => (
+                                <FormItem>
+                                    <FormLabel>{tCommon('description')}</FormLabel>
+
+                                    <FormControl>
+                                        <Textarea {...field} value={field.value} data-invalid={fieldState.invalid} />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                </Form>
+
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="outline">
+                            {t('add.cancel', { fallback: 'Cancel' })}
+                        </Button>
+                    </DialogClose>
+
+                    <Button form="event-form" type="submit">
+                        {t('save')}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }

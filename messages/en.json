@@ -8,6 +8,11 @@
         "booking": "Book Appointment",
         "dashboard": "Dashboard"
     },
+    "Dashboard": {
+        "menu": {
+            "bookNewEcho": "Book New Echo"
+        }
+    },
     "AdminDashboard": {
         "metrics": {
             "revenue": {
@@ -686,6 +691,14 @@
             "dateTime": "Date & Time",
             "others": "Others",
             "totalDue": "Total Due",
+            "summary": "Summary",
+            "policyExtras": "Policy extras",
+            "steps": {
+                "service": "Service",
+                "dateTime": "Date & Time",
+                "addons": "Add-ons",
+                "review": "Review"
+            },
             "datetime": {
                 "title": "Location, Date & Time",
                 "subtitle": "Choose your location, date and time slot.",
@@ -708,6 +721,7 @@
                 "title": "Review & checkout",
                 "subtitle": "Review your booking details and complete your appointment.",
                 "completeBooking": "Complete booking",
+                "confirmBooking": "Confirm Booking",
                 "processing": "Processing...",
                 "errors": {
                     "emailRequired": "Email is required",
@@ -863,7 +877,6 @@
             "location": "Location",
             "staff": "Staff",
             "status": "Status",
-            "payment": "Payment",
             "actions": "Actions"
         },
         "cells": {

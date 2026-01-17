@@ -1,6 +1,6 @@
 'use client';
 
-import BookingsClient from './bookings/bookings-client';
+import { AppointmentsList } from '@/components/client-dashboard/appointments/appointments-list';
 
 interface ClientDashboardProps {
   clientId: string;
@@ -8,13 +8,8 @@ interface ClientDashboardProps {
 
 export default function ClientDashboard({ clientId }: ClientDashboardProps) {
   return (
-    <BookingsClient 
-      initialBookings={[]}
-      initialPagination={{
-        page: 1,
-        totalPages: 1
-      }}
-      clientId={clientId}
-    />
+    <div className="container max-w-7xl py-6">
+      <AppointmentsList clientId={clientId} />
+    </div>
   );
 }

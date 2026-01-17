@@ -1,11 +1,14 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ShiftsClient from './shifts-client';
+import { AvailabilityView } from '@/components/staff-dashboard/availability-view';
+import { DashboardHeader } from "@/components/client-dashboard/header";
+import { Separator } from "@/components/ui/separator";
 
 export default async function ShiftsPage() {
   // Get the server-side Supabase client
   const supabase = await createClient();
-  
+
   // Get the current user (server-side authenticated)
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
@@ -20,13 +23,44 @@ export default async function ShiftsPage() {
     .select('*')
     .eq('id', authUser.id)
     .single();
-  
+
   // If user not found in database, redirect to login
   if (userError || !user) {
     redirect('/auth/login');
   }
 
-  // If user is not admin, redirect to dashboard
+  // If user is staff, render their availability view
+  if (user.role === 'staff') {
+    // Fetch staff profile linked to this user
+    const { data: staff, error: staffError } = await supabase
+      .from('staff')
+      .select('id, first_name')
+      .eq('user_id', user.id)
+      .single();
+
+    if (staffError || !staff) {
+      return (
+        <div className="container py-8">
+          <div className="bg-destructive/10 text-destructive p-4 rounded-md">
+            Error: Staff profile not found for this user.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="container py-6 space-y-6">
+        <DashboardHeader
+          heading="My Shifts"
+          text="View your upcoming scheduled shifts."
+        />
+        <Separator />
+        <AvailabilityView staffId={staff.id} />
+      </div>
+    );
+  }
+
+  // If user is not admin (and not staff filtered above), redirect to dashboard
   if (user.role !== 'admin') {
     redirect('/dashboard');
   }

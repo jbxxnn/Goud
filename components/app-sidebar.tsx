@@ -17,6 +17,7 @@ import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, C
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ClientSidebar } from "@/components/client-dashboard/sidebar";
 
 type UserRole = 'admin' | 'staff' | 'midwife' | 'client';
 
@@ -33,7 +34,7 @@ const allMenuItems: MenuItem[] = [
     title: "Dashboard",
     url: "/dashboard",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
-    roles: ['admin', 'client'], // Both admin and client can see dashboard
+    roles: ['admin', 'client', 'staff'], // All roles can see dashboard
   },
   {
     title: "Locations",
@@ -63,7 +64,25 @@ const allMenuItems: MenuItem[] = [
     title: "Shifts",
     url: "/dashboard/shifts",
     icon: <HugeiconsIcon icon={Loading04Icon} />,
+    roles: ['admin', 'staff'], // Admin and Staff
+  },
+  {
+    title: "Upcoming",
+    url: "/dashboard/upcoming",
+    icon: <HugeiconsIcon icon={Calendar02Icon} />,
+    roles: ['staff'], // Staff only
+  },
+  {
+    title: "Leave Requests",
+    url: "/dashboard/leave-requests",
+    icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin'], // Admin only
+  },
+  {
+    title: "History",
+    url: "/dashboard/history",
+    icon: <HugeiconsIcon icon={Calendar02Icon} />,
+    roles: ['staff'], // Staff only
   },
   {
     title: "Bookings",
@@ -113,6 +132,10 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
     // Otherwise, check if user role is in the allowed roles
     return item.roles.includes(userRole);
   });
+
+  if (userRole === 'client') {
+    return <ClientSidebar />;
+  }
 
   return (
     <Sidebar collapsible="icon">

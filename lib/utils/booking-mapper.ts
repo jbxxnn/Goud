@@ -3,34 +3,28 @@ import { Booking } from '@/lib/types/booking';
 import { IEvent } from '@/calendar/interfaces';
 import { differenceInDays, parseISO } from 'date-fns';
 
-import { mapLocationColorToCalendarColor } from '@/lib/utils/location-color-mapper';
-
 export function bookingToCalendarEvent(booking: Booking): IEvent {
     // Determine color based on booking status
     let color: IEvent['color'] = 'blue';
 
-    if (booking.locations?.color) {
-        color = mapLocationColorToCalendarColor(booking.locations.color);
-    } else {
-        switch (booking.status) {
-            case 'confirmed':
-                color = 'green';
-                break;
-            case 'pending':
-                color = 'yellow';
-                break;
-            case 'cancelled':
-                color = 'red';
-                break;
-            case 'completed':
-                color = 'purple';
-                break;
-            case 'ongoing':
-                color = 'orange';
-                break;
-            default:
-                color = 'blue';
-        }
+    switch (booking.status) {
+        case 'confirmed':
+            color = 'green';
+            break;
+        case 'pending':
+            color = 'yellow';
+            break;
+        case 'cancelled':
+            color = 'red';
+            break;
+        case 'completed':
+            color = 'purple';
+            break;
+        case 'ongoing':
+            color = 'orange';
+            break;
+        default:
+            color = 'blue';
     }
 
     // Format title: Customer Name - Service Name

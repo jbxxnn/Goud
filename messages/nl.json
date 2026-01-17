@@ -8,6 +8,11 @@
         "booking": "Afspraak maken",
         "dashboard": "Dashboard"
     },
+    "Dashboard": {
+        "menu": {
+            "bookNewEcho": "Nieuwe Echo Boeken"
+        }
+    },
     "AdminDashboard": {
         "metrics": {
             "revenue": {
@@ -686,6 +691,14 @@
             "dateTime": "Datum & Tijd",
             "others": "Overige",
             "totalDue": "Totaal te betalen",
+            "summary": "Samenvatting",
+            "policyExtras": "Beleidstoeslagen",
+            "steps": {
+                "service": "Dienst",
+                "dateTime": "Datum & Tijd",
+                "addons": "Extra's",
+                "review": "Controleren"
+            },
             "datetime": {
                 "title": "Locatie, Datum & Tijd",
                 "subtitle": "Kies uw locatie, datum en tijdslot.",
@@ -708,6 +721,7 @@
                 "title": "Controleren & afrekenen",
                 "subtitle": "Controleer uw gegevens en rond uw afspraak af.",
                 "completeBooking": "Boeking afronden",
+                "confirmBooking": "Bevestig Boeking",
                 "processing": "Bezig met verwerken…",
                 "errors": {
                     "emailRequired": "E-mailadres is verplicht",
@@ -863,7 +877,6 @@
             "location": "Locatie",
             "staff": "Personeel",
             "status": "Status",
-            "payment": "Betaling",
             "actions": "Acties"
         },
         "cells": {

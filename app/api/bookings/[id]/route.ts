@@ -9,6 +9,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .from('bookings')
       .select(`
         *,
+        users:users!client_id (
+          id,
+          email,
+          first_name,
+          last_name,
+          phone
+        ),
         services:services!service_id (
           id,
           name,
@@ -16,8 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         ),
         locations:locations!location_id (
           id,
-          name,
-          color
+          name
         ),
         staff:staff!staff_id (
           id,
@@ -59,22 +65,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       };
     });
 
-    // Fetch user (client info) manually
-    let user = null;
-    if (data.created_by) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name, phone')
-        .eq('id', data.created_by)
-        .maybeSingle();
-      user = userData;
-    }
-
     return NextResponse.json({
       booking: {
         ...data,
         addons,
-        users: user,
       }
     });
   } catch (e: any) {
@@ -144,6 +138,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updates: Record<string, any> = {};
     if (status !== undefined) updates.status = status;
     if (notes !== undefined) updates.notes = notes === null || notes === '' ? null : notes;
+    if (body.internal_notes !== undefined) updates.internal_notes = body.internal_notes === null || body.internal_notes === '' ? null : body.internal_notes;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
@@ -156,6 +151,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .from('bookings')
       .select(`
         *,
+        users:users!client_id (
+          id,
+          email,
+          first_name,
+          last_name,
+          phone
+        ),
         services:services!service_id (
           id,
           name,
@@ -163,8 +165,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ),
         locations:locations!location_id (
           id,
-          name,
-          color
+          name
         ),
         staff:staff!staff_id (
           id,
@@ -220,21 +221,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       };
     });
 
-    // Fetch user (client info) manually for updated booking
-    let user = null;
-    if (existing.created_by) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name, phone')
-        .eq('id', existing.created_by)
-        .maybeSingle();
-      user = userData;
-    }
-
     // Merge with existing related data
     const updatedBooking = {
       ...data,
-      users: user,
+      users: existing.users,
       services: existing.services,
       locations: existing.locations,
       staff: existing.staff,
@@ -276,7 +266,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
 
 
 

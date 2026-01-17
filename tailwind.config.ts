@@ -14,6 +14,11 @@ export default {
       spacing: {
         '18': '4.5rem',
       },
+      fontFamily: {
+        sans: ["var(--font-sans)"],
+        serif: ["var(--font-serif)"],
+        mono: ["var(--font-mono)"],
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -31,6 +36,24 @@ export default {
       backgroundImage: {
         'diagonal-stripe': 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
         'diagonal-stripe-light': 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+      },
+      boxShadow: {
+        '2xs': 'var(--shadow-2xs)',
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
+        '2xl': 'var(--shadow-2xl)',
+      },
+      letterSpacing: {
+        tighter: 'calc(var(--tracking-normal) - 0.05em)',
+        tight: 'calc(var(--tracking-normal) - 0.025em)',
+        normal: 'var(--tracking-normal)',
+        wide: 'calc(var(--tracking-normal) + 0.025em)',
+        wider: 'calc(var(--tracking-normal) + 0.05em)',
+        widest: 'calc(var(--tracking-normal) + 0.1em)',
       },
       colors: {
         'calendar-disabled-hour': 'hsl(var(--muted) / 0.3)',
@@ -89,6 +112,7 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
       },
     },
   },
