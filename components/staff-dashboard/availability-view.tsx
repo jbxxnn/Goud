@@ -139,7 +139,7 @@ export function AvailabilityView({ staffId }: AvailabilityViewProps) {
                 </Card>
             ) : (
                 <Card className="border-none shadow-none bg-transparent">
-                    <CardContent className="p-0 space-y-6">
+                    <CardContent className="p-0 px-4 space-y-6">
                         {Object.keys(grouped).map(dateKey => {
                             const dayShifts = grouped[dateKey];
                             const dateObj = parseISO(dayShifts[0].start_time);
@@ -151,7 +151,7 @@ export function AvailabilityView({ staffId }: AvailabilityViewProps) {
                                     </h3>
                                     <div className="space-y-3">
                                         {dayShifts.map(shift => (
-                                            <div key={`${shift.id}-${shift.start_time}`} className="flex items-center justify-between p-4 bg-card border rounded-lg hover:shadow-sm transition-shadow">
+                                            <div key={`${shift.id}-${shift.start_time}`} className="flex items-center justify-between p-0 bg-card border rounded-lg shadow-md hover:shadow-sm transition-shadow max-w-2xl" style={{ borderRadius: '0.3rem' }}>
                                                 <div className="flex items-center gap-4">
                                                     <div className="p-2 bg-secondary/20 rounded-lg text-secondary-foreground font-semibold text-sm w-[100px] text-center flex flex-col items-center justify-center">
                                                         <span>{format(parseISO(shift.start_time), 'HH:mm')}</span>

@@ -2,75 +2,69 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
     Calendar02Icon,
-    Clock01Icon,
     Location01Icon,
     ArrowRight01Icon,
     Loading03Icon
 } from '@hugeicons/core-free-icons';
 import { AppointmentCard } from './appointment-card';
-import { format, parseISO, isSameDay, addDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-
 import { useRouter } from 'next/navigation';
 
-interface UpcomingBookingsProps {
+interface StaffBookingsListProps {
     staffId: string;
+    status: string; // 'completed' | 'cancelled'
+    emptyMessage: string;
+    limit?: number;
 }
 
-export function UpcomingBookings({ staffId }: UpcomingBookingsProps) {
+export function StaffBookingsList({ staffId, status, emptyMessage, limit = 50 }: StaffBookingsListProps) {
     const router = useRouter();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchUpcomingBookings = useCallback(async () => {
+    const fetchBookings = useCallback(async () => {
         try {
             setLoading(true);
-            const today = new Date();
-            // Start from today at 00:00:00 to include today's appointments
-            const startOfPeriod = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-            // Fetch next 30 days
-            const thirtyDaysLater = addDays(today, 30);
-            const endOfPeriod = new Date(thirtyDaysLater.setHours(23, 59, 59, 999)).toISOString();
-
             const params = new URLSearchParams({
-                dateFrom: startOfPeriod,
-                dateTo: endOfPeriod,
                 staffId: staffId,
-                limit: '100',
-                status: 'confirmed,ongoing' // Only active future types
+                status: status,
+                limit: limit.toString(),
             });
 
+            // For completed/cancelled, we usually want descending order (newest first)
+            // The API default sort might need to be checked, or we client-side sort
             const response = await fetch(`/api/bookings?${params}`);
             const result: BookingsResponse = await response.json();
 
             if (!result.success) {
                 console.error('Fetch error details:', result);
-                throw new Error(result.error || 'Failed to fetch upcoming schedule');
+                throw new Error(result.error || 'Failed to fetch bookings');
             }
 
-            // Sort by time
+            // Sort descending by time
             const sorted = (result.data || []).sort((a, b) =>
-                new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+                new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
             );
 
             setBookings(sorted);
         } catch (err) {
             console.error(err);
-            toast.error('Failed to load upcoming schedule');
+            toast.error('Failed to load bookings');
         } finally {
             setLoading(false);
         }
-    }, [staffId]);
+    }, [staffId, status, limit]);
 
     useEffect(() => {
-        fetchUpcomingBookings();
-    }, [fetchUpcomingBookings]);
+        fetchBookings();
+    }, [fetchBookings]);
 
     if (loading) {
         return (
@@ -83,7 +77,7 @@ export function UpcomingBookings({ staffId }: UpcomingBookingsProps) {
     if (bookings.length === 0) {
         return (
             <div className="text-center p-12 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
-                <p>No upcoming appointments found for the next 30 days.</p>
+                <p>{emptyMessage}</p>
             </div>
         );
     }

@@ -25,7 +25,9 @@ export function LanguageSwitcher() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild className='rounded-full' style={{ borderRadius: '50%' }}>
                 <Button variant="ghost" size="icon" className="w-9 h-9 focus-visible:ring-0 focus-visible:ring-offset-0">
-                    <HugeiconsIcon icon={LanguageSkillIcon} className="h-4 w-4" />
+                    <span className="text-lg leading-none mb-0.5">
+                        {locale === 'nl' ? '🇳🇱' : locale === 'en' ? '🇬🇧' : ''}
+                    </span>
                     <span className="sr-only">Switch language</span>
                 </Button>
             </DropdownMenuTrigger>

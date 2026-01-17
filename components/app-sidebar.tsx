@@ -67,22 +67,10 @@ const allMenuItems: MenuItem[] = [
     roles: ['admin', 'staff'], // Admin and Staff
   },
   {
-    title: "Upcoming",
-    url: "/dashboard/upcoming",
-    icon: <HugeiconsIcon icon={Calendar02Icon} />,
-    roles: ['staff'], // Staff only
-  },
-  {
     title: "Leave Requests",
     url: "/dashboard/leave-requests",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin'], // Admin only
-  },
-  {
-    title: "History",
-    url: "/dashboard/history",
-    icon: <HugeiconsIcon icon={Calendar02Icon} />,
-    roles: ['staff'], // Staff only
   },
   {
     title: "Bookings",
@@ -138,15 +126,15 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
   }
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r-0" style={{ borderRight: 'none' }}>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>
+        <SidebarGroup className="p-0">
+          <SidebarGroupLabel className="border-b border-r border-secondary h-14 ">
             <Link href="/">
               <Image src="/Goudecho.png" alt="Logo" width={100} height={100} className="pointer-events-cursor" />
             </Link>
           </SidebarGroupLabel>
-          <SidebarGroupContent className="mt-12">
+          <SidebarGroupContent className="mt-12 px-4">
             <SidebarMenu>
               {items.map((item) => {
                 // Normalize pathname by removing locale prefix (en or nl)
@@ -165,8 +153,8 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                       tooltip={item.title}
                       asChild
                       isActive={isActive}
-                      className={isActive ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
-                      style={{ borderRadius: "0.2rem" }}
+                      className={isActive ? "bg-primary shadow-lg text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
+                      style={{ borderRadius: "1rem" }}
                     >
                       <a href={item.url} className="min-h-10 ">
                         {item.icon}

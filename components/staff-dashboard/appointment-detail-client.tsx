@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MediaSection } from './media-section';
+import { Link } from 'lucide-react';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -35,6 +36,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     const router = useRouter();
     const [notes, setNotes] = useState(booking.internal_notes || '');
     const [isSaving, setIsSaving] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
 
     // Gestational Age Calculation
     const calculateGA = () => {
@@ -79,7 +81,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     };
 
     return (
-        <div className="container py-6 max-w-5xl space-y-6">
+        <div className="container py-6 max-w-5xl mx-auto space-y-6">
             <Button variant="ghost" className="mb-2" onClick={() => router.back()}>
                 <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
                 Back to Dashboard
@@ -91,7 +93,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     <h1 className="text-2xl font-bold flex items-center gap-3">
                         {booking.users?.first_name} {booking.users?.last_name}
                         <Badge variant={
-                            booking.status === 'confirmed' ? 'outline' :
+                            booking.status === 'confirmed' ? 'default' :
                                 booking.status === 'completed' ? 'default' : 'secondary'
                         }>
                             {booking.status}
@@ -108,15 +110,18 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         </span>
                         <span className="flex items-center gap-1">
                             <HugeiconsIcon icon={Location01Icon} size={14} />
-                            {booking.locations?.name}
+                            <a href={`https://google.com/maps/search/?api=1&query=${booking.locations?.address}`} target="_blank">
+                                {booking.locations?.name}
+                            </a>
                         </span>
                     </div>
                 </div>
                 {booking.status === 'confirmed' && (
                     <Button
-                        className="bg-emerald-600 hover:bg-emerald-700"
+                        disabled={isCompleting}
                         onClick={async () => {
                             try {
+                                setIsCompleting(true);
                                 const res = await fetch(`/api/bookings/${booking.id}`, {
                                     method: 'PATCH',
                                     headers: { 'Content-Type': 'application/json' },
@@ -127,10 +132,11 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                 router.refresh();
                             } catch (e) {
                                 toast.error('Failed to complete appointment');
+                                setIsCompleting(false);
                             }
                         }}
                     >
-                        Complete Appointment
+                        {isCompleting ? 'Completing...' : 'Complete Appointment'}
                     </Button>
                 )}
             </div>

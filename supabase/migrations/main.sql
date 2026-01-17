@@ -60,6 +60,7 @@ CREATE TABLE public.bookings (
   street_name character varying,
   city character varying,
   created_by uuid,
+  internal_notes text,
   CONSTRAINT bookings_pkey PRIMARY KEY (id),
   CONSTRAINT bookings_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.users(id),
   CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
@@ -245,6 +246,19 @@ CREATE TABLE public.staff_services (
   CONSTRAINT staff_services_pkey PRIMARY KEY (id),
   CONSTRAINT staff_services_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id),
   CONSTRAINT staff_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
+CREATE TABLE public.time_off_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  staff_id uuid NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  type text NOT NULL CHECK (type = ANY (ARRAY['sick'::text, 'vacation'::text, 'personal'::text, 'other'::text])),
+  reason text,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT time_off_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT time_off_requests_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL,

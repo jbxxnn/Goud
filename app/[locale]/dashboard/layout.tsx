@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import ProfileDropdown from "@/components/kokonutui/profile-dropdown"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { HeaderTitle } from "@/components/dashboard/header-title"
 
 export default async function ProtectedLayout({
   children,
@@ -49,10 +50,13 @@ export default async function ProtectedLayout({
     <SidebarProvider>
       <AppSidebar userRole={user.role as 'admin' | 'staff' | 'midwife' | 'client'} />
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-2 border-b bg-background px-4 relative z-50">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="mx-2 h-6" />
+        <header className="flex h-14 items-center justify-between gap-2 border-b border-l-none border-secondary bg-accent px-4 relative z-50">
+          <div className="flex items-center gap-4">
+            {/* <SidebarTrigger /> */}
+            {/* <Separator orientation="vertical" className="mx-2 h-6" /> */}
+            <div className="flex flex-col justify-center">
+              <HeaderTitle role={user.role || ''} name={user.first_name || ''} />
+            </div>
           </div>
           <div className="flex items-center gap-2 relative z-[100]">
             <LanguageSwitcher />

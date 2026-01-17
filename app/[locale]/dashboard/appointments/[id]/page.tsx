@@ -48,29 +48,26 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
     (booking as any).booking_addons = addons || [];
 
     // Manual fetch for user/client details
-    // bookings.client_id is the primary user reference
-    if (booking.client_id) {
-        const { data: clientUser } = await adminDb
-            .from('users')
-            .select('*')
-            .eq('id', booking.client_id)
-            .single();
-
-        // Attach to booking object as 'users' relation expectation
-        (booking as any).users = clientUser;
-        (booking as any).users = clientUser;
-    } else if (booking.created_by) {
+    // Prioritize created_by as the source of truth for patient identity, falling back to client_id
+    if (booking.created_by) {
         const { data: clientUser } = await adminDb
             .from('users')
             .select('*')
             .eq('id', booking.created_by)
             .single();
         (booking as any).users = clientUser;
+    } else if (booking.client_id) {
+        const { data: clientUser } = await adminDb
+            .from('users')
+            .select('*')
+            .eq('id', booking.client_id)
+            .single();
+        (booking as any).users = clientUser;
     }
 
     // Fetch previous bookings for this client
     let previousBookings: any[] = [];
-    const clientIdentifier = booking.client_id || booking.created_by;
+    const clientIdentifier = booking.created_by || booking.client_id;
 
     if (clientIdentifier) {
         const { data: history } = await adminDb

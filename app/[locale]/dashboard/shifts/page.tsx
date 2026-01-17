@@ -50,11 +50,6 @@ export default async function ShiftsPage() {
 
     return (
       <div className="container py-6 space-y-6">
-        <DashboardHeader
-          heading="My Shifts"
-          text="View your upcoming scheduled shifts."
-        />
-        <Separator />
         <AvailabilityView staffId={staff.id} />
       </div>
     );
