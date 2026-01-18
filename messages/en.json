@@ -3,6 +3,9 @@
         "title": "Goud Echo",
         "description": "The fastest way to book an appointment at Goud Echo"
     },
+    "Hero": {
+        "cta": "Make Your Booking"
+    },
     "Navigation": {
         "home": "Home",
         "booking": "Book Appointment",

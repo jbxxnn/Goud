@@ -35,19 +35,12 @@ export function BookingFlow() {
     ];
 
     return (
-        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-6 items-start justify-center">
+        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[8rem] items-start justify-center" style={{ marginTop: "8rem", marginBottom: "8rem" }}>
 
             {/* this is the left card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
-                        {/* <div>
-                            <h1 className="text-2xl font-poppins font-bold text-gray-900 tracking-tight">Your Booking</h1>
-                            <p className="text-sm text-gray-500 font-medium mt-1">Review your details</p>
-                        </div> */}
-                        {/* <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                            <span className="font-bold font-mono">{step}/4</span>
-                        </div> */}
                     </div>
 
                     {/* Progress Bar */}

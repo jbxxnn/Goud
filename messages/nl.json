@@ -3,6 +3,9 @@
         "title": "Goud Echo",
         "description": "De snelste manier om een afspraak te maken bij Goud Echo"
     },
+    "Hero": {
+        "cta": "Maak een afspraak"
+    },
     "Navigation": {
         "home": "Home",
         "booking": "Afspraak maken",
