@@ -2,8 +2,19 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
-import { AppointmentCard } from './appointment-card';
+import { ActionButtons } from './action-buttons';
 import { ResultsModal } from './results-modal';
+import BookingRescheduleModal from '@/components/booking-reschedule-modal';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { format, parseISO, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarAdd01Icon } from '@hugeicons/core-free-icons';
@@ -21,6 +32,8 @@ export function AppointmentsList({ clientId }: AppointmentsListProps) {
     const [loading, setLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isResultsOpen, setIsResultsOpen] = useState(false);
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [bookingToReschedule, setBookingToReschedule] = useState<Booking | null>(null);
 
     const fetchBookings = useCallback(async () => {
         try {
@@ -52,8 +65,39 @@ export function AppointmentsList({ clientId }: AppointmentsListProps) {
     }, [fetchBookings]);
 
     const handleReschedule = (booking: Booking) => {
-        // TODO: Implement reschedule logic (modal)
-        toast.info('Rescheduling feature coming soon');
+        setBookingToReschedule(booking);
+        setIsRescheduleModalOpen(true);
+    };
+
+    const handleRescheduleConfirm = async (
+        bookingId: string,
+        newStartTime: string,
+        newEndTime: string,
+        locationId: string,
+        staffId: string,
+        shiftId: string
+    ) => {
+        const response = await fetch(`/api/bookings/${bookingId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                start_time: newStartTime,
+                end_time: newEndTime,
+                location_id: locationId,
+                staff_id: staffId,
+                shift_id: shiftId,
+                status: 'confirmed', // Assuming instant confirm for reschedule, or revert to 'pending' if approval needed
+            }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Failed to reschedule booking');
+        }
+
+        fetchBookings(); // Refresh list
     };
 
     const handleCancel = async (booking: Booking) => {
@@ -96,6 +140,26 @@ export function AppointmentsList({ clientId }: AppointmentsListProps) {
         return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
     });
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'confirmed':
+                return 'bg-green-100 text-green-800 hover:bg-green-100/80 border-green-200';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80 border-yellow-200';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800 hover:bg-red-100/80 border-red-200';
+            case 'completed':
+                return 'bg-gray-100 text-gray-800 hover:bg-gray-100/80 border-gray-200';
+            default:
+                return 'bg-gray-100 text-gray-800 hover:bg-gray-100/80';
+        }
+    };
+
+    const getStatusLabel = (status: string, endTime: string) => {
+        if (isPast(new Date(endTime)) && status === 'confirmed') return 'Completed';
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -122,16 +186,60 @@ export function AppointmentsList({ clientId }: AppointmentsListProps) {
                     </Button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sortedBookings.map((booking) => (
-                        <AppointmentCard
-                            key={booking.id}
-                            booking={booking}
-                            onReschedule={handleReschedule}
-                            onCancel={handleCancel}
-                            onViewResults={handleViewResults}
-                        />
-                    ))}
+                <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date & Time</TableHead>
+                                <TableHead>Service</TableHead>
+                                <TableHead>Staff</TableHead>
+                                <TableHead>Location</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedBookings.map((booking) => (
+                                <TableRow key={booking.id}>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">
+                                                {format(parseISO(booking.start_time), 'MMM d, yyyy')}
+                                            </span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {format(parseISO(booking.start_time), 'HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{booking.services?.name || 'Appointment'}</TableCell>
+                                    <TableCell>{booking.staff?.first_name || 'Staff'}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span>{booking.locations?.name || 'Clinic'}</span>
+                                            {/* <span className="text-xs text-muted-foreground truncate max-w-[150px]">{booking.locations?.address}</span> */}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${getStatusColor(booking.status)}`}
+                                        >
+                                            {getStatusLabel(booking.status, booking.end_time)}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <ActionButtons
+                                            booking={booking}
+                                            onReschedule={() => handleReschedule(booking)}
+                                            onCancel={handleCancel}
+                                            onViewResults={handleViewResults}
+                                            isPast={isPast(new Date(booking.end_time))}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
             )}
 
@@ -142,6 +250,16 @@ export function AppointmentsList({ clientId }: AppointmentsListProps) {
                     setSelectedBooking(null);
                 }}
                 booking={selectedBooking}
+            />
+
+            <BookingRescheduleModal
+                isOpen={isRescheduleModalOpen}
+                onClose={() => {
+                    setIsRescheduleModalOpen(false);
+                    setBookingToReschedule(null);
+                }}
+                booking={bookingToReschedule}
+                onReschedule={handleRescheduleConfirm}
             />
         </div>
     );
