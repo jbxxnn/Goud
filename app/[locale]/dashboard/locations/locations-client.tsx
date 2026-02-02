@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { PlusSignIcon, Loading03Icon } from '@hugeicons/core-free-icons';
+import { Loading03Icon } from '@hugeicons/core-free-icons';
 import { Location, LocationsResponse, CreateLocationRequest, UpdateLocationRequest } from '@/lib/types/location_simple';
 import { LocationModal } from '@/components/location-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createLocationColumns } from '@/components/locations-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface LocationsClientProps {
   initialLocations: Location[];
@@ -19,31 +22,28 @@ interface LocationsClientProps {
   };
 }
 
-import { useTranslations } from 'next-intl';
-
 export default function LocationsClient({
   initialLocations,
   initialPagination
 }: LocationsClientProps) {
   const t = useTranslations('Locations');
   const tCommon = useTranslations('Common');
-  const [locations, setLocations] = useState<Location[]>(initialLocations);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
-  // Fetch locations
-  const fetchLocations = useCallback(async () => {
-    try {
-      setLoading(true);
-
+  // Fetch locations with React Query
+  const { data: locations = [], isLoading } = useQuery({
+    queryKey: ['locations', page],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
-        active_only: 'false', // Show all locations by default
+        active_only: 'false',
       });
 
       const response = await fetch(`/api/locations-simple?${params}`);
@@ -53,16 +53,10 @@ export default function LocationsClient({
         throw new Error(data.error || 'Failed to fetch locations');
       }
 
-      setLocations(data.data || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('toasts.loadError');
-      toast.error(t('toasts.loadError'), {
-        description: errorMessage,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
+      return data.data || [];
+    },
+    initialData: initialLocations.length > 0 ? initialLocations : undefined,
+  });
 
   // Delete location
   const handleDelete = async (location: Location) => {
@@ -83,8 +77,9 @@ export default function LocationsClient({
         throw new Error(errorData.error || 'Failed to delete location');
       }
 
-      // Refresh locations
-      await fetchLocations();
+      // Invalidate cache
+      await queryClient.invalidateQueries({ queryKey: ['locations'] });
+
       setDeleteDialogOpen(false);
       setLocationToDelete(null);
       toast.success(t('toasts.deleteSuccess'), {
@@ -119,19 +114,19 @@ export default function LocationsClient({
         throw new Error(errorData.error || 'Failed to update location');
       }
 
-      // Refresh locations
-      await fetchLocations();
+      // Invalidate cache
+      await queryClient.invalidateQueries({ queryKey: ['locations'] });
+
       toast.success(t('toasts.statusChanged', { status: newStatus ? 'activated' : 'deactivated' }), {
         description: location ? t('toasts.statusDescription', { name: location.name, status: newStatus ? 'activated' : 'deactivated' }) : undefined,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('toasts.updateSuccess');
-      toast.error(t('toasts.updateSuccess'), { // reusing update error generic message or create specific
+      toast.error(t('toasts.updateSuccess'), {
         description: errorMessage,
       });
     }
   };
-
 
   // Modal handlers
   const handleAddLocation = () => {
@@ -170,8 +165,8 @@ export default function LocationsClient({
         throw new Error(errorData.error || 'Failed to save location');
       }
 
-      // Refresh locations
-      await fetchLocations();
+      // Invalidate cache
+      await queryClient.invalidateQueries({ queryKey: ['locations'] });
 
       // Show success toast
       toast.success(isEditing ? t('toasts.updateSuccess') : t('toasts.createSuccess'), {
@@ -185,78 +180,77 @@ export default function LocationsClient({
       toast.error(t('toasts.saveError'), {
         description: errorMessage,
       });
-      throw err; // Re-throw to let the form handle it
+      throw err;
     }
   };
 
-  // Load data when filters change
-  useEffect(() => {
-    fetchLocations();
-  }, [fetchLocations]);
-
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('subtitle')}
-          </p>
-        </div>
-        <Button size="default" onClick={handleAddLocation}>
-          {t('addLocation')}
-        </Button>
-      </div>
-
-
-      {/* Advanced Locations Table */}
-      <div>
-        <div className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
+    <PageContainer>
+      <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+        {/* Header */}
+        <PageItem>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
+              <p className="text-muted-foreground text-sm">
+                {t('subtitle')}
+              </p>
             </div>
-          ) : (
-            <DataTable
-              columns={createLocationColumns(
-                t,
-                handleEditLocation,
-                handleDelete,
-                handleToggleActive
+            <Button size="default" onClick={handleAddLocation}>
+              {t('addLocation')}
+            </Button>
+          </div>
+        </PageItem>
+
+        {/* Advanced Locations Table */}
+        <PageItem>
+          <div>
+            <div className="p-0">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <DataTable
+                  columns={createLocationColumns(
+                    t,
+                    handleEditLocation,
+                    handleDelete,
+                    handleToggleActive
+                  )}
+                  data={locations}
+                  searchKey="name"
+                  searchPlaceholder={t('table.searchPlaceholder')}
+                  emptyMessage={t('table.empty')}
+                  showColumnToggle={false}
+                />
               )}
-              data={locations}
-              searchKey="name"
-              searchPlaceholder={t('table.searchPlaceholder')}
-              emptyMessage={t('table.empty')}
-              showColumnToggle={false}
-            />
-          )}
-        </div>
+            </div>
+          </div>
+        </PageItem>
+
+        {/* Location Modal */}
+        <LocationModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          location={editingLocation as Location | undefined}
+          onSave={handleSaveLocation}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          isOpen={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setLocationToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+          title={t('deleteDialog.title')}
+          description={t('deleteDialog.description')}
+          itemName={locationToDelete ? locationToDelete.name : undefined}
+          confirmButtonText={tCommon('delete')}
+        />
       </div>
-
-
-      {/* Location Modal */}
-      <LocationModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        location={editingLocation as Location | undefined}
-        onSave={handleSaveLocation}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        isOpen={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setLocationToDelete(null);
-        }}
-        onConfirm={confirmDelete}
-        title={t('deleteDialog.title')}
-        description={t('deleteDialog.description')}
-        itemName={locationToDelete ? locationToDelete.name : undefined}
-        confirmButtonText={tCommon('delete')}
-      />
-    </div>
+    </PageContainer>
   );
 }

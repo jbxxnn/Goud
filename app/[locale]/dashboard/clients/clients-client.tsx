@@ -20,6 +20,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 type AnalyticsCard = {
   label: string;
@@ -63,94 +65,77 @@ export default function ClientsClient({
   const t = useTranslations('Clients');
   const tTable = useTranslations('Table');
   const router = useRouter();
-  const [clients, setClients] = useState<User[]>(initialClients);
-  const [loading, setLoading] = useState(false);
+
+  // URL & Filter State
   const [page, setPage] = useState(initialPagination.page);
   const [limit, setLimit] = useState<number>(10);
-  const [totalPages, setTotalPages] = useState(initialPagination.totalPages);
-  const [total, setTotal] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const roleOptions = ['client', 'staff', 'midwife', 'admin'] as const;
   type RoleOption = (typeof roleOptions)[number];
   const [selectedRole, setSelectedRole] = useState<RoleOption>('client');
-  const [stats, setStats] = useState<ClientStats | null>(null);
-  const [comparisonStats, setComparisonStats] = useState<ClientStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Date Range State
   const defaultRange = useMemo(() => getDefaultRange(), []);
   const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  // Fetch client statistics
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setStatsLoading(true);
-        if (!dateRange.from || !dateRange.to) return;
+  // --- STATS DATA FETCHING ---
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ['client-stats', dateRange],
+    queryFn: async () => {
+      if (!dateRange.from || !dateRange.to) return { current: null, previous: null };
 
-        const isAllTime =
-          dateRange.from.getTime() === ALL_TIME_RANGE.from!.getTime() &&
-          dateRange.to.getTime() === ALL_TIME_RANGE.to!.getTime();
+      const isAllTime =
+        dateRange.from.getTime() === ALL_TIME_RANGE.from!.getTime() &&
+        dateRange.to.getTime() === ALL_TIME_RANGE.to!.getTime();
 
-        const currentStart = dateRange.from;
-        const currentEnd = dateRange.to;
-        const rangeDuration = Math.max(
-          currentEnd.getTime() - currentStart.getTime(),
-          24 * 60 * 60 * 1000
-        );
-        const previousEnd = isAllTime ? null : new Date(currentStart.getTime() - 1);
-        const previousStart = previousEnd ? new Date(previousEnd.getTime() - rangeDuration) : null;
+      const currentStart = dateRange.from;
+      const currentEnd = dateRange.to;
+      const rangeDuration = Math.max(
+        currentEnd.getTime() - currentStart.getTime(),
+        24 * 60 * 60 * 1000
+      );
+      const previousEnd = isAllTime ? null : new Date(currentStart.getTime() - 1);
+      const previousStart = previousEnd ? new Date(previousEnd.getTime() - rangeDuration) : null;
 
-        const currentParams = new URLSearchParams();
-        currentParams.append('startDate', currentStart.toISOString());
-        currentParams.append('endDate', currentEnd.toISOString());
+      const currentParams = new URLSearchParams();
+      currentParams.append('startDate', currentStart.toISOString());
+      currentParams.append('endDate', currentEnd.toISOString());
 
-        const currentResponse = await fetch(`/api/clients/stats?${currentParams.toString()}`);
-        let previousResponse: Response | null = null;
+      const currentPromise = fetch(`/api/clients/stats?${currentParams.toString()}`).then(r => r.json());
 
-        if (previousStart && previousEnd) {
-          const previousParams = new URLSearchParams();
-          previousParams.append('startDate', previousStart.toISOString());
-          previousParams.append('endDate', previousEnd.toISOString());
-          previousResponse = await fetch(`/api/clients/stats?${previousParams.toString()}`);
-        }
-
-        const currentData = await currentResponse.json();
-        const previousData = previousResponse ? await previousResponse.json() : null;
-
-        setStats(currentData.success && currentData.data ? (currentData.data as ClientStats) : null);
-        setComparisonStats(
-          previousData && previousData.success && previousData.data
-            ? (previousData.data as ClientStats)
-            : null
-        );
-      } catch (err) {
-        console.error('Failed to fetch client statistics:', err);
-      } finally {
-        setStatsLoading(false);
+      let previousPromise: Promise<any> = Promise.resolve(null);
+      if (previousStart && previousEnd) {
+        const previousParams = new URLSearchParams();
+        previousParams.append('startDate', previousStart.toISOString());
+        previousParams.append('endDate', previousEnd.toISOString());
+        previousPromise = fetch(`/api/clients/stats?${previousParams.toString()}`).then(r => r.json());
       }
-    };
-    if (dateRange.from && dateRange.to) {
-      fetchStats();
-    }
-  }, [dateRange]);
 
-  // Fetch clients
-  const fetchClients = useCallback(async () => {
-    try {
-      setLoading(true);
+      const [currentData, previousData] = await Promise.all([currentPromise, previousPromise]);
 
+      return {
+        current: currentData?.success && currentData?.data ? (currentData.data as ClientStats) : null,
+        previous: previousData?.success && previousData?.data ? (previousData.data as ClientStats) : null
+      };
+    },
+    enabled: !!dateRange.from && !!dateRange.to,
+  });
+
+  const stats = statsData?.current || null;
+  const comparisonStats = statsData?.previous || null;
+
+  // --- CLIENTS DATA FETCHING ---
+  const { data: clientsData, isLoading: clientsLoading } = useQuery<UsersResponse>({
+    queryKey: ['clients', page, limit, searchQuery, selectedRole],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
 
-      if (selectedRole) {
-        params.append('role', selectedRole);
-      }
-
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
+      if (selectedRole) params.append('role', selectedRole);
+      if (searchQuery) params.append('search', searchQuery);
 
       const response = await fetch(`/api/users?${params}`);
       const data: UsersResponse = await response.json();
@@ -158,21 +143,16 @@ export default function ClientsClient({
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch clients');
       }
+      return data;
+    },
+    placeholderData: (previousData) => previousData,
+  });
 
-      setClients(data.data || []);
-      if (data.pagination) {
-        setTotalPages(data.pagination.total_pages);
-        setTotal(data.pagination.total);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('toasts.loadError');
-      toast.error(t('toasts.loadError'), {
-        description: errorMessage,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, searchQuery, selectedRole]);
+  const clients = clientsData?.data || [];
+  const totalPages = clientsData?.pagination?.total_pages || 0;
+  const total = clientsData?.pagination?.total || 0;
+  const loading = clientsLoading;
+
 
   // View client details
   const handleView = (client: User) => {
@@ -184,10 +164,7 @@ export default function ClientsClient({
     setPage(1);
   }, [limit, selectedRole]);
 
-  // Load data when filters change
-  useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+
 
   const isAllTimeRange =
     dateRange.from?.getTime() === ALL_TIME_RANGE.from?.getTime() &&
@@ -288,7 +265,7 @@ export default function ClientsClient({
   ];
 
   return (
-    <div className="space-y-6 p-6 bg-white" style={{ borderRadius: '0.5rem' }}>
+    <PageContainer className="space-y-6 p-6 bg-white">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -544,7 +521,7 @@ export default function ClientsClient({
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

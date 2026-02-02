@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '@hugeicons/core-free-icons';
@@ -10,7 +10,9 @@ import { CalendarProvider } from '@/calendar/contexts/calendar-context';
 import { BookingCalendarContainer } from '@/components/booking-calendar-container';
 import { CalendarSettings } from '@/components/calendar-settings';
 import { IEvent } from '@/calendar/interfaces';
-import { TCalendarView } from '@/calendar/types';
+import type { TCalendarView } from '@/calendar/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { DataTable } from '@/components/ui/data-table';
 import { createBookingColumns } from '@/components/bookings-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
@@ -35,21 +37,20 @@ export default function BookingsClient({
   initialPagination,
   clientId
 }: BookingsClientProps) {
+  const queryClient = useQueryClient();
   const t = useTranslations('Bookings');
   const tStatus = useTranslations('BookingStatus');
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
-  const [loading, setLoading] = useState(false);
+  // State for filters and view
   const [page, setPage] = useState(initialPagination.page);
   const [limit, setLimit] = useState<number>(100);
-  const [totalPages, setTotalPages] = useState(initialPagination.totalPages);
-  const [total, setTotal] = useState<number>(0);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
   const [calendarView, setCalendarView] = useState<TCalendarView>('month');
-  const [calendarEvents, setCalendarEvents] = useState<IEvent[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Modal states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -58,35 +59,20 @@ export default function BookingsClient({
   const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
-  // Fetch bookings
-  const fetchBookings = useCallback(async () => {
-    try {
-      setLoading(true);
-
+  // Bookings Query
+  const { data: bookingsData, isLoading: bookingsLoading } = useQuery<BookingsResponse>({
+    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
 
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
-      }
-
-      if (dateFrom) {
-        params.append('dateFrom', dateFrom);
-      }
-
-      if (dateTo) {
-        params.append('dateTo', dateTo);
-      }
-
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
-
-      if (clientId) {
-        params.append('clientId', clientId);
-      }
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (searchQuery) params.append('search', searchQuery);
+      if (clientId) params.append('clientId', clientId);
 
       const response = await fetch(`/api/bookings?${params}`);
       const data: BookingsResponse = await response.json();
@@ -94,27 +80,22 @@ export default function BookingsClient({
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch bookings');
       }
+      return data;
+    },
+    // Keep previous data while fetching new page for smoother pagination
+    placeholderData: (previousData) => previousData,
+  });
 
-      setBookings(data.data || []);
-      if (data.pagination) {
-        setTotalPages(data.pagination.total_pages);
-        setTotal(data.pagination.total);
-      }
+  const bookings = bookingsData?.data || [];
+  const totalPages = bookingsData?.pagination?.total_pages || 0;
+  const total = bookingsData?.pagination?.total || 0;
+  const loading = bookingsLoading;
 
-      // Update calendar events whenever bookings change
-      if (data.data) {
-        const events = data.data.map(booking => bookingToCalendarEvent(booking));
-        setCalendarEvents(events);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('toasts.loadError');
-      toast.error(t('toasts.loadError'), {
-        description: errorMessage,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId, viewMode]); // Added viewMode to refresh when switching views logic if needed, though fetch is manual mostly or effect based
+  // Derive calendar events
+  const calendarEvents = useMemo(() => {
+    return bookings.map(booking => bookingToCalendarEvent(booking));
+  }, [bookings]);
+
 
   // Cancel booking
   const handleCancel = async (booking: Booking) => {
@@ -141,10 +122,7 @@ export default function BookingsClient({
       }
 
       // Refresh bookings
-      await fetchBookings();
-      setDeleteDialogOpen(false);
-      setBookingToCancel(null);
-      await fetchBookings();
+      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
       setDeleteDialogOpen(false);
       setBookingToCancel(null);
       toast.success(t('toasts.cancelSuccess'), {
@@ -179,10 +157,7 @@ export default function BookingsClient({
       }
 
       // Refresh bookings
-      await fetchBookings();
-      setDeleteDialogOpen(false);
-      setBookingToCancel(null);
-      await fetchBookings();
+      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
       setDeleteDialogOpen(false);
       setBookingToCancel(null);
       toast.success(t('toasts.deleteSuccess'), {
@@ -231,7 +206,7 @@ export default function BookingsClient({
         throw new Error(errorData.error || 'Failed to reschedule booking');
       }
 
-      await fetchBookings();
+      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
     } catch (err) {
       throw err;
     }
@@ -243,21 +218,12 @@ export default function BookingsClient({
   }, [limit]);
 
   useEffect(() => {
-    // If we are in calendar mode, we might want to fetch more items or a specific range
-    // For now, let's just stick to standard fetch. 
-    // Ideally for calendar we should fetch by date range, but we are reusing the list API for now.
-    // If the list is paginated, the calendar will only show the current page.
-    // TODO: Ideally update fetchBookings to handle 'calendar' mode by fetching a larger range or all for the month.
     if (viewMode === 'calendar') {
-      setLimit(100); // Temporary hack to get more items for calendar
+      setLimit(100);
     } else {
       setLimit(10);
     }
   }, [viewMode]);
-
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
 
   // Extract users for the calendar filter (staff)
   const calendarUsers = bookings
@@ -288,7 +254,7 @@ export default function BookingsClient({
   const calendarUsersList = Array.from(uniqueStaffMap.values());
 
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+    <PageContainer className="space-y-6 p-6 bg-card">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -538,7 +504,7 @@ export default function BookingsClient({
         } : undefined}
         onUpdate={(updatedBooking) => {
           setViewingBooking(updatedBooking);
-          fetchBookings();
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
         }}
         onReschedule={(booking) => {
           setIsViewModalOpen(false);
@@ -576,7 +542,7 @@ export default function BookingsClient({
         confirmButtonText={isDeleteMode ? t('dialog.deleteConfirm') : t('dialog.cancelConfirm')}
         confirmButtonVariant={isDeleteMode ? 'destructive' : 'default'}
       />
-    </div>
+    </PageContainer>
   );
 }
 

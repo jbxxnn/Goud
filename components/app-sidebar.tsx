@@ -156,10 +156,10 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                       className={isActive ? "bg-primary shadow-lg text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
                       style={{ borderRadius: "1rem" }}
                     >
-                      <a href={item.url} className="min-h-10 ">
+                      <Link href={item.url} className="min-h-10 ">
                         {item.icon}
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

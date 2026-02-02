@@ -25,6 +25,8 @@ import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MediaSection } from './media-section';
 import { Link } from 'lucide-react';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -34,6 +36,7 @@ interface AppointmentDetailClientProps {
 
 export function AppointmentDetailClient({ booking, currentUser, previousBookings = [] }: AppointmentDetailClientProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [notes, setNotes] = useState(booking.internal_notes || '');
     const [isSaving, setIsSaving] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
@@ -73,6 +76,8 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
             if (!res.ok) throw new Error('Failed to save notes');
 
             toast.success('Internal notes saved');
+            // Invalidate bookings list so the dashboard is fresh
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
         } catch (error) {
             toast.error('Error saving notes');
         } finally {
@@ -81,128 +86,135 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     };
 
     return (
-        <div className="container py-6 max-w-5xl mx-auto space-y-6">
-            <Button variant="ghost" className="mb-2" onClick={() => router.back()}>
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
-                Back to Dashboard
-            </Button>
+        <PageContainer className="container py-6 max-w-5xl mx-auto space-y-6">
+            <PageItem>
+                <Button variant="ghost" className="mb-2" onClick={() => router.back()}>
+                    <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Button>
+            </PageItem>
 
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-3">
-                        {booking.users?.first_name} {booking.users?.last_name}
-                        <Badge variant={
-                            booking.status === 'confirmed' ? 'default' :
-                                booking.status === 'completed' ? 'default' : 'secondary'
-                        }>
-                            {booking.status}
-                        </Badge>
-                    </h1>
-                    <div className="text-muted-foreground flex items-center gap-4 mt-1 text-sm">
-                        <span className="flex items-center gap-1">
-                            <HugeiconsIcon icon={Calendar02Icon} size={14} />
-                            {format(new Date(booking.start_time), 'PPP')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <HugeiconsIcon icon={Clock01Icon} size={14} />
-                            {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <HugeiconsIcon icon={Location01Icon} size={14} />
-                            <a href={`https://google.com/maps/search/?api=1&query=${booking.locations?.address}`} target="_blank">
-                                {booking.locations?.name}
-                            </a>
-                        </span>
+            <PageItem>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold flex items-center gap-3">
+                            {booking.users?.first_name} {booking.users?.last_name}
+                            <Badge variant={
+                                booking.status === 'confirmed' ? 'default' :
+                                    booking.status === 'completed' ? 'default' : 'secondary'
+                            }>
+                                {booking.status}
+                            </Badge>
+                        </h1>
+                        <div className="text-muted-foreground flex items-center gap-4 mt-1 text-sm">
+                            <span className="flex items-center gap-1">
+                                <HugeiconsIcon icon={Calendar02Icon} size={14} />
+                                {format(new Date(booking.start_time), 'PPP')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <HugeiconsIcon icon={Clock01Icon} size={14} />
+                                {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <HugeiconsIcon icon={Location01Icon} size={14} />
+                                <a href={`https://google.com/maps/search/?api=1&query=${booking.locations?.address}`} target="_blank">
+                                    {booking.locations?.name}
+                                </a>
+                            </span>
+                        </div>
                     </div>
+                    {booking.status === 'confirmed' && (
+                        <Button
+                            disabled={isCompleting}
+                            onClick={async () => {
+                                try {
+                                    setIsCompleting(true);
+                                    const res = await fetch(`/api/bookings/${booking.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'completed' })
+                                    });
+                                    if (!res.ok) throw new Error('Failed to complete');
+                                    toast.success('Appointment marked as completed');
+                                    queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                                    router.refresh();
+                                } catch (e) {
+                                    toast.error('Failed to complete appointment');
+                                    setIsCompleting(false);
+                                }
+                            }}
+                        >
+                            {isCompleting ? 'Completing...' : 'Complete Appointment'}
+                        </Button>
+                    )}
                 </div>
-                {booking.status === 'confirmed' && (
-                    <Button
-                        disabled={isCompleting}
-                        onClick={async () => {
-                            try {
-                                setIsCompleting(true);
-                                const res = await fetch(`/api/bookings/${booking.id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ status: 'completed' })
-                                });
-                                if (!res.ok) throw new Error('Failed to complete');
-                                toast.success('Appointment marked as completed');
-                                router.refresh();
-                            } catch (e) {
-                                toast.error('Failed to complete appointment');
-                                setIsCompleting(false);
-                            }
-                        }}
-                    >
-                        {isCompleting ? 'Completing...' : 'Complete Appointment'}
-                    </Button>
-                )}
-            </div>
+            </PageItem>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* Left Column: Patient Info */}
                 <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Patient Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Email</div>
-                                <div>{booking.users?.email}</div>
-                            </div>
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Phone</div>
-                                <div>{booking.users?.phone || 'N/A'}</div>
-                            </div>
-                            <Separator />
-                            <div>
-                                <div className="text-sm font-medium text-muted-foreground">Due Date</div>
-                                <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP') : 'Not set'}</div>
-                            </div>
-                            {ga && (
-                                <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
-                                    <div className="text-sm font-medium text-primary">Gestational Age</div>
-                                    <div className="text-2xl font-bold text-primary">
-                                        {ga.weeks}<span className="text-sm font-normal text-muted-foreground ml-1">w</span> {ga.days}<span className="text-sm font-normal text-muted-foreground ml-1">d</span>
-                                    </div>
+                    <PageItem>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base">Patient Details</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <div className="text-sm font-medium text-muted-foreground">Email</div>
+                                    <div>{booking.users?.email}</div>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <MediaSection bookingId={booking.id} />
-
-                    {/* Previous History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Previous Appointments</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {previousBookings && previousBookings.length > 0 ? (
-                                <div className="space-y-3">
-                                    {previousBookings.map((prev: any) => (
-                                        <div key={prev.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/appointments/${prev.id}`)}>
-                                            <div className="space-y-1">
-                                                <div className="font-medium text-sm">{prev.services?.name}</div>
-                                                <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                    <span>{format(new Date(prev.start_time), 'PPP')}</span>
-                                                    <span>•</span>
-                                                    <span>{prev.locations?.name}</span>
-                                                </div>
-                                            </div>
-                                            <Badge variant="outline" className="text-xs">{prev.status}</Badge>
+                                <div>
+                                    <div className="text-sm font-medium text-muted-foreground">Phone</div>
+                                    <div>{booking.users?.phone || 'N/A'}</div>
+                                </div>
+                                <Separator />
+                                <div>
+                                    <div className="text-sm font-medium text-muted-foreground">Due Date</div>
+                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP') : 'Not set'}</div>
+                                </div>
+                                {ga && (
+                                    <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
+                                        <div className="text-sm font-medium text-primary">Gestational Age</div>
+                                        <div className="text-2xl font-bold text-primary">
+                                            {ga.weeks}<span className="text-sm font-normal text-muted-foreground ml-1">w</span> {ga.days}<span className="text-sm font-normal text-muted-foreground ml-1">d</span>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground italic">No previous history found.</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <MediaSection bookingId={booking.id} />
+
+                        {/* Previous History */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base">Previous Appointments</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {previousBookings && previousBookings.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {previousBookings.map((prev: any) => (
+                                            <div key={prev.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/appointments/${prev.id}`)}>
+                                                <div className="space-y-1">
+                                                    <div className="font-medium text-sm">{prev.services?.name}</div>
+                                                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                                        <span>{format(new Date(prev.start_time), 'PPP')}</span>
+                                                        <span>•</span>
+                                                        <span>{prev.locations?.name}</span>
+                                                    </div>
+                                                </div>
+                                                <Badge variant="outline" className="text-xs">{prev.status}</Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground italic">No previous history found.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </PageItem>
                 </div>
 
                 {/* Right Column: Medical View */}
@@ -268,6 +280,6 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }

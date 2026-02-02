@@ -13,6 +13,8 @@ import { Location } from '@/lib/types/location_simple';
 import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
 import { mapLocationColorToCalendarColor } from '@/lib/utils/location-color-mapper';
 import type { TCalendarView } from '@/calendar/types';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface IUser {
   id: string;
@@ -38,37 +40,27 @@ import { useTranslations } from 'next-intl';
 
 export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientProps) {
   const t = useTranslations('Shifts');
-  const [shifts, setShifts] = useState<ShiftWithDetails[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [locationsLoading, setLocationsLoading] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [calendarView, setCalendarView] = useState<TCalendarView>('week');
+  const queryClient = useQueryClient();
 
-  // Fetch shifts - accepts optional date to preserve calendar view
+  // Re-implement fetchShifts as a wrapper to invalidate queries
   const fetchShifts = useCallback(async (preserveDate?: Date) => {
-    try {
-      setLoading(true);
-      setError(null);
+    await queryClient.invalidateQueries({ queryKey: ['shifts'] });
+  }, [queryClient]);
 
-      // Use provided date or current date (for initial load)
-      // This allows preserving the calendar's selectedDate when refreshing
-      const dateToUse = preserveDate || new Date();
-
-      // Get start and end dates based on view
-      // For recurring shifts, we need to look ahead at least 6 months
+  // Fetch shifts query
+  const { data: shifts = [], isLoading: shiftsLoading, error: shiftsError } = useQuery<ShiftWithDetails[]>({
+    queryKey: ['shifts', 'expanded'],
+    queryFn: async () => {
+      const dateToUse = new Date();
       const startOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), 1);
-      // const endOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 1, 0);
-
-      // Expand the range to include 6 months ahead for recurring shifts
       const expandedEndDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 6, 0);
 
       const params = new URLSearchParams({
         with_details: 'true',
         start_date: startOfMonth.toISOString(),
         end_date: expandedEndDate.toISOString(),
-        limit: '2500', // Get all shifts for the 6-month period
+        limit: '2500',
       });
 
       const response = await fetch(`/api/shifts?${params}`);
@@ -78,60 +70,36 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
         throw new Error(data.error || t('errors.fetchShifts'));
       }
 
-      // Expand recurring shifts for the expanded period
       const rawShifts = data.data || [];
-      const expandedShifts = expandRecurringShifts(rawShifts, startOfMonth, expandedEndDate);
+      return expandRecurringShifts(rawShifts, startOfMonth, expandedEndDate);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-      console.log(`Fetched ${rawShifts.length} raw shifts, expanded to ${expandedShifts.length} total shifts`);
+  const loading = shiftsLoading;
+  const error = shiftsError instanceof Error ? shiftsError.message : null;
 
-      setShifts(expandedShifts);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.generic'));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch staff
-  const fetchStaff = useCallback(async () => {
-    try {
+  // Fetch staff query
+  const { data: staff = [] } = useQuery<Staff[]>({
+    queryKey: ['staff', 'active'],
+    queryFn: async () => {
       const response = await fetch('/api/staff?active_only=true&limit=1000');
       const data = await response.json();
+      if (!data.success) throw new Error(t('errors.fetchStaff'));
+      return data.data || [];
+    },
+  });
 
-      if (!data.success) {
-        throw new Error(t('errors.fetchStaff'));
-      }
-
-      setStaff(data.data || []);
-    } catch (err) {
-      console.error('Error fetching staff:', err);
-    }
-  }, []);
-
-  // Fetch locations
-  const fetchLocations = useCallback(async () => {
-    try {
-      setLocationsLoading(true);
+  // Fetch locations query
+  const { data: locations = [], isLoading: locationsLoading } = useQuery<Location[]>({
+    queryKey: ['locations-simple', 'active'],
+    queryFn: async () => {
       const response = await fetch('/api/locations-simple?active_only=true&limit=1000');
       const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(t('errors.fetchLocations'));
-      }
-
-      setLocations(data.data || []);
-    } catch (err) {
-      console.error('Error fetching locations:', err);
-    } finally {
-      setLocationsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchShifts();
-    fetchStaff();
-    fetchLocations();
-  }, [fetchShifts, fetchStaff, fetchLocations]);
+      if (!data.success) throw new Error(t('errors.fetchLocations'));
+      return data.data || [];
+    },
+  });
 
   // Convert staff to calendar users format
   const users: IUser[] = staff.map((s) => ({
@@ -202,56 +170,62 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
   }
 
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+    <PageContainer className="space-y-6 p-6 bg-card" >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('description')}
-          </p>
+      <PageItem>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
+            <p className="text-muted-foreground text-sm">
+              {t('description')}
+            </p>
+          </div>
         </div>
-      </div>
+      </PageItem>
 
       {/* Error Message */}
       {error && (
-        <div className="border-destructive bg-destructive/5 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-destructive" />
-            <p className="text-destructive font-medium">{error}</p>
+        <PageItem>
+          <div className="border-destructive bg-destructive/5 rounded-lg p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-destructive" />
+              <p className="text-destructive font-medium">{error}</p>
+            </div>
           </div>
-        </div>
+        </PageItem>
       )}
 
       {/* Calendar */}
-      <div className="bg-background">
-        {users.length > 0 ? (
-          <CalendarProvider
-            users={users}
-            events={events as unknown as IEvent[]}
-            initialSettings={initialCalendarSettings}
-          >
-            <ShiftCalendarContainerWrapper
-              view={calendarView}
-              onViewChange={setCalendarView}
-              fetchShifts={fetchShifts}
-            />
-            {/* Calendar Settings */}
-            <CalendarSettings />
-          </CalendarProvider>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
-            <div className="rounded-full bg-muted p-3 mb-4">
-              <HugeiconsIcon icon={Calendar03Icon} className="h-6 w-6 text-muted-foreground" />
+      <PageItem>
+        <div className="bg-background">
+          {users.length > 0 ? (
+            <CalendarProvider
+              users={users}
+              events={events as unknown as IEvent[]}
+              initialSettings={initialCalendarSettings}
+            >
+              <ShiftCalendarContainerWrapper
+                view={calendarView}
+                onViewChange={setCalendarView}
+                fetchShifts={fetchShifts}
+              />
+              {/* Calendar Settings */}
+              <CalendarSettings />
+            </CalendarProvider>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
+              <div className="rounded-full bg-muted p-3 mb-4">
+                <HugeiconsIcon icon={Calendar03Icon} className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">{t('empty.noStaffTitle')}</h3>
+              <p className="text-muted-foreground mb-4">
+                {t('empty.noStaffDescription')}
+              </p>
             </div>
-            <h3 className="text-lg font-medium mb-2">{t('empty.noStaffTitle')}</h3>
-            <p className="text-muted-foreground mb-4">
-              {t('empty.noStaffDescription')}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+          )}
+        </div>
+      </PageItem>
+    </PageContainer>
   );
 }
 

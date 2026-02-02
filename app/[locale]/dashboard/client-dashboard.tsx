@@ -1,6 +1,7 @@
 'use client';
 
 import { AppointmentsList } from '@/components/client-dashboard/appointments/appointments-list';
+import PageContainer from '@/components/ui/page-transition';
 
 interface ClientDashboardProps {
   clientId: string;
@@ -8,8 +9,8 @@ interface ClientDashboardProps {
 
 export default function ClientDashboard({ clientId }: ClientDashboardProps) {
   return (
-    <div className="container max-w-7xl py-6">
+    <PageContainer className="container max-w-7xl py-6">
       <AppointmentsList clientId={clientId} />
-    </div>
+    </PageContainer>
   );
 }

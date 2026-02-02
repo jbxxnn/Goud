@@ -1,16 +1,18 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { PlusSignIcon, Loading03Icon, UserIcon } from '@hugeicons/core-free-icons';
+import { Loading03Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { Midwife, MidwivesResponse, CreateMidwifeRequest, UpdateMidwifeRequest } from '@/lib/types/midwife';
 import MidwifeModal from '@/components/midwife-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createMidwifeColumns } from '@/components/midwife-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from 'sonner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface MidwivesClientProps {
   initialMidwives: Midwife[];
@@ -26,8 +28,8 @@ export default function MidwivesClient({
 }: MidwivesClientProps) {
   const t = useTranslations('Midwives');
   const tCommon = useTranslations('Common');
-  const [midwives, setMidwives] = useState<Midwife[]>(initialMidwives);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMidwife, setEditingMidwife] = useState<Midwife | undefined>();
@@ -36,15 +38,14 @@ export default function MidwivesClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [midwifeToDelete, setMidwifeToDelete] = useState<Midwife | null>(null);
 
-  // Fetch midwives
-  const fetchMidwives = useCallback(async () => {
-    try {
-      setLoading(true);
-
+  // Fetch midwives with React Query
+  const { data: midwives = [], isLoading } = useQuery({
+    queryKey: ['midwives', page],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
-        active_only: 'false', // Show all midwives by default
+        active_only: 'false',
       });
 
       const response = await fetch(`/api/midwives?${params}`);
@@ -54,16 +55,10 @@ export default function MidwivesClient({
         throw new Error('Failed to fetch midwives');
       }
 
-      setMidwives(data.data || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch midwives';
-      toast.error(t('toasts.loadError'), {
-        description: errorMessage,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, t]);
+      return data.data || [];
+    },
+    initialData: initialMidwives.length > 0 ? initialMidwives : undefined,
+  });
 
   // Delete midwife
   const handleDelete = async (midwife: Midwife) => {
@@ -84,11 +79,11 @@ export default function MidwivesClient({
         throw new Error(errorData.error || 'Failed to delete midwife');
       }
 
-      // Refresh midwives
-      await fetchMidwives();
+      // Invalidate cache
+      await queryClient.invalidateQueries({ queryKey: ['midwives'] });
+
       setDeleteDialogOpen(false);
       const midwifeName = `${midwifeToDelete.first_name} ${midwifeToDelete.last_name}`;
-      setMidwifeToDelete(null);
       setMidwifeToDelete(null);
       toast.success(t('toasts.deleteSuccess'), {
         description: t('toasts.deletedDescription', { name: midwifeName }),
@@ -123,7 +118,8 @@ export default function MidwivesClient({
       }
 
       // Refresh midwives
-      await fetchMidwives();
+      await queryClient.invalidateQueries({ queryKey: ['midwives'] });
+
       const midwifeName = midwife ? `${midwife.first_name} ${midwife.last_name}` : 'Midwife';
       const statusText = newStatus ? 'activated' : 'deactivated';
       toast.success(t('toasts.statusChanged', { status: statusText }), {
@@ -131,7 +127,7 @@ export default function MidwivesClient({
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update midwife';
-      toast.error(t('toasts.updateSuccess'), { // Intentional reuse or should be updateError
+      toast.error(t('toasts.updateSuccess'), {
         description: errorMessage,
       });
     }
@@ -188,9 +184,8 @@ export default function MidwivesClient({
       }
 
       // Refresh midwives
-      await fetchMidwives();
+      await queryClient.invalidateQueries({ queryKey: ['midwives'] });
 
-      // Show success toast
       // Show success toast
       const midwifeName = data.first_name && data.last_name
         ? `${data.first_name} ${data.last_name}`
@@ -207,100 +202,96 @@ export default function MidwivesClient({
       toast.error(t('toasts.saveError'), {
         description: errorMessage,
       });
-      throw err; // Re-throw to let the form handle it
+      throw err;
     }
   };
 
-  // Load data when filters change
-  useEffect(() => {
-    fetchMidwives();
-  }, [fetchMidwives]);
-
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('subtitle')}
-          </p>
-        </div>
-        <Button
-          onClick={handleAddMidwife}
-          size="default"
-        >
-          {t('addMidwife')}
-        </Button>
-      </div>
-
-      {/* Midwives Table */}
-      <div>
-        <div className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          ) : midwives.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-3 mb-4">
-                <HugeiconsIcon icon={UserIcon} className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-medium mb-2">{t('empty.title')}</h3>
-              <p className="text-muted-foreground mb-4">
-                {t('empty.description')}
+    <PageContainer>
+      <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+        {/* Header */}
+        <PageItem>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
+              <p className="text-muted-foreground text-sm">
+                {t('subtitle')}
               </p>
-              <Button onClick={handleAddMidwife}>
-                {t('addMidwife')}
-              </Button>
             </div>
-          ) : (
-            <DataTable
-              columns={createMidwifeColumns(t, {
-                onEdit: handleEditMidwife,
-                onDelete: handleDelete,
-                onToggleActive: handleToggleActive,
-                onView: handleViewMidwife
-              })}
-              data={midwives}
-              searchKey="first_name"
-              searchPlaceholder={t('table.searchPlaceholder')}
-              emptyMessage={t('table.empty')}
-              showColumnToggle={false}
-            />
-          )}
-        </div>
+            <Button
+              onClick={handleAddMidwife}
+              size="default"
+            >
+              {t('addMidwife')}
+            </Button>
+          </div>
+        </PageItem>
+
+        {/* Midwives Table */}
+        <PageItem>
+          <div>
+            <div className="p-0">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3">
+                    <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              ) : midwives.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="rounded-full bg-muted p-3 mb-4">
+                    <HugeiconsIcon icon={UserIcon} className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">{t('empty.title')}</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {t('empty.description')}
+                  </p>
+                  <Button onClick={handleAddMidwife}>
+                    {t('addMidwife')}
+                  </Button>
+                </div>
+              ) : (
+                <DataTable
+                  columns={createMidwifeColumns(t, {
+                    onEdit: handleEditMidwife,
+                    onDelete: handleDelete,
+                    onToggleActive: handleToggleActive,
+                    onView: handleViewMidwife
+                  })}
+                  data={midwives}
+                  searchKey="first_name"
+                  searchPlaceholder={t('table.searchPlaceholder')}
+                  emptyMessage={t('table.empty')}
+                  showColumnToggle={false}
+                />
+              )}
+            </div>
+          </div>
+        </PageItem>
+
+        {/* Midwife Modal */}
+        <MidwifeModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          midwife={editingMidwife || viewingMidwife}
+          onSave={handleSaveMidwife}
+          isViewMode={isViewMode}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          isOpen={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setMidwifeToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+          title={t('deleteDialog.title')}
+          description={t('deleteDialog.description')}
+          itemName={midwifeToDelete ? `${midwifeToDelete.first_name} ${midwifeToDelete.last_name}` : undefined}
+          confirmButtonText={tCommon('delete')}
+        />
       </div>
-
-      {/* Midwife Modal */}
-      <MidwifeModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        midwife={editingMidwife || viewingMidwife}
-        onSave={handleSaveMidwife}
-        isViewMode={isViewMode}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        isOpen={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setMidwifeToDelete(null);
-        }}
-        onConfirm={confirmDelete}
-        title={t('deleteDialog.title')}
-        description={t('deleteDialog.description')}
-        itemName={midwifeToDelete ? `${midwifeToDelete.first_name} ${midwifeToDelete.last_name}` : undefined}
-        confirmButtonText={tCommon('delete')}
-      />
-    </div>
+    </PageContainer>
   );
 }
-
-
-
-
-

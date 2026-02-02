@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { User, UpdateUserRequest } from '@/lib/types/user';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
-    const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
     const [formData, setFormData] = useState({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
@@ -27,11 +28,8 @@ export function ProfileForm({ user }: ProfileFormProps) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-
-        try {
+    const { mutate: updateProfile, isPending: isLoading } = useMutation({
+        mutationFn: async () => {
             const updateData: UpdateUserRequest = {
                 first_name: formData.first_name,
                 last_name: formData.last_name,
@@ -50,14 +48,23 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 const error = await response.json();
                 throw new Error(error.error || 'Failed to update profile');
             }
-
+            return response.json();
+        },
+        onSuccess: () => {
             toast.success('Profile updated successfully');
-        } catch (error) {
+            queryClient.invalidateQueries({ queryKey: ['user', user.id] });
+            // Also invalidate broad user queries if admin might be looking
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        },
+        onError: (error) => {
             console.error(error);
             toast.error(error instanceof Error ? error.message : 'Failed to update profile');
-        } finally {
-            setIsLoading(false);
         }
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        updateProfile();
     };
 
     return (

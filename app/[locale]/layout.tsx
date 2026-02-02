@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import "../globals.css";
+import QueryProvider from "@/components/providers/query-provider";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -42,7 +43,9 @@ export default async function RootLayout({
           forcedTheme="light"
         >
           <NextIntlClientProvider messages={messages} locale={locale}>
-            {children}
+            <QueryProvider>
+              {children}
+            </QueryProvider>
           </NextIntlClientProvider>
           <Toaster position="top-right" />
         </ThemeProvider>

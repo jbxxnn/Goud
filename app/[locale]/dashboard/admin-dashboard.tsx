@@ -98,6 +98,9 @@ interface UpcomingAppointmentsResponse {
   };
 }
 
+import { useQuery } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
+
 const STATUS_COLORS: Record<BookingStatus, string> = {
   confirmed: '#AF6438',
   pending: '#F59E0B',
@@ -137,20 +140,8 @@ const useMetricConfig = () => {
       helper: t('appointmentsToday.helper'),
       icon: CalendarCheckInIcon,
     },
-    //   {
-    //     key: 'activeStaff',
-    //     label: 'Active staff',
-    //     helper: 'vs previous period',
-    //     icon: UserIcon,
-    //   },
   ], [t]);
 };
-
-// const rangeOptions: Array<{ key: 'week' | 'month' | 'year'; label: string }> = [
-//   { key: 'week', label: 'Week' },
-//   { key: 'month', label: 'Month' },
-//   { key: 'year', label: 'Year' },
-// ];
 
 const formatEuro = (value?: number) => {
   if (value === undefined || value === null) return '—';
@@ -185,91 +176,52 @@ export default function DashboardClient() {
   const t = useTranslations('AdminDashboard');
   const tRoot = useTranslations();
   const metricConfig = useMetricConfig();
-  const [insights, setInsights] = useState<DashboardInsights | null>(null);
-  const [insightsLoading, setInsightsLoading] = useState(true);
-  const [insightsRange,
-    // setInsightsRange
-  ] = useState<'week' | 'month' | 'year'>('week');
+
+  const [insightsRange] = useState<'week' | 'month' | 'year'>('week');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [upcomingAppointments, setUpcomingAppointments] = useState<Booking[]>([]);
-  const [appointmentsCount, setAppointmentsCount] = useState(0);
   const [appointmentsPage] = useState(1);
-  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
-  const [recentBookings, setRecentBookings] = useState<RecentBookingSummary[]>([]);
-  const [recentBookingsLoading, setRecentBookingsLoading] = useState(false);
   const [activeServiceIndex, setActiveServiceIndex] = useState(0);
+
   const recentBookingsTableColumns = useMemo(() => getRecentBookingsColumns(t, tRoot), [t, tRoot]);
 
-  const fetchInsights = useCallback(async () => {
-    try {
-      setInsightsLoading(true);
+  // Insights Query
+  const { data: insights, isLoading: insightsLoading } = useQuery<DashboardInsights>({
+    queryKey: ['dashboard-insights', insightsRange],
+    queryFn: async () => {
       const response = await fetch(`/api/dashboard/insights?range=${insightsRange}`);
       const data = await response.json();
-      if (data.success) {
-        setInsights(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to load insights', error);
-    } finally {
-      setInsightsLoading(false);
-    }
-  }, [insightsRange]);
+      if (!data.success) throw new Error('Failed to load insights');
+      return data.data;
+    },
+  });
 
-  const fetchUpcomingAppointments = useCallback(async () => {
-    try {
-      setAppointmentsLoading(true);
+  // Upcoming Appointments Query
+  const { data: upcomingData, isLoading: appointmentsLoading } = useQuery<UpcomingAppointmentsResponse>({
+    queryKey: ['upcoming-appointments', format(selectedDate, 'yyyy-MM-dd'), appointmentsPage],
+    queryFn: async () => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const response = await fetch(
         `/api/dashboard/upcoming?date=${dateStr}&page=${appointmentsPage}&limit=6`
       );
-      const data: UpcomingAppointmentsResponse = await response.json();
+      const data = await response.json();
+      if (!data.success) throw new Error('Failed to fetch upcoming appointments');
+      return data;
+    },
+  });
 
-      if (data.success) {
-        setUpcomingAppointments(data.data || []);
-        setAppointmentsCount(data.pagination.total);
-      }
-    } catch (error) {
-      console.error('Failed to fetch upcoming appointments', error);
-    } finally {
-      setAppointmentsLoading(false);
-    }
-  }, [selectedDate, appointmentsPage]);
+  const upcomingAppointments = upcomingData?.data || [];
+  const appointmentsCount = upcomingData?.pagination?.total || 0;
 
-  const fetchRecentBookings = useCallback(async () => {
-    try {
-      setRecentBookingsLoading(true);
+  // Recent Bookings Query
+  const { data: recentBookings = [], isLoading: recentBookingsLoading } = useQuery<RecentBookingSummary[]>({
+    queryKey: ['recent-bookings'],
+    queryFn: async () => {
       const response = await fetch('/api/dashboard/recent-bookings?limit=10');
       const data = await response.json();
-      if (data.success) {
-        setRecentBookings(data.data || []);
-      }
-    } catch (error) {
-      console.error('Failed to load recent bookings', error);
-    } finally {
-      setRecentBookingsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInsights();
-  }, [fetchInsights]);
-
-  useEffect(() => {
-    fetchUpcomingAppointments();
-  }, [fetchUpcomingAppointments]);
-
-  useEffect(() => {
-    fetchRecentBookings();
-  }, [fetchRecentBookings]);
-
-  useEffect(() => {
-    const length = insights?.serviceDistribution?.length ?? 0;
-    if (length === 0) {
-      setActiveServiceIndex(0);
-      return;
-    }
-    setActiveServiceIndex((prev) => (prev >= length ? length - 1 : prev));
-  }, [insights?.serviceDistribution?.length]);
+      if (!data.success) throw new Error('Failed to load recent bookings');
+      return data.data || [];
+    },
+  });
 
   const appointmentsTrendData = useMemo(() => {
     if (!insights) return [];
@@ -357,7 +309,7 @@ export default function DashboardClient() {
   };
 
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+    <PageContainer className="space-y-6 p-6 bg-card">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -871,7 +823,7 @@ export default function DashboardClient() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

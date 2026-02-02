@@ -7,25 +7,23 @@ import { ResultsModal } from '../appointments/results-modal';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Image02Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface ResultsListProps {
     clientId: string;
 }
 
 export function ResultsList({ clientId }: ResultsListProps) {
-    const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isResultsOpen, setIsResultsOpen] = useState(false);
 
-    const fetchCompletedBookings = useCallback(async () => {
-        try {
-            setLoading(true);
+    const { data: bookingsArray, isLoading: loading } = useQuery<Booking[]>({
+        queryKey: ['results', clientId],
+        queryFn: async () => {
             const params = new URLSearchParams({
                 clientId: clientId,
                 limit: '100', // Fetch more for history
-                // We will filter client side or ask API for status if supported. 
-                // Assuming API returns all, we filter here.
             });
 
             const response = await fetch(`/api/bookings?${params}`);
@@ -41,18 +39,11 @@ export function ResultsList({ clientId }: ResultsListProps) {
             // Sort by date descending
             completed.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
-            setBookings(completed);
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to load results');
-        } finally {
-            setLoading(false);
-        }
-    }, [clientId]);
+            return completed;
+        },
+    });
 
-    useEffect(() => {
-        fetchCompletedBookings();
-    }, [fetchCompletedBookings]);
+    const bookings = bookingsArray || [];
 
     const handleOpenResults = (booking: Booking) => {
         setSelectedBooking(booking);
@@ -84,15 +75,16 @@ export function ResultsList({ clientId }: ResultsListProps) {
 
     return (
         <>
-            <div className="grid grid-cols-1 sc:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <PageContainer className="grid grid-cols-1 sc:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {bookings.map((booking) => (
-                    <ResultCard
-                        key={booking.id}
-                        booking={booking}
-                        onClick={handleOpenResults}
-                    />
+                    <PageItem key={booking.id}>
+                        <ResultCard
+                            booking={booking}
+                            onClick={handleOpenResults}
+                        />
+                    </PageItem>
                 ))}
-            </div>
+            </PageContainer>
 
             <ResultsModal
                 isOpen={isResultsOpen}

@@ -1,16 +1,18 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { PlusSignIcon, Loading03Icon, UserIcon } from '@hugeicons/core-free-icons';
+import { Loading03Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { Staff, StaffsResponse, CreateStaffRequest, UpdateStaffRequest } from '@/lib/types/staff';
 import StaffModal from '@/components/staff-modal';
 import { DataTable } from '@/components/ui/data-table';
 import { createStaffColumns } from '@/components/staff-table-columns';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from 'sonner';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface StaffClientProps {
   initialStaff: Staff[];
@@ -26,8 +28,8 @@ export default function StaffClient({
 }: StaffClientProps) {
   const t = useTranslations('Staff');
   const tCommon = useTranslations('Common');
-  const [staff, setStaff] = useState<Staff[]>(initialStaff);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+
   const [page] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>();
@@ -106,15 +108,14 @@ export default function StaffClient({
     [t]
   );
 
-  // Fetch staff
-  const fetchStaff = useCallback(async () => {
-    try {
-      setLoading(true);
-
+  // Fetch staff with React Query
+  const { data: staff = [], isLoading } = useQuery({
+    queryKey: ['staff', page],
+    queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
-        active_only: 'false', // Show all staff by default
+        active_only: 'false',
       });
 
       const response = await fetch(`/api/staff?${params}`);
@@ -124,16 +125,10 @@ export default function StaffClient({
         throw new Error('Failed to fetch staff');
       }
 
-      setStaff(data.data || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch staff';
-      toast.error(t('toasts.loadError'), {
-        description: errorMessage,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [page, t]);
+      return data.data || [];
+    },
+    initialData: initialStaff.length > 0 ? initialStaff : undefined,
+  });
 
   // Delete staff
   const handleDelete = async (staff: Staff) => {
@@ -158,11 +153,10 @@ export default function StaffClient({
       const { invalidateStaffAssignmentsCache } = await import('@/lib/utils/cache-invalidation');
       invalidateStaffAssignmentsCache();
 
-      // Refresh staff
-      await fetchStaff();
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
+
       setDeleteDialogOpen(false);
       const staffName = `${staffToDelete.first_name} ${staffToDelete.last_name}`;
-      setStaffToDelete(null);
       setStaffToDelete(null);
       toast.success(t('toasts.deleteSuccess'), {
         description: t('toasts.deletedDescription', { name: staffName }),
@@ -197,7 +191,8 @@ export default function StaffClient({
       }
 
       // Refresh staff
-      await fetchStaff();
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
+
       const staffName = staffMember ? `${staffMember.first_name} ${staffMember.last_name}` : 'Staff member';
       const statusText = newStatus ? 'activated' : 'deactivated';
       toast.success(t('toasts.statusChanged', { status: statusText }), {
@@ -205,7 +200,7 @@ export default function StaffClient({
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update staff';
-      toast.error(t('toasts.updateSuccess'), { // Reusing update success or adding specific update error
+      toast.error(t('toasts.updateSuccess'), {
         description: errorMessage,
       });
     }
@@ -266,7 +261,7 @@ export default function StaffClient({
       invalidateStaffAssignmentsCache();
 
       // Refresh staff
-      await fetchStaff();
+      await queryClient.invalidateQueries({ queryKey: ['staff'] });
 
       const userIdForSync = editingStaff
         ? editingStaff.user_id
@@ -302,95 +297,96 @@ export default function StaffClient({
       toast.error(t('toasts.saveError'), {
         description: errorMessage,
       });
-      throw err; // Re-throw to let the form handle it
+      throw err;
     }
   };
 
-  // Load data when filters change
-  useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
-
   return (
-    <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('subtitle')}
-          </p>
-        </div>
-        <Button
-          onClick={handleAddStaff}
-          size="default"
-        >
-          {t('addStaff')}
-        </Button>
-      </div>
-
-      {/* Staff Table */}
-      <div>
-        <div className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3">
-                <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          ) : staff.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-3 mb-4">
-                <HugeiconsIcon icon={UserIcon} className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-medium mb-2">{t('empty.title')}</h3>
-              <p className="text-muted-foreground mb-4">
-                {t('empty.description')}
+    <PageContainer>
+      <div className="space-y-6 p-6 bg-card" style={{ borderRadius: '0.5rem' }}>
+        {/* Header */}
+        <PageItem>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
+              <p className="text-muted-foreground text-sm">
+                {t('subtitle')}
               </p>
-              <Button onClick={handleAddStaff}>
-                {t('addStaff')}
-              </Button>
             </div>
-          ) : (
-            <DataTable
-              columns={createStaffColumns(t, {
-                onEdit: handleEditStaff,
-                onDelete: handleDelete,
-                onToggleActive: handleToggleActive,
-                onView: handleViewStaff
-              })}
-              data={staff}
-              searchKey="first_name"
-              searchPlaceholder={t('table.searchPlaceholder')}
-              emptyMessage={t('table.empty')}
-              showColumnToggle={false}
-            />
-          )}
-        </div>
+            <Button
+              onClick={handleAddStaff}
+              size="default"
+            >
+              {t('addStaff')}
+            </Button>
+          </div>
+        </PageItem>
+
+        {/* Staff Table */}
+        <PageItem>
+          <div>
+            <div className="p-0">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3">
+                    <HugeiconsIcon icon={Loading03Icon} className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              ) : staff.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="rounded-full bg-muted p-3 mb-4">
+                    <HugeiconsIcon icon={UserIcon} className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">{t('empty.title')}</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {t('empty.description')}
+                  </p>
+                  <Button onClick={handleAddStaff}>
+                    {t('addStaff')}
+                  </Button>
+                </div>
+              ) : (
+                <DataTable
+                  columns={createStaffColumns(t, {
+                    onEdit: handleEditStaff,
+                    onDelete: handleDelete,
+                    onToggleActive: handleToggleActive,
+                    onView: handleViewStaff
+                  })}
+                  data={staff}
+                  searchKey="first_name"
+                  searchPlaceholder={t('table.searchPlaceholder')}
+                  emptyMessage={t('table.empty')}
+                  showColumnToggle={false}
+                />
+              )}
+            </div>
+          </div>
+        </PageItem>
+
+        {/* Staff Modal */}
+        <StaffModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          staff={editingStaff || viewingStaff}
+          onSave={handleSaveStaff}
+          isViewMode={isViewMode}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          isOpen={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setStaffToDelete(null);
+          }}
+          onConfirm={confirmDelete}
+          title={t('deleteDialog.title')}
+          description={t('deleteDialog.description')}
+          itemName={staffToDelete ? `${staffToDelete.first_name} ${staffToDelete.last_name}` : undefined}
+          confirmButtonText={tCommon('delete')}
+        />
       </div>
-
-      {/* Staff Modal */}
-      <StaffModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        staff={editingStaff || viewingStaff}
-        onSave={handleSaveStaff}
-        isViewMode={isViewMode}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        isOpen={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setStaffToDelete(null);
-        }}
-        onConfirm={confirmDelete}
-        title={t('deleteDialog.title')}
-        description={t('deleteDialog.description')}
-        itemName={staffToDelete ? `${staffToDelete.first_name} ${staffToDelete.last_name}` : undefined}
-        confirmButtonText={tCommon('delete')}
-      />
-    </div>
+    </PageContainer>
   );
 }

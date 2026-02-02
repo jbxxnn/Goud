@@ -50,7 +50,7 @@ export default async function ProtectedLayout({
     <SidebarProvider>
       <AppSidebar userRole={user.role as 'admin' | 'staff' | 'midwife' | 'client'} />
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-2 border-b border-l-none border-secondary bg-accent px-4 relative z-50">
+        <header className="flex h-14 items-center justify-between gap-2 border-b border-l-none border-secondary bg-accent px-4 relative z-50 sticky top-0">
           <div className="flex items-center gap-4">
             {/* <SidebarTrigger /> */}
             {/* <Separator orientation="vertical" className="mx-2 h-6" /> */}
