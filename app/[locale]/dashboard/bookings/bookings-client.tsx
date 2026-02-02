@@ -397,6 +397,12 @@ export default function BookingsClient({
               <BookingCalendarContainer
                 view={calendarView}
                 onViewChange={setCalendarView}
+                onEventClick={(event) => {
+                  const booking = bookings.find(b => b.id === event.id);
+                  if (booking) {
+                    handleView(booking);
+                  }
+                }}
               />
               <CalendarSettings />
             </CalendarProvider>

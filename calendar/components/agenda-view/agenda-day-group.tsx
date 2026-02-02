@@ -10,9 +10,10 @@ interface IProps {
   multiDayEvents: IEvent[];
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function AgendaDayGroup({ date, events, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
+export function AgendaDayGroup({ date, events, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const sortedEvents = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   return (
@@ -30,10 +31,10 @@ export function AgendaDayGroup({ date, events, multiDayEvents, onShiftDeleted, o
 
             const eventTotalDays = differenceInDays(eventEnd, eventStart) + 1;
             const eventCurrentDay = differenceInDays(currentDate, eventStart) + 1;
-            return <AgendaEventCard key={event.id} event={event} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />;
+            return <AgendaEventCard key={event.id} event={event} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />;
           })}
 
-        {sortedEvents.length > 0 && sortedEvents.map(event => <AgendaEventCard key={event.id} event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />)}
+        {sortedEvents.length > 0 && sortedEvents.map(event => <AgendaEventCard key={event.id} event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />)}
       </div>
     </div>
   );

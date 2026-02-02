@@ -25,6 +25,7 @@ interface BookingRescheduledEmailProps {
     locationName: string;
     bookingId: string;
     googleMapsLink?: string;
+    customBody?: string;
 }
 
 export const BookingRescheduledEmail = ({
@@ -37,6 +38,7 @@ export const BookingRescheduledEmail = ({
     locationName = 'Goud Echo Clinic',
     bookingId = '12345',
     googleMapsLink,
+    customBody,
 }: BookingRescheduledEmailProps) => {
     const previewText = `Je afspraak is gewijzigd naar ${newDate} om ${newTime}.`;
 
@@ -55,12 +57,19 @@ export const BookingRescheduledEmail = ({
                 </Container>
                 <Container style={container}>
                     <Heading style={h1}>Je afspraak is gewijzigd</Heading>
-                    <Text style={text}>
-                        Hoi {clientName},
-                    </Text>
-                    <Text style={text}>
-                        Je afspraak voor <strong>{serviceName}</strong> is succesvol verzet.
-                    </Text>
+
+                    {customBody ? (
+                        <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
+                    ) : (
+                        <>
+                            <Text style={text}>
+                                Hoi {clientName},
+                            </Text>
+                            <Text style={text}>
+                                Je afspraak voor <strong>{serviceName}</strong> is succesvol verzet.
+                            </Text>
+                        </>
+                    )}
 
                     <Section style={box}>
                         {oldDate && oldTime && (

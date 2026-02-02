@@ -13,9 +13,10 @@ interface IProps {
   multiDayEvents: IEvent[];
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
+export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const { workingHours } = useCalendar();
   const weekStart = startOfWeek(selectedDate);
   const weekEnd = endOfWeek(selectedDate);
@@ -89,30 +90,30 @@ export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShif
       <div className="grid flex-1 grid-cols-7 divide-x border-b border-l">
         {weekDays.map((day, dayIndex) => {
           const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
-          
+
           return (
             <div key={day.toISOString()} className={cn("flex h-full flex-col gap-1 py-1", isClosed && "bg-diagonal-stripe-light")}>
-            {eventRows.map((row, rowIndex) => {
-              const event = row.find(e => e.startIndex <= dayIndex && e.endIndex >= dayIndex);
+              {eventRows.map((row, rowIndex) => {
+                const event = row.find(e => e.startIndex <= dayIndex && e.endIndex >= dayIndex);
 
-              if (!event) {
-                return <div key={`${rowIndex}-${dayIndex}`} className="h-6.5" />;
-              }
+                if (!event) {
+                  return <div key={`${rowIndex}-${dayIndex}`} className="h-6.5" />;
+                }
 
-              let position: "first" | "middle" | "last" | "none" = "none";
+                let position: "first" | "middle" | "last" | "none" = "none";
 
-              if (dayIndex === event.startIndex && dayIndex === event.endIndex) {
-                position = "none";
-              } else if (dayIndex === event.startIndex) {
-                position = "first";
-              } else if (dayIndex === event.endIndex) {
-                position = "last";
-              } else {
-                position = "middle";
-              }
+                if (dayIndex === event.startIndex && dayIndex === event.endIndex) {
+                  position = "none";
+                } else if (dayIndex === event.startIndex) {
+                  position = "first";
+                } else if (dayIndex === event.endIndex) {
+                  position = "last";
+                } else {
+                  position = "middle";
+                }
 
-              return <MonthEventBadge key={`${event.id}-${dayIndex}`} event={event} cellDate={startOfDay(day)} position={position} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />;
-            })}
+                return <MonthEventBadge key={`${event.id}-${dayIndex}`} event={event} cellDate={startOfDay(day)} position={position} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />;
+              })}
             </div>
           );
         })}

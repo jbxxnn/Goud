@@ -23,9 +23,10 @@ interface IProps {
   onShiftCreated?: () => void;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated }: IProps) {
+export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const { selectedDate, setSelectedDate, users, visibleHours, workingHours } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
@@ -41,7 +42,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
   // Get events that are currently happening right now
   const currentEvents = getCurrentEvents(dayEvents);
-  
+
   // If no events are happening right now, show all events for the selected day
   const displayEvents = currentEvents.length > 0 ? currentEvents : dayEvents;
 
@@ -51,12 +52,12 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
     <div className="flex">
       <div className="flex flex-1 flex-col">
         <div>
-          <DayViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
+          <DayViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
 
           {/* Day header */}
           <div className="relative z-20 flex border-b">
             <div className="w-18"></div>
-            <span 
+            <span
               className={cn(
                 "flex-1 border-l py-2 text-center text-xs font-medium text-muted-foreground",
                 !isDayClosed(selectedDate, workingHours) && "bg-secondary"
@@ -85,7 +86,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
             </div>
 
             {/* Day grid */}
-            <div 
+            <div
               className="relative flex-1 border-l"
               style={isDayClosed(selectedDate, workingHours) ? {
                 backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
@@ -97,10 +98,10 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                   const isDisabled = !isWorkingHour(selectedDate, hour, workingHours);
 
                   return (
-                    <div 
-                      key={hour} 
-                      className="relative" 
-                      style={{ 
+                    <div
+                      key={hour}
+                      className="relative"
+                      style={{
                         height: "96px",
                         ...(isDisabled ? {
                           backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
@@ -157,7 +158,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
                     return (
                       <div key={event.id} className="absolute p-1" style={style}>
-                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
+                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
                       </div>
                     );
                   })
@@ -171,9 +172,9 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
       </div>
 
       <div className="hidden w-64 divide-y border-l md:block">
-        <SingleCalendar 
-          className="mx-auto w-full" 
-          selected={selectedDate} 
+        <SingleCalendar
+          className="mx-auto w-full"
+          selected={selectedDate}
           onSelect={setSelectedDate}
           events={singleDayEvents}
         />
@@ -201,7 +202,11 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                   const user = users.find(user => user.id === event.user.id);
 
                   return (
-                    <div key={event.id} className="space-y-1.5">
+                    <div
+                      key={event.id}
+                      className={cn("space-y-1.5", onEventClick && "cursor-pointer hover:opacity-75")}
+                      onClick={() => onEventClick && onEventClick(event)}
+                    >
                       <p className="line-clamp-2 text-sm font-semibold">{event.title}</p>
 
                       {user && (

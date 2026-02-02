@@ -57,9 +57,10 @@ interface IProps extends Omit<VariantProps<typeof eventBadgeVariants>, "color" |
     position?: "first" | "middle" | "last" | "none";
     onShiftDeleted?: () => void;
     onShiftUpdated?: () => void;
+    onEventClick?: (event: IEvent) => void;
 }
 
-export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated }: IProps) {
+export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
     const itemStart = startOfDay(parseISO(event.startDate));
@@ -96,8 +97,15 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
         }
     };
 
+    const handleClick = (e: React.MouseEvent) => {
+        if (onEventClick) {
+            e.stopPropagation();
+            onEventClick(event);
+        }
+    };
+
     const BadgeContent = (
-        <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown}>
+        <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown} onClick={onEventClick ? handleClick : undefined}>
             <div className="flex items-center gap-1.5 truncate">
                 {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
                     <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
@@ -124,9 +132,13 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
     return (
         <DraggableEvent event={event}>
             {entityType === 'booking' ? (
-                <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
-                    {BadgeContent}
-                </BookingDetailsDialog>
+                onEventClick ? (
+                    BadgeContent
+                ) : (
+                    <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+                        {BadgeContent}
+                    </BookingDetailsDialog>
+                )
             ) : (
                 <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
                     {BadgeContent}

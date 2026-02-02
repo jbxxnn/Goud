@@ -8,6 +8,20 @@
     @apply border-border;
   }
 
+  html {
+    overscroll-behavior: none;
+    height: 100%;
+  }
+
+  body {
+    overscroll-behavior: none;
+    min-height: 100%;
+  }
+
+  [data-slot="sidebar-inset"] {
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);

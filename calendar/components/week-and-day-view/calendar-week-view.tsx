@@ -21,9 +21,10 @@ interface IProps {
   onShiftCreated?: () => void;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated }: IProps) {
+export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const { selectedDate, workingHours, visibleHours } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
@@ -35,7 +36,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
     <>
       <div className="flex flex-col">
         <div>
-          <WeekViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
+          <WeekViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
 
           {/* Week header */}
           <div className="relative z-20 flex border-b">
@@ -43,10 +44,10 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
             <div className="grid flex-1 grid-cols-7 divide-x border-l">
               {weekDays.map((day, index) => {
                 const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
-                
+
                 return (
-                  <span 
-                    key={index} 
+                  <span
+                    key={index}
                     className={cn(
                       "py-2 text-center text-xs font-medium text-muted-foreground",
                       !isClosed && "bg-secondary"
@@ -82,13 +83,13 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
               <div className="grid grid-cols-7 divide-x">
                 {weekDays.map((day, dayIndex) => {
                   const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
-                  
+
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
                   const groupedEvents = groupEvents(dayEvents);
 
                   return (
-                    <div 
-                      key={dayIndex} 
+                    <div
+                      key={dayIndex}
                       className="relative"
                       style={isClosed ? {
                         backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
@@ -100,10 +101,10 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                         const isDisabled = !isWorkingHour(day, hour, workingHours);
 
                         return (
-                          <div 
-                            key={hour} 
-                            className="relative" 
-                            style={{ 
+                          <div
+                            key={hour}
+                            className="relative"
+                            style={{
                               height: "96px",
                               ...(isDisabled ? {
                                 backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
@@ -161,7 +162,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
                           return (
                             <div key={event.id} className="absolute p-1" style={style}>
-                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
                             </div>
                           );
                         })

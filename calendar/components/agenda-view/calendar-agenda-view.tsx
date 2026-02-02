@@ -14,9 +14,10 @@ interface IProps {
   multiDayEvents: IEvent[];
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
+export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const { selectedDate } = useCalendar();
 
   const eventsByDay = useMemo(() => {
@@ -66,7 +67,7 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDel
       <ScrollArea className="h-full" type="always">
         <div className="space-y-6 p-4">
           {eventsByDay.map(dayGroup => (
-            <AgendaDayGroup key={format(dayGroup.date, "yyyy-MM-dd")} date={dayGroup.date} events={dayGroup.events} multiDayEvents={dayGroup.multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />
+            <AgendaDayGroup key={format(dayGroup.date, "yyyy-MM-dd")} date={dayGroup.date} events={dayGroup.events} multiDayEvents={dayGroup.multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
           ))}
 
           {!hasAnyEvents && (

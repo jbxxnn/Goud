@@ -22,6 +22,7 @@ interface BookingReminderEmailProps {
     locationName: string;
     googleMapsLink?: string;
     bookingId: string;
+    customBody?: string;
 }
 
 export const BookingReminderEmail = ({
@@ -32,6 +33,7 @@ export const BookingReminderEmail = ({
     locationName = 'Goud Echo Clinic',
     googleMapsLink,
     bookingId = '12345',
+    customBody,
 }: BookingReminderEmailProps) => {
     const previewText = `Herinnering: Je afspraak voor ${serviceName} is morgen.`;
 
@@ -50,12 +52,19 @@ export const BookingReminderEmail = ({
                 </Container>
                 <Container style={container}>
                     <Heading style={h1}>Herinnering: Afspraak morgen</Heading>
-                    <Text style={text}>
-                        Hoi {clientName},
-                    </Text>
-                    <Text style={text}>
-                        Dit is een herinnering voor je afspraak voor <strong>{serviceName}</strong> morgen.
-                    </Text>
+
+                    {customBody ? (
+                        <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
+                    ) : (
+                        <>
+                            <Text style={text}>
+                                Hoi {clientName},
+                            </Text>
+                            <Text style={text}>
+                                Dit is een herinnering voor je afspraak voor <strong>{serviceName}</strong> morgen.
+                            </Text>
+                        </>
+                    )}
 
                     <Section style={box}>
                         <Row>

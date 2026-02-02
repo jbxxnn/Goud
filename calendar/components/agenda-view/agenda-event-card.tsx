@@ -51,9 +51,10 @@ interface IProps {
     eventTotalDays?: number;
     onShiftDeleted?: () => void;
     onShiftUpdated?: () => void;
+    onEventClick?: (event: IEvent) => void;
 }
 
-export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated }: IProps) {
+export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
     const startDate = parseISO(event.startDate);
@@ -70,8 +71,21 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
         }
     };
 
+    const handleClick = (e: React.MouseEvent) => {
+        if (onEventClick) {
+            e.stopPropagation();
+            onEventClick(event);
+        }
+    };
+
     const CardContent = (
-        <div role="button" tabIndex={0} className={agendaEventCardClasses} onKeyDown={handleKeyDown}>
+        <div
+            role="button"
+            tabIndex={0}
+            className={agendaEventCardClasses}
+            onKeyDown={handleKeyDown}
+            onClick={onEventClick ? handleClick : undefined}
+        >
             <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                     {["mixed", "dot"].includes(badgeVariant) && (
@@ -113,9 +127,13 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
     return (
         <DraggableEvent event={event}>
             {entityType === 'booking' ? (
-                <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
-                    {CardContent}
-                </BookingDetailsDialog>
+                onEventClick ? (
+                    CardContent
+                ) : (
+                    <BookingDetailsDialog event={event} onBookingDeleted={onShiftDeleted} onBookingUpdated={onShiftUpdated}>
+                        {CardContent}
+                    </BookingDetailsDialog>
+                )
             ) : (
                 <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
                     {CardContent}

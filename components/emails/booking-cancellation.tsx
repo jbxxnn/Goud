@@ -22,6 +22,7 @@ interface BookingCancellationEmailProps {
     time: string;
     locationName: string;
     bookingId: string;
+    customBody?: string;
 }
 
 export const BookingCancellationEmail = ({
@@ -31,6 +32,7 @@ export const BookingCancellationEmail = ({
     time = '10:00 AM',
     locationName = 'Goud Echo Clinic',
     bookingId = '12345',
+    customBody,
 }: BookingCancellationEmailProps) => {
     const previewText = `Je afspraak voor ${serviceName} is geannuleerd.`;
 
@@ -49,12 +51,19 @@ export const BookingCancellationEmail = ({
                 </Container>
                 <Container style={container}>
                     <Heading style={h1}>Afspraak Geannuleerd</Heading>
-                    <Text style={text}>
-                        Hoi {clientName},
-                    </Text>
-                    <Text style={text}>
-                        Hierbij bevestigen we dat je afspraak voor <strong>{serviceName}</strong> op <strong>{date} om {time}</strong> is geannuleerd.
-                    </Text>
+
+                    {customBody ? (
+                        <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
+                    ) : (
+                        <>
+                            <Text style={text}>
+                                Hoi {clientName},
+                            </Text>
+                            <Text style={text}>
+                                Hierbij bevestigen we dat je afspraak voor <strong>{serviceName}</strong> op <strong>{date} om {time}</strong> is geannuleerd.
+                            </Text>
+                        </>
+                    )}
 
                     <Section style={box}>
                         <Text style={paragraph}>

@@ -585,7 +585,8 @@
                 "fieldType": "Veldtype",
                 "policyFields": "Beleidsvelden",
                 "assignStaff": "Personeel toewijzen aan dienst",
-                "selectStaff": "Selecteer personeelsleden"
+                "selectStaff": "Selecteer personeelsleden",
+                "assignedStaff": "Toegewezen personeel"
             },
             "hints": {
                 "codeHelp": "Standaard de eerste drie tekens van de naam indien leeg.",
@@ -956,6 +957,83 @@
         "cells": {
             "never": "Nooit",
             "viewDetails": "Bekijk Details"
+        },
+        "details": {
+            "title": "Client Details",
+            "backToList": "Terug naar clientenlijst",
+            "active": "Actief",
+            "call": "Bellen",
+            "email": "E-mail",
+            "editDetails": "Gegevens bewerken",
+            "metrics": {
+                "totalBookings": "Totaal boekingen",
+                "upcoming": "Aankomend",
+                "confirmed": "Bevestigd",
+                "totalRevenue": "Totaal omzet"
+            },
+            "contact": {
+                "title": "Contactgegevens",
+                "phone": "Telefoon",
+                "email": "E-mail",
+                "address": "Adres",
+                "oldAddress": "Adres (oud)"
+            },
+            "additionalInfo": {
+                "title": "Aanvullende informatie",
+                "birthDate": "Geboortedatum",
+                "midwife": "Verloskundige"
+            },
+            "generalInfo": {
+                "title": "Algemene informatie",
+                "memberSince": "Lid sinds",
+                "lastLogin": "Laatste login"
+            },
+            "appointments": {
+                "title": "Afspraken",
+                "upcoming": "Aankomend",
+                "history": "Geschiedenis",
+                "noAppointments": "Geen afspraken gevonden",
+                "unknownService": "Onbekende service",
+                "status": {
+                    "pending": "Pending",
+                    "confirmed": "Bevestigd",
+                    "cancelled": "Geannuleerd"
+                }
+            },
+            "editModal": {
+                "title": "Client bewerken",
+                "personalInfo": "Persoonlijke informatie",
+                "firstName": "Voornaam",
+                "lastName": "Achternaam",
+                "contactInfo": "Contactgegevens",
+                "phone": "Telefoon",
+                "email": "E-mail",
+                "emailReadOnly": "E-mail kan niet worden gewijzigd",
+                "role": "Rol",
+                "roleSelect": "Selecteer rol",
+                "roleHint": "Wil je iemand als staff toewijzen? Ga naar",
+                "address": "Adres",
+                "street": "Straatnaam",
+                "houseNumber": "Huisnr.",
+                "postalCode": "Postcode",
+                "city": "Stad",
+                "legacyAddress": "Adres (oud formaat)",
+                "legacyAddressPlaceholder": "Volledig adres (optioneel)",
+                "legacyAddressHint": "Gebruik bij voorkeur de bovenstaande velden",
+                "additionalFields": "Aanvullende velden",
+                "birthDate": "Geboortedatum",
+                "midwife": "Verloskundige",
+                "midwifeSelect": "Selecteer verloskundige (optioneel)",
+                "noMidwife": "Geen verloskundige",
+                "cancel": "Annuleren",
+                "save": "Opslaan",
+                "saving": "Opslaan..."
+            },
+            "toasts": {
+                "updateSuccess": "Client succesvol bijgewerkt",
+                "updateSuccessDesc": "De clientinformatie is bijgewerkt.",
+                "updateError": "Kan client niet bijwerken"
+            }
         }
     },
     "Common": {

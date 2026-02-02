@@ -9,9 +9,10 @@ interface IProps {
   multiDayEvents: IEvent[];
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  onEventClick?: (event: IEvent) => void;
 }
 
-export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated }: IProps) {
+export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const dayStart = startOfDay(selectedDate);
   const dayEnd = endOfDay(selectedDate);
 
@@ -47,7 +48,7 @@ export function DayViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShift
           const eventTotalDays = differenceInDays(eventEnd, eventStart) + 1;
           const eventCurrentDay = differenceInDays(currentDate, eventStart) + 1;
 
-          return <MonthEventBadge key={event.id} event={event} cellDate={selectedDate} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} />;
+          return <MonthEventBadge key={event.id} event={event} cellDate={selectedDate} eventCurrentDay={eventCurrentDay} eventTotalDays={eventTotalDays} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />;
         })}
       </div>
     </div>

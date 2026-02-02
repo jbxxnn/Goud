@@ -13,7 +13,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon } from '@hugeicons/core-free-icons';
+import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon } from '@hugeicons/core-free-icons';
+
+
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -99,6 +101,13 @@ const allMenuItems: MenuItem[] = [
     comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
     roles: ['admin'], // Admin only
+  },
+  {
+    title: "Email Templates",
+    url: "#",
+    comingsoon: "coming soon",
+    icon: <HugeiconsIcon icon={Mail01Icon} />,
+    roles: ['admin'],
   },
   {
     title: "Audit Logs",

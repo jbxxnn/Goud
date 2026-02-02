@@ -12,13 +12,15 @@ import { CalendarAgendaView } from "@/calendar/components/agenda-view/calendar-a
 import { CalendarDayView } from "@/calendar/components/week-and-day-view/calendar-day-view";
 import { CalendarWeekView } from "@/calendar/components/week-and-day-view/calendar-week-view";
 import type { TCalendarView } from "@/calendar/types";
+import type { IEvent } from "@/calendar/interfaces";
 
 interface IProps {
     view: TCalendarView;
     onViewChange: (view: TCalendarView) => void;
+    onEventClick?: (event: IEvent) => void;
 }
 
-export function BookingCalendarContainer({ view, onViewChange }: IProps) {
+export function BookingCalendarContainer({ view, onViewChange, onEventClick }: IProps) {
     const { selectedDate, selectedUserId, events } = useCalendar();
 
     const filteredEvents = useMemo(() => {
@@ -92,11 +94,11 @@ export function BookingCalendarContainer({ view, onViewChange }: IProps) {
             <BookingCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} />
 
             <DndProviderWrapper>
-                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
-                {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
-                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
+                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
+                {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
+                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
                 {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
-                {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} />}
+                {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
             </DndProviderWrapper>
         </div>
     );

@@ -11,9 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { 
-  ArrowLeftIcon, 
-  Loading03Icon, 
+import {
+  ArrowLeftIcon,
+  Loading03Icon,
   CallIcon,
   MailIcon,
   Calendar02Icon,
@@ -29,6 +29,7 @@ import { Midwife } from '@/lib/types/midwife';
 import { formatEuroCents } from '@/lib/currency/format';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface ClientDetailClientProps {
   clientId: string;
@@ -42,9 +43,9 @@ interface MidwifeResponse {
 
 const ROLE_OPTIONS: UserRole[] = ['client', 'midwife', 'admin'];
 
-export default function ClientDetailClient({ 
-  clientId, 
-  initialClient 
+export default function ClientDetailClient({
+  clientId,
+  initialClient
 }: ClientDetailClientProps) {
   const router = useRouter();
   const [client, setClient] = useState<User>(initialClient);
@@ -54,6 +55,9 @@ export default function ClientDetailClient({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [midwives, setMidwives] = useState<Midwife[]>([]);
+  const t = useTranslations('Clients.details');
+  const tCommon = useTranslations('Common');
+  const tBookingStatus = useTranslations('BookingStatus');
 
   // Form setup
   const {
@@ -106,7 +110,7 @@ export default function ClientDetailClient({
         setBookingsLoading(true);
         const response = await fetch(`/api/bookings?clientId=${clientId}&limit=100`);
         const data: BookingsResponse = await response.json();
-        
+
         if (data.success && data.data) {
           setBookings(data.data);
         }
@@ -174,14 +178,14 @@ export default function ClientDetailClient({
       // Update local client state
       setClient(result.data);
       setIsEditModalOpen(false);
-      toast.success('Client updated successfully', {
-        description: 'The client information has been updated.',
+      toast.success(t('toasts.updateSuccess'), {
+        description: t('toasts.updateSuccessDesc'),
       });
-      
+
       // Refresh the page to show updated data
       router.refresh();
     } catch (error) {
-      toast.error('Failed to update client', {
+      toast.error(t('toasts.updateError'), {
         description: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
@@ -191,10 +195,10 @@ export default function ClientDetailClient({
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL', { 
+    return date.toLocaleDateString('nl-NL', {
       weekday: 'short',
-      year: 'numeric', 
-      month: 'short', 
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -203,9 +207,9 @@ export default function ClientDetailClient({
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive', label: string }> = {
-      pending: { variant: 'secondary', label: 'Pending' },
-      confirmed: { variant: 'default', label: 'Bevestigd' },
-      cancelled: { variant: 'destructive', label: 'Geannuleerd' },
+      pending: { variant: 'secondary', label: tBookingStatus('pending') },
+      confirmed: { variant: 'default', label: tBookingStatus('confirmed') },
+      cancelled: { variant: 'destructive', label: tBookingStatus('cancelled') },
     };
     const config = variants[status] || { variant: 'secondary' as const, label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -213,13 +217,13 @@ export default function ClientDetailClient({
 
   const clientName = [client.first_name, client.last_name].filter(Boolean).join(' ') || client.email || 'Onbekend';
   const clientIdShort = client.id.slice(0, 8).toUpperCase();
-  
+
   // Separate upcoming and past bookings
   const now = new Date();
   const upcomingBookings = bookings.filter(b => new Date(b.start_time) >= now && b.status !== 'cancelled');
   const pastBookings = bookings.filter(b => new Date(b.start_time) < now || b.status === 'cancelled');
   const confirmedBookings = bookings.filter(b => b.status === 'confirmed');
-  
+
   // Calculate analytics
   const totalBookings = bookings.length;
   const totalUpcoming = upcomingBookings.length;
@@ -249,8 +253,8 @@ export default function ClientDetailClient({
             <HugeiconsIcon icon={ArrowLeftIcon} className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-md font-bold tracking-tight">Client Details</h1>
-            <p className="text-muted-foreground text-xs">Terug naar clientenlijst</p>
+            <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
+            <p className="text-muted-foreground text-xs">{t('backToList')}</p>
           </div>
         </div>
       </div>
@@ -261,7 +265,7 @@ export default function ClientDetailClient({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Totaal boekingen</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalBookings')}</p>
                 <p className="text-2xl font-bold">{totalBookings}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -275,7 +279,7 @@ export default function ClientDetailClient({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Aankomend</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('metrics.upcoming')}</p>
                 <p className="text-2xl font-bold">{totalUpcoming}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -289,7 +293,7 @@ export default function ClientDetailClient({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Bevestigd</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('metrics.confirmed')}</p>
                 <p className="text-2xl font-bold">{confirmedBookings.length}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -303,7 +307,7 @@ export default function ClientDetailClient({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Totaal omzet</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalRevenue')}</p>
                 <p className="text-2xl font-bold">{formatEuroCents(totalRevenue)}</p>
               </div>
               <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
@@ -337,7 +341,7 @@ export default function ClientDetailClient({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-xl font-bold">{clientName}</h2>
-                    <Badge variant="default">Actief</Badge>
+                    <Badge variant="default">{t('active')}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">Client ID: {clientIdShort}</p>
                   <div className="flex items-center gap-3">
@@ -345,19 +349,19 @@ export default function ClientDetailClient({
                       <Button variant="outline" size="sm" asChild>
                         <a href={`tel:${client.phone}`}>
                           <HugeiconsIcon icon={CallIcon} className="h-4 w-4 mr-2" />
-                          Bellen
+                          {t('call')}
                         </a>
                       </Button>
                     )}
                     <Button variant="outline" size="sm" asChild>
                       <a href={`mailto:${client.email}`}>
                         <HugeiconsIcon icon={MailIcon} className="h-4 w-4 mr-2" />
-                        E-mail
+                        {t('email')}
                       </a>
                     </Button>
                     <Button variant="default" size="sm" onClick={() => setIsEditModalOpen(true)}>
                       <HugeiconsIcon icon={EditIcon} className="h-4 w-4 mr-2" />
-                      Gegevens bewerken
+                      {t('editDetails')}
                     </Button>
                   </div>
                 </div>
@@ -368,13 +372,13 @@ export default function ClientDetailClient({
           {/* Contact Info Card */}
           <Card className="bg-muted border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
             <CardContent className="p-6">
-              <h3 className="text-sm font-bold mb-4">Contactgegevens</h3>
+              <h3 className="text-sm font-bold mb-4">{t('contact.title')}</h3>
               <div className="space-y-4">
                 {client.phone && (
                   <div className="flex items-start gap-3">
                     <HugeiconsIcon icon={CallIcon} className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Telefoon</p>
+                      <p className="text-xs text-muted-foreground">{t('contact.phone')}</p>
                       <p className="text-xs font-medium">{client.phone}</p>
                     </div>
                   </div>
@@ -382,7 +386,7 @@ export default function ClientDetailClient({
                 <div className="flex items-start gap-3">
                   <HugeiconsIcon icon={MailIcon} className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-xs text-muted-foreground">E-mail</p>
+                    <p className="text-xs text-muted-foreground">{t('contact.email')}</p>
                     <p className="text-xs text-foreground font-medium">{client.email}</p>
                   </div>
                 </div>
@@ -390,7 +394,7 @@ export default function ClientDetailClient({
                   <div className="flex items-start gap-3">
                     <HugeiconsIcon icon={FileEmpty02Icon} className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Adres</p>
+                      <p className="text-xs text-muted-foreground">{t('contact.address')}</p>
                       <p className="text-xs text-foreground font-medium">
                         {[client.street_name, client.house_number].filter(Boolean).join(' ')}
                         {client.postal_code || client.city ? ', ' : ''}
@@ -403,7 +407,7 @@ export default function ClientDetailClient({
                   <div className="flex items-start gap-3">
                     <HugeiconsIcon icon={FileEmpty02Icon} className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Adres (oud)</p>
+                      <p className="text-xs text-muted-foreground">{t('contact.oldAddress')}</p>
                       <p className="text-xs text-foreground font-medium">{client.address}</p>
                     </div>
                   </div>
@@ -415,11 +419,11 @@ export default function ClientDetailClient({
           {/* Additional Info Card */}
           <Card className="bg-muted border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
             <CardContent className="p-6">
-              <h3 className="text-sm font-bold mb-4">Aanvullende informatie</h3>
+              <h3 className="text-sm font-bold mb-4">{t('additionalInfo.title')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {client.birth_date && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Geboortedatum</p>
+                    <p className="text-xs text-muted-foreground">{t('additionalInfo.birthDate')}</p>
                     <p className="text-xs text-foreground font-medium">
                       {new Date(client.birth_date).toLocaleDateString('nl-NL', {
                         year: 'numeric',
@@ -433,7 +437,7 @@ export default function ClientDetailClient({
                   const midwife = midwives.find(m => m.id === client.midwife_id);
                   return midwife ? (
                     <div>
-                      <p className="text-xs text-muted-foreground">Verloskundige</p>
+                      <p className="text-xs text-muted-foreground">{t('additionalInfo.midwife')}</p>
                       <p className="text-xs text-foreground font-medium">
                         {[midwife.first_name, midwife.last_name].filter(Boolean).join(' ')}
                         {midwife.practice_name ? ` (${midwife.practice_name})` : ''}
@@ -448,10 +452,10 @@ export default function ClientDetailClient({
           {/* General Info Card */}
           <Card className="bg-muted border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
             <CardContent className="p-6">
-              <h3 className="text-sm font-bold mb-4">Algemene informatie</h3>
+              <h3 className="text-sm font-bold mb-4">{t('generalInfo.title')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Lid sinds</p>
+                  <p className="text-xs text-muted-foreground">{t('generalInfo.memberSince')}</p>
                   <p className="text-xs text-foreground font-medium">
                     {new Date(client.created_at).toLocaleDateString('nl-NL', {
                       year: 'numeric',
@@ -462,7 +466,7 @@ export default function ClientDetailClient({
                 </div>
                 {client.last_login && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Laatste login</p>
+                    <p className="text-sm text-muted-foreground">{t('generalInfo.lastLogin')}</p>
                     <p className="font-medium">
                       {new Date(client.last_login).toLocaleDateString('nl-NL', {
                         year: 'numeric',
@@ -481,8 +485,8 @@ export default function ClientDetailClient({
         <div className="space-y-6">
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Afspraken</h3>
-              
+              <h3 className="text-lg font-semibold mb-4">{t('appointments.title')}</h3>
+
               {bookingsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <HugeiconsIcon icon={Loading03Icon} className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -492,13 +496,13 @@ export default function ClientDetailClient({
                   {/* Upcoming Appointments */}
                   {upcomingBookings.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">Aankomend</h4>
+                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.upcoming')}</h4>
                       <div className="space-y-3">
                         {upcomingBookings.slice(0, 10).map((booking) => (
                           <div key={booking.id} className="px-3 bg-muted/50 rounded-lg border-l-4 border-primary">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{booking.services?.name || 'Onbekende service'}</p>
+                                <p className="font-semibold text-sm">{booking.services?.name || t('appointments.unknownService')}</p>
                               </div>
                               {getStatusBadge(booking.status)}
                             </div>
@@ -515,13 +519,13 @@ export default function ClientDetailClient({
                   {/* Booking History */}
                   {pastBookings.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">Geschiedenis</h4>
+                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.history')}</h4>
                       <div className="space-y-3">
                         {pastBookings.slice(0, 1).map((booking) => (
                           <div key={booking.id} className="p-3 bg-muted/30 rounded-lg border-l-4 border-muted">
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{booking.services?.name || 'Onbekende service'}</p>
+                                <p className="font-semibold text-sm">{booking.services?.name || t('appointments.unknownService')}</p>
                               </div>
                               {getStatusBadge(booking.status)}
                             </div>
@@ -537,7 +541,7 @@ export default function ClientDetailClient({
 
                   {upcomingBookings.length === 0 && pastBookings.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      Geen afspraken gevonden
+                      {t('appointments.noAppointments')}
                     </p>
                   )}
                 </div>
@@ -551,26 +555,26 @@ export default function ClientDetailClient({
       <Sheet open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
           <SheetHeader className="px-6 py-4 border-b">
-            <SheetTitle>Client bewerken</SheetTitle>
+            <SheetTitle>{t('editModal.title')}</SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="first_name" className="text-sm font-semibold mb-2">Voornaam</Label>
+                  <Label htmlFor="first_name" className="text-sm font-semibold mb-2">{t('editModal.firstName')}</Label>
                   <Input
                     id="first_name"
                     {...register('first_name')}
-                    placeholder="Voornaam"
+                    placeholder={t('editModal.firstName')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="last_name" className="text-sm font-semibold mb-2">Achternaam</Label>
+                  <Label htmlFor="last_name" className="text-sm font-semibold mb-2">{t('editModal.lastName')}</Label>
                   <Input
                     id="last_name"
                     {...register('last_name')}
-                    placeholder="Achternaam"
+                    placeholder={t('editModal.lastName')}
                   />
                 </div>
               </div>
@@ -578,7 +582,7 @@ export default function ClientDetailClient({
               {/* Contact Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="phone" className="text-sm font-semibold mb-2">Telefoon</Label>
+                  <Label htmlFor="phone" className="text-sm font-semibold mb-2">{t('editModal.phone')}</Label>
                   <Input
                     id="phone"
                     {...register('phone')}
@@ -586,7 +590,7 @@ export default function ClientDetailClient({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email" className="text-sm font-semibold mb-2">E-mail</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold mb-2">{t('editModal.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -594,19 +598,19 @@ export default function ClientDetailClient({
                     disabled
                     className="bg-muted"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">E-mail kan niet worden gewijzigd</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('editModal.emailReadOnly')}</p>
                 </div>
               </div>
 
               {/* Role Field */}
               <div>
-                <Label htmlFor="role" className="text-sm font-semibold mb-2">Rol</Label>
+                <Label htmlFor="role" className="text-sm font-semibold mb-2">{t('editModal.role')}</Label>
                 <Select
                   value={watch('role') || client.role}
                   onValueChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
                 >
                   <SelectTrigger id="role">
-                    <SelectValue placeholder="Selecteer rol" />
+                    <SelectValue placeholder={t('editModal.roleSelect')} />
                   </SelectTrigger>
                   <SelectContent>
                     {ROLE_OPTIONS.map((role) => (
@@ -617,7 +621,7 @@ export default function ClientDetailClient({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Wil je iemand als staff toewijzen? Ga naar{' '}
+                  {t('editModal.roleHint')}{' '}
                   <a href="/dashboard/staff" className="text-primary underline">
                     /dashboard/staff
                   </a>
@@ -627,18 +631,18 @@ export default function ClientDetailClient({
 
               {/* Address Fields */}
               <div>
-                <Label className="text-sm font-semibold mb-2">Adres</Label>
+                <Label className="text-sm font-semibold mb-2">{t('editModal.address')}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="col-span-2">
                     <Input
                       {...register('street_name')}
-                      placeholder="Straatnaam"
+                      placeholder={t('editModal.street')}
                     />
                   </div>
                   <div>
                     <Input
                       {...register('house_number')}
-                      placeholder="Huisnr."
+                      placeholder={t('editModal.houseNumber')}
                     />
                   </div>
                 </div>
@@ -646,7 +650,7 @@ export default function ClientDetailClient({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="postal_code" className="text-sm font-semibold mb-2">Postcode</Label>
+                  <Label htmlFor="postal_code" className="text-sm font-semibold mb-2">{t('editModal.postalCode')}</Label>
                   <Input
                     id="postal_code"
                     {...register('postal_code')}
@@ -654,30 +658,30 @@ export default function ClientDetailClient({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="city" className="text-sm font-semibold mb-2">Stad</Label>
+                  <Label htmlFor="city" className="text-sm font-semibold mb-2">{t('editModal.city')}</Label>
                   <Input
                     id="city"
                     {...register('city')}
-                    placeholder="Amsterdam"
+                    placeholder={t('editModal.city')}
                   />
                 </div>
               </div>
 
               {/* Legacy Address Field */}
               <div>
-                <Label htmlFor="address" className="text-sm font-semibold mb-2">Adres (oud formaat)</Label>
+                <Label htmlFor="address" className="text-sm font-semibold mb-2">{t('editModal.legacyAddress')}</Label>
                 <Input
                   id="address"
                   {...register('address')}
-                  placeholder="Volledig adres (optioneel)"
+                  placeholder={t('editModal.legacyAddressPlaceholder')}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Gebruik bij voorkeur de bovenstaande velden</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('editModal.legacyAddressHint')}</p>
               </div>
 
               {/* Additional Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="birth_date" className="text-sm font-semibold mb-2">Geboortedatum</Label>
+                  <Label htmlFor="birth_date" className="text-sm font-semibold mb-2">{t('editModal.birthDate')}</Label>
                   <Input
                     id="birth_date"
                     type="date"
@@ -685,7 +689,7 @@ export default function ClientDetailClient({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="midwife_id" className="text-sm font-semibold mb-2">Verloskundige</Label>
+                  <Label htmlFor="midwife_id" className="text-sm font-semibold mb-2">{t('editModal.midwife')}</Label>
                   <Select
                     value={watch('midwife_id') || '__none__'}
                     onValueChange={(value) => {
@@ -694,10 +698,10 @@ export default function ClientDetailClient({
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecteer verloskundige (optioneel)" />
+                      <SelectValue placeholder={t('editModal.midwifeSelect')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Geen verloskundige</SelectItem>
+                      <SelectItem value="__none__">{t('editModal.noMidwife')}</SelectItem>
                       {midwives.map((m) => {
                         const name = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Naamloos';
                         const practice = m.practice_name;
@@ -720,16 +724,16 @@ export default function ClientDetailClient({
                   onClick={() => setIsEditModalOpen(false)}
                   disabled={isSaving}
                 >
-                  Annuleren
+                  {tCommon('cancel')}
                 </Button>
                 <Button type="submit" disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 mr-2 animate-spin" />
-                      Opslaan...
+                      {t('editModal.saving')}
                     </>
                   ) : (
-                    'Opslaan'
+                    tCommon('save')
                   )}
                 </Button>
               </div>

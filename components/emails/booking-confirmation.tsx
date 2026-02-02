@@ -27,6 +27,7 @@ interface BookingConfirmationEmailProps {
     googleMapsLink?: string;
     notes?: string | null;
     addons?: { name: string; price: string }[];
+    customBody?: string;
 }
 
 export const BookingConfirmationEmail = ({
@@ -40,6 +41,7 @@ export const BookingConfirmationEmail = ({
     googleMapsLink,
     notes,
     addons = [],
+    customBody,
 }: BookingConfirmationEmailProps) => {
     const previewText = `Je afspraak is bevestigd. De details kunnen beneden bekeken worden.`;
 
@@ -58,12 +60,19 @@ export const BookingConfirmationEmail = ({
                 </Container>
                 <Container style={container}>
                     <Heading style={h1}>Je echo afspraak is bevestigd</Heading>
-                    <Text style={text}>
-                        Hoi {clientName},
-                    </Text>
-                    <Text style={text}>
-                        Bedankt voor je afspraak met <strong>{serviceName}</strong>.
-                    </Text>
+
+                    {customBody ? (
+                        <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
+                    ) : (
+                        <>
+                            <Text style={text}>
+                                Hoi {clientName},
+                            </Text>
+                            <Text style={text}>
+                                Bedankt voor je afspraak met <strong>{serviceName}</strong>.
+                            </Text>
+                        </>
+                    )}
 
                     <Section style={box}>
                         <Row>

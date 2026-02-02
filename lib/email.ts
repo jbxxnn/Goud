@@ -4,8 +4,39 @@ import { BookingReminderEmail } from '@/components/emails/booking-reminder';
 import { BookingRescheduledEmail } from '@/components/emails/booking-rescheduled';
 import { BookingCancellationEmail } from '@/components/emails/booking-cancellation';
 import { render } from '@react-email/render';
+import { EmailTemplateService } from '@/lib/services/email-template-service';
+import { replaceTemplateVariables } from '@/lib/utils';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Helper to fetch template content
+async function getTemplateContent(
+    key: string,
+    defaultSubject: string,
+    variables: Record<string, any>
+) {
+    try {
+        const template = await EmailTemplateService.getTemplate(key);
+
+        let subject = defaultSubject;
+        let body: string | undefined = undefined;
+
+        if (template) {
+            // If template has a custom subject, use it
+            if (template.subject) subject = template.subject;
+            if (template.body) body = template.body;
+        }
+
+        // Replace variables in subject and body
+        const finalSubject = replaceTemplateVariables(subject, variables);
+        const finalBody = body ? replaceTemplateVariables(body, variables) : undefined;
+
+        return { subject: finalSubject, body: finalBody };
+    } catch (error) {
+        console.warn(`Error fetching template for ${key}, using defaults.`, error);
+        return { subject: defaultSubject, body: undefined };
+    }
+}
 
 export type BookingConfirmationDetails = {
     clientName: string;
@@ -29,7 +60,10 @@ export async function sendBookingConfirmationEmail(
         return;
     }
 
-    const emailHtml = await render(BookingConfirmationEmail({ ...details }));
+    const defaultSubject = `Afspraak voor ${details.serviceName} is bevestigd.`;
+    const { subject, body } = await getTemplateContent('booking_confirmation', defaultSubject, details);
+
+    const emailHtml = await render(BookingConfirmationEmail({ ...details, customBody: body }));
 
     try {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';
@@ -37,7 +71,7 @@ export async function sendBookingConfirmationEmail(
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
             to: [to],
-            subject: `Afspraak voor ${details.serviceName} is bevestigd.`,
+            subject: subject,
             html: emailHtml,
         });
 
@@ -68,7 +102,10 @@ export async function sendBookingReminderEmail(
         return;
     }
 
-    const emailHtml = await render(BookingReminderEmail({ ...details }));
+    const defaultSubject = `Herinnering: Je afspraak morgen voor ${details.serviceName}`;
+    const { subject, body } = await getTemplateContent('booking_reminder', defaultSubject, details);
+
+    const emailHtml = await render(BookingReminderEmail({ ...details, customBody: body }));
 
     try {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';
@@ -76,7 +113,7 @@ export async function sendBookingReminderEmail(
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
             to: [to],
-            subject: `Herinnering: Je afspraak morgen voor ${details.serviceName}`,
+            subject: subject,
             html: emailHtml,
         });
 
@@ -109,7 +146,10 @@ export async function sendBookingRescheduledEmail(
         return;
     }
 
-    const emailHtml = await render(BookingRescheduledEmail({ ...details }));
+    const defaultSubject = `Wijziging van je afspraak bij Goud Echo: ${details.newDate}`;
+    const { subject, body } = await getTemplateContent('booking_rescheduled', defaultSubject, details);
+
+    const emailHtml = await render(BookingRescheduledEmail({ ...details, customBody: body }));
 
     try {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';
@@ -117,8 +157,7 @@ export async function sendBookingRescheduledEmail(
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
             to: [to],
-            // Subject can be customized further if needed
-            subject: `Wijziging van je afspraak bij Goud Echo: ${details.newDate}`,
+            subject: subject,
             html: emailHtml,
         });
 
@@ -148,7 +187,10 @@ export async function sendBookingCancellationEmail(
         return;
     }
 
-    const emailHtml = await render(BookingCancellationEmail({ ...details }));
+    const defaultSubject = `Annulering van je afspraak bij Goud Echo: ${details.date}`;
+    const { subject, body } = await getTemplateContent('booking_cancellation', defaultSubject, details);
+
+    const emailHtml = await render(BookingCancellationEmail({ ...details, customBody: body }));
 
     try {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';
@@ -156,8 +198,7 @@ export async function sendBookingCancellationEmail(
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
             to: [to],
-            // Subject can be customized further if needed
-            subject: `Annulering van je afspraak bij Goud Echo: ${details.date}`,
+            subject: subject,
             html: emailHtml,
         });
 

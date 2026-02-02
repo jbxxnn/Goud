@@ -585,7 +585,8 @@
                 "fieldType": "Field Type",
                 "policyFields": "Policy Fields",
                 "assignStaff": "Assign Staff to Service",
-                "selectStaff": "Select Staff Members"
+                "selectStaff": "Select Staff Members",
+                "assignedStaff": "Assigned Staff"
             },
             "hints": {
                 "codeHelp": "Defaults to the first three characters of the name if left blank.",
@@ -956,6 +957,83 @@
         "cells": {
             "never": "Never",
             "viewDetails": "View Details"
+        },
+        "details": {
+            "title": "Client Details",
+            "backToList": "Back to client list",
+            "active": "Active",
+            "call": "Call",
+            "email": "Email",
+            "editDetails": "Edit Details",
+            "metrics": {
+                "totalBookings": "Total Bookings",
+                "upcoming": "Upcoming",
+                "confirmed": "Confirmed",
+                "totalRevenue": "Total Revenue"
+            },
+            "contact": {
+                "title": "Contact Information",
+                "phone": "Phone",
+                "email": "Email",
+                "address": "Address",
+                "oldAddress": "Address (legacy)"
+            },
+            "additionalInfo": {
+                "title": "Additional Information",
+                "birthDate": "Date of Birth",
+                "midwife": "Midwife"
+            },
+            "generalInfo": {
+                "title": "General Information",
+                "memberSince": "Member since",
+                "lastLogin": "Last login"
+            },
+            "appointments": {
+                "title": "Appointments",
+                "upcoming": "Upcoming",
+                "history": "History",
+                "noAppointments": "No appointments found",
+                "unknownService": "Unknown service",
+                "status": {
+                    "pending": "Pending",
+                    "confirmed": "Confirmed",
+                    "cancelled": "Cancelled"
+                }
+            },
+            "editModal": {
+                "title": "Edit Client",
+                "personalInfo": "Personal Information",
+                "firstName": "First Name",
+                "lastName": "Last Name",
+                "contactInfo": "Contact Information",
+                "phone": "Phone",
+                "email": "Email",
+                "emailReadOnly": "Email cannot be changed",
+                "role": "Role",
+                "roleSelect": "Select role",
+                "roleHint": "Want to assign someone as staff? Go to",
+                "address": "Address",
+                "street": "Street",
+                "houseNumber": "Nr.",
+                "postalCode": "Postal Code",
+                "city": "City",
+                "legacyAddress": "Address (legacy format)",
+                "legacyAddressPlaceholder": "Full address (optional)",
+                "legacyAddressHint": "Prefer using the fields above",
+                "additionalFields": "Additional Fields",
+                "birthDate": "Date of Birth",
+                "midwife": "Midwife",
+                "midwifeSelect": "Select midwife (optional)",
+                "noMidwife": "No midwife",
+                "cancel": "Cancel",
+                "save": "Save",
+                "saving": "Saving..."
+            },
+            "toasts": {
+                "updateSuccess": "Client updated successfully",
+                "updateSuccessDesc": "The client information has been updated.",
+                "updateError": "Failed to update client"
+            }
         }
     },
     "Common": {
