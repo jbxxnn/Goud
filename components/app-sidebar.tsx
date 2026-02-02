@@ -25,6 +25,7 @@ interface MenuItem {
   title: string;
   url: string;
   icon: React.ReactNode;
+  comingsoon?: string;
   roles?: UserRole[]; // If not specified, only admin can see it
 }
 
@@ -68,7 +69,8 @@ const allMenuItems: MenuItem[] = [
   },
   {
     title: "Leave Requests",
-    url: "/dashboard/leave-requests",
+    url: "#",
+    comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin'], // Admin only
   },
@@ -86,19 +88,22 @@ const allMenuItems: MenuItem[] = [
   },
   {
     title: "Settings",
-    url: "/dashboard/settings",
+    url: "#",
+    comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
     roles: ['admin'], // Admin only
   },
   {
     title: "Reports",
-    url: "/dashboard/reports",
+    url: "#",
+    comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
     roles: ['admin'], // Admin only
   },
   {
     title: "Audit Logs",
-    url: "/dashboard/audit-logs",
+    url: "#",
+    comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
     roles: ['admin'], // Admin only
   },
@@ -158,7 +163,7 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                     >
                       <Link href={item.url} className="min-h-10 ">
                         {item.icon}
-                        <span>{item.title}</span>
+                        <span>{item.title}</span> <span className="text-[10px] bg-primary rounded-full px-1 text-primary-foreground">{item.comingsoon}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
