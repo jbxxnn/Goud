@@ -85,21 +85,43 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!location_id || !staff_id || !shift_id) return NextResponse.json({ error: 'location_id, staff_id, and shift_id required' }, { status: 400 });
 
     const supabase = getServiceSupabase();
+    // Fetch existing booking with details for email
     const { data: existing, error: getErr } = await supabase
       .from('bookings')
-      .select('id, status')
+      .select(`
+        id,
+        status,
+        start_time,
+        users!client_id ( email, first_name ),
+        services ( name ),
+        locations ( name )
+      `)
       .eq('id', id)
       .maybeSingle();
-    if (getErr || !existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    if (getErr || !existing) {
+      console.error('Failed to find booking for reschedule:', getErr);
+      return NextResponse.json({ error: getErr ? getErr.message : 'Not found' }, { status: 404 });
+    }
     if (existing.status === 'cancelled') return NextResponse.json({ error: 'Cannot reschedule cancelled booking' }, { status: 400 });
 
     // Verify the shift matches the location and staff
     const { data: shift, error: shiftErr } = await supabase
       .from('shifts')
-      .select('id, staff_id, location_id, is_active')
+      .select(`
+        id,
+        staff_id,
+        location_id,
+        is_active,
+        locations ( name, address )
+      `)
       .eq('id', shift_id)
       .maybeSingle();
-    if (shiftErr || !shift) return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
+
+    if (shiftErr || !shift) {
+      console.error('Failed to find shift for reschedule:', shiftErr);
+      return NextResponse.json({ error: shiftErr ? shiftErr.message : 'Shift not found' }, { status: 404 });
+    }
     if (!shift.is_active) return NextResponse.json({ error: 'Shift is not active' }, { status: 400 });
     if (shift.location_id !== location_id) return NextResponse.json({ error: 'Shift location mismatch' }, { status: 400 });
     if (shift.staff_id !== staff_id) return NextResponse.json({ error: 'Shift staff mismatch' }, { status: 400 });
@@ -113,15 +135,71 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         location_id: location_id,
         staff_id: staff_id,
         shift_id: shift_id,
+        // Reset reminder_sent when rescheduling so they get a new reminder
+        reminder_sent: false
       })
       .eq('id', id)
       .select('*')
       .maybeSingle();
+
     if (updErr || !data) {
+      console.error('Failed to update booking:', updErr);
       const msg = String(updErr?.message || '').toLowerCase();
       if (msg.includes('duplicate')) return NextResponse.json({ error: 'Slot already taken' }, { status: 409 });
       return NextResponse.json({ error: 'Failed to reschedule' }, { status: 500 });
     }
+
+    // Send Reschedule Email
+    try {
+      // Safe access for array/object returns
+      const userOrUsers = existing.users as any;
+      const userData = Array.isArray(userOrUsers) ? userOrUsers[0] : userOrUsers;
+      const clientEmail = userData?.email;
+      const clientName = userData?.first_name || 'Client';
+
+      const serviceOrServices = existing.services as any;
+      const serviceData = Array.isArray(serviceOrServices) ? serviceOrServices[0] : serviceOrServices;
+      const serviceName = serviceData?.name || 'Service';
+
+      // Old date formatting
+      const oldDateObj = new Date(existing.start_time);
+      const oldDate = oldDateObj.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const oldTime = oldDateObj.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+      // New location from shift query
+      const locOrLocs = shift.locations as any;
+      const locData = Array.isArray(locOrLocs) ? locOrLocs[0] : locOrLocs;
+      const locationName = locData?.name || 'Location';
+      const address = locData?.address;
+
+      // New date formatting
+      const newDateObj = new Date(start_time);
+      const newDate = newDateObj.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const newTime = newDateObj.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+      const googleMapsLink = address
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+        : undefined;
+
+      if (clientEmail) {
+        const { sendBookingRescheduledEmail } = await import('@/lib/email');
+        await sendBookingRescheduledEmail(clientEmail, {
+          clientName,
+          serviceName,
+          oldDate,
+          oldTime,
+          newDate,
+          newTime,
+          locationName,
+          bookingId: existing.id.substring(0, 8).toUpperCase(),
+          googleMapsLink
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send reschedule email:', emailError);
+      // Don't block the response if email fails
+    }
+
     return NextResponse.json({ booking: data });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
@@ -192,6 +270,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
     }
 
+    // Send cancellation email if status changed to cancelled
+    if (updates.status === 'cancelled') {
+      // Run in background (fire and forget) to not block response
+      triggerCancellationEmail(existing).catch(err => console.error('Background email error:', err));
+    }
+
     // Fetch add-ons if they exist
     const { data: addonsData } = await supabase
       .from('booking_addons')
@@ -234,6 +318,42 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ booking: updatedBooking });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
+  }
+}
+
+// Helper to trigger cancellation email
+async function triggerCancellationEmail(existingBooking: any) {
+  try {
+    const userOrUsers = existingBooking.users as any;
+    const userData = Array.isArray(userOrUsers) ? userOrUsers[0] : userOrUsers;
+    const clientEmail = userData?.email;
+    const clientName = userData?.first_name || 'Client';
+
+    const serviceOrServices = existingBooking.services as any;
+    const serviceData = Array.isArray(serviceOrServices) ? serviceOrServices[0] : serviceOrServices;
+    const serviceName = serviceData?.name || 'Service';
+
+    const locOrLocs = existingBooking.locations as any;
+    const locData = Array.isArray(locOrLocs) ? locOrLocs[0] : locOrLocs;
+    const locationName = locData?.name || 'Location';
+
+    const dateObj = new Date(existingBooking.start_time);
+    const date = dateObj.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const time = dateObj.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+    if (clientEmail) {
+      const { sendBookingCancellationEmail } = await import('@/lib/email');
+      await sendBookingCancellationEmail(clientEmail, {
+        clientName,
+        serviceName,
+        date,
+        time,
+        locationName,
+        bookingId: existingBooking.id.substring(0, 8).toUpperCase(),
+      });
+    }
+  } catch (emailError) {
+    console.error('Failed to send cancellation email:', emailError);
   }
 }
 
