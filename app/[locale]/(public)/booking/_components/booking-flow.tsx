@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useTranslations } from 'next-intl';
 import { useFormatter } from 'next-intl';
 import { formatEuroCents } from '@/lib/currency/format';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function BookingFlow() {
     const {
@@ -35,10 +36,10 @@ export function BookingFlow() {
     ];
 
     return (
-        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[8rem] items-start justify-center px-4" style={{ marginTop: "8rem", marginBottom: "8rem" }}>
+        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[8rem] pb-[8rem] items-start justify-center px-4" style={{ marginTop: "8rem", marginBottom: "8rem", paddingBottom: "8rem" }}>
 
             {/* this is the left card */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
                     </div>
@@ -209,29 +210,55 @@ export function BookingFlow() {
 
 
             {/* this is the right card */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
                 <CardContent className="space-y-6 pt-12">
-                    {step === 1 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepService />
-                        </div>
-                    )}
-                    {step === 2 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepDateTime />
-                        </div>
-                    )}
-                    {step === 3 && hasAddons && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepAddons />
-                        </div>
-                    )}
-                    {step === 4 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepReview />
-                        </div>
-                    )}
+                    <AnimatePresence mode="wait">
+                        {step === 1 && (
+                            <motion.div
+                                key="step-service"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <StepService />
+                            </motion.div>
+                        )}
+                        {step === 2 && (
+                            <motion.div
+                                key="step-datetime"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <StepDateTime />
+                            </motion.div>
+                        )}
+                        {step === 3 && hasAddons && (
+                            <motion.div
+                                key="step-addons"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <StepAddons />
+                            </motion.div>
+                        )}
+                        {step === 4 && (
+                            <motion.div
+                                key="step-review"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <StepReview />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </CardContent>
             </Card>
         </div>
