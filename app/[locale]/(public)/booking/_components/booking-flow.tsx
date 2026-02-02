@@ -35,7 +35,7 @@ export function BookingFlow() {
     ];
 
     return (
-        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[8rem] items-start justify-center" style={{ marginTop: "8rem", marginBottom: "8rem" }}>
+        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[8rem] items-start justify-center px-4" style={{ marginTop: "8rem", marginBottom: "8rem" }}>
 
             {/* this is the left card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
