@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { createBooking } from '@/lib/bookings/createBooking';
+import { sendBookingConfirmationEmail } from '@/lib/email';
+import { formatEuroCents } from '@/lib/currency/format';
 import { createUserAndProfile } from '@/lib/auth/account';
 import { bookingRequestSchema } from '@/lib/validation/booking';
 
@@ -157,6 +159,76 @@ export async function POST(req: NextRequest) {
       addons,
       createdBy: createdByUserId,
     });
+
+    // --- Send Email Confirmation ---
+    try {
+      // Fetch location and service details for the email
+      const supabase = getServiceSupabase();
+
+      const [
+        { data: serviceData },
+        { data: locationData }
+      ] = await Promise.all([
+        supabase.from('services').select('name').eq('id', serviceId).single(),
+        supabase.from('locations').select('name, address').eq('id', locationId).single()
+      ]);
+
+      const formattedDate = new Date(startTime).toLocaleDateString('nl-NL', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const formattedTime = new Date(startTime).toLocaleTimeString('nl-NL', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Prepare addons list if any
+      let emailAddons: { name: string; price: string }[] = [];
+      if (booking.booking_addons && booking.booking_addons.length > 0) {
+        // We might need to fetch addon names if not readily available in the returned booking object 
+        // (createBooking returns the inserted booking, usually without joined relations unless specified)
+        // For simplicity, we can fetch them or rely on what we passed if we want to be quick.
+        // Better to fetch to be accurate.
+        const { data: addonsDetails } = await supabase
+          .from('booking_addons')
+          .select('price_eur_cents, service_addons(name)')
+          .eq('booking_id', booking.id);
+
+        if (addonsDetails) {
+          emailAddons = addonsDetails.map(a => {
+            const sa = Array.isArray(a.service_addons) ? a.service_addons[0] : a.service_addons;
+            return {
+              name: sa?.name || 'Add-on',
+              price: formatEuroCents(a.price_eur_cents)
+            };
+          });
+        }
+      }
+
+      const emailRecipient = midwifeClientEmail || clientEmail;
+
+      if (emailRecipient && serviceData && locationData) {
+        await sendBookingConfirmationEmail(emailRecipient, {
+          clientName: firstName,
+          serviceName: serviceData.name,
+          date: formattedDate,
+          time: formattedTime,
+          locationName: locationData.name,
+          price: formatEuroCents(priceEurCents),
+          bookingId: booking.id.substring(0, 8).toUpperCase(), // Short ID for display
+          notes: notes,
+          addons: emailAddons,
+          googleMapsLink: locationData.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.address)}` : undefined
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // We do NOT fail the request if email fails, just log it.
+    }
+    // -------------------------------
 
     return NextResponse.json({ booking });
   } catch (e: unknown) {
