@@ -53,7 +53,7 @@ export function ClientBookingFlow() {
 
 
             {/* Right Card: Interactive Steps */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: '0.5rem' }}>
                 <CardContent className="space-y-6 pt-12">
                     {step === 1 && (
                         <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
@@ -81,7 +81,7 @@ export function ClientBookingFlow() {
 
 
             {/* Left Card: Summary */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: '0.5rem' }}>
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
                         {/* Header content if needed */}
