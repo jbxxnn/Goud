@@ -31,18 +31,18 @@ type Slot = {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('nl-NL', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
+  return date.toLocaleDateString('nl-NL', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
 };
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('nl-NL', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return date.toLocaleTimeString('nl-NL', {
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -89,24 +89,24 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
   const monthLabel = month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
-    <div className="border rounded p-3">
+    <div className="border rounded p-3 bg-border">
       <div className="flex justify-between items-center mb-3">
-        <button 
-          className="px-2 py-1 border rounded" 
+        <button
+          className="px-2 py-1 border rounded"
           onClick={onPrevMonth}
         >
           Prev
         </button>
         <div className="font-medium">{monthLabel}</div>
-        <button 
+        <button
           className="px-2 py-1 border rounded"
           onClick={onNextMonth}
         >
           Next
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-2 text-xs mb-2">
-        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+      <div className="grid grid-cols-7 gap-2 text-xs mb-4 font-bold">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
           <div key={d} className="text-center text-gray-500">{d}</div>
         ))}
       </div>
@@ -118,18 +118,17 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
           return (
             <button
               key={idx}
-              className={`aspect-square border rounded flex flex-col items-center justify-center ${
-                isSelected
-                  ? 'bg-black text-white'
-                  : enabled
-                    ? (cell.isOtherMonth ? 'text-gray-400 hover:bg-gray-50' : 'hover:bg-gray-50')
-                    : 'opacity-40 cursor-not-allowed'
-              }`}
+              className={`aspect-square rounded-full flex flex-col items-center justify-center ${isSelected
+                ? 'bg-black text-white'
+                : enabled
+                  ? (cell.isOtherMonth ? 'text-gray-600 hover:bg-gray-50' : 'hover:bg-gray-50')
+                  : 'opacity-40 cursor-not-allowed'
+                }`}
               disabled={!enabled}
               onClick={() => enabled && onSelectDate(cell.dateStr)}
             >
               <div className="text-sm">{new Date(cell.dateStr).getDate()}</div>
-              <div className="text-[10px] text-gray-600">{count} slots</div>
+              {/* <div className="text-[10px] text-gray-600">{count} slots</div> */}
             </button>
           );
         })}
@@ -159,7 +158,7 @@ function TimePicker({ slots, selected, onSelect, loading }: {
       {!loading && slots.length === 0 && <div className="text-sm text-gray-500">No slots available for chosen date.</div>}
       {!loading && slots.length > 0 && (
         <div className="space-y-4">
-          {(['morning','afternoon','evening'] as const).map((k) => groups[k].length > 0 && (
+          {(['morning', 'afternoon', 'evening'] as const).map((k) => groups[k].length > 0 && (
             <div key={k}>
               <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">{k}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -192,7 +191,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
   const [monthCursor, setMonthCursor] = useState<Date>(() => {
     const d = new Date();
     d.setDate(1);
-    d.setHours(0,0,0,0);
+    d.setHours(0, 0, 0, 0);
     return d;
   });
   const [rescheduling, setRescheduling] = useState(false);
@@ -290,7 +289,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
+      <SheetContent className="w-[200px] sm:w-[400px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>Reschedule Booking</SheetTitle>
         </SheetHeader>
@@ -312,7 +311,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
               {' • '}
               Staff: <span className="font-medium">{booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</span>
             </p>
-            
+
             <div className="relative">
               <Calendar
                 month={monthCursor}
@@ -344,7 +343,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
         </div>
         <div className="px-6 py-4 border-t flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button 
+          <Button
             onClick={handleReschedule}
             disabled={!selectedSlot || !booking?.location_id || !booking?.staff_id || rescheduling}
           >
