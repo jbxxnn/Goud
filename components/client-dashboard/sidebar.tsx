@@ -34,11 +34,11 @@ const clientMenuItems = [
         url: "/dashboard/book",
         icon: <HugeiconsIcon icon={PlusSignIcon} />,
     },
-    {
-        title: "Results & Media",
-        url: "/dashboard/results",
-        icon: <HugeiconsIcon icon={Image01Icon} />,
-    },
+    // {
+    //     title: "Results & Media",
+    //     url: "/dashboard/results",
+    //     icon: <HugeiconsIcon icon={Image01Icon} />,
+    // },
     {
         title: "Profile",
         url: "/dashboard/profile",

@@ -46,7 +46,7 @@ export default async function ProfilePage() {
 
                 <div className="grid gap-8 md:grid-cols-2">
                     <PreferencesForm />
-                    <PregnancyDetails />
+                    {/* <PregnancyDetails /> */}
                 </div>
             </div>
         </div>

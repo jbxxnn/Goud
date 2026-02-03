@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
 import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon } from '@hugeicons/core-free-icons';
@@ -124,6 +125,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   // Filter menu items based on user role
   const items = allMenuItems.filter(item => {
@@ -170,7 +172,15 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                       className={isActive ? "bg-primary shadow-lg text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
                       style={{ borderRadius: "1rem" }}
                     >
-                      <Link href={item.url} className="min-h-10 ">
+                      <Link
+                        href={item.url}
+                        className="min-h-10 "
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
                         {item.icon}
                         <span>{item.title}</span> <span className="text-[10px] bg-primary rounded-full px-1 text-primary-foreground">{item.comingsoon}</span>
                       </Link>

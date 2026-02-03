@@ -119,7 +119,7 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
             <button
               key={idx}
               className={`aspect-square rounded-full flex flex-col items-center justify-center ${isSelected
-                ? 'bg-black text-white'
+                ? 'bg-primary text-primary-foreground'
                 : enabled
                   ? (cell.isOtherMonth ? 'text-gray-600 hover:bg-gray-50' : 'hover:bg-gray-50')
                   : 'opacity-40 cursor-not-allowed'
