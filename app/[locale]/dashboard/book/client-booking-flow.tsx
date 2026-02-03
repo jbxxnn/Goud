@@ -51,6 +51,35 @@ export function ClientBookingFlow() {
     return (
         <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-6 items-start justify-center">
 
+
+            {/* Right Card: Interactive Steps */}
+            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
+                <CardContent className="space-y-6 pt-12">
+                    {step === 1 && (
+                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
+                            <StepService />
+                        </div>
+                    )}
+                    {step === 2 && (
+                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
+                            <StepDateTime />
+                        </div>
+                    )}
+                    {step === 3 && hasAddons && (
+                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
+                            <StepAddons />
+                        </div>
+                    )}
+                    {step === 4 && (
+                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
+                            {/* Use our custom review component here */}
+                            <ClientStepReview />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+
             {/* Left Card: Summary */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18">
                 <CardHeader className="relative pb-6 pt-8 px-8">
@@ -231,32 +260,7 @@ export function ClientBookingFlow() {
             </Card>
 
 
-            {/* Right Card: Interactive Steps */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-[2rem] overflow-hidden bg-white/80 backdrop-blur-xl">
-                <CardContent className="space-y-6 pt-12">
-                    {step === 1 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepService />
-                        </div>
-                    )}
-                    {step === 2 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepDateTime />
-                        </div>
-                    )}
-                    {step === 3 && hasAddons && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            <StepAddons />
-                        </div>
-                    )}
-                    {step === 4 && (
-                        <div className="animate-in fade-in zoom-in-95 duration-500 ease-in-out">
-                            {/* Use our custom review component here */}
-                            <ClientStepReview />
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+
         </div>
     );
 }

@@ -13,7 +13,8 @@
     },
     "Dashboard": {
         "menu": {
-            "bookNewEcho": "Book New Echo"
+            "bookNewEcho": "Book New Echo",
+            "bookNewEchoDescription": "Select a service and time for your next appointment."
         }
     },
     "AdminDashboard": {

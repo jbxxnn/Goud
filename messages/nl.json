@@ -13,7 +13,8 @@
     },
     "Dashboard": {
         "menu": {
-            "bookNewEcho": "Nieuwe Echo Boeken"
+            "bookNewEcho": "Nieuwe Echo Boeken",
+            "bookNewEchoDescription": "Kies een dienst en tijd voor uw volgende afspraak."
         }
     },
     "AdminDashboard": {
