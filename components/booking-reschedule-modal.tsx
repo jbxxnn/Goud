@@ -289,7 +289,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[200px] sm:w-[400px] p-0 flex flex-col">
+      <SheetContent className="w-[400px] sm:w-[400px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle>Reschedule Booking</SheetTitle>
         </SheetHeader>
