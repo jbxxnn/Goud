@@ -16,23 +16,24 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
     Calendar02Icon,
     UserIcon,
-    Image01Icon,
-    PlusSignIcon
+    PlusSignIcon,
 } from '@hugeicons/core-free-icons';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
-export function ClientSidebar() {
+export function MidwifeSidebar() {
     const pathname = usePathname();
     const { isMobile, setOpenMobile } = useSidebar();
-    const t = useTranslations('ClientSidebar');
+    const t = useTranslations('MidwifeSidebar');
 
-    const clientMenuItems = [
+    // Midwife specific menu items
+    // Defined inside component to access translation hook
+    const midwifeMenuItems = [
         {
             title: t('appointments'),
-            url: "/dashboard", // Landing page for client
+            url: "/dashboard", // Landing page for midwife
             icon: <HugeiconsIcon icon={Calendar02Icon} />,
         },
         {
@@ -40,11 +41,6 @@ export function ClientSidebar() {
             url: "/dashboard/book",
             icon: <HugeiconsIcon icon={PlusSignIcon} />,
         },
-        // {
-        //     title: t('results'),
-        //     url: "/dashboard/results",
-        //     icon: <HugeiconsIcon icon={Image01Icon} />,
-        // },
         {
             title: t('profile'),
             url: "/dashboard/profile",
@@ -63,7 +59,7 @@ export function ClientSidebar() {
                     </SidebarGroupLabel>
                     <SidebarGroupContent className="mt-12">
                         <SidebarMenu>
-                            {clientMenuItems.map((item) => {
+                            {midwifeMenuItems.map((item) => {
                                 // Normalize pathname by removing locale prefix (en or nl)
                                 const normalizedPath = pathname.replace(/^\/(?:en|nl)/, '') || '/';
 

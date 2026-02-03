@@ -1047,5 +1047,114 @@
         "create": "Aanmaken",
         "actions": "Acties",
         "close": "Sluiten"
+    },
+    "Appointments": {
+        "title": "Mijn Afspraken",
+        "subtitle": "Beheer uw komende echo's en bekijk uw geschiedenis.",
+        "bookNew": "Nieuwe Echo Boeken",
+        "searchPlaceholder": "Zoek cliëntnaam of e-mail...",
+        "filters": {
+            "allStatuses": "Alle Statussen",
+            "pending": "In afwachting",
+            "confirmed": "Bevestigd",
+            "cancelled": "Geannuleerd",
+            "completed": "Voltooid",
+            "reset": "Reset",
+            "from": "Van",
+            "to": "Tot"
+        },
+        "table": {
+            "dateTime": "Datum & Tijd",
+            "client": "Cliënt",
+            "service": "Dienst",
+            "staff": "Medewerker",
+            "location": "Locatie",
+            "status": "Status",
+            "actions": "Acties",
+            "unknown": "Onbekend"
+        },
+        "empty": {
+            "title": "Geen afspraken gevonden",
+            "description": "U heeft nog geen echo's geboekt.",
+            "cta": "Boek uw eerste echo"
+        },
+        "status": {
+            "completed": "Voltooid"
+        },
+        "toasts": {
+            "cancelSuccess": "Afspraak succesvol geannuleerd",
+            "cancelError": "Afspraak annuleren mislukt",
+            "loadError": "Afspraken laden mislukt",
+            "rescheduleError": "Afspraak verzetten mislukt",
+            "cancelFailed": "Boeking annuleren mislukt"
+        },
+        "sidebar": {
+            "appointments": "Afspraken",
+            "profile": "Profiel"
+        },
+        "actions": {
+            "viewResults": "Resultaten bekijken",
+            "reschedule": "Verzetten",
+            "cancel": "Afspraak annuleren",
+            "cancelDialog": {
+                "title": "Afspraak annuleren",
+                "description": "Weet u zeker dat u uw {service} op {date} wilt annuleren? Deze actie kan niet ongedaan worden gemaakt.",
+                "keep": "Afspraak behouden",
+                "confirm": "Ja, annuleer afspraak",
+                "processing": "Bezig met annuleren..."
+            }
+        }
+    },
+    "Profile": {
+        "title": "Profiel & Voorkeuren",
+        "subtitle": "Beheer uw persoonlijke gegevens en applicatie-instellingen.",
+        "personalInfo": {
+            "title": "Persoonlijke Informatie",
+            "description": "Uw persoonlijke gegevens bijwerken.",
+            "firstName": "Voornaam",
+            "lastName": "Achternaam",
+            "phone": "Telefoonnummer",
+            "email": "E-mail",
+            "emailNote": "E-mail kan niet direct worden gewijzigd. Neem contact op met support.",
+            "save": "Wijzigingen opslaan",
+            "saving": "Opslaan...",
+            "success": "Profiel succesvol bijgewerkt",
+            "error": "Profiel bijwerken mislukt"
+        },
+        "notifications": {
+            "title": "Notificaties",
+            "description": "Beheer hoe u op de hoogte wilt worden gehouden over afspraken.",
+            "email": {
+                "label": "E-mail herinneringen",
+                "description": "Ontvang boekingsbevestigingen en herinneringen via e-mail.",
+                "on": "E-mail notificaties ingeschakeld",
+                "off": "E-mail notificaties uitgeschakeld"
+            },
+            "sms": {
+                "label": "SMS herinneringen",
+                "description": "Ontvang updates en herinneringen via SMS.",
+                "on": "SMS notificaties ingeschakeld",
+                "off": "SMS notificaties uitgeschakeld"
+            }
+        },
+        "pregnancy": {
+            "title": "Zwangerschapsdetails",
+            "description": "Medische informatie beheerd door uw verloskundige.",
+            "readOnly": "Deze gegevens zijn alleen-lezen.",
+            "edd": "Uitgerekende datum",
+            "parity": "Pariteit",
+            "contact": "Neem contact op met Goud Echo of uw verloskundige om deze gegevens bij te werken."
+        }
+    },
+    "ClientSidebar": {
+        "appointments": "Mijn Afspraken",
+        "book": "Nieuwe Echo Boeken",
+        "results": "Resultaten en media",
+        "profile": "Profiel"
+    },
+    "MidwifeSidebar": {
+        "appointments": "Afspraken",
+        "book": "Nieuwe Echo Boeken",
+        "profile": "Profiel"
     }
 }

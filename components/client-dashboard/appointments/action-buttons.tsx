@@ -27,6 +27,7 @@ import {
 import { Booking } from '@/lib/types/booking';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useTranslations } from 'next-intl';
 
 interface ActionButtonsProps {
     booking: Booking;
@@ -37,6 +38,7 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, isPast }: ActionButtonsProps) {
+    const t = useTranslations('Appointments.actions');
     const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -91,7 +93,7 @@ export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, 
                 <div className="flex items-center justify-end w-full">
                     <Button onClick={() => onViewResults(booking)} className="bg-primary text-primary-foreground hover:bg-primary/90">
                         <HugeiconsIcon icon={Image01Icon} size={16} className="mr-2" />
-                        View Results
+                        {t('viewResults')}
                     </Button>
                 </div>
             );
@@ -107,10 +109,10 @@ export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, 
 
     return (
         <>
-            <div className="flex items-center justify-between w-full">
-                <Button onClick={() => onReschedule(booking)}>
-                    <HugeiconsIcon icon={Calendar01Icon} size={16} className="" />
-                    Reschedule
+            <div className="flex items-center justify-between w-full gap-2">
+                <Button onClick={() => onReschedule(booking)} size="sm">
+                    <HugeiconsIcon icon={Calendar01Icon} size={16} className="mr-2" />
+                    {t('reschedule')}
                 </Button>
                 {/* <Button onClick={handleAddToCalendar} className="sm:hidden">
                         <HugeiconsIcon icon={CalendarAdd01Icon} size={16} className="mr-2" />
@@ -118,28 +120,31 @@ export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, 
                     </Button> */}
                 <Button
                     onClick={() => setIsCancelOpen(true)}
-                    className="text-secondary-foreground shadow-md focus:text-primary-foreground bg-secondary hover:text-primary-foreground focus:bg-red-50"
+                    size="sm"
+                    className="text-secondary-foreground shadow-md focus:text-primary-foreground bg-secondary hover:text-primary-foreground focus:bg-red-50 hover:bg-destructive"
                 >
-                    <HugeiconsIcon icon={Cancel01Icon} size={16} className="" />
-                    Cancel Appointment
+                    <HugeiconsIcon icon={Cancel01Icon} size={16} className="mr-2" />
+                    {t('cancel')}
                 </Button>
             </div>
 
             <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Cancel Appointment</DialogTitle>
+                        <DialogTitle>{t('cancelDialog.title')}</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to cancel your {booking.services?.name} on {format(new Date(booking.start_time), 'MMMM d, yyyy')}?
-                            This action cannot be undone.
+                            {t('cancelDialog.description', {
+                                service: booking.services?.name || 'Appointment',
+                                date: format(new Date(booking.start_time), 'MMMM d, yyyy')
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsCancelOpen(false)} disabled={isCancelling}>
-                            Keep Appointment
+                            {t('cancelDialog.keep')}
                         </Button>
                         <Button variant="destructive" onClick={handleCancelConfirm} disabled={isCancelling}>
-                            {isCancelling ? 'Cancelling...' : 'Yes, Cancel Appointment'}
+                            {isCancelling ? t('cancelDialog.processing') : t('cancelDialog.confirm')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

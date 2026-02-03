@@ -5,8 +5,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 export function PreferencesForm() {
+    const t = useTranslations('Profile.notifications');
     const [emailEnabled, setEmailEnabled] = useState(true);
     const [smsEnabled, setSmsEnabled] = useState(true);
 
@@ -15,25 +17,25 @@ export function PreferencesForm() {
         if (type === 'sms') setSmsEnabled(value);
 
         // Mock API call
-        toast.success(`${type === 'email' ? 'Email' : 'SMS'} notifications turned ${value ? 'on' : 'off'}`);
+        toast.success(value ? t(`${type}.on`) : t(`${type}.off`));
     };
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Notifications</CardTitle>
+                <CardTitle>{t('title')}</CardTitle>
                 <CardDescription>
-                    Manage how you want to be notified about appointments.
+                    {t('description')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="flex items-center justify-between space-x-2">
                     <div className="flex flex-col space-y-1">
                         <Label htmlFor="email-notifications" className="font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Email Reminders
+                            {t('email.label')}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                            Receive booking confirmations and reminders via email.
+                            {t('email.description')}
                         </p>
                     </div>
                     <Switch
@@ -45,10 +47,10 @@ export function PreferencesForm() {
                 <div className="flex items-center justify-between space-x-2">
                     <div className="flex flex-col space-y-1">
                         <Label htmlFor="sms-notifications" className="font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            SMS Reminders
+                            {t('sms.label')}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                            Receive urgent updates and reminders via SMS.
+                            {t('sms.description')}
                         </p>
                     </div>
                     <Switch

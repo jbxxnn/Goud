@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ClientSidebar } from "@/components/client-dashboard/sidebar";
+import { MidwifeSidebar } from "@/components/midwife-sidebar";
 
 type UserRole = 'admin' | 'staff' | 'midwife' | 'client';
 
@@ -139,6 +140,10 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
 
   if (userRole === 'client') {
     return <ClientSidebar />;
+  }
+
+  if (userRole === 'midwife') {
+    return <MidwifeSidebar />;
   }
 
   return (

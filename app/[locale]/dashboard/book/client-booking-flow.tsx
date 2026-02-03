@@ -258,9 +258,6 @@ export function ClientBookingFlow() {
                     </div>
                 </CardContent>
             </Card>
-
-
-
         </div>
     );
 }

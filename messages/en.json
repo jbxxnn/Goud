@@ -1047,5 +1047,114 @@
         "create": "Create",
         "actions": "Actions",
         "close": "Close"
+    },
+    "Appointments": {
+        "title": "My Appointments",
+        "subtitle": "Manage your upcoming echoes and view your history.",
+        "bookNew": "Book New Echo",
+        "searchPlaceholder": "Search client name or email...",
+        "filters": {
+            "allStatuses": "All Statuses",
+            "pending": "Pending",
+            "confirmed": "Confirmed",
+            "cancelled": "Cancelled",
+            "completed": "Completed",
+            "reset": "Reset",
+            "from": "From",
+            "to": "To"
+        },
+        "table": {
+            "dateTime": "Date & Time",
+            "client": "Client",
+            "service": "Service",
+            "staff": "Staff",
+            "location": "Location",
+            "status": "Status",
+            "actions": "Actions",
+            "unknown": "Unknown"
+        },
+        "empty": {
+            "title": "No appointments found",
+            "description": "You haven't booked any echoes yet.",
+            "cta": "Book your first echo"
+        },
+        "status": {
+            "completed": "Completed"
+        },
+        "toasts": {
+            "cancelSuccess": "Appointment cancelled successfully",
+            "cancelError": "Failed to cancel appointment",
+            "loadError": "Failed to load appointments",
+            "rescheduleError": "Failed to reschedule booking",
+            "cancelFailed": "Failed to cancel booking"
+        },
+        "sidebar": {
+            "appointments": "Appointments",
+            "profile": "Profile"
+        },
+        "actions": {
+            "viewResults": "View Results",
+            "reschedule": "Reschedule",
+            "cancel": "Cancel Appointment",
+            "cancelDialog": {
+                "title": "Cancel Appointment",
+                "description": "Are you sure you want to cancel your {service} on {date}? This action cannot be undone.",
+                "keep": "Keep Appointment",
+                "confirm": "Yes, Cancel Appointment",
+                "processing": "Cancelling..."
+            }
+        }
+    },
+    "Profile": {
+        "title": "Profile & Preferences",
+        "subtitle": "Manage your personal details and application settings.",
+        "personalInfo": {
+            "title": "Personal Information",
+            "description": "Update your personal details.",
+            "firstName": "First name",
+            "lastName": "Last name",
+            "phone": "Phone number",
+            "email": "Email",
+            "emailNote": "Email cannot be changed directly. Please contact support.",
+            "save": "Save Changes",
+            "saving": "Saving...",
+            "success": "Profile updated successfully",
+            "error": "Failed to update profile"
+        },
+        "notifications": {
+            "title": "Notifications",
+            "description": "Manage how you want to be notified about appointments.",
+            "email": {
+                "label": "Email Reminders",
+                "description": "Receive booking confirmations and reminders via email.",
+                "on": "Email notifications turned on",
+                "off": "Email notifications turned off"
+            },
+            "sms": {
+                "label": "SMS Reminders",
+                "description": "Receive urgent updates and reminders via SMS.",
+                "on": "SMS notifications turned on",
+                "off": "SMS notifications turned off"
+            }
+        },
+        "pregnancy": {
+            "title": "Pregnancy Details",
+            "description": "Medical information managed by your midwife.",
+            "readOnly": "These details are read-only.",
+            "edd": "Estimated Due Date",
+            "parity": "Parity",
+            "contact": "Please contact Goud Echo or your midwife to update these details."
+        }
+    },
+    "ClientSidebar": {
+        "appointments": "My Appointments",
+        "book": "Book New Echo",
+        "results": "Results & Media",
+        "profile": "Profile"
+    },
+    "MidwifeSidebar": {
+        "appointments": "Appointments",
+        "book": "Book New Echo",
+        "profile": "Profile"
     }
 }

@@ -1,3 +1,4 @@
+
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardHeader } from "@/components/client-dashboard/header";
@@ -5,9 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { ProfileForm } from "./profile-form";
 import { PreferencesForm } from "./preferences-form";
 import { PregnancyDetails } from "./pregnancy-details";
+import { getTranslations } from 'next-intl/server';
 
 export default async function ProfilePage() {
     const supabase = await createClient();
+    const t = await getTranslations('Profile');
 
     const { data, error } = await supabase.auth.getClaims();
     if (error || !data?.claims) {
@@ -32,8 +35,8 @@ export default async function ProfilePage() {
         <div className="container max-w-4xl py-6 space-y-8">
             <div>
                 <DashboardHeader
-                    heading="Profile & Preferences"
-                    text="Manage your personal details and application settings."
+                    heading={t('title')}
+                    text={t('subtitle')}
                 />
             </div>
 

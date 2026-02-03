@@ -10,12 +10,14 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Tick01Icon } from '@hugeicons/core-free-icons';
+import { useTranslations } from 'next-intl';
 
 interface ProfileFormProps {
     user: User;
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
+    const t = useTranslations('Profile.personalInfo');
     const queryClient = useQueryClient();
     const [formData, setFormData] = useState({
         first_name: user.first_name || '',
@@ -46,19 +48,19 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Failed to update profile');
+                throw new Error(error.error || t('error'));
             }
             return response.json();
         },
         onSuccess: () => {
-            toast.success('Profile updated successfully');
+            toast.success(t('success'));
             queryClient.invalidateQueries({ queryKey: ['user', user.id] });
             // Also invalidate broad user queries if admin might be looking
             queryClient.invalidateQueries({ queryKey: ['users'] });
         },
         onError: (error) => {
             console.error(error);
-            toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+            toast.error(error instanceof Error ? error.message : t('error'));
         }
     });
 
@@ -70,16 +72,16 @@ export function ProfileForm({ user }: ProfileFormProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
+                <CardTitle>{t('title')}</CardTitle>
                 <CardDescription>
-                    Update your personal details.
+                    {t('description')}
                 </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="first_name">First name</Label>
+                            <Label htmlFor="first_name">{t('firstName')}</Label>
                             <Input
                                 id="first_name"
                                 name="first_name"
@@ -90,7 +92,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="last_name">Last name</Label>
+                            <Label htmlFor="last_name">{t('lastName')}</Label>
                             <Input
                                 id="last_name"
                                 name="last_name"
@@ -102,7 +104,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="phone">Phone number</Label>
+                        <Label htmlFor="phone">{t('phone')}</Label>
                         <Input
                             id="phone"
                             name="phone"
@@ -113,7 +115,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('email')}</Label>
                         <Input
                             id="email"
                             value={user.email}
@@ -121,7 +123,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                             className="bg-muted"
                         />
                         <p className="text-xs text-muted-foreground">
-                            Email cannot be changed directly. Please contact support.
+                            {t('emailNote')}
                         </p>
                     </div>
                 </CardContent>
@@ -130,12 +132,12 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         {isLoading ? (
                             <>
                                 <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
+                                {t('saving')}
                             </>
                         ) : (
                             <>
                                 <HugeiconsIcon icon={Tick01Icon} className="mr-2 h-4 w-4" />
-                                Save Changes
+                                {t('save')}
                             </>
                         )}
                     </Button>

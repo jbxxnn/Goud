@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import DashboardClient from "./admin-dashboard";
 import ClientDashboard from "./client-dashboard";
 import StaffDashboard from "./staff-dashboard";
+import MidwifeDashboard from "./midwife-dashboard";
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
@@ -50,8 +51,10 @@ export default async function ProtectedPage() {
     }
 
     return <StaffDashboard staff={staff} />;
+  } else if (user.role === 'midwife') {
+    return <MidwifeDashboard clientId={userId} />;
   }
 
-  // Fallback for midwife or unsure roles -> Client Dashboard (safe default)
+  // Fallback for unsure roles -> Client Dashboard (safe default)
   return <ClientDashboard clientId={userId} />;
 }

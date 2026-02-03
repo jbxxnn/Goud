@@ -301,9 +301,15 @@ export async function GET(req: NextRequest) {
       `, { count: 'exact' })
       .order('start_time', { ascending: false });
 
-    // If clientId provided, filter by client
+    // If clientId provided, filter by created_by (Legacy behavior for Client Dashboard - bookings they CREATED)
     if (clientId) {
       query = query.eq('created_by', clientId);
+    }
+
+    // If patientId provided, filter by client_id (For Midwife Dashboard - bookings where they are the CLIENT/PATIENT)
+    const patientId = searchParams.get('patientId');
+    if (patientId) {
+      query = query.eq('client_id', patientId);
     }
 
     // If search provided, filter by matching user IDs

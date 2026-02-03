@@ -6,16 +6,19 @@ import { Label } from '@/components/ui/label';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CircleLock02Icon } from '@hugeicons/core-free-icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useTranslations } from 'next-intl';
 
 export function PregnancyDetails() {
+    const t = useTranslations('Profile.pregnancy');
+
     return (
         <Card className="bg-muted/30 border-dashed">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                        <CardTitle className="text-muted-foreground">Pregnancy Details</CardTitle>
+                        <CardTitle className="text-muted-foreground">{t('title')}</CardTitle>
                         <CardDescription>
-                            Medical information managed by your midwife.
+                            {t('description')}
                         </CardDescription>
                     </div>
                     <TooltipProvider>
@@ -24,7 +27,7 @@ export function PregnancyDetails() {
                                 <HugeiconsIcon icon={CircleLock02Icon} className="text-muted-foreground h-5 w-5" />
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>These details are read-only.</p>
+                                <p>{t('readOnly')}</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -33,7 +36,7 @@ export function PregnancyDetails() {
             <CardContent className="space-y-4 opacity-70">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label>Estimated Due Date</Label>
+                        <Label>{t('edd')}</Label>
                         <div className="relative">
                             <Input value="-- / -- / ----" disabled className="pl-10" />
                             <div className="absolute left-3 top-2.5">
@@ -42,7 +45,7 @@ export function PregnancyDetails() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Parity</Label>
+                        <Label>{t('parity')}</Label>
                         <div className="relative">
                             <Input value="--" disabled className="pl-10" />
                             <div className="absolute left-3 top-2.5">
@@ -52,7 +55,7 @@ export function PregnancyDetails() {
                     </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    Please contact Goud Echo or your midwife to update these details.
+                    {t('contact')}
                 </p>
             </CardContent>
         </Card>
