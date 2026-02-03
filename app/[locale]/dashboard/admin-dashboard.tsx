@@ -102,7 +102,7 @@ import { useQuery } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
-  confirmed: '#AF6438',
+  confirmed: '#3B82F6',
   pending: '#F59E0B',
   cancelled: '#6b7280',
   ongoing: '#3B82F6',
@@ -162,11 +162,15 @@ const formatDelta = (value?: number) => {
 const statusBadgeVariant = (status: BookingStatus | string) => {
   switch (status) {
     case 'confirmed':
-      return 'default';
+      return 'confirmed';
     case 'pending':
-      return 'secondary';
+      return 'pending';
     case 'cancelled':
       return 'destructive';
+    case 'ongoing':
+      return 'ongoing';
+    case 'completed':
+      return 'completed';
     default:
       return 'secondary';
   }
