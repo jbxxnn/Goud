@@ -10,6 +10,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarRail,
+    useSidebar,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -48,6 +49,7 @@ const clientMenuItems = [
 
 export function ClientSidebar() {
     const pathname = usePathname();
+    const { isMobile, setOpenMobile } = useSidebar();
 
     return (
         <Sidebar collapsible="icon">
@@ -80,7 +82,15 @@ export function ClientSidebar() {
                                             className={isActive ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "bg-sidebar text-sidebar-foreground"}
                                             style={{ borderRadius: "0.2rem" }}
                                         >
-                                            <Link href={item.url} className="min-h-10 ">
+                                            <Link
+                                                href={item.url}
+                                                className="min-h-10 "
+                                                onClick={() => {
+                                                    if (isMobile) {
+                                                        setOpenMobile(false);
+                                                    }
+                                                }}
+                                            >
                                                 {item.icon}
                                                 <span>{item.title}</span>
                                             </Link>
