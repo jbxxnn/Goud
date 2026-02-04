@@ -240,11 +240,59 @@ export async function POST(req: NextRequest) {
         .eq('session_token', parsed.data.sessionToken);
     }
 
-    return NextResponse.json({ booking });
+    // -------------------------------
+    // MOLLIE PAYMENT INTEGRATION
+    // -------------------------------
+    let checkoutUrl: string | undefined;
+
+    try {
+      const { default: mollieClient } = await import('@/lib/mollie/client');
+
+      const payment = await mollieClient.payments.create({
+        amount: {
+          currency: 'EUR',
+          value: (priceEurCents / 100).toFixed(2),
+        },
+        description: `Order #${booking.id}`,
+        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?bookingId=${booking.id}`,
+        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mollie`,
+        metadata: {
+          booking_id: booking.id,
+        },
+      });
+
+      if (payment.id) {
+        const supabase = getServiceSupabase();
+        const { error: updateError, data: updatedBooking } = await supabase
+          .from('bookings')
+          .update({
+            mollie_payment_id: payment.id,
+            payment_link: payment._links.checkout?.href,
+            payment_status: 'unpaid'
+          })
+          .eq('id', booking.id)
+          .select();
+
+        if (updateError) {
+          console.error('[Booking API] Failed to update booking with payment ID:', updateError);
+        } else {
+          console.log('[Booking API] Successfully updated booking payment ID. Rows affected:', updatedBooking?.length);
+        }
+
+        checkoutUrl = payment._links.checkout?.href;
+      }
+    } catch (paymentError) {
+      console.error('Failed to create Mollie payment:', paymentError);
+      // We do NOT fail the request if payment creation fails, but the user won't get a redirect.
+      // They will land on confirmation page with 'unpaid' status.
+    }
+
+    return NextResponse.json({ booking, checkoutUrl });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
+
 
 export async function GET(req: NextRequest) {
   try {

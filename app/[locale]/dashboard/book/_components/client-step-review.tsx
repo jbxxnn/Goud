@@ -132,8 +132,15 @@ export function ClientStepReview() {
             // Clear state
             try { localStorage.removeItem('goudecho_booking_state'); } catch { }
 
+            // Start payment flow if checkout link exists
+            if (data.checkoutUrl) {
+                // Clear state before leaving
+                try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+                window.location.href = data.checkoutUrl;
+                return;
+            }
+
             // Redirect to success / my appointments
-            // For now, let's go to the confirmation page or directly to appointments
             router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
 
         } catch (e: any) {

@@ -274,6 +274,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (updates.status === 'cancelled') {
       // Run in background (fire and forget) to not block response
       triggerCancellationEmail(existing).catch(err => console.error('Background email error:', err));
+      triggerRefund(existing).catch(err => console.error('Background refund error:', err));
     }
 
     // Fetch add-ons if they exist
@@ -354,6 +355,35 @@ async function triggerCancellationEmail(existingBooking: any) {
     }
   } catch (emailError) {
     console.error('Failed to send cancellation email:', emailError);
+  }
+}
+
+// Helper to trigger Mollie refund
+async function triggerRefund(booking: any) {
+  console.log('[triggerRefund] Checking refund for booking:', booking.id, 'Payment ID:', booking.mollie_payment_id);
+
+  if (!booking.mollie_payment_id) {
+    console.log('[triggerRefund] No mollie_payment_id found, skipping.');
+    return;
+  }
+
+  try {
+    const { processRefundOrCancel } = await import('@/lib/mollie/actions');
+    const result = await processRefundOrCancel(booking.mollie_payment_id, booking.price_eur_cents);
+
+    // Update DB status if meaningful change
+    const supabase = getServiceSupabase();
+    let status = 'refunded';
+    if (result === 'payment_cancelled') status = 'canceled';
+    if (result === 'no_action') return; // Don't overwrite if nothing happened
+
+    await supabase
+      .from('bookings')
+      .update({ payment_status: status })
+      .eq('id', booking.id);
+
+  } catch (e: any) {
+    console.error('Failed to trigger refund:', e);
   }
 }
 

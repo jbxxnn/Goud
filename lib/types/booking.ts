@@ -132,7 +132,7 @@ export interface RecentBookingSummary {
 }
 
 export const BOOKING_STATE_KEY = 'goudecho_booking_state';
-export const STATE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const STATE_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
 export interface BookingsResponse {
     success: boolean;

@@ -174,8 +174,13 @@ export function StepReview() {
                 } catch { }
             }
 
-            // Clear state - we'll just remove localStorage here manually to be safe or rely on the final page unload
-            try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+            // Start payment flow if checkout link exists
+            if (data.checkoutUrl) {
+                // Clear state before leaving
+                try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+                window.location.href = data.checkoutUrl;
+                return;
+            }
 
             router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
         } catch (e: any) {
