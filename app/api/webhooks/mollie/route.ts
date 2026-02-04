@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
         // Map Mollie status to our payment_status enum
         // Mollie: open, canceled, pending, expired, failed, paid
-        // Our DB: unpaid, paid, open, expired, failed, canceled
+        // Our DB: unpaid, paid, open, expired, failed, canceled 
         let dbStatus = 'open';
         if (payment.status === 'paid') dbStatus = 'paid';
         else if (payment.status === 'canceled') dbStatus = 'canceled';
