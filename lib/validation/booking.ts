@@ -131,6 +131,7 @@ export type BookingSelectionInput = z.infer<typeof bookingSelectionSchema>;
 export const bookingRequestSchema = bookingSelectionSchema.merge(bookingContactSchema).extend({
   policyAnswers: z.array(bookingPolicyAnswerSchema).optional(),
   addons: z.array(bookingAddonSelectionSchema).optional(),
+  sessionToken: z.string().optional(),
 });
 
 export type BookingRequestInput = z.infer<typeof bookingRequestSchema>;

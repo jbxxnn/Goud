@@ -230,6 +230,16 @@ export async function POST(req: NextRequest) {
     }
     // -------------------------------
 
+    // -------------------------------
+
+    // Clear the lock if sessionToken is present
+    if (parsed.data.sessionToken) {
+      await getServiceSupabase()
+        .from('booking_locks')
+        .delete()
+        .eq('session_token', parsed.data.sessionToken);
+    }
+
     return NextResponse.json({ booking });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });

@@ -10,6 +10,10 @@ import { useTranslations } from 'next-intl';
 import { useFormatter } from 'next-intl';
 import { formatEuroCents } from '@/lib/currency/format';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogAction, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { RotateLeft01Icon } from '@hugeicons/core-free-icons';
 
 export function BookingFlow() {
     const {
@@ -24,7 +28,8 @@ export function BookingFlow() {
         hasAddons,
         policyExtraPriceCents,
         addonExtraPriceCents,
-        selectedAddOnItems
+        selectedAddOnItems,
+        handleStartOver
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -95,6 +100,31 @@ export function BookingFlow() {
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
+                        {/* Header content if needed */}
+                        <div></div>
+                        {/* Reset Button */}
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
+                                    <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
+                                    {t('reset')}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('resetTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {t('resetDescription')}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('back')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0">
+                                        {t('confirmReset')}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
 
                     {/* Progress Bar */}

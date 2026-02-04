@@ -26,21 +26,23 @@ export async function GET(req: NextRequest) {
 
     const supabase = getServiceSupabase();
 
-     const skipCache = Boolean(excludeBookingId);
-     const cacheKey = skipCache
-       ? null
+    const noCacheHeader = req.headers.get('Cache-Control');
+    const tParam = searchParams.get('_t');
+    const skipCache = Boolean(excludeBookingId) || noCacheHeader === 'no-cache' || Boolean(tParam);
+    const cacheKey = skipCache
+      ? null
       : makeDaySlotsCacheKey({
-           serviceId,
-           locationId,
-           date: dateStr,
-           staffId: staffId ?? null,
-         });
-     if (!skipCache && cacheKey) {
-       const cached = daySlotsCache.get(cacheKey);
-       if (cached) {
-         return NextResponse.json(cached, { headers: availabilityCacheHeaders });
-       }
-     }
+        serviceId,
+        locationId,
+        date: dateStr,
+        staffId: staffId ?? null,
+      });
+    if (!skipCache && cacheKey) {
+      const cached = daySlotsCache.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached, { headers: availabilityCacheHeaders });
+      }
+    }
 
     // Fetch service rules (duration, buffer, lead_time) from services
     const { data: serviceData, error: serviceErr } = await supabase
@@ -85,7 +87,7 @@ export async function GET(req: NextRequest) {
       .in('id', allowedShiftIds)
       .lt('start_time', dayEnd.toISOString())
       .gt('end_time', dayStart.toISOString());
-    
+
     // Filter by staff if specified
     if (staffId) {
       shiftsQuery = shiftsQuery.eq('staff_id', staffId);
@@ -133,7 +135,7 @@ export async function GET(req: NextRequest) {
       .neq('status', 'cancelled')
       .lt('start_time', dayEnd.toISOString())
       .gt('end_time', dayStart.toISOString());
-    
+
     if (excludeBookingId) {
       bookingsQuery = bookingsQuery.neq('id', excludeBookingId);
     }
@@ -153,7 +155,25 @@ export async function GET(req: NextRequest) {
     const existingAll: TimeInterval[] = [];
     for (const arr of existingByShift.values()) existingAll.push(...arr);
 
-    const slots = generateSlotsForDay({
+    // Fetch active locks
+    const { data: locksData, error: locksErr } = await supabase
+      .from('booking_locks')
+      .select('start_time, end_time')
+      .in('shift_id', allowedShiftIds)
+      .gt('expires_at', new Date().toISOString())
+      .lt('start_time', dayEnd.toISOString())
+      .gt('end_time', dayStart.toISOString());
+
+    if (locksErr) {
+      console.log('[availability] locks error', locksErr);
+    }
+
+    const activeLocks: TimeInterval[] = (locksData ?? []).map((l: any) => ({
+      start: new Date(l.start_time),
+      end: new Date(l.end_time),
+    }));
+
+    const allSlots = generateSlotsForDay({
       date,
       serviceId,
       locationId,
@@ -163,12 +183,22 @@ export async function GET(req: NextRequest) {
       existingBookings: existingAll,
     });
 
-    console.log('[availability] slots count', slots.length);
-    const payload = { slots };
+    console.log('[availability] slots count (before locks)', allSlots.length);
+    const payload = { slots: allSlots }; // Cache the raw available slots
     if (!skipCache && cacheKey) {
       daySlotsCache.set(cacheKey, payload);
     }
-    return NextResponse.json(payload, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
+
+    // Filter by active locks for the response
+    const visibleSlots = allSlots.filter(slot => {
+      const slotStart = new Date(slot.startTime);
+      const slotEnd = new Date(slot.endTime);
+      return !activeLocks.some(lock =>
+        slotStart < lock.end && lock.start < slotEnd
+      );
+    });
+
+    return NextResponse.json({ slots: visibleSlots }, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
   } catch (e: any) {
     console.error('[availability] error', e);
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });

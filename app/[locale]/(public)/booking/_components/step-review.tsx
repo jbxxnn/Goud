@@ -144,6 +144,7 @@ export function StepReview() {
                     priceEurCents: priceCents,
                     policyAnswers: policyAnswersPayload.length > 0 ? policyAnswersPayload : undefined,
                     addons: addOnPayload.length > 0 ? addOnPayload : undefined,
+                    sessionToken: sessionStorage.getItem('booking_session_token') || undefined,
                 }),
             });
 

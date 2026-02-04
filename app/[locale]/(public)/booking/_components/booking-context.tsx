@@ -1,4 +1,4 @@
-'use client';
+import { useTranslations } from 'next-intl';
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { BookingContactInput } from '@/lib/validation/booking';
@@ -251,6 +251,7 @@ function computeMissingRanges(existing: DateRange[], target: DateRange): DateRan
 
 export function BookingProvider({ children }: { children: React.ReactNode }) {
     const [isMounted, setIsMounted] = useState(false);
+    const t = useTranslations('Booking.flow');
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
     // Step 1
@@ -709,6 +710,13 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     };
 
     const handleStartOver = async () => {
+        try {
+            await fetch(`/api/bookings/lock?sessionToken=${sessionTokenRef.current}`, {
+                method: 'DELETE',
+            });
+        } catch (e) {
+            console.error('Failed to release lock', e);
+        }
         clearBookingState();
         window.location.reload();
     };
@@ -794,6 +802,80 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // Session Token
+    const sessionTokenRef = useRef<string>('');
+    useEffect(() => {
+        let token = sessionStorage.getItem('booking_session_token');
+        if (!token) {
+            token = crypto.randomUUID();
+            sessionStorage.setItem('booking_session_token', token);
+        }
+        sessionTokenRef.current = token;
+    }, []);
+
+    const handleSelectSlot = async (slot: Slot | null) => {
+        if (!slot) {
+            setSelectedSlot(null);
+            return;
+        }
+        if (loadingSlots) return;
+
+        // Optimistic UI: Select immediately, revert if lock fails
+        setSelectedSlot(slot);
+        setErrorMsg('');
+
+        try {
+            const res = await fetch('/api/bookings/lock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    serviceId: serviceId,
+                    locationId: locationId,
+                    staffId: slot.staffId,
+                    shiftId: slot.shiftId,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    sessionToken: sessionTokenRef.current,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                // Lock failed - Revert selection
+                setSelectedSlot(null);
+
+                // Refresh slots to show it's gone
+                const params = new URLSearchParams({ serviceId, locationId, date, _t: Date.now().toString() });
+                fetch(`/api/availability?${params.toString()}`, { headers: { 'Cache-Control': 'no-cache' } })
+                    .then(r => r.json())
+                    .then(d => {
+                        const s: Slot[] = (d.slots ?? []).map((x: Slot) => ({
+                            shiftId: x.shiftId,
+                            staffId: x.staffId,
+                            startTime: new Date(x.startTime).toISOString(),
+                            endTime: new Date(x.endTime).toISOString(),
+                        }));
+                        setSlots(s);
+                    });
+
+                let msg = t('errors.slotNotAvailable');
+                if (data.error === 'SLOT_BOOKED') msg = t('errors.slotBooked');
+                if (data.error === 'SLOT_LOCKED') msg = t('errors.slotNotAvailable');
+                setErrorMsg(msg);
+                // Clear error after 3s
+                setTimeout(() => setErrorMsg(''), 3000);
+                return;
+            }
+
+            // Success - Keep selection
+        } catch (e) {
+            console.error('Lock error', e);
+            setSelectedSlot(null); // Revert on error
+            setErrorMsg('Failed to select slot');
+        }
+    };
+
     const getDisplayStepNumber = (internalStep: number): number => {
         if (!hasAddons && internalStep === 4) return 3;
         return internalStep;
@@ -813,7 +895,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                 setPrevMonth: () => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1)),
                 setNextMonth: () => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1)),
                 heatmap, loadingHeatmap,
-                slots, loadingSlots, selectedSlot, setSelectedSlot,
+                slots, loadingSlots, selectedSlot, setSelectedSlot: handleSelectSlot,
                 policyResponses, policyErrors, updatePolicyResponse, toggleMultiChoiceOption, clearPolicyError, setPolicyErrors,
                 selectedAddons, toggleAddonSelection, hasAddons, selectedAddOnItems,
                 clientEmail, setClientEmail,
@@ -830,6 +912,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             }}
         >
             {children}
+            {errorMsg && (
+                <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50 animate-in fade-in slide-in-from-bottom-4">
+                    <p className="font-bold">Error</p>
+                    <p>{errorMsg}</p>
+                </div>
+            )}
         </BookingContext.Provider>
     );
 }

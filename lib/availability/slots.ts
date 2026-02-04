@@ -40,8 +40,8 @@ function isWithinBlackout(date: Date, blackouts: BlackoutPeriod[], locationId: s
   return false;
 }
 
-function startOfDay(d: Date): Date { const x = new Date(d); x.setUTCHours(0,0,0,0); return x; }
-function endOfDay(d: Date): Date { const x = new Date(d); x.setUTCHours(23,59,59,999); return x; }
+function startOfDay(d: Date): Date { const x = new Date(d); x.setUTCHours(0, 0, 0, 0); return x; }
+function endOfDay(d: Date): Date { const x = new Date(d); x.setUTCHours(23, 59, 59, 999); return x; }
 
 function addMinutes(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * 60_000);
@@ -58,6 +58,7 @@ export type GenerateSlotsParams = {
   serviceRules: ServiceRules;
   blackouts: BlackoutPeriod[];
   existingBookings: TimeInterval[]; // for the same shift+day to exclude
+  locks?: TimeInterval[]; // temporary locks to exclude
   now?: Date; // for testing; defaults to new Date()
 };
 
@@ -70,6 +71,7 @@ export function generateSlotsForDay(params: GenerateSlotsParams): Slot[] {
     serviceRules,
     blackouts,
     existingBookings,
+    locks,
     now = new Date(),
   } = params;
 
@@ -106,9 +108,13 @@ export function generateSlotsForDay(params: GenerateSlotsParams): Slot[] {
       }
 
       // Exclude if overlapping with existing bookings
-      const overlaps = existingBookings.some((b) => intervalsOverlap({ start: slotStart, end: apptEnd }, b));
-      if (!overlaps) {
-        daySlots.push({ shiftId: shift.id, staffId: shift.staffId, startTime: slotStart, endTime: apptEnd });
+      const overlapsBooking = existingBookings.some((b) => intervalsOverlap({ start: slotStart, end: apptEnd }, b));
+      if (!overlapsBooking) {
+        // Exclude if overlapping with temporary locks
+        const overlapsLock = locks?.some((l) => intervalsOverlap({ start: slotStart, end: apptEnd }, l));
+        if (!overlapsLock) {
+          daySlots.push({ shiftId: shift.id, staffId: shift.staffId, startTime: slotStart, endTime: apptEnd });
+        }
       }
 
       slotStart = addMinutes(slotStart, slotLength);

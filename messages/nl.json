@@ -783,6 +783,8 @@
             "currentTotal": "Actuele totaalprijs",
             "continue": "Doorgaan",
             "errors": {
+                "slotNotAvailable": "Slot is tijdelijk niet beschikbaar. Selecteer aub een ander slot.",
+                "slotBooked": "Slot reeds geboekt",
                 "policy": {
                     "confirmCheckBox": "Bevestig dit beleid om door te gaan.",
                     "makeChoice": "Maak minstens één keuze.",

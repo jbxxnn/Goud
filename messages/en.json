@@ -783,6 +783,8 @@
             "currentTotal": "Current total",
             "continue": "Continue",
             "errors": {
+                "slotNotAvailable": "Slot is temporarily not available. Please select another slot.",
+                "slotBooked": "Slot already booked",
                 "policy": {
                     "confirmCheckBox": "Confirm this policy to continue.",
                     "makeChoice": "Make at least one choice.",

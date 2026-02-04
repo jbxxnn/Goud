@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       .in('id', allowedShiftIds)
       .lt('start_time', endUTC.toISOString())
       .gt('end_time', startUTC.toISOString());
-    
+
     // Filter by staff if specified
     if (staffId) {
       shiftsQuery = shiftsQuery.eq('staff_id', staffId);
@@ -193,6 +193,24 @@ export async function GET(req: NextRequest) {
     const combinedExisting: TimeInterval[] = [];
     for (const arr of existingByShift.values()) combinedExisting.push(...arr);
 
+    // Fetch active locks
+    const { data: locksData, error: locksErr } = await supabase
+      .from('booking_locks')
+      .select('start_time, end_time')
+      .in('shift_id', allowedShiftIds)
+      .gt('expires_at', new Date().toISOString())
+      .lt('start_time', endUTC.toISOString())
+      .gt('end_time', startUTC.toISOString());
+
+    if (locksErr) {
+      console.log('[availability/heatmap] locks error', locksErr);
+    }
+
+    const activeLocks: TimeInterval[] = (locksData ?? []).map((l: any) => ({
+      start: new Date(l.start_time),
+      end: new Date(l.end_time),
+    }));
+
     const dayMs = 24 * 60 * 60 * 1000;
     for (let d = new Date(start); d <= end; d = new Date(d.getTime() + dayMs)) {
       dayList.push(new Date(d));
@@ -231,6 +249,18 @@ export async function GET(req: NextRequest) {
           ...slot,
         })),
       });
+    }
+
+    // Filter perDaySlots based on activeLocks
+    if (activeLocks.length > 0) {
+      for (const [dayKey, slots] of perDaySlots.entries()) {
+        const visible = slots.filter(slot => {
+          const sStart = new Date(slot.startTime);
+          const sEnd = new Date(slot.endTime);
+          return !activeLocks.some(lock => sStart < lock.end && lock.start < sEnd);
+        });
+        perDaySlots.set(dayKey, visible);
+      }
     }
 
     const days = summarizeDayHeatmap(dayList, perDaySlots);
