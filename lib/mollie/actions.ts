@@ -4,7 +4,7 @@ export async function processRefundOrCancel(paymentId: string, amount: number) {
     try {
         const payment = await mollieClient.payments.get(paymentId);
 
-        if (payment.isPaid()) {
+        if (payment.status === 'paid') {
             const remaining = parseFloat(payment.amountRemaining?.value || '0');
             if (remaining <= 0) {
                 console.log('[Mollie] Payment already refunded');
@@ -23,7 +23,7 @@ export async function processRefundOrCancel(paymentId: string, amount: number) {
             console.log('[Mollie] Refund initiated');
             return 'refund_initiated';
 
-        } else if (payment.isCancelable()) {
+        } else if (['open', 'pending'].includes(payment.status)) {
             // Cancel the payment
             await mollieClient.payments.cancel(paymentId);
             console.log('[Mollie] Payment cancelled');
