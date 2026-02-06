@@ -345,7 +345,19 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                             </div>
                                         </TableCell>
                                     )}
-                                    <TableCell>{booking.services?.name || t('table.unknown')}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <span>{booking.services?.name || t('table.unknown')}</span>
+                                            {booking.is_twin && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
+                                                >
+                                                    Tweeling
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell>{booking.staff?.first_name || t('table.staff')}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">

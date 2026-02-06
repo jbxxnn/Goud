@@ -85,6 +85,7 @@ export interface Booking {
     internal_notes?: string | null;
     birth_date?: string | null;
     midwife_id?: string | null;
+    is_twin?: boolean;
 
     // Relations
     services: {

@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       policyAnswers,
       addons,
       midwifeClientEmail,
+      isTwin,
     } = parsed.data;
 
     // Resolve created_by:
@@ -158,6 +159,7 @@ export async function POST(req: NextRequest) {
       policyAnswers,
       addons,
       createdBy: createdByUserId,
+      isTwin,
     });
 
     // --- Send Email Confirmation ---

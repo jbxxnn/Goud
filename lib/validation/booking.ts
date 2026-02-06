@@ -124,6 +124,7 @@ export const bookingSelectionSchema = z.object({
     .int('Prijs moet een geheel getal in centen zijn')
     .nonnegative('Prijs kan niet negatief zijn'),
   notes: optionalText('Notities', 500).optional(),
+  isTwin: z.boolean().optional(),
 });
 
 export type BookingSelectionInput = z.infer<typeof bookingSelectionSchema>;
