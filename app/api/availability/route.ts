@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const dateStr = searchParams.get('date'); // ISO YYYY-MM-DD
     const excludeBookingId = searchParams.get('excludeBookingId'); // For rescheduling - exclude this booking from conflicts
     const staffId = searchParams.get('staffId'); // Optional - filter by staff
+    const isTwin = searchParams.get('isTwin') === 'true';
 
     if (!serviceId || !locationId || !dateStr) {
       return NextResponse.json({ error: 'Missing serviceId, locationId, or date' }, { status: 400 });
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
         locationId,
         date: dateStr,
         staffId: staffId ?? null,
+        isTwin,
       });
     if (!skipCache && cacheKey) {
       const cached = daySlotsCache.get(cacheKey);
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
     // Fetch service rules (duration, buffer, lead_time) from services
     const { data: serviceData, error: serviceErr } = await supabase
       .from('services')
-      .select('id, duration, buffer_time, lead_time')
+      .select('id, duration, buffer_time, lead_time, allows_twins')
       .eq('id', serviceId)
       .maybeSingle();
     if (serviceErr || !serviceData) {
@@ -59,6 +61,18 @@ export async function GET(req: NextRequest) {
       bufferMinutes: Number(serviceData.buffer_time) || 0,
       leadTimeMinutes: Number(serviceData.lead_time) || 0,
     };
+
+    if (isTwin) {
+      if (serviceData.allows_twins) {
+        // Apply 2x multiplier for Twin duration.
+        // Note: Buffer time is NOT multiplied by default, as cleanup usually takes same time.
+        serviceRules.durationMinutes = serviceRules.durationMinutes * 2;
+      } else {
+        // If service doesn't allow twins but isTwin=true is passed, ignore it or error?
+        // For now, we ignore the twin flag to prevent errors, but logically this shouldn't happen from UI.
+        console.warn('[availability] isTwin requested for service that does not allow twins');
+      }
+    }
 
     // shift_services → collect shift_ids that allow this service
     const { data: shiftServices, error: ssErr } = await supabase
@@ -78,6 +92,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(payload, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
     }
 
+    // If Twin Request: Fetch qualified staff first
+    let qualifiedStaffIds: string[] | null = null;
+    if (isTwin) {
+      const { data: qualifiedStaff, error: qsErr } = await supabase
+        .from('staff_services')
+        .select('staff_id')
+        .eq('service_id', serviceId)
+        .eq('is_twin_qualified', true);
+
+      if (qsErr) {
+        console.error('[availability] qualified staff error', qsErr);
+        return NextResponse.json({ error: 'Failed to check staff qualifications' }, { status: 500 });
+      }
+      qualifiedStaffIds = (qualifiedStaff ?? []).map((s: any) => s.staff_id);
+
+      if (qualifiedStaffIds.length === 0) {
+        const payload = { slots: [] as any[] };
+        if (!skipCache && cacheKey) {
+          daySlotsCache.set(cacheKey, payload);
+        }
+        return NextResponse.json(payload, skipCache ? { headers: NO_CACHE_HEADERS } : { headers: availabilityCacheHeaders });
+      }
+    }
+
     // Shifts intersecting the day, at location, active, and included in allowedShiftIds
     let shiftsQuery = supabase
       .from('shifts')
@@ -88,9 +126,12 @@ export async function GET(req: NextRequest) {
       .lt('start_time', dayEnd.toISOString())
       .gt('end_time', dayStart.toISOString());
 
-    // Filter by staff if specified
+    // Filter by staff
     if (staffId) {
       shiftsQuery = shiftsQuery.eq('staff_id', staffId);
+    }
+    if (qualifiedStaffIds !== null) {
+      shiftsQuery = shiftsQuery.in('staff_id', qualifiedStaffIds);
     }
 
     const { data: shiftsData, error: shiftsErr } = await shiftsQuery;

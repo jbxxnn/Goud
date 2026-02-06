@@ -18,6 +18,7 @@ export interface Service {
   service_categories?: ServiceCategory; // Joined category data
   policy_fields: ServicePolicyField[]; // Dynamic policy fields
   staff_ids?: string[]; // IDs of staff qualified for this service
+  allows_twins: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -172,6 +173,7 @@ export interface ServiceFormData {
   category_id: string | null;
   policy_fields: ServicePolicyField[];
   staff_ids: string[];
+  allows_twins: boolean;
   is_active: boolean;
 }
 
@@ -225,14 +227,14 @@ export const formatDuration = (minutes: number): string => {
   if (minutes < 60) {
     return `${minutes}m`;
   }
-  
+
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  
+
   if (remainingMinutes === 0) {
     return `${hours}h`;
   }
-  
+
   return `${hours}h ${remainingMinutes}m`;
 };
 
@@ -253,7 +255,7 @@ export const getTotalServiceTime = (service: Service): number => {
 export const canBookService = (service: Service, bookingTime: Date): boolean => {
   const now = new Date();
   const hoursUntilBooking = (bookingTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-  
+
   return hoursUntilBooking >= service.lead_time;
 };
 
@@ -261,6 +263,6 @@ export const canBookService = (service: Service, bookingTime: Date): boolean => 
 export const canRescheduleService = (service: Service, appointmentTime: Date): boolean => {
   const now = new Date();
   const hoursUntilAppointment = (appointmentTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-  
+
   return hoursUntilAppointment >= service.reschedule_cutoff;
 };

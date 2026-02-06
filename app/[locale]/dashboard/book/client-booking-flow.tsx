@@ -37,13 +37,15 @@ export function ClientBookingFlow() {
         hasAddons,
         policyExtraPriceCents,
         selectedAddOnItems,
-        handleStartOver
+        handleStartOver,
+        isTwin
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
     const format = useFormatter();
 
     const otherSelections = [
+        ...(isTwin && selectedService ? [{ label: `${t('isTwinPregnancy')} (+${formatEuroCents(selectedService.price ?? 0)})`, price: 0 }] : []),
         ...(policyExtraPriceCents > 0 ? [{ label: t('policyExtras'), price: policyExtraPriceCents }] : []),
         ...selectedAddOnItems.map(a => ({ label: a.name, price: a.priceCents })),
     ];

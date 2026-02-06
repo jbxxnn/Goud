@@ -62,6 +62,7 @@ interface ServiceFormData {
   category_id: string | null;
   policy_fields: ServicePolicyField[];
   staff_ids: string[];
+  allows_twins: boolean;
   is_active: boolean;
 }
 
@@ -609,6 +610,12 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   const [staffDropdownOpen, setStaffDropdownOpen] = useState(false);
   const [hasCustomServiceCode, setHasCustomServiceCode] = useState(false);
 
+  // Wizard State
+  const [activeTab, setActiveTab] = useState('details');
+  const tabs = ['details', 'pricing', 'advanced', 'policy', 'staff', 'addons'];
+  const isFirstStep = activeTab === tabs[0];
+  const isLastStep = activeTab === tabs[tabs.length - 1];
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -622,7 +629,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
     reset,
     formState: { errors },
     watch,
-    setValue
+    setValue,
+    trigger
   } = useForm<ServiceFormData>({
     defaultValues: {
       name: '',
@@ -640,6 +648,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       category_id: null,
       policy_fields: [],
       staff_ids: [],
+      allows_twins: false,
       is_active: true,
     },
   });
@@ -673,6 +682,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         category_id: service.category_id,
         policy_fields: service.policy_fields || [],
         staff_ids: service.staff_ids || [],
+        allows_twins: service.allows_twins || false,
         is_active: service.is_active,
       });
       setHasCustomServiceCode(Boolean(service.serviceCode));
@@ -693,6 +703,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         category_id: null,
         policy_fields: [],
         staff_ids: [],
+        allows_twins: false,
         is_active: true,
       });
       setHasCustomServiceCode(false);
@@ -848,11 +859,49 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
   // Get selected staff
   const selectedStaff = staff.filter(s => watch('staff_ids').includes(s.id));
 
+  // Wizard Navigation
+  const handleNext = async () => {
+    let isValid = false;
+
+    // Validate current step fields
+    switch (activeTab) {
+      case 'details':
+        isValid = await trigger(['name', 'serviceCode', 'duration', 'category_id', 'instructions', 'description']);
+        break;
+      case 'pricing':
+        isValid = await trigger(['price', 'sale_price']);
+        break;
+      case 'advanced':
+        isValid = await trigger(['buffer_time', 'lead_time', 'scheduling_window', 'reschedule_cutoff', 'cancel_cutoff']);
+        break;
+      case 'policy':
+        // Policy fields don't have strict form validation in the main schema
+        isValid = true;
+        break;
+      default:
+        isValid = true;
+    }
+
+    if (isValid) {
+      const currentIndex = tabs.indexOf(activeTab);
+      if (currentIndex < tabs.length - 1) {
+        setActiveTab(tabs[currentIndex + 1]);
+      }
+    }
+  };
+
+  const handleBack = () => {
+    const currentIndex = tabs.indexOf(activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1]);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto">
-          <Tabs defaultValue="details" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-6" style={{ borderRadius: '0.5rem' }}>
               <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
                 {t('tabs.details')}
@@ -927,6 +976,22 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                   {errors.serviceCode && (
                     <p className="text-sm text-destructive mt-1">{errors.serviceCode.message}</p>
                   )}
+                </div>
+
+                <div className="md:col-span-2 mb-4 space-y-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="allows_twins" className="text-base">Allows Twins</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Enable twin pregnancy booking for this service (doubles duration/price)
+                      </p>
+                    </div>
+                    <Switch
+                      id="allows_twins"
+                      checked={watch('allows_twins')}
+                      onCheckedChange={(checked) => setValue('allows_twins', checked, { shouldDirty: true })}
+                    />
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -1476,46 +1541,77 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         {!isViewMode && (
           <div className="py-4 border-t bg-background mt-auto">
             <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="text-sm text-muted-foreground">
-                  {service
-                    ? t('status.update')
-                    : isFormComplete()
-                      ? t('status.ready')
-                      : t('status.incomplete')
-                  }
-                </div>
-                {!service && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span>{t('status.progress')}:</span>
-                    <div className="flex gap-1">
-                      {[
-                        { key: 'details', condition: watch('name') && watch('duration') },
-                        { key: 'pricing', condition: watch('price') !== undefined && watch('price') >= 0 },
-                        { key: 'advanced', condition: watch('buffer_time') !== undefined && watch('lead_time') !== undefined },
-                        { key: 'policy', condition: watch('policy_fields') && watch('policy_fields').length > 0 }
-                      ].map((tab) => (
-                        <div
-                          key={tab.key}
-                          className={`w-2 h-2 rounded-full ${tab.condition ? 'bg-primary' : 'bg-gray-300'}`}
-                          title={`${tab.key} ${tab.condition ? 'completed' : 'pending'}`}
-                        />
-                      ))}
-                    </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-muted-foreground">
+                    {/* Step Indicator */}
+                    <span className="font-medium text-foreground">
+                      Step {tabs.indexOf(activeTab) + 1} of {tabs.length}
+                    </span>
+                    <span className="mx-2 text-muted-foreground/30">|</span>
+                    {t(`tabs.${activeTab}`)}
                   </div>
-                )}
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  {tCommon('cancel')}
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || (!service && !isFormComplete())}
-                  className="min-w-[120px]"
-                >
-                  {isSubmitting ? tCommon('saving') : service ? t('buttons.update') : t('buttons.create')}
-                </Button>
+                  {!service && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground ml-4">
+                      <div className="flex gap-1">
+                        {tabs.map((tab) => {
+                          const isCompleted = tabs.indexOf(tab) < tabs.indexOf(activeTab);
+                          const isCurrent = tab === activeTab;
+                          return (
+                            <div
+                              key={tab}
+                              className={`w-2 h-2 rounded-full transition-colors ${isCurrent ? 'bg-primary' : isCompleted ? 'bg-primary/50' : 'bg-muted'
+                                }`}
+                              title={t(`tabs.${tab}`)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={onCancel}
+                    className="mr-2"
+                  >
+                    {tCommon('cancel')}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={isFirstStep}
+                    className={isFirstStep ? 'opacity-0 pointer-events-none' : ''}
+                  >
+                    Back
+                  </Button>
+
+                  {isLastStep ? (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="min-w-[120px]"
+                    >
+                      {isSubmitting ? tCommon('saving') : service ? t('buttons.update') : t('buttons.create')}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNext();
+                      }}
+                      className="min-w-[100px]"
+                    >
+                      Next
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

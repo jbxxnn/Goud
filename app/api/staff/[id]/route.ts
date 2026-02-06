@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Staff ID is required' },
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     const supabase = await createClient();
-    
+
     // Get staff data
     const { data: staff, error } = await supabase
       .from('staff')
@@ -40,14 +40,16 @@ export async function GET(
     // Get staff services
     const { data: staffServices } = await supabase
       .from('staff_services')
-      .select('service_id')
+      .select('service_id, is_twin_qualified')
       .eq('staff_id', id);
 
     // Add location_ids and service_ids to staff data
+    // We also include 'services' for the frontend to access detailed qualifications
     const staffWithRelations = {
       ...staff,
       location_ids: staffLocations?.map(sl => sl.location_id) || [],
-      service_ids: staffServices?.map(ss => ss.service_id) || []
+      service_ids: staffServices?.map(ss => ss.service_id) || [],
+      services: staffServices || []
     };
 
     return NextResponse.json({
@@ -79,7 +81,7 @@ export async function PUT(
     }
 
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -89,7 +91,7 @@ export async function PUT(
       );
     }
 
-    const { location_ids, service_ids, ...staffFields } = body;
+    const { location_ids, service_ids, services, ...staffFields } = body;
 
     // Update staff record
     const { data: staff, error: staffError } = await supabase
@@ -135,20 +137,37 @@ export async function PUT(
       }
     }
 
-    // Update service qualifications if provided
-    if (service_ids !== undefined) {
-      // Remove existing qualifications
+    // Update service qualifications
+    // Check 'services' first (detailed), then fall back to 'service_ids' (simple)
+    if (services !== undefined) {
+      // Expects array of { service_id, is_twin_qualified }
+      await supabase.from('staff_services').delete().eq('staff_id', id);
+
+      if (services.length > 0) {
+        const qualifications = services.map((s: any) => ({
+          staff_id: id,
+          service_id: s.service_id,
+          is_qualified: true,
+          is_twin_qualified: !!s.is_twin_qualified,
+          qualification_date: new Date().toISOString().split('T')[0]
+        }));
+        const { error: sErr } = await supabase.from('staff_services').insert(qualifications);
+        if (sErr) console.error('Error updating detailed services', sErr);
+      }
+
+    } else if (service_ids !== undefined) {
+      // Compatibility mode: simple array of IDs, twin qualified defaults to false
       await supabase
         .from('staff_services')
         .delete()
         .eq('staff_id', id);
 
-      // Add new qualifications
       if (service_ids.length > 0) {
         const serviceQualifications = service_ids.map((service_id: string) => ({
           staff_id: id,
           service_id,
           is_qualified: true,
+          is_twin_qualified: false, // Default to false if using legacy field
           qualification_date: new Date().toISOString().split('T')[0]
         }));
 
@@ -164,7 +183,7 @@ export async function PUT(
 
     // Invalidate cache when staff assignments are updated
     const invalidateCache = location_ids !== undefined || service_ids !== undefined;
-    
+
     return NextResponse.json({
       success: true,
       data: staff,
@@ -199,7 +218,7 @@ export async function DELETE(
     }
 
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

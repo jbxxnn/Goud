@@ -794,6 +794,8 @@
                     "required": "Dit veld is verplicht."
                 }
             },
+            "isTwinPregnancy": "Is dit een tweelingzwangerschap?",
+            "twinPregnancyDescription": "Dubbele tijd, dubbele pret!",
             "noOptions": "Geen opties beschikbaar.",
             "uploadSoon": "Uploaden via dit formulier wordt binnenkort ondersteund. Neem contact op met de kliniek als dit verplicht is."
         },

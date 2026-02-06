@@ -53,10 +53,12 @@ interface BookingContextProps {
     showDetailsForm: boolean;
     isFormValid: boolean;
     userRole: string | null;
+    isTwin: boolean;
 
     // Actions
     setStep: (step: 1 | 2 | 3 | 4) => void;
     setServiceId: (id: string) => void;
+    setIsTwin: (value: boolean) => void;
     setLocationId: (id: string) => void;
     setDate: (date: string) => void;
     setMonthCursor: (date: Date) => void;
@@ -258,6 +260,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [serviceId, setServiceId] = useState<string>('');
+    const [isTwin, setIsTwin] = useState<boolean>(false);
 
     // Step 2
     const [locations, setLocations] = useState<Location[]>([]);
@@ -329,8 +332,12 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
 
     const grandTotalCents = useMemo(() => {
         if (!selectedService) return 0;
-        return (selectedService.price ?? 0) + policyExtraPriceCents + addonExtraPriceCents;
-    }, [selectedService, policyExtraPriceCents, addonExtraPriceCents]);
+        let basePrice = selectedService.price ?? 0;
+        if (isTwin) {
+            basePrice *= 2; // Apply Twin Multiplier to Price
+        }
+        return basePrice + policyExtraPriceCents + addonExtraPriceCents;
+    }, [selectedService, policyExtraPriceCents, addonExtraPriceCents, isTwin]);
 
     const selectedAddOnItems = useMemo(() => {
         if (!selectedService) return [];
@@ -362,6 +369,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                 price: typeof service.price === 'number' ? Math.round(service.price * 100) : 0,
                 policyFields: normalizePolicyFields(service.policy_fields),
                 addons: normalizeAddons(service.addons),
+                allowsTwins: Boolean(service.allows_twins),
             }));
             setServices(normalizedServices);
             setLoadingServices(false);
@@ -434,6 +442,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             if (savedState.contactDefaults) setContactDefaults(savedState.contactDefaults);
             if (savedState.emailChecked !== undefined) setEmailChecked(savedState.emailChecked);
             if (savedState.isLoggedIn !== undefined) setIsLoggedIn(savedState.isLoggedIn);
+            if (savedState.isTwin !== undefined) setIsTwin(savedState.isTwin);
 
             // Simplified User Prefetch here if needed... (skipping for brevity as main login check handles most)
 
@@ -463,6 +472,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                     emailChecked,
                     isLoggedIn,
                     monthCursor: monthCursor.toISOString(),
+                    isTwin,
                 });
             } catch (error) {
                 console.error('Error saving booking state:', error);
@@ -471,13 +481,13 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             }
         }, 500);
         return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-    }, [isMounted, step, serviceId, locationId, date, selectedSlot, policyResponses, selectedAddons, clientEmail, contactDefaults, emailChecked, isLoggedIn, monthCursor]);
+    }, [isMounted, step, serviceId, locationId, date, selectedSlot, policyResponses, selectedAddons, clientEmail, contactDefaults, emailChecked, isLoggedIn, monthCursor, isTwin]);
 
     // Slots
     useEffect(() => {
         if (serviceId && locationId && date) {
             setLoadingSlots(true);
-            const params = new URLSearchParams({ serviceId, locationId, date });
+            const params = new URLSearchParams({ serviceId, locationId, date, isTwin: isTwin.toString() });
             fetch(`/api/availability?${params.toString()}`)
                 .then(r => r.json())
                 .then(d => {
@@ -494,14 +504,14 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         } else {
             setSlots([]);
         }
-    }, [serviceId, locationId, date]);
+    }, [serviceId, locationId, date, isTwin]);
 
     // Heatmap
     useEffect(() => {
         heatmapCacheRef.current = {};
         heatmapRangesRef.current = [];
         setHeatmap({});
-    }, [serviceId, locationId]);
+    }, [serviceId, locationId, isTwin]);
 
     useEffect(() => {
         if (!serviceId || !locationId) return;
@@ -545,6 +555,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                     locationId,
                     start: range.start,
                     end: range.end,
+                    isTwin: isTwin.toString(),
                 });
                 try {
                     const response = await fetch(`/api/availability/heatmap?${params.toString()}`);
@@ -566,13 +577,15 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         });
 
         return () => { cancelled = true; };
-    }, [serviceId, locationId, monthCursor]);
+    }, [serviceId, locationId, monthCursor, isTwin]);
 
     // Policy Reset
     useEffect(() => {
         if (previousServiceIdRef.current !== undefined && previousServiceIdRef.current !== serviceId) {
             setPolicyResponses({});
             setPolicyErrors({});
+            // Reset Twin toggle when changing service (as some services might not support it)
+            setIsTwin(false);
         }
         previousServiceIdRef.current = serviceId;
     }, [serviceId]);
@@ -903,6 +916,7 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                 contactDefaults, setContactDefaults, contactDefaultsVersion, setContactDefaultsVersion,
                 emailChecked, setEmailChecked,
                 isLoggedIn, setIsLoggedIn,
+                isTwin, setIsTwin,
                 finalizing, setFinalizing,
                 errorMsg, setErrorMsg,
                 policyExtraPriceCents, addonExtraPriceCents, grandTotalCents,

@@ -22,6 +22,7 @@ export type Service = {
     price: number;
     policyFields: PolicyField[];
     addons: Addon[];
+    allowsTwins: boolean;
 };
 
 export type Location = { id: string; name: string };
@@ -42,6 +43,7 @@ export type ServiceApiResponse = {
     price: number;
     policy_fields?: RawPolicyField[] | null;
     addons?: ServiceAddon[] | null;
+    allows_twins?: boolean | null;
 };
 
 export type DateRange = { start: string; end: string };
@@ -60,6 +62,7 @@ export type BookingState = {
     isLoggedIn: boolean;
     monthCursor: string; // ISO date string
     timestamp: number; // to detect stale data
+    isTwin: boolean;
 };
 
 export type BookingStatus = 'confirmed' | 'pending' | 'cancelled' | 'ongoing' | 'completed';

@@ -795,6 +795,8 @@
                 }
             },
             "noOptions": "No options available.",
+            "isTwinPregnancy": "Is this a twin pregnancy?",
+            "twinPregnancyDescription": "Double the time, double the fun!",
             "uploadSoon": "Uploading via this form will be supported soon. Contact the clinic if this is mandatory."
         },
         "confirmation": {

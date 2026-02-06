@@ -26,7 +26,9 @@ export function StepService() {
         clearPolicyError,
         setPolicyErrors,
         setStep,
-        grandTotalCents
+        grandTotalCents,
+        isTwin,
+        setIsTwin
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -274,6 +276,26 @@ export function StepService() {
                     </Select>
                 </div>
             </div>
+            {selectedService?.allowsTwins && (
+                <div className="space-y-4 p-4 bg-white animate-in fade-in slide-in-from-top-4 duration-500 ease-in-out" style={{ borderRadius: '0.2rem' }}>
+                    <div className="flex items-start gap-3">
+                        <Checkbox
+                            id="twin-pregnancy"
+                            checked={isTwin}
+                            onCheckedChange={(checked) => setIsTwin(checked === true)}
+                            className="mt-1 rounded-full border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary"
+                        />
+                        <div className="space-y-1">
+                            <Label htmlFor="twin-pregnancy" className="text-sm font-bold text-gray-900 cursor-pointer">
+                                {t('isTwinPregnancy')}
+                            </Label>
+                            <p className="text-xs text-gray-500">
+                                {t('twinPregnancyDescription')} (+100% price/duration)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             {selectedService?.policyFields.length ? (
                 <div className="space-y-4 p-4 bg-white animate-in fade-in slide-in-from-top-4 duration-500 ease-in-out" style={{ borderRadius: '0.2rem' }}>
                     <h3 className="text-sm font-bold tracking-wide text-gray-600">{t('servicePolicy')}</h3>

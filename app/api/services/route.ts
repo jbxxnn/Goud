@@ -62,7 +62,7 @@ const mapServiceRecord = (
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -134,12 +134,12 @@ export async function GET(request: NextRequest) {
         .select('id, service_id, name, description, price, is_required, is_active')
         .eq('service_id', service.id)
         .eq('is_active', true);
-      
+
       if (addonsError) {
         console.error('Error fetching addons for service', service.id, addonsError);
       }
 
-      return mapServiceRecord(service, { staff_ids, addons: addons || [] });
+      return mapServiceRecord(service, { staff_ids, addons: addons || [], allows_twins: service.allows_twins });
     }));
 
     return NextResponse.json({
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateServiceRequest = await request.json();
-    
+
     // Validate required fields
     if (!body.name) {
       return NextResponse.json(
@@ -208,6 +208,7 @@ export async function POST(request: NextRequest) {
         scheduling_window: body.scheduling_window || 12,
         category_id: body.category_id || null,
         is_active: body.is_active !== undefined ? body.is_active : true,
+        allows_twins: body.allows_twins !== undefined ? body.allows_twins : false,
       })
       .select()
       .single();

@@ -6,7 +6,7 @@ type CacheEntry<T> = {
 class TTLCache<T> {
   private map = new Map<string, CacheEntry<T>>();
 
-  constructor(private readonly ttlMs: number, private readonly maxSize: number) {}
+  constructor(private readonly ttlMs: number, private readonly maxSize: number) { }
 
   get(key: string): T | undefined {
     const entry = this.map.get(key);
@@ -51,15 +51,17 @@ type DayCacheKeyParams = {
   locationId: string;
   date: string; // YYYY-MM-DD
   staffId?: string | null;
+  isTwin?: boolean;
 };
 
 export function makeDaySlotsCacheKey(params: DayCacheKeyParams): string {
-  const { serviceId, locationId, date, staffId = null } = params;
+  const { serviceId, locationId, date, staffId = null, isTwin = false } = params;
   return JSON.stringify({
     serviceId,
     locationId,
     date,
     staffId,
+    isTwin,
   });
 }
 

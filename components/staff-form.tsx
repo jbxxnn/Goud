@@ -36,6 +36,7 @@ interface StaffFormData {
   is_active: boolean;
   location_ids: string[];
   service_ids: string[];
+  services: { service_id: string; is_twin_qualified: boolean }[];
 }
 
 export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
@@ -67,9 +68,9 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
       hire_date: '',
       role: 'technician',
       bio: '',
-      is_active: true,
       location_ids: [],
-      service_ids: []
+      service_ids: [],
+      services: []
     },
   });
 
@@ -94,7 +95,8 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               bio: data.data.bio || '',
               is_active: data.data.is_active,
               location_ids: data.data.location_ids || [],
-              service_ids: data.data.service_ids || []
+              service_ids: data.data.service_ids || [],
+              services: data.data.services || []
             });
           }
         } catch (error) {
@@ -111,7 +113,8 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
             bio: staff.bio || '',
             is_active: staff.is_active,
             location_ids: [],
-            service_ids: []
+            service_ids: [],
+            services: []
           });
         }
       };
@@ -129,7 +132,8 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
         bio: '',
         is_active: true,
         location_ids: [],
-        service_ids: []
+        service_ids: [],
+        services: []
       });
     }
   }, [staff, reset]);
@@ -232,16 +236,35 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
   };
 
   const toggleService = (serviceId: string) => {
-    const current = watch('service_ids');
-    if (current.includes(serviceId)) {
-      setValue('service_ids', current.filter(id => id !== serviceId));
+    const currentIds = watch('service_ids');
+    const currentServices = watch('services') || [];
+
+    if (currentIds.includes(serviceId)) {
+      setValue('service_ids', currentIds.filter(id => id !== serviceId));
+      setValue('services', currentServices.filter(s => s.service_id !== serviceId));
     } else {
-      setValue('service_ids', [...current, serviceId]);
+      setValue('service_ids', [...currentIds, serviceId]);
+      setValue('services', [...currentServices, { service_id: serviceId, is_twin_qualified: false }]);
     }
   };
 
   const removeService = (serviceId: string) => {
     setValue('service_ids', watch('service_ids').filter(id => id !== serviceId));
+    setValue('services', (watch('services') || []).filter(s => s.service_id !== serviceId));
+  };
+
+  const toggleTwinQualification = (serviceId: string) => {
+    const currentServices = watch('services') || [];
+    const index = currentServices.findIndex(s => s.service_id === serviceId);
+
+    if (index >= 0) {
+      const newServices = [...currentServices];
+      newServices[index] = {
+        ...newServices[index],
+        is_twin_qualified: !newServices[index].is_twin_qualified
+      };
+      setValue('services', newServices);
+    }
   };
 
   // Get selected items
@@ -529,20 +552,45 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               {/* Selected Services as Badges */}
               {selectedServices.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedServices.map((service) => (
-                    <Badge key={service.id} variant="secondary" className="gap-1">
-                      <span>{service.name}</span>
-                      <span className="text-xs text-muted-foreground">({service.duration}m)</span>
-                      <button
-                        type="button"
-                        onClick={() => removeService(service.id)}
-                        className="ml-1 rounded-full hover:bg-muted-foreground/20"
-                        aria-label={`Remove ${service.name}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                  {selectedServices.map((service) => {
+                    const qualification = (watch('services') || []).find(s => s.service_id === service.id);
+                    const isTwinQualified = qualification?.is_twin_qualified || false;
+
+                    return (
+                      <Badge key={service.id} variant="secondary" className="gap-1 pr-1 items-center">
+                        <div className="flex flex-col gap-1 py-1">
+                          <div className="flex items-center gap-1">
+                            <span>{service.name}</span>
+                            <span className="text-xs text-muted-foreground">({service.duration}m)</span>
+                          </div>
+
+                          {service.allows_twins && (
+                            <div
+                              className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 rounded px-1 -ml-1 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTwinQualification(service.id);
+                              }}
+                            >
+                              <div className={`w-3 h-3 rounded border flex items-center justify-center ${isTwinQualified ? 'bg-primary border-primary' : 'border-muted-foreground'}`}>
+                                {isTwinQualified && <ChevronDown className="h-2 w-2 text-primary-foreground" />}
+                              </div>
+                              <span className="text-[10px] text-muted-foreground">Twin Qualified</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeService(service.id)}
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20 self-start mt-1"
+                          aria-label={`Remove ${service.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
                 </div>
               )}
             </div>
