@@ -86,6 +86,7 @@ export interface CreateServiceRequest {
   category_id?: string | null;
   policy_fields?: ServicePolicyField[];
   staff_ids?: string[];
+  allows_twins?: boolean;
   is_active?: boolean;
 }
 
@@ -105,6 +106,7 @@ export interface UpdateServiceRequest {
   category_id?: string | null;
   policy_fields?: ServicePolicyField[];
   staff_ids?: string[];
+  allows_twins?: boolean;
   is_active?: boolean;
 }
 
