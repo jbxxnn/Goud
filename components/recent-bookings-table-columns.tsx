@@ -34,7 +34,14 @@ export const getRecentBookingsColumns = (t: (key: string) => string, tRoot: (key
       const booking = row.original;
       return (
         <div className="flex flex-col">
-          <span className="font-medium text-foreground">{booking.serviceName}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">{booking.serviceName}</span>
+            {booking.isRepeat && (
+              <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/20 h-4 text-[10px] px-1.5 uppercase font-bold tracking-wider">
+                Repeat
+              </Badge>
+            )}
+          </div>
           {booking.serviceCode ? (
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
               {booking.serviceCode}

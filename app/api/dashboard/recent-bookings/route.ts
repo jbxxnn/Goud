@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
           id,
           start_time,
           status,
+          parent_booking_id,
+          continuation_id,
           users:users!client_id (
             first_name,
             last_name,
@@ -67,6 +69,8 @@ export async function GET(req: NextRequest) {
           locationName: location?.name ?? null,
           startTime: booking.start_time,
           status: booking.status,
+          isRepeat: !!booking.parent_booking_id,
+          parentBookingId: booking.parent_booking_id,
         };
       }) ?? [];
 

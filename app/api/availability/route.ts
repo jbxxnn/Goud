@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const excludeBookingId = searchParams.get('excludeBookingId'); // For rescheduling - exclude this booking from conflicts
     const staffId = searchParams.get('staffId'); // Optional - filter by staff
     const isTwin = searchParams.get('isTwin') === 'true';
+    const continuationToken = searchParams.get('continuationToken');
 
     if (!serviceId || !locationId || !dateStr) {
       return NextResponse.json({ error: 'Missing serviceId, locationId, or date' }, { status: 400 });
@@ -61,6 +62,20 @@ export async function GET(req: NextRequest) {
       bufferMinutes: Number(serviceData.buffer_time) || 0,
       leadTimeMinutes: Number(serviceData.lead_time) || 0,
     };
+
+    if (continuationToken) {
+      const { data: contData, error: contErr } = await supabase
+        .from('booking_continuations')
+        .select('*, repeat_type:service_repeat_types(duration_minutes, service_id)')
+        .eq('token', continuationToken)
+        .single();
+
+      if (!contErr && contData?.repeat_type) {
+        if (contData.repeat_type.service_id === serviceId) {
+          serviceRules.durationMinutes = contData.repeat_type.duration_minutes;
+        }
+      }
+    }
 
     if (isTwin) {
       if (serviceData.allows_twins) {

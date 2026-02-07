@@ -125,6 +125,7 @@ export const bookingSelectionSchema = z.object({
     .nonnegative('Prijs kan niet negatief zijn'),
   notes: optionalText('Notities', 500).optional(),
   isTwin: z.boolean().optional(),
+  continuationToken: z.string().optional(),
 });
 
 export type BookingSelectionInput = z.infer<typeof bookingSelectionSchema>;

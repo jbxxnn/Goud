@@ -20,6 +20,7 @@ export type Service = {
     id: string;
     name: string;
     price: number;
+    duration?: number;
     policyFields: PolicyField[];
     addons: Addon[];
     allowsTwins: boolean;
@@ -86,6 +87,8 @@ export interface Booking {
     birth_date?: string | null;
     midwife_id?: string | null;
     is_twin?: boolean;
+    parent_booking_id?: string | null;
+    continuation_id?: string | null;
 
     // Relations
     services: {
@@ -133,6 +136,8 @@ export interface RecentBookingSummary {
     locationName?: string;
     startTime: string;
     status: BookingStatus | string;
+    isRepeat?: boolean;
+    parentBookingId?: string | null;
 }
 
 export const BOOKING_STATE_KEY = 'goudecho_booking_state';

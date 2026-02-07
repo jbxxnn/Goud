@@ -21,6 +21,7 @@ export function StepReview() {
         setStep, policyResponses, selectedAddons, serviceId, locationId, userRole,
         setEmailChecked, setUserRole, setContactDefaults, setContactDefaultsVersion,
         isTwin,
+        continuationToken,
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -147,6 +148,7 @@ export function StepReview() {
                     addons: addOnPayload.length > 0 ? addOnPayload : undefined,
                     sessionToken: sessionStorage.getItem('booking_session_token') || undefined,
                     isTwin,
+                    continuationToken,
                 }),
 
             });

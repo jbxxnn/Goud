@@ -54,6 +54,8 @@ interface BookingContextProps {
     isFormValid: boolean;
     userRole: string | null;
     isTwin: boolean;
+    continuationToken?: string;
+
 
     // Actions
     setStep: (step: 1 | 2 | 3 | 4) => void;
@@ -251,7 +253,7 @@ function computeMissingRanges(existing: DateRange[], target: DateRange): DateRan
     return missing;
 }
 
-export function BookingProvider({ children }: { children: React.ReactNode }) {
+export function BookingProvider({ children, continuationToken }: { children: React.ReactNode; continuationToken?: string }) {
     const [isMounted, setIsMounted] = useState(false);
     const t = useTranslations('Booking.flow');
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -261,6 +263,8 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     const [loadingServices, setLoadingServices] = useState(true);
     const [serviceId, setServiceId] = useState<string>('');
     const [isTwin, setIsTwin] = useState<boolean>(false);
+    const [repeatServiceLoaded, setRepeatServiceLoaded] = useState(false);
+
 
     // Step 2
     const [locations, setLocations] = useState<Location[]>([]);
@@ -353,14 +357,87 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
     // Initial Load
     useEffect(() => {
         const load = async () => {
+            // Fetch locations first as they are needed for both flows
+            try {
+                const locRes = await fetch('/api/locations-simple');
+                const locJson = await locRes.json();
+                const locData = Array.isArray(locJson?.data) ? locJson.data : [];
+                setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
+                setLoadingLocations(false);
+            } catch (e) {
+                console.error('Failed to load locations', e);
+                setLoadingLocations(false);
+            }
+
+            if (continuationToken) {
+                // REPEAT FLOW
+                try {
+                    const res = await fetch(`/api/continuations?token=${continuationToken}`);
+                    const json = await res.json();
+                    if (!json.success) {
+                        setErrorMsg(json.error || 'Invalid token');
+                        setLoadingServices(false);
+                        return;
+                    }
+
+                    const { repeatType, parentBooking } = json.data;
+                    const serviceInfo = parentBooking.service;
+
+                    // Let's fetch the full service details for the parent service
+                    const svcRes = await fetch(`/api/services/${serviceInfo.id}`);
+                    const svcJson = await svcRes.json();
+                    const fullService = svcJson.data || svcJson.service;
+
+                    const repeatService: Service = {
+                        id: serviceInfo.id,
+                        name: `${fullService.name} (${repeatType.label})`, // Customize name
+                        price: repeatType.price_eur_cents,
+                        duration: repeatType.duration_minutes,
+                        policyFields: normalizePolicyFields(fullService.policy_fields),
+                        addons: normalizeAddons(fullService.addons),
+                        allowsTwins: false,
+                    };
+
+                    setServices([repeatService]);
+                    setServiceId(repeatService.id);
+                    if (parentBooking.location_id) {
+                        setLocationId(parentBooking.location_id);
+                    }
+                    setStep(2);
+                    setRepeatServiceLoaded(true);
+
+                    // Pre-fill user details from parent booking
+                    if (parentBooking.users) {
+                        const u = parentBooking.users;
+                        setContactDefaults({
+                            firstName: u.first_name || '',
+                            lastName: u.last_name || '',
+                            phone: u.phone || undefined,
+                            notes: undefined,
+                        });
+                        setClientEmail(u.email);
+                        setIsLoggedIn(false);
+
+                        if (parentBooking.is_twin) {
+                            setIsTwin(true);
+                        }
+                    }
+
+                } catch (e) {
+                    console.error('Error loading repeat details', e);
+                    setErrorMsg('Failed to load repeat details');
+                } finally {
+                    setLoadingServices(false);
+                }
+                return;
+            }
+
+            // NORMAL FLOW
             const { createClient } = await import('@/lib/supabase/client');
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
 
-            const [svcRes, locRes] = await Promise.all([
-                fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] })),
-                fetch('/api/locations-simple').then(r => r.json()).catch(() => ({ data: [] })),
-            ]);
+            const svcRes = await fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] }));
 
             const svcData = Array.isArray(svcRes?.data) ? svcRes.data : [];
             const normalizedServices: Service[] = (svcData as ServiceApiResponse[]).map((service) => ({
@@ -373,10 +450,6 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             }));
             setServices(normalizedServices);
             setLoadingServices(false);
-
-            const locData = Array.isArray(locRes?.data) ? locRes.data : [];
-            setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
-            setLoadingLocations(false);
 
             // Auto-login check
             if (session?.user?.email) {
@@ -444,6 +517,14 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
             if (savedState.isLoggedIn !== undefined) setIsLoggedIn(savedState.isLoggedIn);
             if (savedState.isTwin !== undefined) setIsTwin(savedState.isTwin);
 
+            // If in repeat mode, do NOT restore serviceId or step from local storage to avoid conflicts
+            if (continuationToken) {
+                // Ignore saved service/step
+                // But we might want to restore inputs if same token?
+                // For safety, let's ignore.
+                return;
+            }
+
             // Simplified User Prefetch here if needed... (skipping for brevity as main login check handles most)
 
             setTimeout(() => { isRestoringRef.current = false; }, 100);
@@ -473,6 +554,9 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                     isLoggedIn,
                     monthCursor: monthCursor.toISOString(),
                     isTwin,
+                    // Don't save state if repeat mode? 
+                    // Or save with token?
+                    // Safe to save, but load logic handles ignoring it.
                 });
             } catch (error) {
                 console.error('Error saving booking state:', error);
@@ -488,6 +572,8 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
         if (serviceId && locationId && date) {
             setLoadingSlots(true);
             const params = new URLSearchParams({ serviceId, locationId, date, isTwin: isTwin.toString() });
+            if (continuationToken) params.append('continuationToken', continuationToken);
+
             fetch(`/api/availability?${params.toString()}`)
                 .then(r => r.json())
                 .then(d => {
@@ -557,6 +643,8 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
                     end: range.end,
                     isTwin: isTwin.toString(),
                 });
+                if (continuationToken) params.append('continuationToken', continuationToken);
+
                 try {
                     const response = await fetch(`/api/availability/heatmap?${params.toString()}`);
                     const payload = await response.json();

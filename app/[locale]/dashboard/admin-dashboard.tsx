@@ -771,9 +771,16 @@ export default function DashboardClient() {
                             {formatTime(booking.start_time)}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold">
-                              {booking.services?.name || t('recentBookings.unknownService')}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold">
+                                {booking.services?.name || t('recentBookings.unknownService')}
+                              </p>
+                              {booking.parent_booking_id && (
+                                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/20 h-4 text-[9px] px-1 uppercase font-bold tracking-wider">
+                                  Repeat
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               {formatClientName(booking)}
                             </p>

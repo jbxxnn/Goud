@@ -516,7 +516,8 @@
                 "advanced": "Geavanceerd",
                 "policy": "Beleid",
                 "staff": "Personeel",
-                "addons": "Extra's"
+                "addons": "Extra's",
+                "repeats": "Herhalingen"
             },
             "placeholders": {
                 "name": "bijv. 2D Echo Basis",
@@ -528,6 +529,35 @@
                 "selectStaff": "Selecteer personeelsleden...",
                 "searchStaff": "Zoek personeel...",
                 "fieldType": "Selecteer veldtype om toe te voegen"
+            },
+            "repeats": {
+                "title": "Herhaalopties",
+                "subtitle": "Configureer beschikbare herhaalafspraken voor deze dienst.",
+                "add": "Herhaling toevoegen",
+                "edit": "Herhaling bewerken",
+                "new": "Nieuwe herhaling",
+                "label": "Label",
+                "labelPlaceholder": "bijv. \"15 min check-up\"",
+                "duration": "Duur (minuten)",
+                "price": "Prijs (€)",
+                "active": "Actief",
+                "inactive": "Inactief",
+                "free": "Gratis",
+                "update": "Bijwerken",
+                "create": "Aanmaken",
+                "loading": "Laden...",
+                "listEmpty": "Nog geen herhaalopties geconfigureerd.",
+                "saveServiceFirst": "Sla de dienst eerst op om herhalingen te beheren.",
+                "labelRequired": "Label is verplicht",
+                "updateSuccess": "Herhaling bijgewerkt",
+                "updateError": "Bijwerken mislukt",
+                "createSuccess": "Herhaling aangemaakt",
+                "createError": "Aanmaken mislukt",
+                "saveError": "Fout bij opslaan herhaling",
+                "deleteConfirm": "Weet u zeker dat u deze herhaling wilt verwijderen?",
+                "deleteSuccess": "Succesvol verwijderd",
+                "deleteError": "Verwijderen mislukt",
+                "loadError": "Ophalen van herhalingen mislukt"
             },
             "addons": {
                 "title": "Dienst extra's",
@@ -895,6 +925,25 @@
             "view": "Bekijk details",
             "cancel": "Annuleren",
             "delete": "Verwijderen"
+        },
+        "repeat": {
+            "button": "Plan Herhaling",
+            "title": "Plan Herhaling",
+            "description": "Genereer een beveiligde link voor de cliënt om een vervolgafspraak te boeken voor deze screening.",
+            "selectDuration": "Selecteer Herhaalduur",
+            "free": "Gratis",
+            "generating": "Genereren...",
+            "generateButton": "Boekingslink genereren",
+            "linkReady": "Link gereed",
+            "linkExpiry": "Deel deze link met de cliënt. Deze verloopt na 30 dagen.",
+            "generateAnother": "Nog een genereren",
+            "done": "Klaar",
+            "toasts": {
+                "generated": "Herhaal-link gegenereerd",
+                "generateError": "Link genereren mislukt",
+                "unexpectedError": "Fout bij genereren link",
+                "copied": "Link gekopieerd naar klembord"
+            }
         }
     },
     "BookingStatus": {

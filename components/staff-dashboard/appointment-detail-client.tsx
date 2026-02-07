@@ -17,16 +17,17 @@ import {
     Tick01Icon,
     AlertCircleIcon,
     ImageUploadIcon,
-    ArrowLeft01Icon
+    ArrowLeft01Icon,
+    Link01Icon
 } from '@hugeicons/core-free-icons';
 import { format, differenceInWeeks, differenceInDays, addDays, subDays } from 'date-fns';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MediaSection } from './media-section';
-import { Link } from 'lucide-react';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { useQueryClient } from '@tanstack/react-query';
+import { RepeatPrescriber } from '@/components/repeat-prescriber';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -106,6 +107,17 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             }>
                                 {booking.status}
                             </Badge>
+                            {booking.parent_booking_id && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 text-[10px] px-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                                    onClick={() => router.push(`/dashboard/appointments/${booking.parent_booking_id}`)}
+                                >
+                                    <HugeiconsIcon icon={Link01Icon} size={12} className="mr-1" />
+                                    Linked to Parent Screening
+                                </Button>
+                            )}
                         </h1>
                         <div className="text-muted-foreground flex items-center gap-4 mt-1 text-sm">
                             <span className="flex items-center gap-1">
@@ -124,30 +136,35 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             </span>
                         </div>
                     </div>
-                    {booking.status === 'confirmed' && (
-                        <Button
-                            disabled={isCompleting}
-                            onClick={async () => {
-                                try {
-                                    setIsCompleting(true);
-                                    const res = await fetch(`/api/bookings/${booking.id}`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ status: 'completed' })
-                                    });
-                                    if (!res.ok) throw new Error('Failed to complete');
-                                    toast.success('Appointment marked as completed');
-                                    queryClient.invalidateQueries({ queryKey: ['bookings'] });
-                                    router.refresh();
-                                } catch (e) {
-                                    toast.error('Failed to complete appointment');
-                                    setIsCompleting(false);
-                                }
-                            }}
-                        >
-                            {isCompleting ? 'Completing...' : 'Complete Appointment'}
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {(booking.status === 'confirmed' || booking.status === 'completed') && (
+                            <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
+                        )}
+                        {booking.status === 'confirmed' && (
+                            <Button
+                                disabled={isCompleting}
+                                onClick={async () => {
+                                    try {
+                                        setIsCompleting(true);
+                                        const res = await fetch(`/api/bookings/${booking.id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ status: 'completed' })
+                                        });
+                                        if (!res.ok) throw new Error('Failed to complete');
+                                        toast.success('Appointment marked as completed');
+                                        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                                        router.refresh();
+                                    } catch (e) {
+                                        toast.error('Failed to complete appointment');
+                                        setIsCompleting(false);
+                                    }
+                                }}
+                            >
+                                {isCompleting ? 'Completing...' : 'Complete Appointment'}
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </PageItem>
 

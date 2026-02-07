@@ -38,6 +38,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
 import { ServiceAddon } from '@/lib/types/service';
 import { toast } from 'sonner';
+import { ServiceRepeatManager } from './service-repeat-manager';
 
 interface ServiceFormProps {
   service?: Service;
@@ -612,7 +613,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
 
   // Wizard State
   const [activeTab, setActiveTab] = useState('details');
-  const tabs = ['details', 'pricing', 'advanced', 'policy', 'staff', 'addons'];
+  const tabs = ['details', 'pricing', 'advanced', 'policy', 'staff', 'repeats', 'addons'];
   const isFirstStep = activeTab === tabs[0];
   const isLastStep = activeTab === tabs[tabs.length - 1];
 
@@ -902,7 +903,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6" style={{ borderRadius: '0.5rem' }}>
+            <TabsList className="grid w-full grid-cols-7" style={{ borderRadius: '0.5rem' }}>
               <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
                 {t('tabs.details')}
                 {watch('name') && watch('duration') && (
@@ -932,6 +933,9 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                 {watch('staff_ids') && watch('staff_ids').length > 0 && (
                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full" />
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="repeats" style={{ borderRadius: '0.5rem' }} className="relative">
+                Herhalingen
               </TabsTrigger>
               <TabsTrigger value="addons" style={{ borderRadius: '0.5rem' }} className="relative">
                 {t('tabs.addons')}
@@ -1530,6 +1534,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </div>
             </TabsContent>
 
+            {/* Repeats Tab */}
+            <TabsContent value="repeats" className="mt-12">
+              <ServiceRepeatManager serviceId={service?.id} />
+            </TabsContent>
+
             {/* Add-ons Tab */}
             <TabsContent value="addons" className="space-y-4 min-h-0 mt-12">
               <AddonsManager serviceId={service?.id} />
@@ -1538,94 +1547,98 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         </div>
 
         {/* Form Actions - Fixed at Bottom */}
-        {!isViewMode && (
-          <div className="py-4 border-t bg-background mt-auto">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-muted-foreground">
-                    {/* Step Indicator */}
-                    <span className="font-medium text-foreground">
-                      Step {tabs.indexOf(activeTab) + 1} of {tabs.length}
-                    </span>
-                    <span className="mx-2 text-muted-foreground/30">|</span>
-                    {t(`tabs.${activeTab}`)}
-                  </div>
-                  {!service && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground ml-4">
-                      <div className="flex gap-1">
-                        {tabs.map((tab) => {
-                          const isCompleted = tabs.indexOf(tab) < tabs.indexOf(activeTab);
-                          const isCurrent = tab === activeTab;
-                          return (
-                            <div
-                              key={tab}
-                              className={`w-2 h-2 rounded-full transition-colors ${isCurrent ? 'bg-primary' : isCompleted ? 'bg-primary/50' : 'bg-muted'
-                                }`}
-                              title={t(`tabs.${tab}`)}
-                            />
-                          );
-                        })}
-                      </div>
+        {
+          !isViewMode && (
+            <div className="py-4 border-t bg-background mt-auto">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-muted-foreground">
+                      {/* Step Indicator */}
+                      <span className="font-medium text-foreground">
+                        Step {tabs.indexOf(activeTab) + 1} of {tabs.length}
+                      </span>
+                      <span className="mx-2 text-muted-foreground/30">|</span>
+                      {t(`tabs.${activeTab}`)}
                     </div>
-                  )}
-                </div>
+                    {!service && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground ml-4">
+                        <div className="flex gap-1">
+                          {tabs.map((tab) => {
+                            const isCompleted = tabs.indexOf(tab) < tabs.indexOf(activeTab);
+                            const isCurrent = tab === activeTab;
+                            return (
+                              <div
+                                key={tab}
+                                className={`w-2 h-2 rounded-full transition-colors ${isCurrent ? 'bg-primary' : isCompleted ? 'bg-primary/50' : 'bg-muted'
+                                  }`}
+                                title={t(`tabs.${tab}`)}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={onCancel}
-                    className="mr-2"
-                  >
-                    {tCommon('cancel')}
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleBack}
-                    disabled={isFirstStep}
-                    className={isFirstStep ? 'opacity-0 pointer-events-none' : ''}
-                  >
-                    Back
-                  </Button>
-
-                  {isLastStep ? (
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="min-w-[120px]"
-                    >
-                      {isSubmitting ? tCommon('saving') : service ? t('buttons.update') : t('buttons.create')}
-                    </Button>
-                  ) : (
+                  <div className="flex justify-end gap-2">
                     <Button
                       type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleNext();
-                      }}
-                      className="min-w-[100px]"
+                      variant="ghost"
+                      onClick={onCancel}
+                      className="mr-2"
                     >
-                      Next
+                      {tCommon('cancel')}
                     </Button>
-                  )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleBack}
+                      disabled={isFirstStep}
+                      className={isFirstStep ? 'opacity-0 pointer-events-none' : ''}
+                    >
+                      Back
+                    </Button>
+
+                    {isLastStep ? (
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="min-w-[120px]"
+                      >
+                        {isSubmitting ? tCommon('saving') : service ? t('buttons.update') : t('buttons.create')}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleNext();
+                        }}
+                        className="min-w-[100px]"
+                      >
+                        Next
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* View Mode Actions - Fixed at Bottom */}
-        {isViewMode && (
-          <div className="py-4 border-t bg-background mt-auto flex justify-end">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              {tCommon('close')}
-            </Button>
-          </div>
-        )}
-      </form>
-    </div>
+        {
+          isViewMode && (
+            <div className="py-4 border-t bg-background mt-auto flex justify-end">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                {tCommon('close')}
+              </Button>
+            </div>
+          )
+        }
+      </form >
+    </div >
   );
 }

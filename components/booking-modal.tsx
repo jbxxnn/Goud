@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { RepeatPrescriber } from './repeat-prescriber';
 
 interface PolicyField {
   id: string;
@@ -569,7 +570,8 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
             {((onReschedule && ['pending', 'confirmed'].includes(booking.status)) ||
               (onCancel && !['cancelled', 'completed'].includes(booking.status)) ||
               (onComplete && booking.status === 'ongoing') ||
-              (onDelete && ['cancelled', 'completed'].includes(booking.status))) ? (
+              (onDelete && ['cancelled', 'completed'].includes(booking.status)) ||
+              (booking.status !== 'cancelled' && booking.service_id)) ? (
               <div className="px-6 py-4 border-t flex justify-end gap-3">
                 {onCancel && !['cancelled', 'completed'].includes(booking.status) && (
                   <Button
@@ -616,6 +618,9 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   >
                     Delete Booking
                   </Button>
+                )}
+                {booking.service_id && !['cancelled'].includes(booking.status) && (
+                  <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                 )}
               </div>
             ) : null}

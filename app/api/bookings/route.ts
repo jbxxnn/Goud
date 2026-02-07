@@ -49,7 +49,45 @@ export async function POST(req: NextRequest) {
       addons,
       midwifeClientEmail,
       isTwin,
+      continuationToken,
     } = parsed.data;
+
+    // Mutable variables for repeat logic override
+    let finalServiceId = serviceId;
+    let finalPrice = priceEurCents;
+    let finalEndTime = endTime;
+    let parentBookingId: string | undefined;
+    let continuationId: string | undefined;
+
+    if (continuationToken) {
+      const supabase = getServiceSupabase();
+      const { data: continuation, error: contError } = await supabase
+        .from('booking_continuations')
+        .select('*, repeat_type:service_repeat_types(*)')
+        .eq('token', continuationToken)
+        .single();
+
+      if (contError || !continuation) {
+        return NextResponse.json({ error: 'Invalid or expired continuation token' }, { status: 400 });
+      }
+      if (new Date(continuation.expires_at) < new Date()) {
+        return NextResponse.json({ error: 'Continuation token expired' }, { status: 400 });
+      }
+      if (continuation.claimed_booking_id) {
+        return NextResponse.json({ error: 'Continuation token already used' }, { status: 400 });
+      }
+
+      // Override booking details
+      parentBookingId = continuation.parent_booking_id;
+      continuationId = continuation.id;
+      if (continuation.repeat_type) {
+        finalServiceId = continuation.repeat_type.service_id;
+        finalPrice = continuation.repeat_type.price_eur_cents;
+        const start = new Date(startTime);
+        const end = new Date(start.getTime() + continuation.repeat_type.duration_minutes * 60000);
+        finalEndTime = end.toISOString();
+      }
+    }
 
     // Resolve created_by:
     // 1. If midwifeClientEmail provided, look up that user's ID (midwife booking for client)
@@ -141,13 +179,13 @@ export async function POST(req: NextRequest) {
 
     const booking = await createBooking({
       clientId: resolvedClientId!,
-      serviceId,
+      serviceId: finalServiceId,
       locationId,
       staffId,
       shiftId,
       startTime,
-      endTime,
-      priceEurCents,
+      endTime: finalEndTime,
+      priceEurCents: finalPrice,
       notes,
       dueDate,
       birthDate,
@@ -160,7 +198,18 @@ export async function POST(req: NextRequest) {
       addons,
       createdBy: createdByUserId,
       isTwin,
+      parentBookingId,
+      continuationId,
     });
+
+    // Mark continuation as claimed
+    if (continuationId) {
+      const supabase = getServiceSupabase();
+      await supabase
+        .from('booking_continuations')
+        .update({ claimed_booking_id: booking.id })
+        .eq('id', continuationId);
+    }
 
     // --- Send Email Confirmation ---
     try {

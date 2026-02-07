@@ -22,6 +22,8 @@ export type CreateBookingInput = {
   addons?: BookingAddonSelection[] | null;
   createdBy?: string;
   isTwin?: boolean;
+  parentBookingId?: string;
+  continuationId?: string;
 };
 
 export async function createBooking(input: CreateBookingInput) {
@@ -95,6 +97,8 @@ export async function createBooking(input: CreateBookingInput) {
       policy_answers: input.policyAnswers && input.policyAnswers.length > 0 ? input.policyAnswers : null,
       created_by: input.createdBy || null,
       is_twin: input.isTwin || false,
+      parent_booking_id: input.parentBookingId || null,
+      continuation_id: input.continuationId || null,
     })
     .select('*')
     .single();
