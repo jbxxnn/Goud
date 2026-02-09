@@ -129,7 +129,7 @@ export async function createBooking(input: CreateBookingInput) {
       }
     }
 
-    const inserts: { booking_id: string; addon_id: string; quantity: number; price_eur_cents: number }[] = [];
+    const inserts: { booking_id: string; addon_id: string; quantity: number; price_eur_cents: number; option_id?: string }[] = [];
 
     for (const addon of input.addons) {
       const record = addonMap.get(addon.addonId);
@@ -143,6 +143,7 @@ export async function createBooking(input: CreateBookingInput) {
         addon_id: addon.addonId,
         quantity: Math.max(1, addon.quantity || 1),
         price_eur_cents: Math.max(0, priceCents),
+        option_id: addon.optionId,
       });
     }
 

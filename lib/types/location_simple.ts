@@ -83,31 +83,38 @@ export const getLocationDisplayName = (location: Location): string => {
 export const validatePhoneNumber = (phone: string): boolean => {
   // Remove all non-digit characters
   const digits = phone.replace(/\D/g, '');
-  
-  // Check if it's a valid US phone number (10 or 11 digits)
-  return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
+
+  // Allow international numbers (typically 7-15 digits)
+  return digits.length >= 7 && digits.length <= 15;
 };
 
 // Helper function to format phone number for display
 export const formatPhoneNumber = (phone: string): string => {
+  // If it starts with +, preserve the + but strip other non-digits for analysis
+  const hasPlus = phone.startsWith('+');
   const digits = phone.replace(/\D/g, '');
-  
-  if (digits.length === 10) {
+
+  if (digits.length === 10 && !hasPlus) {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
-  
-  if (digits.length === 11 && digits.startsWith('1')) {
+
+  if (digits.length === 11 && digits.startsWith('1') && !hasPlus) {
     return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   }
-  
+
+  // If it's international or already formatted with +, return with + prefix if it had one
+  if (hasPlus) {
+    return `+${digits}`;
+  }
+
   return phone; // Return original if format is not recognized
 };
 
 // Helper function to search locations by name or address
 export const searchLocations = (locations: Location[], searchTerm: string): Location[] => {
   const term = searchTerm.toLowerCase();
-  
-  return locations.filter(location => 
+
+  return locations.filter(location =>
     location.name.toLowerCase().includes(term) ||
     location.address.toLowerCase().includes(term)
   );

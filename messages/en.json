@@ -590,7 +590,26 @@
                 "saveError": "Failed to save add-on",
                 "deleteSuccess": "Add-on deleted successfully",
                 "deleteError": "Failed to delete add-on",
-                "saveServiceFirst": "Please save the service first to manage add-ons"
+                "saveServiceFirst": "Please save the service first to manage add-ons",
+                "options": {
+                    "title": "Options",
+                    "add": "Add Option",
+                    "name": "Option Name",
+                    "namePlaceholder": "e.g., 3 Prints",
+                    "price": "Price (€)",
+                    "active": "Active",
+                    "save": "Save Option",
+                    "create": "Create Option",
+                    "empty": "No options defined for this add-on.",
+                    "deleteConfirm": "Are you sure you want to delete this option?",
+                    "deleteSuccess": "Option deleted",
+                    "deleteError": "Failed to delete option",
+                    "updateSuccess": "Option updated",
+                    "updateError": "Failed to update option",
+                    "createSuccess": "Option created",
+                    "createError": "Failed to create option",
+                    "nameRequired": "Option name is required"
+                }
             },
             "validation": {
                 "codeRequired": "Service code is required",

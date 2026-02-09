@@ -101,6 +101,7 @@ export const bookingAddonSelectionSchema = z.object({
     .number()
     .int('Prijs moet een geheel getal zijn')
     .nonnegative('Prijs kan niet negatief zijn'),
+  optionId: z.string().uuid('Ongeldig optie-ID').optional(),
 });
 
 export type BookingAddonSelection = z.infer<typeof bookingAddonSelectionSchema>;

@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     // Fetch service rules (duration, buffer, lead_time) from services
     const { data: serviceData, error: serviceErr } = await supabase
       .from('services')
-      .select('id, duration, buffer_time, lead_time, allows_twins')
+      .select('id, duration, buffer_time, lead_time, allows_twins, twin_duration_minutes')
       .eq('id', serviceId)
       .maybeSingle();
     if (serviceErr || !serviceData) {
@@ -79,9 +79,13 @@ export async function GET(req: NextRequest) {
 
     if (isTwin) {
       if (serviceData.allows_twins) {
-        // Apply 2x multiplier for Twin duration.
-        // Note: Buffer time is NOT multiplied by default, as cleanup usually takes same time.
-        serviceRules.durationMinutes = serviceRules.durationMinutes * 2;
+        // Use custom twin duration if set, otherwise double the base duration.
+        if (serviceData.twin_duration_minutes) {
+          serviceRules.durationMinutes = serviceData.twin_duration_minutes;
+        } else {
+          // Note: Buffer time is NOT multiplied by default, as cleanup usually takes same time.
+          serviceRules.durationMinutes = serviceRules.durationMinutes * 2;
+        }
       } else {
         // If service doesn't allow twins but isTwin=true is passed, ignore it or error?
         // For now, we ignore the twin flag to prevent errors, but logically this shouldn't happen from UI.

@@ -42,6 +42,7 @@ interface DataTableProps<TData, TValue> {
   showSearchBar?: boolean
   showPagination?: boolean
   showColumnToggle?: boolean
+  pageSize?: number
 }
 
 export function DataTable<TData, TValue>({
@@ -53,6 +54,7 @@ export function DataTable<TData, TValue>({
   showSearchBar = true,
   showPagination = true,
   showColumnToggle = true,
+  pageSize = 10,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations('Table');
 
@@ -77,6 +79,11 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
+    },
+    initialState: {
+      pagination: {
+        pageSize: pageSize,
+      },
     },
   })
 

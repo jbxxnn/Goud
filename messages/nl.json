@@ -590,7 +590,26 @@
                 "saveError": "Opslaan van extra mislukt",
                 "deleteSuccess": "Extra succesvol verwijderd",
                 "deleteError": "Verwijderen van extra mislukt",
-                "saveServiceFirst": "Sla de dienst eerst op om extra's te beheren"
+                "saveServiceFirst": "Sla de dienst eerst op om extra's te beheren",
+                "options": {
+                    "title": "Opties",
+                    "add": "Optie toevoegen",
+                    "name": "Naam optie",
+                    "namePlaceholder": "bijv. 3 afdrukken",
+                    "price": "Prijs (€)",
+                    "active": "Actief",
+                    "save": "Optie opslaan",
+                    "create": "Optie aanmaken",
+                    "empty": "Geen opties gedefinieerd voor deze extra.",
+                    "deleteConfirm": "Weet je zeker dat je deze optie wilt verwijderen?",
+                    "deleteSuccess": "Optie verwijderd",
+                    "deleteError": "Verwijderen van optie mislukt",
+                    "updateSuccess": "Optie bijgewerkt",
+                    "updateError": "Bijwerken van optie mislukt",
+                    "createSuccess": "Optie aangemaakt",
+                    "createError": "Aanmaken van optie mislukt",
+                    "nameRequired": "Naam van optie is verplicht"
+                }
             },
             "validation": {
                 "codeRequired": "Dienstcode is vereist",

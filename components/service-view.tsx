@@ -75,9 +75,9 @@ export default function ServiceView({ service }: ServiceViewProps) {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-bold">{service.name}</h2>
-          {service.serviceCode && (
+          {(service.serviceCode || (service as any).service_code) && (
             <p className="text-sm font-mono uppercase tracking-wide text-muted-foreground mt-1">
-              {t('code')}: {service.serviceCode}
+              {t('code')}: {service.serviceCode || (service as any).service_code}
             </p>
           )}
           {service.description && (
@@ -200,7 +200,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
                     <h4 className="font-medium">
                       {field.title}
                       <span className="text-sm text-muted-foreground ml-2">
-                        ({field.field_type.replace('_', ' ')})
+                        ({field.field_type === 'multi_choice' ? 'single choice' : field.field_type.replace('_', ' ')})
                       </span>
                     </h4>
                     {field.is_required && (

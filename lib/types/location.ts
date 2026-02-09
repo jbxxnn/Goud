@@ -105,7 +105,7 @@ export const getFullAddress = (location: Location): string => {
     location.state,
     location.postal_code
   ].filter(Boolean);
-  
+
   return parts.join(', ');
 };
 
@@ -121,13 +121,13 @@ export const validatePostalCode = (postalCode: string, country: string = 'US'): 
     const usZipRegex = /^\d{5}(-\d{4})?$/;
     return usZipRegex.test(postalCode);
   }
-  
+
   if (country === 'CA') {
     // Canadian postal code format: A1A 1A1
     const caPostalRegex = /^[A-Za-z]\d[A-Za-z] \d[A-Za-z]\d$/;
     return caPostalRegex.test(postalCode);
   }
-  
+
   // For other countries, just check if it's not empty
   return postalCode.trim().length > 0;
 };
@@ -136,23 +136,30 @@ export const validatePostalCode = (postalCode: string, country: string = 'US'): 
 export const validatePhoneNumber = (phone: string): boolean => {
   // Remove all non-digit characters
   const digits = phone.replace(/\D/g, '');
-  
-  // Check if it's a valid US phone number (10 or 11 digits)
-  return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
+
+  // Allow international numbers (typically 7-15 digits)
+  return digits.length >= 7 && digits.length <= 15;
 };
 
 // Helper function to format phone number for display
 export const formatPhoneNumber = (phone: string): string => {
+  // If it starts with +, preserve the + but strip other non-digits for analysis
+  const hasPlus = phone.startsWith('+');
   const digits = phone.replace(/\D/g, '');
-  
-  if (digits.length === 10) {
+
+  if (digits.length === 10 && !hasPlus) {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
-  
-  if (digits.length === 11 && digits.startsWith('1')) {
+
+  if (digits.length === 11 && digits.startsWith('1') && !hasPlus) {
     return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
   }
-  
+
+  // If it's international or already formatted with +, return with + prefix if it had one
+  if (hasPlus) {
+    return `+${digits}`;
+  }
+
   return phone; // Return original if format is not recognized
 };
 
@@ -164,10 +171,10 @@ export const getTimezoneDisplayName = (timezone: string): string => {
       timeZone: timezone,
       timeZoneName: 'long'
     });
-    
+
     const parts = formatter.formatToParts(date);
     const timeZoneName = parts.find(part => part.type === 'timeZoneName')?.value;
-    
+
     return timeZoneName || timezone;
   } catch (error) {
     return timezone;
@@ -189,7 +196,7 @@ export const getLocationDistance = (location1: Location, location2: Location): n
 
 // Helper function to sort locations by distance from a reference location
 export const sortLocationsByDistance = (
-  locations: Location[], 
+  locations: Location[],
   referenceLocation: Location
 ): Location[] => {
   // This would require geocoding and distance calculation
@@ -199,14 +206,14 @@ export const sortLocationsByDistance = (
 
 // Helper function to filter locations by city
 export const filterLocationsByCity = (locations: Location[], city: string): Location[] => {
-  return locations.filter(location => 
+  return locations.filter(location =>
     location.city.toLowerCase().includes(city.toLowerCase())
   );
 };
 
 // Helper function to filter locations by state
 export const filterLocationsByState = (locations: Location[], state: string): Location[] => {
-  return locations.filter(location => 
+  return locations.filter(location =>
     location.state.toLowerCase().includes(state.toLowerCase())
   );
 };
@@ -214,8 +221,8 @@ export const filterLocationsByState = (locations: Location[], state: string): Lo
 // Helper function to search locations by name, city, or address
 export const searchLocations = (locations: Location[], searchTerm: string): Location[] => {
   const term = searchTerm.toLowerCase();
-  
-  return locations.filter(location => 
+
+  return locations.filter(location =>
     location.name.toLowerCase().includes(term) ||
     location.city.toLowerCase().includes(term) ||
     location.state.toLowerCase().includes(term) ||

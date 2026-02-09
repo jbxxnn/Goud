@@ -43,7 +43,8 @@ export const createServiceColumns = (
         );
       },
       cell: ({ row }) => {
-        const code = row.getValue<string>('serviceCode');
+        const service = row.original;
+        const code = service.serviceCode || (service as any).service_code;
         return (
           <span className="font-mono text-sm uppercase tracking-wide ml-2">
             {code || '-'}

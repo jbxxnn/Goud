@@ -55,6 +55,9 @@ const mapServiceRecord = (
     serviceCode: service_code ?? null,
     policy_fields: policyFields,
     addons,
+    allows_twins: rest.allows_twins,
+    twin_price: rest.twin_price,
+    twin_duration_minutes: rest.twin_duration_minutes,
     ...extras,
   };
 };
@@ -139,7 +142,13 @@ export async function GET(request: NextRequest) {
         console.error('Error fetching addons for service', service.id, addonsError);
       }
 
-      return mapServiceRecord(service, { staff_ids, addons: addons || [], allows_twins: service.allows_twins });
+      return mapServiceRecord(service, {
+        staff_ids,
+        addons: addons || [],
+        allows_twins: service.allows_twins,
+        twin_price_eur_cents: service.twin_price_eur_cents,
+        twin_duration_minutes: service.twin_duration_minutes,
+      });
     }));
 
     return NextResponse.json({
@@ -147,7 +156,9 @@ export async function GET(request: NextRequest) {
       data: mappedData,
       pagination: {
         page,
-        totalPages
+        limit,
+        total: count || 0,
+        total_pages: totalPages,
       }
     });
   } catch (error) {
@@ -209,6 +220,8 @@ export async function POST(request: NextRequest) {
         category_id: body.category_id || null,
         is_active: body.is_active !== undefined ? body.is_active : true,
         allows_twins: body.allows_twins !== undefined ? body.allows_twins : false,
+        twin_price: body.twin_price || null,
+        twin_duration_minutes: body.twin_duration_minutes || null,
       })
       .select()
       .single();

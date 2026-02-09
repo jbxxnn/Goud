@@ -8,12 +8,20 @@ export type PolicyField = ServicePolicyField & {
     order: number;
 };
 
+export type AddonOption = {
+    id: string;
+    addonId: string;
+    name: string;
+    priceCents: number;
+};
+
 export type Addon = {
     id: string;
     name: string;
     description: string | null;
     priceCents: number;
     isRequired: boolean;
+    options?: AddonOption[];
 };
 
 export type Service = {
@@ -24,13 +32,15 @@ export type Service = {
     policyFields: PolicyField[];
     addons: Addon[];
     allowsTwins: boolean;
+    twinPrice?: number | null;
+    twinDurationMinutes?: number | null;
 };
 
 export type Location = { id: string; name: string };
 export type Slot = { shiftId: string; staffId: string; startTime: string; endTime: string };
 export type PolicyAnswerValue = string | number | boolean | string[] | null;
 export type PolicyResponses = Record<string, PolicyAnswerValue>;
-export type AddonSelections = Record<string, boolean>;
+export type AddonSelections = Record<string, boolean | string>; // boolean for toggled, string for selected option id
 
 export type RawPolicyField = ServicePolicyField & {
     order?: number | null;
@@ -45,6 +55,8 @@ export type ServiceApiResponse = {
     policy_fields?: RawPolicyField[] | null;
     addons?: ServiceAddon[] | null;
     allows_twins?: boolean | null;
+    twin_price?: number | null;
+    twin_duration_minutes?: number | null;
 };
 
 export type DateRange = { start: string; end: string };
@@ -116,6 +128,11 @@ export interface Booking {
         description: string | null;
         price_eur_cents: number;
         quantity: number;
+        option_id?: string | null;
+        option?: {
+            name: string;
+            price: number;
+        } | null;
     }>;
     policy_answers: Array<{
         fieldId?: string;

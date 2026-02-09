@@ -59,6 +59,9 @@ const mapServiceRecord = (
     serviceCode: service_code ?? null,
     policy_fields: policyFields,
     addons,
+    allows_twins: rest.allows_twins,
+    twin_price: rest.twin_price,
+    twin_duration_minutes: rest.twin_duration_minutes,
     ...extras,
   };
 };
@@ -80,7 +83,7 @@ export async function GET(
     }
 
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
       .from('services')
       .select(`
@@ -121,7 +124,7 @@ export async function GET(
       .eq('service_id', id);
 
     const staff_ids = staffAssignments?.map(sa => sa.staff_id) || [];
-    
+
     // Fetch addons for this service separately
     // Use service role client to bypass RLS for public API endpoint
     const serviceSupabase = getServiceSupabase();
@@ -130,12 +133,18 @@ export async function GET(
       .select('id, service_id, name, description, price, is_required, is_active')
       .eq('service_id', id)
       .eq('is_active', true);
-    
+
     if (addonsError) {
       console.error('Error fetching addons for service', id, addonsError);
     }
-    
-    const mappedData = mapServiceRecord(data, { staff_ids, addons: addons || [] });
+
+    const mappedData = mapServiceRecord(data, {
+      staff_ids,
+      addons: addons || [],
+      allows_twins: data.allows_twins,
+      twin_price: data.twin_price,
+      twin_duration_minutes: data.twin_duration_minutes,
+    });
 
     return NextResponse.json({
       success: true,
@@ -174,7 +183,7 @@ export async function PUT(
     }
 
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -246,9 +255,9 @@ export async function PUT(
             .order('field_order');
 
           // Handle choices for multi-choice fields
-        for (const field of policyFieldsPayload) {
+          for (const field of policyFieldsPayload) {
             if (field.field_type === 'multi_choice' && field.choices && field.choices.length > 0) {
-            const fieldId = insertedFields?.find(f => f.field_order === policyFieldsPayload?.indexOf(field))?.id;
+              const fieldId = insertedFields?.find(f => f.field_order === policyFieldsPayload?.indexOf(field))?.id;
               if (fieldId) {
                 const choicesData = field.choices.map((choice: ServicePolicyFieldChoice, choiceIndex: number) => ({
                   field_id: fieldId,
@@ -322,7 +331,7 @@ export async function DELETE(
     }
 
     const supabase = await createClient();
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

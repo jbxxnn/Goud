@@ -73,9 +73,11 @@ export const createLocationColumns = (
       cell: ({ row }) => {
         const location = row.original
         return (
-          <div className="text-sm text-muted-foreground max-w-[300px] flex items-center gap-2">
+          <div className="text-sm text-muted-foreground max-w-[300px] flex items-center gap-2 overflow-hidden">
             <HugeiconsIcon icon={Location03Icon} className="h-4 w-4 flex-shrink-0" />
-            <span>{getFullAddress(location)}</span>
+            <span className="truncate block" title={getFullAddress(location)}>
+              {getFullAddress(location)}
+            </span>
           </div>
         )
       },

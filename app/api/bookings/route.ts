@@ -245,14 +245,20 @@ export async function POST(req: NextRequest) {
         // Better to fetch to be accurate.
         const { data: addonsDetails } = await supabase
           .from('booking_addons')
-          .select('price_eur_cents, service_addons(name)')
+          .select(`
+            price_eur_cents, 
+            service_addons(name),
+            service_addon_options(name)
+          `)
           .eq('booking_id', booking.id);
 
         if (addonsDetails) {
           emailAddons = addonsDetails.map(a => {
             const sa = Array.isArray(a.service_addons) ? a.service_addons[0] : a.service_addons;
+            const sao = Array.isArray(a.service_addon_options) ? a.service_addon_options[0] : a.service_addon_options;
+            const displayName = sao ? `${sa?.name} - ${sao.name}` : (sa?.name || 'Add-on');
             return {
-              name: sa?.name || 'Add-on',
+              name: displayName,
               price: formatEuroCents(a.price_eur_cents)
             };
           });
@@ -481,6 +487,10 @@ export async function GET(req: NextRequest) {
             name,
             description,
             price
+          ),
+          service_addon_options (
+            id,
+            name
           )
         `)
         .in('booking_id', bookingIds);
@@ -492,13 +502,17 @@ export async function GET(req: NextRequest) {
           ? addon.service_addons[0]
           : addon.service_addons;
 
+        const serviceAddonOption = Array.isArray(addon.service_addon_options)
+          ? addon.service_addon_options[0]
+          : addon.service_addon_options;
+
         if (!addonsMap[addon.booking_id]) {
           addonsMap[addon.booking_id] = [];
         }
         if (serviceAddon) {
           addonsMap[addon.booking_id].push({
             id: serviceAddon.id,
-            name: serviceAddon.name || '',
+            name: serviceAddonOption ? `${serviceAddon.name} - ${serviceAddonOption.name}` : (serviceAddon.name || ''),
             description: serviceAddon.description || null,
             quantity: addon.quantity || 1,
             price_eur_cents: addon.price_eur_cents || 0,

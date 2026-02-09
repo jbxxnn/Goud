@@ -1,15 +1,18 @@
 // Database utilities for service operations
 import { createClient } from '@/lib/supabase/client';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
-import { 
-  Service, 
-  ServiceAddon, 
+import {
+  Service,
+  ServiceAddon,
   ServiceWithAddons,
-  CreateServiceRequest, 
+  CreateServiceRequest,
   UpdateServiceRequest,
   CreateServiceAddonRequest,
   UpdateServiceAddonRequest,
-  ServiceResponse, 
+  CreateServiceAddonOptionRequest,
+  UpdateServiceAddonOptionRequest,
+  ServiceAddonOption,
+  ServiceResponse,
   ServicesResponse,
   ServiceAddonResponse,
   ServiceAddonsResponse
@@ -33,9 +36,9 @@ export class ServiceService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -71,17 +74,17 @@ export class ServiceService {
 
       return { success: true, data: serviceWithAddons };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
 
   // Get all services with pagination
   static async getServices(
-    page: number = 1, 
-    limit: number = 10, 
+    page: number = 1,
+    limit: number = 10,
     activeOnly: boolean = false
   ): Promise<ServicesResponse> {
     try {
@@ -116,9 +119,9 @@ export class ServiceService {
         },
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -138,9 +141,9 @@ export class ServiceService {
 
       return { success: true, data: data || [] };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -164,9 +167,9 @@ export class ServiceService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -190,9 +193,9 @@ export class ServiceService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -216,9 +219,9 @@ export class ServiceService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -244,9 +247,9 @@ export class ServiceService {
 
       return { success: true, data: data || [] };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -260,26 +263,23 @@ export class ServiceAddonService {
     try {
       // Use service role client for admin operations to bypass RLS
       const adminSupabase = getServiceSupabase();
-      let query = adminSupabase
+      const { data: addons, error: addonsError } = await adminSupabase
         .from('service_addons')
-        .select('*')
+        .select(`
+          *,
+          options:service_addon_options(*)
+        `)
         .eq('service_id', serviceId);
-      
-      if (!includeInactive) {
-        query = query.eq('is_active', true);
-      }
-      
-      const { data, error } = await query.order('name');
 
-      if (error) {
-        return { success: false, error: error.message };
+      if (addonsError) {
+        return { success: false, error: addonsError.message };
       }
 
-      return { success: true, data: data || [] };
+      return { success: true, data: addons || [] };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -305,9 +305,9 @@ export class ServiceAddonService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -333,9 +333,9 @@ export class ServiceAddonService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -358,9 +358,88 @@ export class ServiceAddonService {
 
       return { success: true, data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+
+  // Create service addon option
+  static async createAddonOption(optionData: CreateServiceAddonOptionRequest): Promise<{ success: boolean; data?: ServiceAddonOption; error?: string }> {
+    try {
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
+        .from('service_addon_options')
+        .insert({
+          ...optionData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Update service addon option
+  static async updateAddonOption(id: string, updates: UpdateServiceAddonOptionRequest): Promise<{ success: boolean; data?: ServiceAddonOption; error?: string }> {
+    try {
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
+        .from('service_addon_options')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  // Delete service addon option
+  static async deleteAddonOption(id: string): Promise<{ success: boolean; data?: ServiceAddonOption; error?: string }> {
+    try {
+      const adminSupabase = getServiceSupabase();
+      const { data, error } = await adminSupabase
+        .from('service_addon_options')
+        .delete()
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }

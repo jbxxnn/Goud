@@ -19,6 +19,7 @@ interface ServicesClientProps {
   initialPagination: {
     page: number;
     totalPages: number;
+    total: number;
   };
 }
 
@@ -27,9 +28,10 @@ export default function ServicesClient({
   initialPagination
 }: ServicesClientProps) {
   const t = useTranslations('Services');
+  const tTable = useTranslations('Table');
   const queryClient = useQueryClient();
 
-  const [page] = useState(initialPagination.page);
+  const [page, setPage] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | undefined>();
   const [viewingService, setViewingService] = useState<Service | undefined>();
@@ -38,12 +40,12 @@ export default function ServicesClient({
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
 
   // Fetch services with React Query
-  const { data: services = [], isLoading } = useQuery({
+  const { data: servicesData, isLoading } = useQuery({
     queryKey: ['services', page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: '20',
         active_only: 'false',
       });
 
@@ -54,10 +56,24 @@ export default function ServicesClient({
         throw new Error('Failed to fetch services');
       }
 
-      return data.data || [];
+      return data;
     },
-    initialData: initialServices.length > 0 ? initialServices : undefined,
+    initialData: initialServices.length > 0 ? {
+      success: true,
+      data: initialServices,
+      pagination: {
+        page: initialPagination.page,
+        total_pages: initialPagination.totalPages,
+        total: initialPagination.total,
+        limit: 20
+      }
+    } : undefined,
   });
+
+  const services = servicesData?.data || [];
+  const pagination = servicesData?.pagination;
+  const totalPages = pagination?.total_pages || 0;
+  const total = pagination?.total || 0;
 
   // Delete service
   const handleDelete = async (service: Service) => {
@@ -260,10 +276,81 @@ export default function ServicesClient({
                   searchKey="name"
                   searchPlaceholder={t('searchPlaceholder')}
                   emptyMessage={t('noServicesEmpty')}
+                  showPagination={false}
                   showColumnToggle={false}
+                  pageSize={20}
                 />
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {total > 0 ? (
+                      tTable('showing', {
+                        start: (page - 1) * 20 + 1,
+                        end: Math.min(page * 20, total),
+                        total
+                      })
+                    ) : (
+                      t('noServices')
+                    )}
+                  </span>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1 || isLoading}
+                    >
+                      {tTable('previous')}
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            disabled={isLoading}
+                            className="w-10"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages || isLoading}
+                    >
+                      {tTable('next')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </PageItem>
 

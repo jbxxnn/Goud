@@ -72,6 +72,7 @@ interface BookingContextProps {
     clearPolicyError: (fieldId: string) => void;
     setPolicyErrors: (errors: Record<string, string>) => void;
     toggleAddonSelection: (addonId: string) => void;
+    toggleAddonOptionSelection: (addonId: string, optionId: string) => void;
     setClientEmail: (email: string) => void;
     setContactDefaults: (defaults: Omit<BookingContactInput, 'clientEmail'>) => void;
     setIsLoggedIn: (value: boolean) => void;
@@ -338,14 +339,34 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         if (!selectedService) return 0;
         let basePrice = selectedService.price ?? 0;
         if (isTwin) {
-            basePrice *= 2; // Apply Twin Multiplier to Price
+            // Use custom twin price if available, otherwise double the base price
+            if (selectedService.twinPrice) {
+                basePrice = selectedService.twinPrice;
+            } else {
+                basePrice *= 2;
+            }
         }
         return basePrice + policyExtraPriceCents + addonExtraPriceCents;
     }, [selectedService, policyExtraPriceCents, addonExtraPriceCents, isTwin]);
 
     const selectedAddOnItems = useMemo(() => {
         if (!selectedService) return [];
-        return selectedService.addons.filter((addon) => addon.isRequired || selectedAddons[addon.id]);
+        return selectedService.addons
+            .filter((addon) => addon.isRequired || selectedAddons[addon.id])
+            .map(addon => {
+                const selection = selectedAddons[addon.id];
+                if (typeof selection === 'string') {
+                    const option = addon.options?.find(o => o.id === selection);
+                    if (option) {
+                        return {
+                            ...addon,
+                            name: `${addon.name} - ${option.name}`,
+                            priceCents: option.priceCents
+                        };
+                    }
+                }
+                return addon;
+            });
     }, [selectedService, selectedAddons]);
 
     const hasAddons = useMemo(() => {
@@ -447,6 +468,8 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                 policyFields: normalizePolicyFields(service.policy_fields),
                 addons: normalizeAddons(service.addons),
                 allowsTwins: Boolean(service.allows_twins),
+                twinPrice: typeof service.twin_price === 'number' ? Math.round(service.twin_price * 100) : null,
+                twinDurationMinutes: typeof service.twin_duration_minutes === 'number' ? service.twin_duration_minutes : null,
             }));
             setServices(normalizedServices);
             setLoadingServices(false);
@@ -788,7 +811,9 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
     const toggleMultiChoiceOption = (fieldId: string, optionId: string) => {
         setPolicyResponses(prev => {
             const current = Array.isArray(prev[fieldId]) ? (prev[fieldId] as string[]) : [];
-            const next = current.includes(optionId) ? current.filter(id => id !== optionId) : [...current, optionId];
+            // If already selected, keep it selected (like a radio button)
+            // or we can allow deselecting by checking if it's already there
+            const next = current.includes(optionId) ? [] : [optionId];
             return { ...prev, [fieldId]: next };
         });
         clearPolicyError(fieldId);
@@ -807,7 +832,38 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         if (!selectedService) return;
         const target = selectedService.addons.find(a => a.id === addonId);
         if (!target || target.isRequired) return;
-        setSelectedAddons(prev => ({ ...prev, [addonId]: !prev[addonId] }));
+
+        setSelectedAddons(prev => {
+            const current = prev[addonId];
+            // If it's currently selected (either as boolean or as an option id), deselect it
+            if (current) {
+                const next = { ...prev };
+                delete next[addonId];
+                return next;
+            }
+            // If it has options, picking the toggle without an option id doesn't make much sense 
+            // but we can default to true or just do nothing if handled by a radio UI.
+            // For boolean addons, we just set to true.
+            return { ...prev, [addonId]: true };
+        });
+    };
+
+    const toggleAddonOptionSelection = (addonId: string, optionId: string) => {
+        if (!selectedService) return;
+        const target = selectedService.addons.find(a => a.id === addonId);
+        if (!target) return;
+
+        setSelectedAddons(prev => {
+            const current = prev[addonId];
+            // If this exact option is already selected, deselect it (unless addon is required)
+            if (current === optionId && !target.isRequired) {
+                const next = { ...prev };
+                delete next[addonId];
+                return next;
+            }
+            // Otherwise select the option
+            return { ...prev, [addonId]: optionId };
+        });
     };
 
     const handleStartOver = async () => {
@@ -998,7 +1054,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                 heatmap, loadingHeatmap,
                 slots, loadingSlots, selectedSlot, setSelectedSlot: handleSelectSlot,
                 policyResponses, policyErrors, updatePolicyResponse, toggleMultiChoiceOption, clearPolicyError, setPolicyErrors,
-                selectedAddons, toggleAddonSelection, hasAddons, selectedAddOnItems,
+                selectedAddons, toggleAddonSelection, toggleAddonOptionSelection, hasAddons, selectedAddOnItems,
                 clientEmail, setClientEmail,
                 userRole, setUserRole,
                 contactDefaults, setContactDefaults, contactDefaultsVersion, setContactDefaultsVersion,

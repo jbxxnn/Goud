@@ -14,6 +14,7 @@ export function StepAddons() {
         selectedService,
         selectedAddons,
         toggleAddonSelection,
+        toggleAddonOptionSelection,
         grandTotalCents,
         setStep,
     } = useBooking();
@@ -31,28 +32,59 @@ export function StepAddons() {
             {!selectedService ? (
                 <p className="text-sm text-gray-600">{t('addons.selectServiceFirst')}</p>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {selectedService.addons.map((addon) => {
-                        const checked = addon.isRequired || Boolean(selectedAddons[addon.id]);
+                        const hasOptions = addon.options && addon.options.length > 0;
+                        const selection = selectedAddons[addon.id];
+                        const checked = addon.isRequired || Boolean(selection);
+
                         return (
-                            <label key={addon.id} className="flex items-start gap-4 p-4 bg-gray-50 transition-colors cursor-pointer" style={{ borderRadius: '1rem' }}>
-                                <Checkbox
-                                    className="mt-1 rounded-full border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary"
-                                    checked={checked}
-                                    disabled={addon.isRequired}
-                                    onCheckedChange={() => toggleAddonSelection(addon.id)}
-                                />
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <span className="text-sm font-bold">{addon.name}</span>
-                                        <span className="text-sm text-gray-700 font-bold">{formatEuroCents(addon.priceCents)}</span>
+                            <div key={addon.id} className="bg-gray-50 border border-transparent transition-all" style={{ borderRadius: '1rem' }}>
+                                <label className="flex items-start gap-4 p-4 cursor-pointer">
+                                    <Checkbox
+                                        className="mt-1 rounded-full border-gray-300 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground focus-visible:ring-primary"
+                                        checked={checked}
+                                        disabled={addon.isRequired || hasOptions} // Force option selection if hasOptions
+                                        onCheckedChange={() => !hasOptions && toggleAddonSelection(addon.id)}
+                                    />
+                                    <div className="flex-1 space-y-1">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <span className="text-sm font-bold">{addon.name}</span>
+                                            {!hasOptions && (
+                                                <span className="text-sm text-gray-700 font-bold">{formatEuroCents(addon.priceCents)}</span>
+                                            )}
+                                        </div>
+                                        {addon.description && <p className="text-sm text-gray-500">{addon.description}</p>}
+                                        {addon.isRequired && (
+                                            <p className="text-xs text-amber-600 font-medium">{t('addons.requiredAddon')}</p>
+                                        )}
                                     </div>
-                                    {addon.description && <p className="text-sm text-gray-500">{addon.description}</p>}
-                                    {addon.isRequired && (
-                                        <p className="text-xs text-amber-600 font-medium">{t('addons.requiredAddon')}</p>
-                                    )}
-                                </div>
-                            </label>
+                                </label>
+
+                                {hasOptions && (
+                                    <div className="px-4 pb-4 pt-1 ml-9 space-y-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {addon.options!.map((option) => {
+                                                const isSelected = selection === option.id;
+                                                return (
+                                                    <button
+                                                        key={option.id}
+                                                        type="button"
+                                                        onClick={() => toggleAddonOptionSelection(addon.id, option.id)}
+                                                        className={`flex items-center justify-between px-3 py-2 text-xs border rounded-lg transition-all ${isSelected
+                                                            ? 'bg-primary border-primary text-white font-bold'
+                                                            : 'bg-white border-gray-200 text-gray-700 hover:border-primary/50'
+                                                            }`}
+                                                    >
+                                                        <span>{option.name}</span>
+                                                        <span>{formatEuroCents(option.priceCents)}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </div>

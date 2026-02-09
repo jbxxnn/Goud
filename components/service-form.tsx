@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
-import { Service, ServicePolicyField, ServiceCategory } from '@/lib/types/service';
+import { Service, ServicePolicyField, ServiceCategory, ServiceAddon, ServiceAddonOption } from '@/lib/types/service';
 import { Staff } from '@/lib/types/staff';
 import {
   DndContext,
@@ -36,7 +36,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
-import { ServiceAddon } from '@/lib/types/service';
+import { CreateServiceAddonOptionRequest, UpdateServiceAddonOptionRequest } from '@/lib/types/service';
 import { toast } from 'sonner';
 import { ServiceRepeatManager } from './service-repeat-manager';
 
@@ -64,6 +64,8 @@ interface ServiceFormData {
   policy_fields: ServicePolicyField[];
   staff_ids: string[];
   allows_twins: boolean;
+  twin_price?: number | null;
+  twin_duration_minutes?: number | null;
   is_active: boolean;
 }
 
@@ -128,7 +130,7 @@ function SortableField({
             <h4 className="font-medium">
               {field.title || `Field ${index + 1}`}
               <span className="text-sm text-muted-foreground ml-2">
-                ({field.field_type.replace('_', ' ')})
+                ({field.field_type === 'multi_choice' ? 'single choice' : field.field_type.replace('_', ' ')})
               </span>
             </h4>
           </div>
@@ -192,7 +194,7 @@ function SortableField({
               <Label htmlFor={`field_required_${index}`}>{t('required')}</Label>
             </div>
 
-            {/* Multi Choice Options */}
+            {/* Single Choice Options */}
             {field.field_type === 'multi_choice' && (
               <div className="md:col-span-2">
                 <Label>{t('choices')}</Label>
@@ -261,6 +263,190 @@ function SortableField({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Addon Options Manager Component
+function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { addonId: string, options: ServiceAddonOption[], onUpdate: () => void }) {
+  const t = useTranslations('Services.form.addons.options');
+  const tCommon = useTranslations('Common');
+  const [options, setOptions] = useState<ServiceAddonOption[]>(initialOptions);
+  const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    price: '0',
+    option_order: 0,
+    is_active: true,
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      price: '0',
+      option_order: options.length,
+      is_active: true,
+    });
+    setIsAdding(false);
+    setEditingId(null);
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    setIsAdding(true);
+  };
+
+  const handleEdit = (option: ServiceAddonOption) => {
+    setFormData({
+      name: option.name,
+      price: option.price.toString(),
+      option_order: option.option_order,
+      is_active: option.is_active,
+    });
+    setEditingId(option.id);
+    setIsAdding(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error(t('nameRequired'));
+      return;
+    }
+
+    try {
+      const price = parseFloat(formData.price) || 0;
+      const payload = {
+        name: formData.name.trim(),
+        price,
+        option_order: formData.option_order,
+        is_active: formData.is_active,
+      };
+
+      if (editingId) {
+        const response = await fetch(`/api/services/addons/${addonId}/options/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast.success(t('updateSuccess'));
+          onUpdate();
+          resetForm();
+        } else {
+          toast.error(t('updateError'), { description: data.error });
+        }
+      } else {
+        const response = await fetch(`/api/services/addons/${addonId}/options`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (data.success) {
+          toast.success(t('createSuccess'));
+          onUpdate();
+          resetForm();
+        } else {
+          toast.error(t('createError'), { description: data.error });
+        }
+      }
+    } catch (error) {
+      toast.error(tCommon('error'), { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm(t('deleteConfirm'))) return;
+    try {
+      const response = await fetch(`/api/services/addons/${addonId}/options/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(t('deleteSuccess'));
+        onUpdate();
+      } else {
+        toast.error(t('deleteError'), { description: data.error });
+      }
+    } catch (error) {
+      toast.error(tCommon('error'), { description: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
+
+  return (
+    <div className="mt-6 border-t pt-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h4>
+        {!isAdding && (
+          <Button type="button" onClick={handleAdd} size="sm" variant="outline">
+            <Plus className="h-3 w-3 mr-1" />
+            {t('add')}
+          </Button>
+        )}
+      </div>
+
+      {isAdding && (
+        <div className="bg-muted/30 p-3 rounded-md border space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <Label className="text-xs">{t('name')}</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder={t('namePlaceholder')}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">{t('price')}</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+              />
+              <Label className="text-xs cursor-pointer">{t('active')}</Label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" size="sm" onClick={resetForm}>
+              {tCommon('cancel')}
+            </Button>
+            <Button type="button" size="sm" onClick={handleSave}>
+              {editingId ? t('save') : t('create')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {initialOptions?.sort((a, b) => a.option_order - b.option_order).map((option) => (
+          <div key={option.id} className="flex items-center justify-between p-2 bg-background border rounded-md group">
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{option.name}</span>
+              <span className="text-xs text-muted-foreground">€{option.price.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(option)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(option.id)}>
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {(!initialOptions || initialOptions.length === 0) && !isAdding && (
+          <p className="text-xs text-center py-2 text-muted-foreground italic">{t('empty')}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -538,6 +724,14 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
               {editingId ? t('update') : t('create')}
             </Button>
           </div>
+
+          {editingId && (
+            <AddonOptionsManager
+              addonId={editingId}
+              options={addons.find(a => a.id === editingId)?.options || []}
+              onUpdate={fetchAddons}
+            />
+          )}
         </div>
       )}
 
@@ -650,6 +844,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       policy_fields: [],
       staff_ids: [],
       allows_twins: false,
+      twin_price: null,
+      twin_duration_minutes: null,
       is_active: true,
     },
   });
@@ -669,7 +865,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
     if (service) {
       reset({
         name: service.name,
-        serviceCode: service.serviceCode || generateServiceCode(service.name),
+        serviceCode: service.serviceCode || (service as any).service_code || generateServiceCode(service.name),
         description: service.description || '',
         duration: service.duration,
         buffer_time: service.buffer_time,
@@ -684,9 +880,11 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         policy_fields: service.policy_fields || [],
         staff_ids: service.staff_ids || [],
         allows_twins: service.allows_twins || false,
+        twin_price: service.twin_price || null,
+        twin_duration_minutes: service.twin_duration_minutes || null,
         is_active: service.is_active,
       });
-      setHasCustomServiceCode(Boolean(service.serviceCode));
+      setHasCustomServiceCode(Boolean(service.serviceCode || (service as any).service_code));
     } else {
       reset({
         name: '',
@@ -705,6 +903,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         policy_fields: [],
         staff_ids: [],
         allows_twins: false,
+        twin_price: null,
+        twin_duration_minutes: null,
         is_active: true,
       });
       setHasCustomServiceCode(false);
@@ -996,6 +1196,42 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                       onCheckedChange={(checked) => setValue('allows_twins', checked, { shouldDirty: true })}
                     />
                   </div>
+
+                  {watch('allows_twins') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-in fade-in slide-in-from-top-2">
+                      <div>
+                        <Label htmlFor="twin_price" className="text-sm font-medium mb-2">Custom Twin Price (€)</Label>
+                        <Input
+                          id="twin_price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...register('twin_price', {
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Leave empty for double price"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Fixed price for twins. If empty, it will be 2x the base price.
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="twin_duration" className="text-sm font-medium mb-2">Custom Twin Duration (min)</Label>
+                        <Input
+                          id="twin_duration"
+                          type="number"
+                          min="1"
+                          {...register('twin_duration_minutes', {
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Leave empty for double time"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Fixed duration for twins. If empty, it will be 2x the base duration.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}
@@ -1356,7 +1592,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                           <SelectValue placeholder={t('placeholders.fieldType')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="multi_choice">Multi Choice</SelectItem>
+                          <SelectItem value="multi_choice">Single Choice</SelectItem>
                           <SelectItem value="text_input">Text Input</SelectItem>
                           <SelectItem value="number_input">Number Input</SelectItem>
                           <SelectItem value="date_time">Date/Time</SelectItem>

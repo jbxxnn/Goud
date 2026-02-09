@@ -42,9 +42,9 @@ export const getRecentBookingsColumns = (t: (key: string) => string, tRoot: (key
               </Badge>
             )}
           </div>
-          {booking.serviceCode ? (
+          {(booking.serviceCode || (booking as any).service_code) ? (
             <span className="text-xs text-muted-foreground uppercase tracking-wide">
-              {booking.serviceCode}
+              {booking.serviceCode || (booking as any).service_code}
             </span>
           ) : null}
         </div>

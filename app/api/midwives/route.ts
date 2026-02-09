@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || undefined;
 
     const supabase = getServiceSupabase();
-    
+
     let query = supabase
       .from('midwives')
       .select('*', { count: 'exact' })
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
+        total_pages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getServiceSupabase();
-    
+
     const { data, error } = await supabase
       .from('midwives')
       .insert({

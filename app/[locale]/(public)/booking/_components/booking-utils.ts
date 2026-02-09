@@ -42,6 +42,12 @@ export function normalizeAddons(rawAddons: ServiceAddon[] | null | undefined): A
             description: addon.description ?? null,
             priceCents: Math.round(((addon.price ?? 0) as number) * 100),
             isRequired: Boolean(addon.is_required),
+            options: addon.options?.filter(o => o.is_active).map(o => ({
+                id: o.id,
+                addonId: o.addon_id,
+                name: o.name,
+                priceCents: Math.round(o.price * 100)
+            }))
         }));
 }
 
@@ -70,7 +76,14 @@ export function calculatePolicyExtraPriceCents(fields: PolicyField[], responses:
 
 export function calculateAddonExtraPriceCents(addons: Addon[], selections: AddonSelections): number {
     return addons.reduce((sum, addon) => {
-        if (selections[addon.id] || addon.isRequired) {
+        const selection = selections[addon.id];
+        if (addon.isRequired || selection) {
+            // If it's a string, it's an option ID
+            if (typeof selection === 'string') {
+                const option = addon.options?.find(o => o.id === selection);
+                if (option) return sum + option.priceCents;
+            }
+            // Fallback to base price if no option selected or it's a simple boolean
             return sum + addon.priceCents;
         }
         return sum;
@@ -104,9 +117,24 @@ export function buildPolicyAnswerPayload(fields: PolicyField[], responses: Polic
 export function buildAddonPayload(addons: Addon[], selections: AddonSelections): BookingAddonSelection[] {
     return addons
         .filter((addon) => addon.isRequired || selections[addon.id])
-        .map((addon) => ({
-            addonId: addon.id,
-            quantity: 1,
-            priceEurCents: addon.priceCents,
-        }));
+        .map((addon) => {
+            const selection = selections[addon.id];
+            let priceCents = addon.priceCents;
+            let optionId: string | undefined = undefined;
+
+            if (typeof selection === 'string') {
+                const option = addon.options?.find(o => o.id === selection);
+                if (option) {
+                    priceCents = option.priceCents;
+                    optionId = option.id;
+                }
+            }
+
+            return {
+                addonId: addon.id,
+                quantity: 1,
+                priceEurCents: priceCents,
+                optionId
+            };
+        });
 }

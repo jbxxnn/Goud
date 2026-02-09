@@ -19,6 +19,7 @@ interface MidwivesClientProps {
   initialPagination: {
     page: number;
     totalPages: number;
+    total: number;
   };
 }
 
@@ -28,9 +29,10 @@ export default function MidwivesClient({
 }: MidwivesClientProps) {
   const t = useTranslations('Midwives');
   const tCommon = useTranslations('Common');
+  const tTable = useTranslations('Table');
   const queryClient = useQueryClient();
 
-  const [page] = useState(initialPagination.page);
+  const [page, setPage] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMidwife, setEditingMidwife] = useState<Midwife | undefined>();
   const [viewingMidwife, setViewingMidwife] = useState<Midwife | undefined>();
@@ -39,26 +41,40 @@ export default function MidwivesClient({
   const [midwifeToDelete, setMidwifeToDelete] = useState<Midwife | null>(null);
 
   // Fetch midwives with React Query
-  const { data: midwives = [], isLoading } = useQuery({
+  const { data: midwivesData, isLoading } = useQuery({
     queryKey: ['midwives', page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: '20',
         active_only: 'false',
       });
 
       const response = await fetch(`/api/midwives?${params}`);
-      const data: MidwivesResponse = await response.json();
+      const data: MidwivesResponse & { pagination?: { total_pages: number; total: number } } = await response.json();
 
       if (!data.success) {
         throw new Error('Failed to fetch midwives');
       }
 
-      return data.data || [];
+      return data;
     },
-    initialData: initialMidwives.length > 0 ? initialMidwives : undefined,
+    initialData: initialMidwives.length > 0 ? {
+      success: true,
+      data: initialMidwives,
+      pagination: {
+        page: initialPagination.page,
+        total_pages: initialPagination.totalPages,
+        total: initialPagination.total,
+        limit: 20
+      }
+    } as any : undefined,
   });
+
+  const midwives = midwivesData?.data || [];
+  const pagination = midwivesData?.pagination;
+  const totalPages = (pagination as any)?.total_pages || 0;
+  const total = (pagination as any)?.total || 0;
 
   // Delete midwife
   const handleDelete = async (midwife: Midwife) => {
@@ -98,7 +114,7 @@ export default function MidwivesClient({
 
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
-    const midwife = midwives.find(m => m.id === id);
+    const midwife = midwives.find((m: Midwife) => m.id === id);
     const newStatus = !currentStatus;
 
     try {
@@ -262,10 +278,81 @@ export default function MidwivesClient({
                   searchKey="first_name"
                   searchPlaceholder={t('table.searchPlaceholder')}
                   emptyMessage={t('table.empty')}
+                  showPagination={false}
                   showColumnToggle={false}
+                  pageSize={20}
                 />
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {total > 0 ? (
+                      tTable('showing', {
+                        start: (page - 1) * 20 + 1,
+                        end: Math.min(page * 20, total),
+                        total
+                      })
+                    ) : (
+                      t('empty.title')
+                    )}
+                  </span>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1 || isLoading}
+                    >
+                      {tTable('previous')}
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            disabled={isLoading}
+                            className="w-10"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages || isLoading}
+                    >
+                      {tTable('next')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </PageItem>
 

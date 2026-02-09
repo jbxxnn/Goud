@@ -19,6 +19,8 @@ export interface Service {
   policy_fields: ServicePolicyField[]; // Dynamic policy fields
   staff_ids?: string[]; // IDs of staff qualified for this service
   allows_twins: boolean;
+  twin_price?: number | null;
+  twin_duration_minutes?: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -62,6 +64,18 @@ export interface ServiceAddon {
   price: number;
   is_required: boolean;
   is_active: boolean;
+  options?: ServiceAddonOption[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceAddonOption {
+  id: string;
+  addon_id: string;
+  name: string;
+  price: number;
+  option_order: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -87,6 +101,8 @@ export interface CreateServiceRequest {
   policy_fields?: ServicePolicyField[];
   staff_ids?: string[];
   allows_twins?: boolean;
+  twin_price?: number | null;
+  twin_duration_minutes?: number | null;
   is_active?: boolean;
 }
 
@@ -107,6 +123,8 @@ export interface UpdateServiceRequest {
   policy_fields?: ServicePolicyField[];
   staff_ids?: string[];
   allows_twins?: boolean;
+  twin_price?: number | null;
+  twin_duration_minutes?: number | null;
   is_active?: boolean;
 }
 
@@ -124,6 +142,21 @@ export interface UpdateServiceAddonRequest {
   description?: string;
   price?: number;
   is_required?: boolean;
+  is_active?: boolean;
+}
+
+export interface CreateServiceAddonOptionRequest {
+  addon_id: string;
+  name: string;
+  price?: number;
+  option_order?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateServiceAddonOptionRequest {
+  name?: string;
+  price?: number;
+  option_order?: number;
   is_active?: boolean;
 }
 
@@ -176,6 +209,8 @@ export interface ServiceFormData {
   policy_fields: ServicePolicyField[];
   staff_ids: string[];
   allows_twins: boolean;
+  twin_price?: number | null;
+  twin_duration_minutes?: number | null;
   is_active: boolean;
 }
 
