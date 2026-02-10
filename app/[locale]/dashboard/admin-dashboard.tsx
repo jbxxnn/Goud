@@ -35,7 +35,7 @@ import type { PieSectorDataItem } from 'recharts/types/polar/Pie';
 import { DataTable } from '@/components/ui/data-table';
 import { getRecentBookingsColumns } from '@/components/recent-bookings-table-columns';
 import Link from 'next/link';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { Booking, BookingStatus, RecentBookingSummary } from '@/lib/types/booking';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
@@ -777,8 +777,8 @@ export default function DashboardClient() {
                                 {booking.services?.name || t('recentBookings.unknownService')}
                               </p>
                               {booking.parent_booking_id && (
-                                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/20 h-4 text-[9px] px-1 uppercase font-bold tracking-wider">
-                                  Repeat
+                                <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                                  {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
                                 </Badge>
                               )}
                             </div>

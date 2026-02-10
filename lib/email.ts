@@ -209,3 +209,44 @@ export async function sendBookingCancellationEmail(
         throw error;
     }
 }
+
+export type RepeatBookingDetails = {
+    clientName: string;
+    serviceName: string;
+    link: string;
+};
+
+export async function sendRepeatBookingEmail(
+    to: string,
+    details: RepeatBookingDetails
+) {
+    if (!process.env.RESEND_API_KEY) {
+        console.error('RESEND_API_KEY is not set');
+        return;
+    }
+
+    const { RepeatBookingEmail } = await import('@/components/emails/repeat-booking');
+
+    const defaultSubject = `Plan je vervolgafspraak bij Goud Echo`;
+    // We can use a template key if we want to support dynamic subjects/body later
+    const { subject, body } = await getTemplateContent('repeat_booking', defaultSubject, details);
+
+    const emailHtml = await render(RepeatBookingEmail({ ...details, customBody: body }));
+
+    try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';
+
+        const data = await resend.emails.send({
+            from: `Goud Echo <${fromEmail}>`,
+            to: [to],
+            subject: subject,
+            html: emailHtml,
+        });
+
+        console.log('Repeat booking email sent successfully:', data);
+        return data;
+    } catch (error) {
+        console.error('Error sending repeat booking email:', error);
+        throw error;
+    }
+}

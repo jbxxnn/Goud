@@ -1263,5 +1263,42 @@
         "dontHaveAccount": "Don't have an account?",
         "signUp": "Sign up",
         "error": "An error occurred"
+    },
+    "AppointmentDetail": {
+        "backToDashboard": "Back to Dashboard",
+        "linkedToParent": "Linked to Parent Screening",
+        "completing": "Completing...",
+        "completeAppointment": "Complete Appointment",
+        "patientDetails": "Patient Details",
+        "email": "Email",
+        "phone": "Phone",
+        "dueDate": "Due Date",
+        "notSet": "Not set",
+        "gestationalAge": "Gestational Age",
+        "previousAppointments": "Previous Appointments",
+        "noHistory": "No previous history found.",
+        "addons": "Addons:",
+        "standardAppointment": "Standard appointment",
+        "medicalNotes": "Medical / Internal Notes",
+        "saving": "Saving...",
+        "saveNotes": "Save Notes",
+        "notesPlaceholder": "Enter medical observations, measurements, or private notes here...",
+        "notesVisibility": "These notes are only visible to staff.",
+        "protocolChecklist": "Protocol Checklist",
+        "checklist": {
+            "verifyIdentity": "Verify Patient Identity",
+            "consentForm": "Consent Form Signed",
+            "gaConfirmed": "Gestational Age Confirmed",
+            "fhrChecked": "Fetal Heart Rate Checked",
+            "imagesSaved": "Images Saved"
+        },
+        "toasts": {
+            "notesSaved": "Internal notes saved",
+            "notesError": "Error saving notes",
+            "notesFailed": "Failed to save notes",
+            "completed": "Appointment marked as completed",
+            "completeError": "Failed to complete appointment",
+            "completeFailed": "Failed to complete"
+        }
     }
 }

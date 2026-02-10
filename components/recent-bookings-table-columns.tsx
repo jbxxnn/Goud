@@ -1,5 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
+import { differenceInMinutes, format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { RecentBookingSummary } from '@/lib/types/booking';
 
@@ -37,8 +37,8 @@ export const getRecentBookingsColumns = (t: (key: string) => string, tRoot: (key
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground">{booking.serviceName}</span>
             {booking.isRepeat && (
-              <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/20 hover:bg-primary/20 h-4 text-[10px] px-1.5 uppercase font-bold tracking-wider">
-                Repeat
+              <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                {differenceInMinutes(new Date(booking.endTime), new Date(booking.startTime))}
               </Badge>
             )}
           </div>

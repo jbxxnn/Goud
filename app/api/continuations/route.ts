@@ -174,6 +174,48 @@ export async function POST(request: NextRequest) {
         // For now we return relative path or let client construct it.
         const link = `/booking/repeat?token=${token}`;
 
+        // Send email to client
+        // Fetch full details for email
+        const { data: fullBooking } = await supabase
+            .from('bookings')
+            .select(`
+                *,
+                users:users!client_id (
+                    first_name,
+                    last_name,
+                    email
+                ),
+                services:services!service_id (
+                    name
+                )
+            `)
+            .eq('id', parent_booking_id)
+            .single();
+
+        if (fullBooking) {
+            const client = fullBooking.users;
+            const clientName = [client?.first_name, client?.last_name].filter(Boolean).join(' ') || 'Client';
+            const clientEmail = client?.email;
+            const serviceName = fullBooking.services?.name || 'Service';
+
+            if (clientEmail) {
+                // Determine base URL
+                const protocol = request.headers.get('x-forwarded-proto') || 'http';
+                const host = request.headers.get('host') || 'goudecho.nl';
+                const baseUrl = `${protocol}://${host}`;
+                const fullLink = `${baseUrl}${link}`;
+
+                // We import dynamically or use the function we just added
+                const { sendRepeatBookingEmail } = await import('@/lib/email');
+
+                await sendRepeatBookingEmail(clientEmail, {
+                    clientName,
+                    serviceName,
+                    link: fullLink
+                }).catch(err => console.error('Failed to send repeat booking email', err));
+            }
+        }
+
         return NextResponse.json({
             success: true,
             data: {

@@ -11,6 +11,7 @@ import {
     EyeIcon
 } from '@hugeicons/core-free-icons';
 import { Booking, BookingStatus } from '@/lib/types/booking';
+import { differenceInMinutes } from 'date-fns';
 
 const getStatusBadge = (status: BookingStatus, t: any) => {
     const variants: Record<BookingStatus, { variant: 'confirmed' | 'pending' | 'destructive' | 'ongoing' | 'completed' | 'default' | 'secondary' | 'outline', label: string }> = {
@@ -102,10 +103,11 @@ export const createBookingColumns = (
             cell: ({ row }) => {
                 const booking = row.original;
                 const startTime = booking.start_time;
+                const timeRange = `${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`;
                 return (
                     <div>
                         <div className="font-medium">{formatDate(startTime)}</div>
-                        <div className="text-sm text-muted-foreground">{formatTime(startTime)}</div>
+                        <div className="text-sm text-muted-foreground">{timeRange}</div>
                     </div>
                 );
             },
@@ -116,13 +118,18 @@ export const createBookingColumns = (
             cell: ({ row }) => {
                 const booking = row.original;
                 const service = booking.services;
-                const duration = service?.duration ? formatDuration(service.duration) : null;
+                const timeRange = `${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`;
                 return service ? (
                     <div>
-                        <div className="font-medium">{service.name}</div>
-                        {duration && (
-                            <div className="text-xs text-muted-foreground mt-1">{duration}</div>
-                        )}
+                        <div className="font-medium flex items-center gap-2">
+                            {service.name}
+                            {booking.parent_booking_id && (
+                                <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                                    {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                                </Badge>
+                            )}
+                        </div>
+                        {/* <div className="text-xs text-muted-foreground mt-1">{timeRange}</div> */}
                     </div>
                 ) : (
                     <span className="text-muted-foreground">{t('cells.na')}</span>

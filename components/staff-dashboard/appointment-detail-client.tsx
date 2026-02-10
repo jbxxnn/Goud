@@ -20,7 +20,7 @@ import {
     ArrowLeft01Icon,
     Link01Icon
 } from '@hugeicons/core-free-icons';
-import { format, differenceInWeeks, differenceInDays, addDays, subDays } from 'date-fns';
+import { format, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,7 @@ import { MediaSection } from './media-section';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { useQueryClient } from '@tanstack/react-query';
 import { RepeatPrescriber } from '@/components/repeat-prescriber';
+import { useTranslations } from 'next-intl';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -36,6 +37,7 @@ interface AppointmentDetailClientProps {
 }
 
 export function AppointmentDetailClient({ booking, currentUser, previousBookings = [] }: AppointmentDetailClientProps) {
+    const t = useTranslations('AppointmentDetail');
     const router = useRouter();
     const queryClient = useQueryClient();
     const [notes, setNotes] = useState(booking.internal_notes || '');
@@ -76,11 +78,11 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
             if (!res.ok) throw new Error('Failed to save notes');
 
-            toast.success('Internal notes saved');
+            toast.success(t('toasts.notesSaved'));
             // Invalidate bookings list so the dashboard is fresh
             queryClient.invalidateQueries({ queryKey: ['bookings'] });
         } catch (error) {
-            toast.error('Error saving notes');
+            toast.error(t('toasts.notesError'));
         } finally {
             setIsSaving(false);
         }
@@ -91,7 +93,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
             <PageItem>
                 <Button variant="ghost" className="mb-2" onClick={() => router.back()}>
                     <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
-                    Back to Dashboard
+                    {t('backToDashboard')}
                 </Button>
             </PageItem>
 
@@ -115,7 +117,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                     onClick={() => router.push(`/dashboard/appointments/${booking.parent_booking_id}`)}
                                 >
                                     <HugeiconsIcon icon={Link01Icon} size={12} className="mr-1" />
-                                    Linked to Parent Screening
+                                    {t('linkedToParent')}
                                 </Button>
                             )}
                         </h1>
@@ -137,7 +139,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        {(booking.status === 'confirmed' || booking.status === 'completed') && (
+                        {booking.status === 'completed' && (
                             <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                         )}
                         {booking.status === 'confirmed' && (
@@ -152,16 +154,16 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                             body: JSON.stringify({ status: 'completed' })
                                         });
                                         if (!res.ok) throw new Error('Failed to complete');
-                                        toast.success('Appointment marked as completed');
+                                        toast.success(t('toasts.completed'));
                                         queryClient.invalidateQueries({ queryKey: ['bookings'] });
                                         router.refresh();
                                     } catch (e) {
-                                        toast.error('Failed to complete appointment');
+                                        toast.error(t('toasts.completeError'));
                                         setIsCompleting(false);
                                     }
                                 }}
                             >
-                                {isCompleting ? 'Completing...' : 'Complete Appointment'}
+                                {isCompleting ? t('completing') : t('completeAppointment')}
                             </Button>
                         )}
                     </div>
@@ -175,25 +177,25 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     <PageItem>
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Patient Details</CardTitle>
+                                <CardTitle className="text-base">{t('patientDetails')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Email</div>
+                                    <div className="text-sm font-medium text-muted-foreground">{t('email')}</div>
                                     <div>{booking.users?.email}</div>
                                 </div>
                                 <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Phone</div>
+                                    <div className="text-sm font-medium text-muted-foreground">{t('phone')}</div>
                                     <div>{booking.users?.phone || 'N/A'}</div>
                                 </div>
                                 <Separator />
                                 <div>
-                                    <div className="text-sm font-medium text-muted-foreground">Due Date</div>
-                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP') : 'Not set'}</div>
+                                    <div className="text-sm font-medium text-muted-foreground">{t('dueDate')}</div>
+                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP') : t('notSet')}</div>
                                 </div>
                                 {ga && (
                                     <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
-                                        <div className="text-sm font-medium text-primary">Gestational Age</div>
+                                        <div className="text-sm font-medium text-primary">{t('gestationalAge')}</div>
                                         <div className="text-2xl font-bold text-primary">
                                             {ga.weeks}<span className="text-sm font-normal text-muted-foreground ml-1">w</span> {ga.days}<span className="text-sm font-normal text-muted-foreground ml-1">d</span>
                                         </div>
@@ -207,7 +209,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         {/* Previous History */}
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-base">Previous Appointments</CardTitle>
+                                <CardTitle className="text-base">{t('previousAppointments')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {previousBookings && previousBookings.length > 0 ? (
@@ -227,7 +229,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-muted-foreground italic">No previous history found.</p>
+                                    <p className="text-sm text-muted-foreground italic">{t('noHistory')}</p>
                                 )}
                             </CardContent>
                         </Card>
@@ -240,11 +242,13 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     {/* Service & Notes */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>{booking.services?.name}</CardTitle>
+                            <CardTitle>{booking.services?.name} {booking.isRepeat && <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                                {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                            </Badge>}</CardTitle>
                             <CardDescription>
                                 {booking.booking_addons && booking.booking_addons.length > 0 ? (
-                                    <span>Addons: {booking.booking_addons.map((a: any) => a.service_addons?.name).join(', ')}</span>
-                                ) : 'Standard appointment'}
+                                    <span>{t('addons')} {booking.booking_addons.map((a: any) => a.service_addons?.name).join(', ')}</span>
+                                ) : t('standardAppointment')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -254,21 +258,21 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium flex items-center gap-2">
                                         <HugeiconsIcon icon={File01Icon} size={16} />
-                                        Medical / Internal Notes
+                                        {t('medicalNotes')}
                                     </label>
                                     <Button size="sm" variant="ghost" onClick={handleSaveNotes} disabled={isSaving}>
-                                        {isSaving ? 'Saving...' : 'Save Notes'}
+                                        {isSaving ? t('saving') : t('saveNotes')}
                                     </Button>
                                 </div>
                                 <Textarea
                                     className="min-h-[150px] bg-yellow-50/50 border-yellow-200 focus-visible:ring-yellow-400"
-                                    placeholder="Enter medical observations, measurements, or private notes here..."
+                                    placeholder={t('notesPlaceholder')}
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                     <HugeiconsIcon icon={AlertCircleIcon} size={12} />
-                                    These notes are only visible to staff.
+                                    {t('notesVisibility')}
                                 </p>
                             </div>
 
@@ -278,10 +282,16 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     {/* Checklist (Mocked) */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Protocol Checklist</CardTitle>
+                            <CardTitle className="text-base">{t('protocolChecklist')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {['Verify Patient Identity', 'Consent Form Signed', 'Gestational Age Confirmed', 'Fetal Heart Rate Checked', 'Images Saved'].map((item, i) => (
+                            {[
+                                t('checklist.verifyIdentity'),
+                                t('checklist.consentForm'),
+                                t('checklist.gaConfirmed'),
+                                t('checklist.fhrChecked'),
+                                t('checklist.imagesSaved')
+                            ].map((item, i) => (
                                 <div key={i} className="flex items-center space-x-2">
                                     <Checkbox id={`check-${i}`} />
                                     <label

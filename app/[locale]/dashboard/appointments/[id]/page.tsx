@@ -65,6 +65,8 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
         (booking as any).users = clientUser;
     }
 
+    (booking as any).isRepeat = !!booking.parent_booking_id;
+
     // Fetch previous bookings for this client
     let previousBookings: any[] = [];
     const clientIdentifier = booking.created_by || booking.client_id;

@@ -119,7 +119,7 @@ export function BookingFlow() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>{t('back')}</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0">
+                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-full" style={{ borderRadius: '10rem' }}>
                                         {t('confirmReset')}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>

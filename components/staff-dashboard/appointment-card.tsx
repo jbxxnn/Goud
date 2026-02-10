@@ -14,7 +14,7 @@ import {
     MoreHorizontalIcon,
     Loading03Icon
 } from '@hugeicons/core-free-icons';
-import { format, parseISO, addMinutes } from 'date-fns';
+import { format, parseISO, addMinutes, differenceInMinutes } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
 interface AppointmentCardProps {
@@ -27,8 +27,7 @@ export function AppointmentCard({ booking }: AppointmentCardProps) {
     const start = parseISO(booking.start_time);
 
     // Fallback duration if not present (should be in service)
-    const duration = booking.services?.duration || 30;
-    const end = addMinutes(start, duration);
+    const end = parseISO(booking.end_time);
 
     const handleClick = () => {
         setIsLoading(true);
@@ -79,7 +78,11 @@ export function AppointmentCard({ booking }: AppointmentCardProps) {
 
                         {/* Title */}
                         <span className="font-semibold text-base">
-                            {booking.services?.name} with {booking.users?.first_name} {booking.users?.last_name}
+                            {booking.services?.name}
+                            {booking.isRepeat && <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                                {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                            </Badge>} <br />
+                            with {booking.users?.first_name} {booking.users?.last_name}
                         </span>
                         {/* Status */}
                         {/* <Badge variant={

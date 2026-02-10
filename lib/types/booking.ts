@@ -140,6 +140,7 @@ export interface Booking {
             price: number;
         } | null;
     }>;
+    isRepeat?: boolean;
     policy_answers: Array<{
         fieldId?: string;
         field_id?: string;
@@ -158,6 +159,7 @@ export interface RecentBookingSummary {
     staffName?: string;
     locationName?: string;
     startTime: string;
+    endTime: string;
     status: BookingStatus | string;
     isRepeat?: boolean;
     parentBookingId?: string | null;

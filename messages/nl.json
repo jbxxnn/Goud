@@ -1263,5 +1263,42 @@
         "dontHaveAccount": "Heeft u nog geen account?",
         "signUp": "Aanmelden",
         "error": "Er is een fout opgetreden"
+    },
+    "AppointmentDetail": {
+        "backToDashboard": "Terug naar Dashboard",
+        "linkedToParent": "Gekoppeld aan moederscreening",
+        "completing": "Afronden...",
+        "completeAppointment": "Afspraak afronden",
+        "patientDetails": "Patiëntgegevens",
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "dueDate": "Uitgerekende datum",
+        "notSet": "Niet ingesteld",
+        "gestationalAge": "Zwangerschapsduur",
+        "previousAppointments": "Eerdere afspraken",
+        "noHistory": "Geen eerdere geschiedenis gevonden.",
+        "addons": "Extra's:",
+        "standardAppointment": "Standaard afspraak",
+        "medicalNotes": "Medische / Interne notities",
+        "saving": "Opslaan...",
+        "saveNotes": "Notities opslaan",
+        "notesPlaceholder": "Voer hier medische observaties, metingen of privénotities in...",
+        "notesVisibility": "Deze notities zijn alleen zichtbaar voor personeel.",
+        "protocolChecklist": "Protocol controlelijst",
+        "checklist": {
+            "verifyIdentity": "Identiteit patiënt verifiëren",
+            "consentForm": "Toestemmingsformulier ondertekend",
+            "gaConfirmed": "Zwangerschapsduur bevestigd",
+            "fhrChecked": "Hartslag foetus gecontroleerd",
+            "imagesSaved": "Beelden opgeslagen"
+        },
+        "toasts": {
+            "notesSaved": "Interne notities opgeslagen",
+            "notesError": "Fout bij opslaan notities",
+            "notesFailed": "Opslaan van notities mislukt",
+            "completed": "Afspraak gemarkeerd als voltooid",
+            "completeError": "Afronden van afspraak mislukt",
+            "completeFailed": "Afronden mislukt"
+        }
     }
 }

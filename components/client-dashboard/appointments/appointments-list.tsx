@@ -15,7 +15,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO, isPast } from 'date-fns';
+import { format, parseISO, isPast, differenceInMinutes } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarAdd01Icon, Search01Icon } from '@hugeicons/core-free-icons';
@@ -354,6 +354,14 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                                     className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
                                                 >
                                                     Tweeling
+                                                </Badge>
+                                            )}
+                                            {booking.isRepeat && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider"
+                                                >
+                                                    {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
                                                 </Badge>
                                             )}
                                         </div>

@@ -557,7 +557,8 @@ export async function GET(req: NextRequest) {
 
     const bookingsFinal = bookingsWithAddons.map(b => ({
       ...b,
-      users: usersMap[b.created_by] || usersMap[b.client_id] || null
+      users: usersMap[b.created_by] || usersMap[b.client_id] || null,
+      isRepeat: !!b.parent_booking_id
     }));
 
     const totalPages = count ? Math.ceil(count / limit) : 0;

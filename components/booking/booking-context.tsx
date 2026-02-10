@@ -395,6 +395,11 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
             if (continuationToken) {
                 // REPEAT FLOW
                 try {
+                    // Check for existing session first to avoid forcing logout
+                    const { createClient } = await import('@/lib/supabase/client');
+                    const supabase = createClient();
+                    const { data: { session } } = await supabase.auth.getSession();
+
                     const res = await fetch(`/api/continuations?token=${continuationToken}`);
                     const json = await res.json();
                     if (!json.success) {
@@ -429,7 +434,28 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                     setStep(2);
                     setRepeatServiceLoaded(true);
 
-                    // Pre-fill user details from parent booking
+                    // Pre-fill user details
+                    if (session?.user?.email) {
+                        // User is logged in, prioritize their session
+                        setClientEmail(session.user.email);
+                        setIsLoggedIn(true);
+                        setEmailChecked({ exists: true });
+
+                        // We could fetch their latest details here if we wanted to be super safe
+                        // But let's trust the session for auth state
+                    } else if (parentBooking.users) {
+                        // Fallback to parent booking email if not logged in
+                        setClientEmail(parentBooking.users.email);
+                        setIsLoggedIn(false);
+                        // Since we have a parent booking, the user MUST exist.
+                        // We set emailChecked to true so the password field shows up immediately
+                        // instead of waiting for them to edit the email field.
+                        setEmailChecked({ exists: true });
+                    }
+
+                    // Always pre-fill form data from parent booking for convenience
+                    // unless we want to fetch fresh data for the logged in user? 
+                    // Let's stick to parent booking data as it's a "repeat" of that specific client context.
                     if (parentBooking.users) {
                         const u = parentBooking.users;
                         setContactDefaults({
@@ -438,8 +464,6 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                             phone: u.phone || undefined,
                             notes: undefined,
                         });
-                        setClientEmail(u.email);
-                        setIsLoggedIn(false);
 
                         if (parentBooking.is_twin) {
                             setIsTwin(true);
@@ -1068,7 +1092,8 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                 policyExtraPriceCents, addonExtraPriceCents, grandTotalCents,
                 showDetailsForm, isFormValid, setIsFormValid,
                 handleStartOver, handleEmailChange,
-                getDisplayStepNumber, totalSteps, currentStepNumber
+                getDisplayStepNumber, totalSteps, currentStepNumber,
+                continuationToken
             }}
         >
             {children}

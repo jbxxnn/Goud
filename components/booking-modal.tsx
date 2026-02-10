@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { RepeatPrescriber } from './repeat-prescriber';
+import { differenceInMinutes } from 'date-fns';
 
 interface PolicyField {
   id: string;
@@ -268,7 +269,12 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   </div>
                   <div>
                     <div className="text-muted-foreground">Service</div>
-                    <div className="font-medium">{service?.name || 'N/A'}</div>
+                    <div className="font-medium">{service?.name || 'N/A'} {booking.parent_booking_id && (
+                      <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                        {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                      </Badge>
+                    )}</div>
+
                   </div>
                   <div>
                     <div className="text-muted-foreground">Duration</div>

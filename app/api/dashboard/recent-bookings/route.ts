@@ -12,9 +12,11 @@ export async function GET(req: NextRequest) {
       .from('bookings')
       .select(
         `
+          
           id,
           created_by,
           start_time,
+          end_time,
           status,
           parent_booking_id,
           continuation_id,
@@ -92,6 +94,7 @@ export async function GET(req: NextRequest) {
           staffName,
           locationName: location?.name ?? null,
           startTime: booking.start_time,
+          endTime: booking.end_time,
           status: booking.status,
           isRepeat: !!booking.parent_booking_id,
           parentBookingId: booking.parent_booking_id,
