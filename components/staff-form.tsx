@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Staff, CreateStaffRequest, UpdateStaffRequest, StaffRole } from '@/lib/types/staff';
@@ -50,6 +53,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [serviceDropdownOpen, setServiceDropdownOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const {
     register,
@@ -150,7 +154,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
         }
 
         // Fetch services
-        const servicesResponse = await fetch('/api/services');
+        const servicesResponse = await fetch(`/api/services?limit=100&t=${Date.now()}`, { cache: 'no-store' });
         const servicesData = await servicesResponse.json();
         if (servicesData.success) {
           setServices(servicesData.data || []);
@@ -390,11 +394,35 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
             {/* Hire Date */}
             <div>
               <Label htmlFor="hire_date" className="text-xs font-semibold mb-2">{t('hireDate')}</Label>
-              <Input
-                id="hire_date"
-                type="date"
-                {...register('hire_date')}
-              />
+              <Popover modal={true} open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-12 border border-gray-200 bg-gray-50",
+                      !watch('hire_date') && "text-muted-foreground"
+                    )}
+                    style={{ borderRadius: '0.2rem' }}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {watch('hire_date') ? format(new Date(watch('hire_date')), "PPP") : <span>{t('pickDate')}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={watch('hire_date') ? new Date(watch('hire_date')) : undefined}
+                    onSelect={(date) => {
+                      setValue('hire_date', date ? format(date, 'yyyy-MM-dd') : '');
+                      setDatePickerOpen(false);
+                    }}
+                    initialFocus
+                    captionLayout="dropdown"
+                    fromYear={1990}
+                    toYear={2030}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Role */}
@@ -430,7 +458,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
             {/* Location Assignments */}
             <div className="md:col-span-2">
               <Label htmlFor="location_ids" className="text-xs font-semibold mb-2">{t('locations')}</Label>
-              <Popover open={locationDropdownOpen} onOpenChange={setLocationDropdownOpen}>
+              <Popover open={locationDropdownOpen} onOpenChange={setLocationDropdownOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -451,7 +479,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                   <Command>
                     <CommandInput placeholder={t('locationsPlaceholder')} />
-                    <CommandList>
+                    <CommandList className="max-h-[300px] overflow-y-auto overscroll-contain">
                       <CommandEmpty>{t('noLocations')}</CommandEmpty>
                       <CommandGroup>
                         {locations.map((location) => (
@@ -482,12 +510,13 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               {selectedLocations.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {selectedLocations.map((location) => (
-                    <Badge key={location.id} variant="secondary" className="gap-1">
+                    <Badge key={location.id} variant="secondary" className="gap-1" style={{ borderRadius: '0.2rem' }}>
                       {location.name}
                       <button
                         type="button"
                         onClick={() => removeLocation(location.id)}
-                        className="ml-1 rounded-full hover:bg-muted-foreground/20"
+                        className="ml-1 hover:bg-muted-foreground/20"
+                        style={{ borderRadius: '0.2rem' }}
                         aria-label={`Remove ${location.name}`}
                       >
                         <X className="h-3 w-3" />
@@ -501,7 +530,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
             {/* Service Qualifications */}
             <div className="md:col-span-2">
               <Label htmlFor="service_ids" className="text-xs font-semibold mb-2">{t('services')}</Label>
-              <Popover open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen}>
+              <Popover open={serviceDropdownOpen} onOpenChange={setServiceDropdownOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -522,7 +551,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                 <PopoverContent className="p-0" align="start" style={{ width: 'var(--radix-popover-trigger-width)' }}>
                   <Command>
                     <CommandInput placeholder={t('servicesPlaceholder')} />
-                    <CommandList>
+                    <CommandList className="max-h-[300px] overflow-y-auto overscroll-contain">
                       <CommandEmpty>{t('noServices')}</CommandEmpty>
                       <CommandGroup>
                         {services.map((service) => (
@@ -557,7 +586,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
                     const isTwinQualified = qualification?.is_twin_qualified || false;
 
                     return (
-                      <Badge key={service.id} variant="secondary" className="gap-1 pr-1 items-center">
+                      <Badge key={service.id} variant="secondary" className="gap-1 pr-1 items-center" style={{ borderRadius: '0.2rem' }}>
                         <div className="flex flex-col gap-1 py-1">
                           <div className="flex items-center gap-1">
                             <span>{service.name}</span>

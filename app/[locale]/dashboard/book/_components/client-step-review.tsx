@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { useBooking } from '@/app/[locale]/(public)/booking/_components/booking-context';
+import { useBooking } from '@/components/booking/booking-context';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CircleArrowLeft02Icon, CircleArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { useRouter } from 'next/navigation';
@@ -10,9 +10,9 @@ import { formatEuroCents } from '@/lib/currency/format';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { CheckoutForm } from '@/app/[locale]/(public)/booking/_components/checkout-form';
+import { CheckoutForm } from '@/components/booking/checkout-form';
 import { BookingContactInput } from '@/lib/validation/booking';
-import { buildAddonPayload, buildPolicyAnswerPayload } from '@/app/[locale]/(public)/booking/_components/booking-utils';
+import { buildAddonPayload, buildPolicyAnswerPayload } from '@/components/booking/booking-utils';
 
 export function ClientStepReview() {
     const router = useRouter();

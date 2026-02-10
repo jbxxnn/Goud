@@ -1,9 +1,9 @@
 'use client';
 
-import { useBooking } from '@/app/[locale]/(public)/booking/_components/booking-context';
-import { StepService } from '@/app/[locale]/(public)/booking/_components/step-service';
-import { StepDateTime } from '@/app/[locale]/(public)/booking/_components/step-datetime';
-import { StepAddons } from '@/app/[locale]/(public)/booking/_components/step-addons';
+import { useBooking } from '@/components/booking/booking-context';
+import { StepService } from '@/components/booking/step-service';
+import { StepDateTime } from '@/components/booking/step-datetime';
+import { StepAddons } from '@/components/booking/step-addons';
 import { ClientStepReview } from './_components/client-step-review'; // Custom simplified review
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useTranslations } from 'next-intl';

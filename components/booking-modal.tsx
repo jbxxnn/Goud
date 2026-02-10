@@ -619,7 +619,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     Delete Booking
                   </Button>
                 )}
-                {booking.service_id && !['cancelled'].includes(booking.status) && (
+                {booking.service_id && booking.status === 'completed' && (
                   <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                 )}
               </div>

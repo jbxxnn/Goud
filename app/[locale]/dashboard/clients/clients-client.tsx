@@ -55,6 +55,7 @@ interface ClientsClientProps {
   initialPagination: {
     page: number;
     totalPages: number;
+    total: number;
   };
 }
 
@@ -68,7 +69,7 @@ export default function ClientsClient({
 
   // URL & Filter State
   const [page, setPage] = useState(initialPagination.page);
-  const [limit, setLimit] = useState<number>(10);
+  const [limit, setLimit] = useState<number>(20); // Default to 20
   const [searchQuery, setSearchQuery] = useState<string>('');
   const roleOptions = ['client', 'staff', 'midwife', 'admin'] as const;
   type RoleOption = (typeof roleOptions)[number];
@@ -145,12 +146,22 @@ export default function ClientsClient({
       }
       return data;
     },
-    placeholderData: (previousData) => previousData,
+    initialData: (page === 1 && limit === 20 && !searchQuery && selectedRole === 'client' && initialClients.length > 0) ? {
+      success: true,
+      data: initialClients,
+      pagination: {
+        page: initialPagination.page,
+        total_pages: initialPagination.totalPages,
+        total: initialPagination.total,
+        limit: 20
+      }
+    } as any : undefined,
   });
 
   const clients = clientsData?.data || [];
-  const totalPages = clientsData?.pagination?.total_pages || 0;
-  const total = clientsData?.pagination?.total || 0;
+  const pagination = clientsData?.pagination;
+  const totalPages = pagination?.total_pages || 0;
+  const total = pagination?.total || 0;
   const loading = clientsLoading;
 
 
@@ -461,7 +472,6 @@ export default function ClientsClient({
                 {total > 0 ? (
                   <>
                     {tTable('showing', { start: (page - 1) * limit + 1, end: Math.min(page * limit, total), total: total })}{' '}
-                    {roleLabel}
                   </>
                 ) : (
                   <>{t('table.emptyTitle', { role: roleLabel })}</>

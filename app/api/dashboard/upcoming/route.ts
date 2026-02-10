@@ -7,25 +7,25 @@ export async function GET(req: NextRequest) {
     const dateStr = searchParams.get('date'); // ISO YYYY-MM-DD
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
-    
+
     if (!dateStr) {
       return NextResponse.json({ error: 'Missing date parameter' }, { status: 400 });
     }
-    
+
     const supabase = getServiceSupabase();
-    
+
     // Parse date and get start/end of day
     const selectedDate = new Date(`${dateStr}T00:00:00.000Z`);
     const dayStart = new Date(selectedDate);
     dayStart.setUTCHours(0, 0, 0, 0);
     const dayEnd = new Date(selectedDate);
     dayEnd.setUTCHours(23, 59, 59, 999);
-    
+
     // Get bookings for the selected date
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    
-    const { data, error, count } = await supabase
+
+    const { data: bookings, error, count } = await supabase
       .from('bookings')
       .select(`
         *,
@@ -57,11 +57,31 @@ export async function GET(req: NextRequest) {
       .neq('status', 'cancelled')
       .order('start_time', { ascending: true })
       .range(from, to);
-    
+
     if (error) {
       return NextResponse.json({ error: 'Failed to fetch upcoming appointments' }, { status: 500 });
     }
-    
+
+    // Fetch created_by users if any
+    let data = bookings;
+    if (bookings && bookings.length > 0) {
+      const createdByIds = Array.from(new Set(bookings.map((b: any) => b.created_by).filter(Boolean)));
+
+      if (createdByIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email, phone')
+          .in('id', createdByIds);
+
+        const userMap = new Map(users?.map((u) => [u.id, u]) || []);
+
+        data = bookings.map((b: any) => ({
+          ...b,
+          created_by_user: b.created_by ? userMap.get(b.created_by) || null : null
+        }));
+      }
+    }
+
     // Count total for the day
     const { count: totalCount } = await supabase
       .from('bookings')
@@ -69,9 +89,9 @@ export async function GET(req: NextRequest) {
       .gte('start_time', dayStart.toISOString())
       .lte('start_time', dayEnd.toISOString())
       .neq('status', 'cancelled');
-    
+
     const totalPages = count ? Math.ceil(count / limit) : 0;
-    
+
     return NextResponse.json({
       success: true,
       data: data || [],

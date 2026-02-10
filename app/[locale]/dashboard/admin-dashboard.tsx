@@ -290,13 +290,14 @@ export default function DashboardClient() {
   //   );
 
   const formatClientName = (booking: Booking) => {
-    if (booking.users?.first_name && booking.users?.last_name) {
-      return `${booking.users.first_name} ${booking.users.last_name}`;
+    const user = booking.created_by_user || booking.users;
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
     }
-    if (booking.users?.first_name) {
-      return booking.users.first_name;
+    if (user?.first_name) {
+      return user.first_name;
     }
-    return booking.users?.email || 'Unknown';
+    return user?.email || 'Unknown';
   };
 
   const formatTime = (timeString: string) => {

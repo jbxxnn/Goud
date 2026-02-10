@@ -247,7 +247,10 @@ export function StepService() {
                 <div className="space-y-2">
                     {/* <Label htmlFor="service-select" className="text-sm font-bold text-gray-700">Services</Label> */}
                     <Select value={serviceId} onValueChange={setServiceId}>
-                        <SelectTrigger id="service-select" className="w-full">
+                        <SelectTrigger
+                            id="service-select"
+                            className={`w-full transition-all duration-300 ${!serviceId && !loadingServices ? "ring-2 ring-primary ring-offset-2 animate-ring-pulse" : ""}`}
+                        >
                             {loadingServices ? (
                                 <div>
                                     <div className="flex items-center gap-2 opacity-25">
@@ -289,9 +292,9 @@ export function StepService() {
                             <Label htmlFor="twin-pregnancy" className="text-sm font-bold text-gray-900 cursor-pointer">
                                 {t('isTwinPregnancy')}
                             </Label>
-                            <p className="text-xs text-gray-500">
+                            {/* <p className="text-xs text-gray-500">
                                 {t('twinPregnancyDescription')} (+100% price/duration)
-                            </p>
+                            </p> */}
                         </div>
                     </div>
                 </div>

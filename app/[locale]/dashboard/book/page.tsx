@@ -1,6 +1,6 @@
 'use client';
 
-import { BookingProvider } from '@/app/[locale]/(public)/booking/_components/booking-context';
+import { BookingProvider } from '@/components/booking/booking-context';
 import { ClientBookingFlow } from './client-booking-flow';
 import { useTranslations } from 'next-intl';
 

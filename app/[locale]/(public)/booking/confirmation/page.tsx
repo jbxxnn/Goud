@@ -187,7 +187,7 @@ function BookingConfirmationContent() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">{t('errorTitle')}</h1>
           <p className="text-gray-600 mb-8 text-lg leading-relaxed">{error || t('errorLoad')}</p>
           <Button
-            onClick={() => router.push('/booking')}
+            onClick={() => router.push('/')}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-6 text-base shadow-lg"
           >
             {t('backToBookings')}
@@ -197,7 +197,7 @@ function BookingConfirmationContent() {
     );
   }
 
-  const user = booking.users;
+  const user = booking.created_by_user || booking.users;
   const service = booking.services;
   const location = booking.locations;
   const staff = booking.staff;
@@ -469,7 +469,7 @@ function BookingConfirmationContent() {
           <div className="p-6 bg-gray-50/50 flex items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-3 justify-between">
               <Button
-                onClick={() => router.push('/booking')}
+                onClick={() => router.push('/')}
                 variant={isLoggedIn ? "outline" : "default"}
                 className={`flex-1 h-auto px-8 font-semibold  ${isLoggedIn
                   ? 'border-gray-300 hover:bg-gray-50'

@@ -108,8 +108,9 @@ export default function ClientDetailClient({
     const fetchBookings = async () => {
       try {
         setBookingsLoading(true);
-        const response = await fetch(`/api/bookings?clientId=${clientId}&limit=100`);
-        const data: BookingsResponse = await response.json();
+        // Fetch bookings where user is CREATOR or CLIENT (anyUserId)
+        const res = await fetch(`/api/bookings?anyUserId=${clientId}&limit=100`);
+        const data: BookingsResponse = await res.json();
 
         if (data.success && data.data) {
           setBookings(data.data);
@@ -689,7 +690,9 @@ export default function ClientDetailClient({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="midwife_id" className="text-sm font-semibold mb-2">{t('editModal.midwife')}</Label>
+                  <Label htmlFor="midwife_id" className="text-sm font-semibold mb-2">
+                    {(watch('role') === 'midwife' || client.role === 'midwife') ? t('editModal.practice') : t('editModal.midwife')}
+                  </Label>
                   <Select
                     value={watch('midwife_id') || '__none__'}
                     onValueChange={(value) => {

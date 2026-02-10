@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const withAssignments = searchParams.get('with_assignments') === 'true';
-    
+
     const params: StaffSearchParams = {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '10'),
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     };
 
     const supabase = await createClient();
-    
+
     // If with_assignments is true, use a single query with joins
     if (withAssignments) {
       let query = supabase
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
+        total_pages: Math.ceil((count || 0) / limit)
       }
     });
   } catch (error) {
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Check authentication
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { location_ids, service_ids, ...staffFields } = body;
+    const { location_ids, service_ids, services, ...staffFields } = body;
 
     // Create staff record
     const { data: staff, error: staffError } = await supabase
@@ -196,11 +196,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Add service qualifications if provided
-    if (service_ids && service_ids.length > 0) {
+    // Prioritize 'services' array which contains detailed qualification info
+    if (services && services.length > 0) {
+      const serviceQualifications = services.map((s: any) => ({
+        staff_id: staff.id,
+        service_id: s.service_id,
+        is_qualified: true,
+        is_twin_qualified: !!s.is_twin_qualified,
+        qualification_date: new Date().toISOString().split('T')[0]
+      }));
+
+      const { error: serviceError } = await supabase
+        .from('staff_services')
+        .insert(serviceQualifications);
+
+      if (serviceError) {
+        console.error('Error creating detailed service qualifications:', serviceError);
+      }
+    } else if (service_ids && service_ids.length > 0) {
       const serviceQualifications = service_ids.map((service_id: string) => ({
         staff_id: staff.id,
         service_id,
         is_qualified: true,
+        is_twin_qualified: false, // Default
         qualification_date: new Date().toISOString().split('T')[0]
       }));
 

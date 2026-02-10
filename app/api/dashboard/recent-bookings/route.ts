@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
       .select(
         `
           id,
+          created_by,
           start_time,
           status,
           parent_booking_id,
@@ -44,16 +45,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 });
     }
 
+    // Fetch created_by users if any
+    let bookings = data || [];
+    if (bookings.length > 0) {
+      const createdByIds = Array.from(new Set(bookings.map((b: any) => b.created_by).filter(Boolean)));
+
+      if (createdByIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, first_name, last_name, email')
+          .in('id', createdByIds);
+
+        const userMap = new Map(users?.map((u) => [u.id, u]) || []);
+
+        bookings = bookings.map((b: any) => ({
+          ...b,
+          created_by_user: b.created_by ? userMap.get(b.created_by) || null : null
+        }));
+      }
+    }
+
     const formatted =
-      data?.map((booking: any) => {
+      bookings.map((booking: any) => {
         const client = booking.users;
+        const createdBy = booking.created_by_user;
         const staff = booking.staff;
         const service = booking.services;
         const location = booking.locations;
 
+        const primaryUser = createdBy || client;
+
         const clientName =
-          [client?.first_name, client?.last_name].filter(Boolean).join(' ').trim() ||
-          client?.email ||
+          [primaryUser?.first_name, primaryUser?.last_name].filter(Boolean).join(' ').trim() ||
+          primaryUser?.email ||
           'Unknown';
 
         const staffName =
@@ -62,7 +86,7 @@ export async function GET(req: NextRequest) {
         return {
           id: booking.id,
           clientName,
-          clientEmail: client?.email ?? null,
+          clientEmail: primaryUser?.email ?? null,
           serviceName: service?.name ?? 'Unknown service',
           serviceCode: service?.service_code ?? null,
           staffName,

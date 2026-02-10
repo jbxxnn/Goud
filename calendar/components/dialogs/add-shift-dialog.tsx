@@ -7,6 +7,8 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { Input } from "@/components/ui/input";
+import { TimeInput } from "@/components/ui/time-input";
+import { Time } from "@internationalized/date";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -15,6 +17,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectItem, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogHeader, DialogClose, DialogContent, DialogTrigger, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Calendar01Icon } from "@hugeicons/core-free-icons";
 
 import { buildRecurrenceRule, RecurrenceOptions } from "@/lib/types/shift";
 import { Staff } from "@/lib/types/staff";
@@ -57,7 +66,10 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [staffLocationMap, setStaffLocationMap] = useState<{ [key: string]: string[] }>({});
   const [staffServiceMap, setStaffServiceMap] = useState<{ [key: string]: string[] }>({});
+
   const [showServices, setShowServices] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const {
     register,
@@ -393,26 +405,118 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             </div>
 
             {/* Date and Time */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label htmlFor="start_time">{t('startTime')}</Label>
-                <Input
-                  id="start_time"
-                  type="datetime-local"
-                  {...register('start_time', { required: t('startTime') + ' is required' })}
-                />
+                <Label className="block mb-2">{t('startTime')}</Label>
+                <div className="flex gap-2">
+                  <Popover modal={true} open={startDateOpen} onOpenChange={setStartDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                          !watch('start_time') && "text-muted-foreground"
+                        )}
+                        style={{ borderRadius: '0.2rem' }}
+                      >
+                        <HugeiconsIcon icon={Calendar01Icon} />
+                        {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={watch('start_time') ? new Date(watch('start_time')) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const current = watch('start_time') ? new Date(watch('start_time')) : new Date();
+                            date.setHours(current.getHours(), current.getMinutes());
+                            setValue('start_time', formatDateTimeLocal(date));
+                            setStartDateOpen(false);
+                          }
+                        }}
+                        initialFocus
+                        captionLayout="dropdown"
+                        fromYear={2020}
+                        toYear={2030}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <TimeInput
+                    className="flex-1"
+                    style={{ borderRadius: '0.2rem' }}
+                    dateInputClassName="h-10"
+                    hourCycle={12}
+                    disabled={isLoading}
+                    value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
+                    onChange={(time) => {
+                      if (time) {
+                        const date = watch('start_time') ? new Date(watch('start_time')) : new Date();
+                        date.setHours(time.hour, time.minute);
+                        setValue('start_time', formatDateTimeLocal(date));
+                      }
+                    }}
+                  />
+                  <input type="hidden" {...register('start_time', { required: t('startTime') + ' is required' })} />
+                </div>
                 {errors.start_time && (
                   <p className="text-sm text-destructive mt-1">{errors.start_time.message}</p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="end_time">{t('endTime')}</Label>
-                <Input
-                  id="end_time"
-                  type="datetime-local"
-                  {...register('end_time', { required: t('endTime') + ' is required' })}
-                />
+                <Label className="block mb-2">{t('endTime')}</Label>
+                <div className="flex gap-2">
+                  <Popover modal={true} open={endDateOpen} onOpenChange={setEndDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                          !watch('end_time') && "text-muted-foreground"
+                        )}
+                        style={{ borderRadius: '0.2rem' }}
+                      >
+                        <HugeiconsIcon icon={Calendar01Icon} />
+                        {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={watch('end_time') ? new Date(watch('end_time')) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const current = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                            date.setHours(current.getHours(), current.getMinutes());
+                            setValue('end_time', formatDateTimeLocal(date));
+                            setEndDateOpen(false);
+                          }
+                        }}
+                        initialFocus
+                        captionLayout="dropdown"
+                        fromYear={2020}
+                        toYear={2030}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <TimeInput
+                    className="flex-1"
+                    style={{ borderRadius: '0.2rem' }}
+                    dateInputClassName="h-10"
+                    hourCycle={12}
+                    disabled={isLoading}
+                    value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
+                    onChange={(time) => {
+                      if (time) {
+                        const date = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                        date.setHours(time.hour, time.minute);
+                        setValue('end_time', formatDateTimeLocal(date));
+                      }
+                    }}
+                  />
+                  <input type="hidden" {...register('end_time', { required: t('endTime') + ' is required' })} />
+                </div>
                 {errors.end_time && (
                   <p className="text-sm text-destructive mt-1">{errors.end_time.message}</p>
                 )}

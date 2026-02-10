@@ -1,8 +1,8 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { BookingProvider } from '../_components/booking-context';
-import { BookingFlow } from '../_components/booking-flow';
+import { BookingProvider } from '@/components/booking/booking-context';
+import { BookingFlow } from '@/components/booking/booking-flow';
 import { Suspense } from 'react';
 
 function RepeatBookingContent() {

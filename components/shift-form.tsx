@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimeInput } from '@/components/ui/time-input';
+import { Time } from '@internationalized/date';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +17,11 @@ import { Service } from '@/lib/types/service';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { toast } from 'sonner';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface ShiftFormProps {
   shift?: ShiftWithDetails;
@@ -50,6 +57,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const [staffServiceMap, setStaffServiceMap] = useState<{ [key: string]: string[] }>({});
   const [showServices, setShowServices] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const {
     register,
@@ -80,7 +89,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         // Fetch staff with assignments to get service mappings
         const { getStaffAssignmentsCacheVersion } = await import('@/lib/utils/cache-invalidation');
         const cacheVersion = getStaffAssignmentsCacheVersion();
-        
+
         const staffResponse = await fetch(`/api/staff?active_only=true&limit=1000&with_assignments=true&v=${cacheVersion}`, {
           cache: 'no-store',
         });
@@ -88,7 +97,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         if (staffData.success) {
           const staffList = staffData.data || [];
           setStaff(staffList);
-          
+
           // Build staff-service mapping
           const serviceMapping: { [key: string]: string[] } = {};
           for (const member of staffList) {
@@ -275,79 +284,167 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Staff Selection - Only show when creating new shift */}
       {!shift && (
-      <div>
-        <Label htmlFor="staff_id" className="text-xs font-semibold mb-2">Staff Member *</Label>
-        <Select
-          value={watch('staff_id')}
-          onValueChange={(value) => setValue('staff_id', value)}
-          disabled={isViewMode}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select staff member" />
-          </SelectTrigger>
-          <SelectContent>
-            {staff.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.first_name} {s.last_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.staff_id && (
-          <p className="text-sm text-destructive mt-1">{errors.staff_id.message}</p>
-        )}
-      </div>
+        <div>
+          <Label htmlFor="staff_id" className="text-xs font-semibold mb-2">Staff Member *</Label>
+          <Select
+            value={watch('staff_id')}
+            onValueChange={(value) => setValue('staff_id', value)}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select staff member" />
+            </SelectTrigger>
+            <SelectContent>
+              {staff.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.first_name} {s.last_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.staff_id && (
+            <p className="text-sm text-destructive mt-1">{errors.staff_id.message}</p>
+          )}
+        </div>
       )}
 
       {/* Location Selection - Only show when creating new shift */}
       {!shift && (
-      <div>
-        <Label htmlFor="location_id" className="text-xs font-semibold mb-2">Location *</Label>
-        <Select
-          value={watch('location_id')}
-          onValueChange={(value) => setValue('location_id', value)}
-          disabled={isViewMode}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select location" />
-          </SelectTrigger>
-          <SelectContent>
-            {locations.map((l) => (
-              <SelectItem key={l.id} value={l.id}>
-                {l.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.location_id && (
-          <p className="text-sm text-destructive mt-1">{errors.location_id.message}</p>
-        )}
-      </div>
+        <div>
+          <Label htmlFor="location_id" className="text-xs font-semibold mb-2">Location *</Label>
+          <Select
+            value={watch('location_id')}
+            onValueChange={(value) => setValue('location_id', value)}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map((l) => (
+                <SelectItem key={l.id} value={l.id}>
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.location_id && (
+            <p className="text-sm text-destructive mt-1">{errors.location_id.message}</p>
+          )}
+        </div>
       )}
 
       {/* Date and Time */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="start_time" className="text-xs font-semibold mb-2">Start Time *</Label>
-          <Input
-            id="start_time"
-            type="datetime-local"
-            {...register('start_time', { required: 'Start time is required' })}
-            disabled={isViewMode}
-          />
+          <Label className="text-xs font-semibold mb-2 block">Start Time *</Label>
+          <div className="flex gap-2">
+            <Popover modal={true} open={startDateOpen} onOpenChange={setStartDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                    !watch('start_time') && "text-muted-foreground"
+                  )}
+                  disabled={isViewMode}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={watch('start_time') ? new Date(watch('start_time')) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const current = watch('start_time') ? new Date(watch('start_time')) : new Date();
+                      date.setHours(current.getHours(), current.getMinutes());
+                      setValue('start_time', formatDateTimeLocal(date.toISOString()));
+                      setStartDateOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  captionLayout="dropdown"
+                  fromYear={2020}
+                  toYear={2030}
+                />
+              </PopoverContent>
+            </Popover>
+            <TimeInput
+              className="flex-1"
+              dateInputClassName="h-10"
+              hourCycle={12}
+              value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
+              onChange={(time) => {
+                if (time) {
+                  const date = watch('start_time') ? new Date(watch('start_time')) : new Date();
+                  date.setHours(time.hour, time.minute);
+                  setValue('start_time', formatDateTimeLocal(date.toISOString()));
+                }
+              }}
+              disabled={isViewMode}
+            />
+            <input type="hidden" {...register('start_time', { required: 'Start time is required' })} />
+          </div>
           {errors.start_time && (
             <p className="text-sm text-destructive mt-1">{errors.start_time.message}</p>
           )}
         </div>
 
         <div>
-          <Label htmlFor="end_time" className="text-xs font-semibold mb-2">End Time *</Label>
-          <Input
-            id="end_time"
-            type="datetime-local"
-            {...register('end_time', { required: 'End time is required' })}
-            disabled={isViewMode}
-          />
+          <Label className="text-xs font-semibold mb-2 block">End Time *</Label>
+          <div className="flex gap-2">
+            <Popover modal={true} open={endDateOpen} onOpenChange={setEndDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                    !watch('end_time') && "text-muted-foreground"
+                  )}
+                  disabled={isViewMode}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={watch('end_time') ? new Date(watch('end_time')) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const current = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                      date.setHours(current.getHours(), current.getMinutes());
+                      setValue('end_time', formatDateTimeLocal(date.toISOString()));
+                      setEndDateOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  captionLayout="dropdown"
+                  fromYear={2020}
+                  toYear={2030}
+                />
+              </PopoverContent>
+            </Popover>
+            <TimeInput
+              className="flex-1"
+              dateInputClassName="h-10"
+              hourCycle={12}
+              value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
+              onChange={(time) => {
+                if (time) {
+                  const date = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                  date.setHours(time.hour, time.minute);
+                  setValue('end_time', formatDateTimeLocal(date.toISOString()));
+                }
+              }}
+              disabled={isViewMode}
+            />
+            <input type="hidden" {...register('end_time', { required: 'End time is required' })} />
+          </div>
           {errors.end_time && (
             <p className="text-sm text-destructive mt-1">{errors.end_time.message}</p>
           )}
@@ -503,43 +600,43 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   Showing {selectedServices.length} of {filteredServices.length} services selected
                 </p>
                 {filteredServices.map((service) => (
-            <div key={service.id} className="flex items-start space-x-2">
-              <Checkbox
-                id={service.id}
-                checked={selectedServices.includes(service.id)}
-                onCheckedChange={() => toggleService(service.id)}
-                disabled={isViewMode}
-              />
-              <div className="flex-1">
-                <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
-                  {service.name}
-                </label>
-                {selectedServices.includes(service.id) && (
-                    <Input
-                      type="number"
-                      min="1"
-                          placeholder="Max bookings (optional)"
-                      value={watch(`max_concurrent_bookings.${service.id}`) || ''}
-                      onChange={(e) => {
-                        const value = e.target.value ? parseInt(e.target.value) : null;
-                        setValue(`max_concurrent_bookings.${service.id}`, value);
-                      }}
-                          className="mt-1 h-8 text-xs"
+                  <div key={service.id} className="flex items-start space-x-2">
+                    <Checkbox
+                      id={service.id}
+                      checked={selectedServices.includes(service.id)}
+                      onCheckedChange={() => toggleService(service.id)}
                       disabled={isViewMode}
                     />
-                )}
-              </div>
-            </div>
-          ))}
+                    <div className="flex-1">
+                      <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
+                        {service.name}
+                      </label>
+                      {selectedServices.includes(service.id) && (
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Max bookings (optional)"
+                          value={watch(`max_concurrent_bookings.${service.id}`) || ''}
+                          onChange={(e) => {
+                            const value = e.target.value ? parseInt(e.target.value) : null;
+                            setValue(`max_concurrent_bookings.${service.id}`, value);
+                          }}
+                          className="mt-1 h-8 text-xs"
+                          disabled={isViewMode}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </>
             )}
-        </div>
+          </div>
         )}
 
         {!showServices && staffId && filteredServices.length > 0 && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Select services that can be booked during this shift
-        </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Select services that can be booked during this shift
+          </p>
         )}
       </div>
 
@@ -574,9 +671,9 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       {!isViewMode && (
         <div className="flex space-x-2 pt-4 border-t">
           {shift && onDelete && (
-            <Button 
-              type="button" 
-              variant="destructive" 
+            <Button
+              type="button"
+              variant="destructive"
               onClick={() => setShowDeleteDialog(true)}
               className="mr-auto"
               disabled={isSubmitting || isDeleting}

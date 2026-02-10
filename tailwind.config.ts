@@ -20,6 +20,10 @@ export default {
         mono: ["var(--font-mono)"],
       },
       keyframes: {
+        "ring-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 2px var(--primary)" },
+          "50%": { boxShadow: "0 0 0 2px transparent" },
+        },
         "accordion-down": {
           from: { height: "0" },
           to: { height: "var(--radix-accordion-content-height)" },
@@ -32,6 +36,7 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ring-pulse": "ring-pulse 5s cubic-bezier(0.4, 0, 0.6, 1) 1",
       },
       backgroundImage: {
         'diagonal-stripe': 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',

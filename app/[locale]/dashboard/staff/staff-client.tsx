@@ -19,6 +19,7 @@ interface StaffClientProps {
   initialPagination: {
     page: number;
     totalPages: number;
+    total: number;
   };
 }
 
@@ -28,9 +29,10 @@ export default function StaffClient({
 }: StaffClientProps) {
   const t = useTranslations('Staff');
   const tCommon = useTranslations('Common');
+  const tTable = useTranslations('Table');
   const queryClient = useQueryClient();
 
-  const [page] = useState(initialPagination.page);
+  const [page, setPage] = useState(initialPagination.page);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | undefined>();
   const [viewingStaff, setViewingStaff] = useState<Staff | undefined>();
@@ -109,26 +111,40 @@ export default function StaffClient({
   );
 
   // Fetch staff with React Query
-  const { data: staff = [], isLoading } = useQuery({
+  const { data: staffData, isLoading } = useQuery({
     queryKey: ['staff', page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: '20',
         active_only: 'false',
       });
 
       const response = await fetch(`/api/staff?${params}`);
-      const data: StaffsResponse = await response.json();
+      const data: StaffsResponse & { pagination?: { total_pages: number; total: number } } = await response.json();
 
       if (!data.success) {
         throw new Error('Failed to fetch staff');
       }
 
-      return data.data || [];
+      return data;
     },
-    initialData: initialStaff.length > 0 ? initialStaff : undefined,
+    initialData: initialStaff.length > 0 ? {
+      success: true,
+      data: initialStaff,
+      pagination: {
+        page: initialPagination.page,
+        total_pages: initialPagination.totalPages,
+        total: initialPagination.total,
+        limit: 20
+      }
+    } as any : undefined,
   });
+
+  const staff = staffData?.data || [];
+  const pagination = staffData?.pagination;
+  const totalPages = (pagination as any)?.total_pages || 0;
+  const total = (pagination as any)?.total || 0;
 
   // Delete staff
   const handleDelete = async (staff: Staff) => {
@@ -171,7 +187,7 @@ export default function StaffClient({
 
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
-    const staffMember = staff.find(s => s.id === id);
+    const staffMember = staff.find((s: Staff) => s.id === id);
     const newStatus = !currentStatus;
 
     try {
@@ -357,10 +373,81 @@ export default function StaffClient({
                   searchKey="first_name"
                   searchPlaceholder={t('table.searchPlaceholder')}
                   emptyMessage={t('table.empty')}
+                  showPagination={false}
                   showColumnToggle={false}
+                  pageSize={20}
                 />
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t pt-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {total > 0 ? (
+                      tTable('showing', {
+                        start: (page - 1) * 20 + 1,
+                        end: Math.min(page * 20, total),
+                        total
+                      })
+                    ) : (
+                      t('empty.title')
+                    )}
+                  </span>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1 || isLoading}
+                    >
+                      {tTable('previous')}
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={page === pageNum ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            disabled={isLoading}
+                            className="w-10"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages || isLoading}
+                    >
+                      {tTable('next')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </PageItem>
 

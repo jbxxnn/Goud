@@ -72,13 +72,6 @@ const allMenuItems: MenuItem[] = [
     roles: ['admin', 'staff'], // Admin and Staff
   },
   {
-    title: "Leave Requests",
-    url: "#",
-    comingsoon: "coming soon",
-    icon: <HugeiconsIcon icon={Calendar02Icon} />,
-    roles: ['admin'], // Admin only
-  },
-  {
     title: "Bookings",
     url: "/dashboard/bookings",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
@@ -88,6 +81,13 @@ const allMenuItems: MenuItem[] = [
     title: "Clients",
     url: "/dashboard/clients",
     icon: <HugeiconsIcon icon={UserIcon} />,
+    roles: ['admin'], // Admin only
+  },
+  {
+    title: "Leave Requests",
+    url: "#",
+    comingsoon: "coming soon",
+    icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin'], // Admin only
   },
   {

@@ -5,7 +5,7 @@ import ClientsClient from './clients-client';
 export default async function ClientsPage() {
   // Get the server-side Supabase client
   const supabase = await createClient();
-  
+
   // Get the current user (server-side authenticated)
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
@@ -20,7 +20,7 @@ export default async function ClientsPage() {
     .select('*')
     .eq('id', authUser.id)
     .single();
-  
+
   // If user not found in database, redirect to login
   if (userError || !user) {
     redirect('/auth/login');
@@ -31,12 +31,21 @@ export default async function ClientsPage() {
     redirect('/dashboard');
   }
 
+  // Fetch initial clients (default to role='client' to match client component)
+  const { UserService } = await import('@/lib/database/users');
+  const initialData = await UserService.getUsers(1, 20, 'client');
+
   return (
-    <ClientsClient 
-      initialClients={[]}
-      initialPagination={{
+    <ClientsClient
+      initialClients={initialData.success ? (initialData.data || []) : []}
+      initialPagination={initialData.success && initialData.pagination ? {
+        page: initialData.pagination.page,
+        totalPages: initialData.pagination.total_pages,
+        total: initialData.pagination.total
+      } : {
         page: 1,
-        totalPages: 1
+        totalPages: 1,
+        total: 0
       }}
     />
   );

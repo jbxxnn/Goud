@@ -121,6 +121,12 @@ export interface Booking {
         email: string;
         phone: string | null;
     } | null;
+    created_by_user?: {
+        first_name: string | null;
+        last_name: string | null;
+        email: string;
+        phone: string | null;
+    } | null;
 
     addons: Array<{
         id: string;

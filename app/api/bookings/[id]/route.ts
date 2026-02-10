@@ -65,10 +65,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       };
     });
 
+    // Fetch created_by user details if present
+    let createdByUser = null;
+    if (data.created_by) {
+      const { data: user } = await supabase
+        .from('users')
+        .select('first_name, last_name, email, phone')
+        .eq('id', data.created_by)
+        .single();
+      createdByUser = user;
+    }
+
     return NextResponse.json({
       booking: {
         ...data,
         addons,
+        created_by_user: createdByUser,
       }
     });
   } catch (e: any) {

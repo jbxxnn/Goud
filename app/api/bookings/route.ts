@@ -416,14 +416,20 @@ export async function GET(req: NextRequest) {
       `, { count: 'exact' })
       .order('start_time', { ascending: false });
 
+    // If anyUserId provided, filter by created_by OR client_id (Inclusive for "My Bookings" or "Client Bookings")
+    const anyUserId = searchParams.get('anyUserId');
+    if (anyUserId) {
+      query = query.or(`created_by.eq.${anyUserId},client_id.eq.${anyUserId}`);
+    }
+
     // If clientId provided, filter by created_by (Legacy behavior for Client Dashboard - bookings they CREATED)
-    if (clientId) {
+    if (clientId && !anyUserId) {
       query = query.eq('created_by', clientId);
     }
 
     // If patientId provided, filter by client_id (For Midwife Dashboard - bookings where they are the CLIENT/PATIENT)
     const patientId = searchParams.get('patientId');
-    if (patientId) {
+    if (patientId && !anyUserId) {
       query = query.eq('client_id', patientId);
     }
 
@@ -527,8 +533,13 @@ export async function GET(req: NextRequest) {
       addons: addonsMap[booking.id] || [],
     }));
 
-    // Manual fetch for 'users' (client info) via created_by
-    const userIds = [...new Set((data || []).map(b => b.created_by).filter(Boolean))] as string[];
+    // Manual fetch for 'users' (client info)
+    // Priority: created_by (Booker) -> client_id (Owner/Patient)
+    // We fetch users for both fields to ensure we have the data.
+    const createdByIds = (data || []).map(b => b.created_by).filter(Boolean) as string[];
+    const clientIds = (data || []).map(b => b.client_id).filter(Boolean) as string[];
+    const userIds = [...new Set([...createdByIds, ...clientIds])];
+
     let usersMap: Record<string, any> = {};
 
     if (userIds.length > 0) {
@@ -546,7 +557,7 @@ export async function GET(req: NextRequest) {
 
     const bookingsFinal = bookingsWithAddons.map(b => ({
       ...b,
-      users: usersMap[b.created_by] || null
+      users: usersMap[b.created_by] || usersMap[b.client_id] || null
     }));
 
     const totalPages = count ? Math.ceil(count / limit) : 0;
