@@ -48,9 +48,10 @@ interface IProps extends HTMLAttributes<HTMLDivElement>, Omit<VariantProps<typeo
     onShiftDeleted?: () => void;
     onShiftUpdated?: () => void;
     onEventClick?: (event: IEvent) => void;
+    isReadOnly?: boolean;
 }
 
-export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
+export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
     const start = parseISO(event.startDate);
@@ -115,7 +116,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
                     </BookingDetailsDialog>
                 )
             ) : (
-                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} isReadOnly={isReadOnly}>
                     {BlockContent}
                 </ShiftDetailsDialog>
             )}

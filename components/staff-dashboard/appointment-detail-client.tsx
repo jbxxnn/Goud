@@ -29,6 +29,7 @@ import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { useQueryClient } from '@tanstack/react-query';
 import { RepeatPrescriber } from '@/components/repeat-prescriber';
 import { useTranslations } from 'next-intl';
+import { ChecklistManager } from './checklist-manager';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -40,8 +41,8 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     const t = useTranslations('AppointmentDetail');
     const router = useRouter();
     const queryClient = useQueryClient();
-    const [notes, setNotes] = useState(booking.internal_notes || '');
-    const [isSaving, setIsSaving] = useState(false);
+    // const [notes, setNotes] = useState(booking.internal_notes || '');
+    // const [isSaving, setIsSaving] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Gestational Age Calculation
@@ -67,26 +68,26 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
     const ga = calculateGA();
 
-    const handleSaveNotes = async () => {
-        setIsSaving(true);
-        try {
-            const res = await fetch(`/api/bookings/${booking.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ internal_notes: notes })
-            });
-
-            if (!res.ok) throw new Error('Failed to save notes');
-
-            toast.success(t('toasts.notesSaved'));
-            // Invalidate bookings list so the dashboard is fresh
-            queryClient.invalidateQueries({ queryKey: ['bookings'] });
-        } catch (error) {
-            toast.error(t('toasts.notesError'));
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    // const handleSaveNotes = async () => {
+    //     setIsSaving(true);
+    //     try {
+    //         const res = await fetch(`/api/bookings/${booking.id}`, {
+    //             method: 'PATCH',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ internal_notes: notes })
+    //         });
+    //
+    //         if (!res.ok) throw new Error('Failed to save notes');
+    //
+    //         toast.success(t('toasts.notesSaved'));
+    //         // Invalidate bookings list so the dashboard is fresh
+    //         queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    //     } catch (error) {
+    //         toast.error(t('toasts.notesError'));
+    //     } finally {
+    //         setIsSaving(false);
+    //     }
+    // };
 
     return (
         <PageContainer className="container py-6 max-w-5xl mx-auto space-y-6">
@@ -252,58 +253,20 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-
-                            {/* Internal Notes */}
+                            {/* Checklist Manager */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium flex items-center gap-2">
                                         <HugeiconsIcon icon={File01Icon} size={16} />
-                                        {t('medicalNotes')}
+                                        {t('medicalNotesAndChecklist')}
                                     </label>
-                                    <Button size="sm" variant="ghost" onClick={handleSaveNotes} disabled={isSaving}>
-                                        {isSaving ? t('saving') : t('saveNotes')}
-                                    </Button>
                                 </div>
-                                <Textarea
-                                    className="min-h-[150px] bg-yellow-50/50 border-yellow-200 focus-visible:ring-yellow-400"
-                                    placeholder={t('notesPlaceholder')}
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                />
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <HugeiconsIcon icon={AlertCircleIcon} size={12} />
-                                    {t('notesVisibility')}
-                                </p>
+                                <ChecklistManager bookingId={booking.id} />
                             </div>
-
                         </CardContent>
                     </Card>
 
-                    {/* Checklist (Mocked) */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">{t('protocolChecklist')}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {[
-                                t('checklist.verifyIdentity'),
-                                t('checklist.consentForm'),
-                                t('checklist.gaConfirmed'),
-                                t('checklist.fhrChecked'),
-                                t('checklist.imagesSaved')
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center space-x-2">
-                                    <Checkbox id={`check-${i}`} />
-                                    <label
-                                        htmlFor={`check-${i}`}
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                    >
-                                        {item}
-                                    </label>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+
 
                 </div>
             </div>

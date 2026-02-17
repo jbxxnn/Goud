@@ -1299,6 +1299,21 @@
             "completed": "Appointment marked as completed",
             "completeError": "Failed to complete appointment",
             "completeFailed": "Failed to complete"
-        }
+        },
+        "medicalNotesAndChecklist": "Medical / Internal Notes & Checklist"
+    },
+    "Checklist": {
+        "itemAdded": "Checklist item added",
+        "errorAdding": "Failed to add item",
+        "itemDeleted": "Checklist item deleted",
+        "errorDeleting": "Failed to delete item",
+        "errorUpdating": "Failed to update item",
+        "commentSaved": "Comment saved",
+        "errorCommenting": "Failed to save comment",
+        "addItemPlaceholder": "Add a new checklist item...",
+        "noItems": "No checklist items yet.",
+        "completedBy": "Completed by",
+        "commentPlaceholder": "Add a comment...",
+        "addComment": "Add comment"
     }
 }

@@ -24,9 +24,10 @@ interface IProps {
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
   onEventClick?: (event: IEvent) => void;
+  hideAddButton?: boolean;
 }
 
-export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
+export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
   const { selectedDate, setSelectedDate, users, visibleHours, workingHours } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
@@ -111,31 +112,47 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                     >
                       {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b"></div>}
 
-                      <DroppableTimeBlock date={selectedDate} hour={hour} minute={0}>
-                        <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>
-                          <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                        </AddShiftDialog>
-                      </DroppableTimeBlock>
+                      {hideAddButton ? (
+                        <div className="absolute inset-x-0 top-0 h-[24px]" />
+                      ) : (
+                        <DroppableTimeBlock date={selectedDate} hour={hour} minute={0}>
+                          <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>
+                            <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          </AddShiftDialog>
+                        </DroppableTimeBlock>
+                      )}
 
-                      <DroppableTimeBlock date={selectedDate} hour={hour} minute={15}>
-                        <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated}>
-                          <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                        </AddShiftDialog>
-                      </DroppableTimeBlock>
+                      {hideAddButton ? (
+                        <div className="absolute inset-x-0 top-[24px] h-[24px]" />
+                      ) : (
+                        <DroppableTimeBlock date={selectedDate} hour={hour} minute={15}>
+                          <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated}>
+                            <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          </AddShiftDialog>
+                        </DroppableTimeBlock>
+                      )}
 
                       <div className="pointer-events-none absolute inset-x-0 top-1/2 border-b border-dashed"></div>
 
-                      <DroppableTimeBlock date={selectedDate} hour={hour} minute={30}>
-                        <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated}>
-                          <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                        </AddShiftDialog>
-                      </DroppableTimeBlock>
+                      {hideAddButton ? (
+                        <div className="absolute inset-x-0 top-[48px] h-[24px]" />
+                      ) : (
+                        <DroppableTimeBlock date={selectedDate} hour={hour} minute={30}>
+                          <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated}>
+                            <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          </AddShiftDialog>
+                        </DroppableTimeBlock>
+                      )}
 
-                      <DroppableTimeBlock date={selectedDate} hour={hour} minute={45}>
-                        <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated}>
-                          <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                        </AddShiftDialog>
-                      </DroppableTimeBlock>
+                      {hideAddButton ? (
+                        <div className="absolute inset-x-0 top-[72px] h-[24px]" />
+                      ) : (
+                        <DroppableTimeBlock date={selectedDate} hour={hour} minute={45}>
+                          <AddShiftDialog startDate={selectedDate} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated}>
+                            <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                          </AddShiftDialog>
+                        </DroppableTimeBlock>
+                      )}
                     </div>
                   );
                 })}
@@ -158,7 +175,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
                     return (
                       <div key={event.id} className="absolute p-1" style={style}>
-                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
+                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
                       </div>
                     );
                   })

@@ -19,9 +19,10 @@ interface IProps {
   children: React.ReactNode;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  isReadOnly?: boolean;
 }
 
-export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpdated }: IProps) {
+export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpdated, isReadOnly }: IProps) {
   const t = useTranslations('Shifts.dialog.details');
   const [shift, setShift] = useState<ShiftWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
@@ -185,25 +186,27 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
             </div>
           )}
 
-          <DialogFooter className="flex gap-2">
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={loading || !shift}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t('delete')}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleEdit}
-              disabled={loading || !shift}
-            >
-              {t('edit')}
-            </Button>
-          </DialogFooter>
+          {!isReadOnly && (
+            <DialogFooter className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={loading || !shift}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t('delete')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleEdit}
+                disabled={loading || !shift}
+              >
+                {t('edit')}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

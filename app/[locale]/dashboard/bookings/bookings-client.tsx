@@ -30,12 +30,16 @@ interface BookingsClientProps {
     totalPages: number;
   };
   clientId?: string; // Optional: if provided, filter bookings for this client only
+  staffId?: string; // Optional: if provided, filter bookings for this staff only
+  onBookingClick?: (booking: Booking) => void;
 }
 
 export default function BookingsClient({
   initialBookings,
   initialPagination,
-  clientId
+  clientId,
+  staffId,
+  onBookingClick
 }: BookingsClientProps) {
   const queryClient = useQueryClient();
   const t = useTranslations('Bookings');
@@ -61,7 +65,7 @@ export default function BookingsClient({
 
   // Bookings Query
   const { data: bookingsData, isLoading: bookingsLoading } = useQuery<BookingsResponse>({
-    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId],
+    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId, staffId],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -73,6 +77,7 @@ export default function BookingsClient({
       if (dateTo) params.append('dateTo', dateTo);
       if (searchQuery) params.append('search', searchQuery);
       if (clientId) params.append('clientId', clientId);
+      if (staffId) params.append('staffId', staffId);
 
       const response = await fetch(`/api/bookings?${params}`);
       const data: BookingsResponse = await response.json();
@@ -173,6 +178,10 @@ export default function BookingsClient({
 
   // View booking
   const handleView = (booking: Booking) => {
+    if (onBookingClick) {
+      onBookingClick(booking);
+      return;
+    }
     setViewingBooking(booking);
     setIsViewModalOpen(true);
   };
@@ -374,7 +383,8 @@ export default function BookingsClient({
                   handleView,
                   handleCancel,
                   handleDelete,
-                  !clientId, // Only allow delete if not a client (i.e., admin)
+                  !clientId && !staffId, // canDelete: true only if admin
+                  // (booking) => {
                   // (booking) => {
                   //   setReschedulingBooking(booking);
                   //   setIsRescheduleModalOpen(true);
@@ -404,7 +414,7 @@ export default function BookingsClient({
                   }
                 }}
               />
-              <CalendarSettings />
+              {!staffId && <CalendarSettings />}
             </CalendarProvider>
           </div>
         )}

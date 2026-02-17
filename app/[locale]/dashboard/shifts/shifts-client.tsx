@@ -34,11 +34,12 @@ interface IEvent {
 
 interface ShiftsClientProps {
   initialCalendarSettings?: Record<string, unknown> | null;
+  staffId?: string;
 }
 
 import { useTranslations } from 'next-intl';
 
-export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientProps) {
+export default function ShiftsClient({ initialCalendarSettings, staffId }: ShiftsClientProps) {
   const t = useTranslations('Shifts');
   const [calendarView, setCalendarView] = useState<TCalendarView>('week');
   const queryClient = useQueryClient();
@@ -50,7 +51,7 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
 
   // Fetch shifts query
   const { data: shifts = [], isLoading: shiftsLoading, error: shiftsError } = useQuery<ShiftWithDetails[]>({
-    queryKey: ['shifts', 'expanded'],
+    queryKey: ['shifts', 'expanded', staffId], // Include staffId in key
     queryFn: async () => {
       const dateToUse = new Date();
       const startOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), 1);
@@ -62,6 +63,10 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
         end_date: expandedEndDate.toISOString(),
         limit: '2500',
       });
+
+      if (staffId) {
+        params.append('staff_id', staffId);
+      }
 
       const response = await fetch(`/api/shifts?${params}`);
       const data: ShiftsWithDetailsResponse = await response.json();
@@ -102,11 +107,22 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
   });
 
   // Convert staff to calendar users format
-  const users: IUser[] = staff.map((s) => ({
-    id: s.id,
-    name: `${s.first_name} ${s.last_name}`,
-    picturePath: null,
-  }));
+  const users: IUser[] = useMemo(() => {
+    if (staffId) {
+      const currentStaff = staff.find(s => s.id === staffId);
+      if (!currentStaff) return [];
+      return [{
+        id: currentStaff.id,
+        name: `${currentStaff.first_name} ${currentStaff.last_name}`,
+        picturePath: null,
+      }];
+    }
+    return staff.map((s) => ({
+      id: s.id,
+      name: `${s.first_name} ${s.last_name}`,
+      picturePath: null,
+    }));
+  }, [staff, staffId]);
 
   // Color map for locations using actual location colors
   // Use useMemo to ensure it only recalculates when locations change
@@ -208,9 +224,10 @@ export default function ShiftsClient({ initialCalendarSettings }: ShiftsClientPr
                 view={calendarView}
                 onViewChange={setCalendarView}
                 fetchShifts={fetchShifts}
+                hideAddButton={!!staffId}
               />
               {/* Calendar Settings */}
-              <CalendarSettings />
+              {!staffId && <CalendarSettings />}
             </CalendarProvider>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
@@ -234,10 +251,12 @@ function ShiftCalendarContainerWrapper({
   view,
   onViewChange,
   fetchShifts,
+  hideAddButton,
 }: {
   view: TCalendarView;
   onViewChange: (view: TCalendarView) => void;
   fetchShifts: (preserveDate?: Date) => Promise<void>;
+  hideAddButton?: boolean;
 }) {
   const searchParams = useSearchParams();
   const { selectedDate } = useCalendar();
@@ -267,6 +286,7 @@ function ShiftCalendarContainerWrapper({
       onShiftCreated={handleShiftChange}
       onShiftDeleted={handleShiftChange}
       onShiftUpdated={handleShiftChange}
+      hideAddButton={hideAddButton}
     />
   );
 }

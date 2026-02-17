@@ -29,6 +29,27 @@ export default async function ShiftsPage() {
     redirect('/auth/login');
   }
 
+  // Fetch calendar settings server-side for faster initial load
+  let initialCalendarSettings = null;
+  try {
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('calendar_settings')
+      .select('*')
+      .order('setting_key');
+
+    if (!settingsError && settingsData) {
+      // Convert settings array to object format
+      const settingsObject = settingsData.reduce((acc, setting) => {
+        acc[setting.setting_key] = setting.setting_value;
+        return acc;
+      }, {} as Record<string, unknown>);
+      initialCalendarSettings = settingsObject;
+    }
+  } catch (error) {
+    console.error('Error fetching calendar settings:', error);
+    // Continue without settings, will use defaults
+  }
+
   // If user is staff, render their availability view
   if (user.role === 'staff') {
     // Fetch staff profile linked to this user
@@ -49,8 +70,11 @@ export default async function ShiftsPage() {
     }
 
     return (
-      <div className="container py-6 space-y-6">
-        <AvailabilityView staffId={staff.id} />
+      <div className="container px-0 sm:px-4 py-4 sm:py-6 h-[calc(100vh-4rem)]">
+        <ShiftsClient 
+          staffId={staff.id} 
+          initialCalendarSettings={initialCalendarSettings}
+        />
       </div>
     );
   }
@@ -58,27 +82,6 @@ export default async function ShiftsPage() {
   // If user is not admin (and not staff filtered above), redirect to dashboard
   if (user.role !== 'admin') {
     redirect('/dashboard');
-  }
-
-  // Fetch calendar settings server-side for faster initial load
-  let initialCalendarSettings = null;
-  try {
-    const { data: settingsData, error: settingsError } = await supabase
-      .from('calendar_settings')
-      .select('*')
-      .order('setting_key');
-
-    if (!settingsError && settingsData) {
-      // Convert settings array to object format
-      const settingsObject = settingsData.reduce((acc, setting) => {
-        acc[setting.setting_key] = setting.setting_value;
-        return acc;
-      }, {} as Record<string, unknown>);
-      initialCalendarSettings = settingsObject;
-    }
-  } catch (error) {
-    console.error('Error fetching calendar settings:', error);
-    // Continue without settings, will use defaults
   }
 
   return <ShiftsClient initialCalendarSettings={initialCalendarSettings} />;

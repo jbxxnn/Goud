@@ -14,11 +14,12 @@ interface IProps {
   events: IEvent[];
   onViewChange: (view: TCalendarView) => void;
   onShiftCreated?: () => void;
+  hideAddButton?: boolean;
 }
 
 import { useTranslations } from 'next-intl';
 
-export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated }: IProps) {
+export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated, hideAddButton }: IProps) {
   const t = useTranslations('Shifts.header');
   return (
     <div className="flex flex-col gap-4 border-b bg-border p-4 lg:flex-row lg:items-center lg:justify-between">
@@ -103,11 +104,13 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
 
           <UserSelect />
 
-          <AddShiftDialog onShiftCreated={onShiftCreated}>
-            <Button size="default" className="hover:bg-secondary-foreground bg-primary text-primary-foreground" style={{ borderRadius: '1rem' }}>
-              {t('addShift')}
-            </Button>
-          </AddShiftDialog>
+          {!hideAddButton && (
+            <AddShiftDialog onShiftCreated={onShiftCreated}>
+              <Button size="default" className="hover:bg-secondary-foreground bg-primary text-primary-foreground" style={{ borderRadius: '1rem' }}>
+                {t('addShift')}
+              </Button>
+            </AddShiftDialog>
+          )}
         </div>
       </div>
     </div>
