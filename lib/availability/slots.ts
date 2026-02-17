@@ -94,16 +94,16 @@ export function generateSlotsForDay(params: GenerateSlotsParams): Slot[] {
     const shiftEnd = minDate(shift.endTime, dayEnd);
     if (shiftEnd <= shiftStart) continue;
 
-    // Generate slots with duration + buffer
+    // Generate slots with fixed 15-minute interval
     let slotStart = new Date(shiftStart);
-    const slotLength = Math.max(1, serviceRules.durationMinutes + serviceRules.bufferMinutes);
+    const slotInterval = 15;
 
     while (addMinutes(slotStart, serviceRules.durationMinutes) <= shiftEnd) {
       const apptEnd = addMinutes(slotStart, serviceRules.durationMinutes);
 
       // Respect lead time
       if (slotStart < minStartAllowed) {
-        slotStart = addMinutes(slotStart, slotLength);
+        slotStart = addMinutes(slotStart, slotInterval);
         continue;
       }
 
@@ -117,7 +117,7 @@ export function generateSlotsForDay(params: GenerateSlotsParams): Slot[] {
         }
       }
 
-      slotStart = addMinutes(slotStart, slotLength);
+      slotStart = addMinutes(slotStart, slotInterval);
     }
   }
 
