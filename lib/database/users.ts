@@ -70,6 +70,7 @@ export class UserService {
       const { data, error, count } = await query.range(from, to);
 
       if (error) {
+        console.error('UserService.getUsers Supabase error:', error);
         return { success: false, error: error.message };
       }
 
@@ -86,6 +87,7 @@ export class UserService {
         },
       };
     } catch (error) {
+      console.error('UserService.getUsers exception:', error);
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 

@@ -23,7 +23,7 @@ import Link from 'next/link';
 import { ClientSidebar } from "@/components/client-dashboard/sidebar";
 import { MidwifeSidebar } from "@/components/midwife-sidebar";
 
-type UserRole = 'admin' | 'staff' | 'midwife' | 'client';
+type UserRole = 'admin' | 'staff' | 'midwife' | 'client' | 'assistant';
 
 interface MenuItem {
   title: string;
@@ -39,49 +39,49 @@ const allMenuItems: MenuItem[] = [
     title: "Dashboard",
     url: "/dashboard",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
-    roles: ['admin', 'client', 'staff'], // All roles can see dashboard
+    roles: ['admin', 'client', 'staff', 'assistant'], // All roles can see dashboard
   },
   {
     title: "Locations",
     url: "/dashboard/locations",
     icon: <HugeiconsIcon icon={Building03Icon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Staff",
     url: "/dashboard/staff",
     icon: <HugeiconsIcon icon={UserGroup03Icon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Midwives",
     url: "/dashboard/midwives",
     icon: <HugeiconsIcon icon={UserIcon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Services",
     url: "/dashboard/services",
     icon: <HugeiconsIcon icon={BrochureIcon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Shifts",
     url: "/dashboard/shifts",
     icon: <HugeiconsIcon icon={Loading04Icon} />,
-    roles: ['admin', 'staff'], // Admin and Staff
+    roles: ['admin', 'staff', 'assistant'], // Admin, Staff, and Assistant
   },
   {
     title: "Bookings",
     url: "/dashboard/bookings",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Clients",
     url: "/dashboard/clients",
     icon: <HugeiconsIcon icon={UserIcon} />,
-    roles: ['admin'], // Admin only
+    roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
     title: "Leave Requests",
@@ -109,7 +109,7 @@ const allMenuItems: MenuItem[] = [
     url: "#",
     comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={Mail01Icon} />,
-    roles: ['admin'],
+    roles: ['admin'], // Admin only
   },
   {
     title: "Audit Logs",
@@ -130,9 +130,9 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
 
   // Filter menu items based on user role
   const items = allMenuItems.filter(item => {
-    // If roles are not specified, default to admin only
+    // If roles are not specified, default to admin or assistant
     if (!item.roles) {
-      return userRole === 'admin';
+      return userRole === 'admin' || userRole === 'assistant';
     }
     // Otherwise, check if user role is in the allowed roles
     return item.roles.includes(userRole);

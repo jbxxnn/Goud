@@ -94,8 +94,18 @@ export async function GET(req: NextRequest) {
         totalRevenue,
       },
     });
+    }
   } catch (e: unknown) {
-    console.error('[clients/stats] error', e);
+    console.error('[clients/stats] error details:', {
+      message: (e as Error)?.message,
+      stack: (e as Error)?.stack,
+      cause: (e as Error)?.cause,
+      name: (e as Error)?.name,
+      env: {
+        hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      }
+    });
     return NextResponse.json(
       { error: (e as Error)?.message || 'Unexpected error' },
       { status: 500 }

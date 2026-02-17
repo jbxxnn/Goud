@@ -1004,12 +1004,14 @@
             "staff": "staff",
             "midwife": "midwife",
             "admin": "admin",
+            "assistant": "assistant",
             "users": "users",
             "plural": {
                 "client": "clients",
                 "staff": "staff",
                 "midwife": "midwives",
                 "admin": "admins",
+                "assistant": "assistants",
                 "users": "users"
             }
         },

@@ -1004,12 +1004,14 @@
             "staff": "personeel",
             "midwife": "verloskundige",
             "admin": "beheerder",
+            "assistant": "assistent",
             "users": "gebruikers",
             "plural": {
                 "client": "cliënten",
                 "staff": "personeel",
                 "midwife": "verloskundigen",
                 "admin": "beheerders",
+                "assistant": "assistenten",
                 "users": "gebruikers"
             }
         },

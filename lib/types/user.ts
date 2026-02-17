@@ -1,6 +1,6 @@
 // User types for the Prenatal Ultrasound Booking System
 
-export type UserRole = 'admin' | 'staff' | 'midwife' | 'client';
+export type UserRole = 'admin' | 'staff' | 'midwife' | 'client' | 'assistant';
 
 export interface User {
   id: string;

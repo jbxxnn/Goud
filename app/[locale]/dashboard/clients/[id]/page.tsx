@@ -31,7 +31,7 @@ export default async function ClientDetailPage({
   }
 
   // If user is not admin, redirect to dashboard
-  if (user.role !== 'admin') {
+  if (user.role !== 'admin' && user.role !== 'assistant') {
     redirect('/dashboard');
   }
 

@@ -71,7 +71,7 @@ export default function ClientsClient({
   const [page, setPage] = useState(initialPagination.page);
   const [limit, setLimit] = useState<number>(20); // Default to 20
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const roleOptions = ['client', 'staff', 'midwife', 'admin'] as const;
+  const roleOptions = ['client', 'staff', 'midwife', 'admin', 'assistant'] as const;
   type RoleOption = (typeof roleOptions)[number];
   const [selectedRole, setSelectedRole] = useState<RoleOption>('client');
 

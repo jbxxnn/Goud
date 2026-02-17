@@ -48,7 +48,7 @@ export default async function ProtectedLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar userRole={user.role as 'admin' | 'staff' | 'midwife' | 'client'} />
+      <AppSidebar userRole={user.role as 'admin' | 'staff' | 'midwife' | 'client' | 'assistant'} />
       <SidebarInset>
         <header className="flex h-14 items-center justify-between gap-2 border-b border-l-none border-secondary bg-accent px-4 relative z-50 sticky top-0">
           <div className="flex items-center gap-1">

@@ -28,7 +28,7 @@ export default async function ProtectedPage() {
   }
 
   // Render appropriate dashboard based on role
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'assistant') {
     return <DashboardClient />;
   } else if (user.role === 'client') {
     return <ClientDashboard clientId={userId} />;

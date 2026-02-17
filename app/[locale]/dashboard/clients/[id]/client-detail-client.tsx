@@ -41,7 +41,7 @@ interface MidwifeResponse {
   data: Midwife[];
 }
 
-const ROLE_OPTIONS: UserRole[] = ['client', 'midwife', 'admin'];
+const ROLE_OPTIONS: UserRole[] = ['client', 'midwife', 'admin', 'assistant'];
 
 export default function ClientDetailClient({
   clientId,
