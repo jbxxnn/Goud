@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { location_ids, service_ids, services, ...staffFields } = body;
+    const { location_ids, service_ids, services, recurring_breaks, ...staffFields } = body;
 
     // Create staff record
     const { data: staff, error: staffError } = await supabase
@@ -228,6 +228,26 @@ export async function POST(request: NextRequest) {
 
       if (serviceError) {
         console.error('Error creating service qualifications:', serviceError);
+      }
+    }
+
+    // Add recurring breaks if provided
+    // Expects array of StaffRecurringBreak (without id/timestamps)
+    // Check for breaks
+    if (recurring_breaks && recurring_breaks.length > 0) {
+      const breaksToInsert = recurring_breaks.map((b: any) => ({
+        staff_id: staff.id,
+        start_time: b.start_time,
+        end_time: b.end_time,
+        day_of_week: b.day_of_week
+      }));
+      
+      const { error: breaksError } = await supabase
+        .from('staff_recurring_breaks')
+        .insert(breaksToInsert);
+        
+      if (breaksError) {
+        console.error('Error creating recurring breaks:', breaksError);
       }
     }
 

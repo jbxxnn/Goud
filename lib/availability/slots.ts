@@ -34,7 +34,10 @@ export type Slot = {
 
 function isWithinBlackout(date: Date, blackouts: BlackoutPeriod[], locationId: string): boolean {
   for (const b of blackouts) {
-    if (b.locationId !== locationId) continue;
+    // If locationId is null, it's a global blackout (applies to all)
+    // Otherwise, it must match the requested locationId
+    if (b.locationId !== null && b.locationId !== locationId) continue;
+    
     if (date >= startOfDay(b.startDate) && date <= endOfDay(b.endDate)) return true;
   }
   return false;
@@ -59,6 +62,7 @@ export type GenerateSlotsParams = {
   blackouts: BlackoutPeriod[];
   existingBookings: TimeInterval[]; // for the same shift+day to exclude
   locks?: TimeInterval[]; // temporary locks to exclude
+  breaks?: TimeInterval[]; // staff breaks to exclude
   now?: Date; // for testing; defaults to new Date()
 };
 
@@ -113,7 +117,11 @@ export function generateSlotsForDay(params: GenerateSlotsParams): Slot[] {
         // Exclude if overlapping with temporary locks
         const overlapsLock = locks?.some((l) => intervalsOverlap({ start: slotStart, end: apptEnd }, l));
         if (!overlapsLock) {
-          daySlots.push({ shiftId: shift.id, staffId: shift.staffId, startTime: slotStart, endTime: apptEnd });
+           // Exclude if overlapping with breaks
+           const overlapsBreak = params.breaks?.some((b) => intervalsOverlap({ start: slotStart, end: apptEnd }, b));
+           if (!overlapsBreak) {
+              daySlots.push({ shiftId: shift.id, staffId: shift.staffId, startTime: slotStart, endTime: apptEnd });
+           }
         }
       }
 

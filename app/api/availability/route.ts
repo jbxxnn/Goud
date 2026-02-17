@@ -173,7 +173,7 @@ export async function GET(req: NextRequest) {
     const { data: blackoutData, error: blackoutErr } = await supabase
       .from('blackout_periods')
       .select('location_id, start_date, end_date')
-      .eq('location_id', locationId)
+      .or(`location_id.eq.${locationId},location_id.is.null`)
       .lte('start_date', dayEnd.toISOString())
       .gte('end_date', dayStart.toISOString());
     if (blackoutErr) {
@@ -233,6 +233,33 @@ export async function GET(req: NextRequest) {
       end: new Date(l.end_time),
     }));
 
+    // Fetch staff recurring breaks
+    const { data: breaksData, error: breaksErr } = await supabase
+      .from('staff_recurring_breaks')
+      .select('staff_id, start_time, end_time, day_of_week')
+      .in('staff_id', shifts.map(s => s.staffId));
+
+    if (breaksErr) {
+      console.log('[availability] breaks error', breaksErr);
+    }
+
+    const dayOfWeek = date.getDay(); // 0-6
+    const breaksForDay: TimeInterval[] = (breaksData ?? [])
+      .filter((b: any) => b.day_of_week === null || b.day_of_week === dayOfWeek)
+      .map((b: any) => {
+        // breaks are stored as TIME (HH:MM:SS), need to combine with current Date
+        const [startH, startM] = b.start_time.split(':');
+        const [endH, endM] = b.end_time.split(':');
+        
+        const start = new Date(date);
+        start.setHours(Number(startH), Number(startM), 0, 0);
+        
+        const end = new Date(date);
+        end.setHours(Number(endH), Number(endM), 0, 0);
+        
+        return { start, end };
+      });
+
     const allSlots = generateSlotsForDay({
       date,
       serviceId,
@@ -241,6 +268,7 @@ export async function GET(req: NextRequest) {
       serviceRules,
       blackouts,
       existingBookings: existingAll,
+      breaks: breaksForDay,
     });
 
     console.log('[availability] slots count (before locks)', allSlots.length);

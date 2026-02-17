@@ -67,6 +67,16 @@ export interface BlackoutPeriod {
   updated_at: string;
 }
 
+export interface StaffRecurringBreak {
+  id: string;
+  staff_id: string;
+  start_time: string; // HH:mm:ss
+  end_time: string;   // HH:mm:ss
+  day_of_week: number | null; // 0-6 or NULL for everyday
+  created_at: string;
+  updated_at: string;
+}
+
 // =============================================
 // REQUEST/RESPONSE TYPES
 // =============================================
@@ -136,8 +146,8 @@ export interface ShiftSearchParams {
 export interface BlackoutPeriodSearchParams {
   page?: number;
   limit?: number;
-  location_id?: string;
-  staff_id?: string;
+  location_id?: string | null;
+  staff_id?: string | null;
   start_date?: string;
   end_date?: string;
   active_only?: boolean;

@@ -8,11 +8,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const location_id = searchParams.get('location_id') || undefined;
+    let location_id: string | null | undefined = searchParams.get('location_id') || undefined;
     const staff_id = searchParams.get('staff_id') || undefined;
     const start_date = searchParams.get('start_date') || undefined;
     const end_date = searchParams.get('end_date') || undefined;
     const active_only = searchParams.get('active_only') === 'true';
+    const global = searchParams.get('global') === 'true';
+
+    if (global) {
+      location_id = null;
+    }
 
     const result = await ShiftService.getBlackoutPeriods({
       page,

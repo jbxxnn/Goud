@@ -425,12 +425,20 @@ export class ShiftService {
     const supabase = await createClient();
     let query = supabase.from('blackout_periods').select('*', { count: 'exact' });
 
-    if (location_id) {
-      query = query.eq('location_id', location_id);
+    if (location_id !== undefined) {
+      if (location_id === null) {
+        query = query.is('location_id', null);
+      } else {
+        query = query.eq('location_id', location_id);
+      }
     }
 
-    if (staff_id) {
-      query = query.eq('staff_id', staff_id);
+    if (staff_id !== undefined) {
+      if (staff_id === null) {
+        query = query.is('staff_id', null);
+      } else {
+        query = query.eq('staff_id', staff_id);
+      }
     }
 
     if (active_only) {

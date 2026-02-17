@@ -92,8 +92,8 @@ const allMenuItems: MenuItem[] = [
   },
   {
     title: "Settings",
-    url: "#",
-    comingsoon: "coming soon",
+    url: "/dashboard/settings",
+    // comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
     roles: ['admin'], // Admin only
   },
