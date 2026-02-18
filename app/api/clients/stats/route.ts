@@ -94,7 +94,6 @@ export async function GET(req: NextRequest) {
         totalRevenue,
       },
     });
-    }
   } catch (e: unknown) {
     console.error('[clients/stats] error details:', {
       message: (e as Error)?.message,

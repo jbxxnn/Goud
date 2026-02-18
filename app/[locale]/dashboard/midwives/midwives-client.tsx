@@ -21,11 +21,13 @@ interface MidwivesClientProps {
     totalPages: number;
     total: number;
   };
+  userRole: string;
 }
 
 export default function MidwivesClient({
   initialMidwives,
-  initialPagination
+  initialPagination,
+  userRole
 }: MidwivesClientProps) {
   const t = useTranslations('Midwives');
   const tCommon = useTranslations('Common');
@@ -39,6 +41,8 @@ export default function MidwivesClient({
   const [isViewMode, setIsViewMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [midwifeToDelete, setMidwifeToDelete] = useState<Midwife | null>(null);
+
+  const isAdmin = userRole === 'admin';
 
   // Fetch midwives with React Query
   const { data: midwivesData, isLoading } = useQuery({
@@ -234,12 +238,14 @@ export default function MidwivesClient({
                 {t('subtitle')}
               </p>
             </div>
-            <Button
-              onClick={handleAddMidwife}
-              size="default"
-            >
-              {t('addMidwife')}
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={handleAddMidwife}
+                size="default"
+              >
+                {t('addMidwife')}
+              </Button>
+            )}
           </div>
         </PageItem>
 
@@ -262,16 +268,18 @@ export default function MidwivesClient({
                   <p className="text-muted-foreground mb-4">
                     {t('empty.description')}
                   </p>
-                  <Button onClick={handleAddMidwife}>
-                    {t('addMidwife')}
-                  </Button>
+                  {isAdmin && (
+                    <Button onClick={handleAddMidwife}>
+                      {t('addMidwife')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <DataTable
                   columns={createMidwifeColumns(t, {
                     onEdit: handleEditMidwife,
-                    onDelete: handleDelete,
-                    onToggleActive: handleToggleActive,
+                    onDelete: isAdmin ? handleDelete : undefined,
+                    onToggleActive: isAdmin ? handleToggleActive : undefined,
                     onView: handleViewMidwife
                   })}
                   data={midwives}

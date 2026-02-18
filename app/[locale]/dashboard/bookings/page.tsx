@@ -26,8 +26,8 @@ export default async function BookingsPage() {
     redirect('/auth/login');
   }
 
-  // If user is not admin, redirect to dashboard
-  if (user.role !== 'admin') {
+  // If user is not admin or assistant, redirect to dashboard
+  if (user.role !== 'admin' && user.role !== 'assistant') {
     redirect('/dashboard');
   }
 
@@ -38,6 +38,7 @@ export default async function BookingsPage() {
         page: 1,
         totalPages: 1
       }}
+      userRole={user.role}
     />
   );
 }

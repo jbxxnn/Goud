@@ -52,9 +52,10 @@ interface IProps {
     onShiftDeleted?: () => void;
     onShiftUpdated?: () => void;
     onEventClick?: (event: IEvent) => void;
+    isReadOnly?: boolean;
 }
 
-export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
+export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
     const startDate = parseISO(event.startDate);
@@ -135,7 +136,7 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
                     </BookingDetailsDialog>
                 )
             ) : (
-                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} isReadOnly={isReadOnly}>
                     {CardContent}
                 </ShiftDetailsDialog>
             )}

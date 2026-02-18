@@ -31,6 +31,7 @@ interface BookingModalProps {
   onReschedule?: (booking: Booking) => void;
   onUpdate?: (booking: Booking) => void;
   onComplete?: (booking: Booking) => void;
+  userRole?: string;
 }
 
 const formatDate = (dateString: string) => {
@@ -81,15 +82,19 @@ const getPaymentBadge = (status: string) => {
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
-export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, userRole }: BookingModalProps) {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isEditingInternalNotes, setIsEditingInternalNotes] = useState(false);
+  const [internalNotesValue, setInternalNotesValue] = useState('');
+  const [isSavingInternalNotes, setIsSavingInternalNotes] = useState(false);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
 
   useEffect(() => {
     if (booking) {
       setNotesValue(booking.notes || '');
+      setInternalNotesValue(booking.internal_notes || '');
 
       // Fetch policy fields for the service
       if (booking.service_id) {
@@ -552,6 +557,95 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                 )}
               </div>
 
+              {/* Staff Notes (Assistant <-> Staff) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">Staff Notes</h3>
+                  {!isEditingInternalNotes && userRole !== 'client' && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEditingInternalNotes(true)}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      {booking.internal_notes ? 'Edit' : 'Add Note'}
+                    </Button>
+                  )}
+                </div>
+
+                {isEditingInternalNotes ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={internalNotesValue}
+                      onChange={(e) => setInternalNotesValue(e.target.value)}
+                      placeholder={userRole === 'assistant' ? "Leave a note for the staff member..." : "Internal notes for staff..."}
+                      rows={3}
+                      className="resize-none"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditingInternalNotes(false);
+                          setInternalNotesValue(booking.internal_notes || '');
+                        }}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            setIsSavingInternalNotes(true);
+                            const response = await fetch(`/api/bookings/${booking.id}`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ internal_notes: internalNotesValue.trim() || null }),
+                            });
+
+                            const data = await response.json();
+                            if (!response.ok) {
+                              throw new Error(data.error || 'Failed to update staff notes');
+                            }
+
+                            toast.success('Staff notes updated successfully');
+                            setIsEditingInternalNotes(false);
+                            if (onUpdate && data.booking) {
+                              onUpdate(data.booking);
+                            }
+                          } catch (error) {
+                            toast.error('Failed to update staff notes', {
+                              description: error instanceof Error ? error.message : 'Unknown error',
+                            });
+                          } finally {
+                            setIsSavingInternalNotes(false);
+                          }
+                        }}
+                        disabled={isSavingInternalNotes}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {isSavingInternalNotes ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  booking.internal_notes ? (
+                    <div className="text-sm p-3 bg-blue-50/50 text-blue-900 rounded-md whitespace-pre-wrap border border-blue-100">
+                      {booking.internal_notes}
+                    </div>
+                  ) : (
+                    <div className="text-sm p-3 bg-muted rounded-md text-muted-foreground italic">
+                      No staff notes
+                    </div>
+                  )
+                )}
+              </div>
+
               {/* Booking Metadata */}
               <div className="space-y-2 pt-4 border-t">
                 <h3 className="font-semibold text-lg">Booking Information</h3>
@@ -625,7 +719,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     Delete Booking
                   </Button>
                 )}
-                {booking.service_id && booking.status === 'completed' && (
+                {booking.service_id && booking.status === 'completed' && userRole !== 'assistant' && (
                   <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                 )}
               </div>

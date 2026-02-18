@@ -18,7 +18,8 @@ import {
     AlertCircleIcon,
     ImageUploadIcon,
     ArrowLeft01Icon,
-    Link01Icon
+    Link01Icon,
+    InformationCircleIcon
 } from '@hugeicons/core-free-icons';
 import { format, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
 import { toast } from 'sonner';
@@ -239,6 +240,21 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
                 {/* Right Column: Medical View */}
                 <div className="md:col-span-2 space-y-6">
+
+                    {/* Internal Staff Notes */}
+                    {booking.internal_notes && (
+                        <Card className="border-blue-200 bg-blue-50">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                                    <HugeiconsIcon icon={InformationCircleIcon} size={16} />
+                                    {t('internalNotes') || "Internal Staff Notes"}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-blue-700 whitespace-pre-wrap">{booking.internal_notes}</p>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Service & Notes */}
                     <Card>

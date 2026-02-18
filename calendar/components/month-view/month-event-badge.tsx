@@ -58,9 +58,10 @@ interface IProps extends Omit<VariantProps<typeof eventBadgeVariants>, "color" |
     onShiftDeleted?: () => void;
     onShiftUpdated?: () => void;
     onEventClick?: (event: IEvent) => void;
+    isReadOnly?: boolean;
 }
 
-export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
+export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDays, className, position: propPosition, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
     const itemStart = startOfDay(parseISO(event.startDate));
@@ -140,7 +141,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
                     </BookingDetailsDialog>
                 )
             ) : (
-                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated}>
+                <ShiftDetailsDialog event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} isReadOnly={isReadOnly}>
                     {BadgeContent}
                 </ShiftDetailsDialog>
             )}

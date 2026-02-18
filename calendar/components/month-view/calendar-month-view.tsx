@@ -14,11 +14,12 @@ interface IProps {
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
   onEventClick?: (event: IEvent) => void;
+  hideAddButton?: boolean;
 }
 
 const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function CalendarMonthView({ singleDayEvents, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
+export function CalendarMonthView({ singleDayEvents, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
   const { selectedDate } = useCalendar();
 
   const allEvents = [...multiDayEvents, ...singleDayEvents];
@@ -42,7 +43,7 @@ export function CalendarMonthView({ singleDayEvents, multiDayEvents, onShiftDele
 
       <div className="grid grid-cols-7 overflow-hidden">
         {cells.map(cell => (
-          <DayCell key={cell.date.toISOString()} cell={cell} events={allEvents} eventPositions={eventPositions} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
+          <DayCell key={cell.date.toISOString()} cell={cell} events={allEvents} eventPositions={eventPositions} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} hideAddButton={hideAddButton} />
         ))}
       </div>
     </div>

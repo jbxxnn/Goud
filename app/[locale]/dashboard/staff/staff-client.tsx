@@ -21,11 +21,13 @@ interface StaffClientProps {
     totalPages: number;
     total: number;
   };
+  userRole: string;
 }
 
 export default function StaffClient({
   initialStaff,
-  initialPagination
+  initialPagination,
+  userRole
 }: StaffClientProps) {
   const t = useTranslations('Staff');
   const tCommon = useTranslations('Common');
@@ -39,6 +41,8 @@ export default function StaffClient({
   const [isViewMode, setIsViewMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
+
+  const isAdmin = userRole === 'admin';
 
   const ensureUserRoleIsStaff = useCallback(async (userId: string) => {
     if (!userId) return;
@@ -158,6 +162,9 @@ export default function StaffClient({
     try {
       const response = await fetch(`/api/staff/${staffToDelete.id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -329,12 +336,14 @@ export default function StaffClient({
                 {t('subtitle')}
               </p>
             </div>
-            <Button
-              onClick={handleAddStaff}
-              size="default"
-            >
-              {t('addStaff')}
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={handleAddStaff}
+                size="default"
+              >
+                {t('addStaff')}
+              </Button>
+            )}
           </div>
         </PageItem>
 
@@ -357,16 +366,18 @@ export default function StaffClient({
                   <p className="text-muted-foreground mb-4">
                     {t('empty.description')}
                   </p>
-                  <Button onClick={handleAddStaff}>
-                    {t('addStaff')}
-                  </Button>
+                  {isAdmin && (
+                    <Button onClick={handleAddStaff}>
+                      {t('addStaff')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <DataTable
                   columns={createStaffColumns(t, {
                     onEdit: handleEditStaff,
-                    onDelete: handleDelete,
-                    onToggleActive: handleToggleActive,
+                    onDelete: isAdmin ? handleDelete : undefined,
+                    onToggleActive: isAdmin ? handleToggleActive : undefined,
                     onView: handleViewStaff
                   })}
                   data={staff}

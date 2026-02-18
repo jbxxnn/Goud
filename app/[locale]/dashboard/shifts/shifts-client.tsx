@@ -35,14 +35,17 @@ interface IEvent {
 interface ShiftsClientProps {
   initialCalendarSettings?: Record<string, unknown> | null;
   staffId?: string;
+  userRole?: string;
 }
 
 import { useTranslations } from 'next-intl';
 
-export default function ShiftsClient({ initialCalendarSettings, staffId }: ShiftsClientProps) {
+export default function ShiftsClient({ initialCalendarSettings, staffId, userRole }: ShiftsClientProps) {
   const t = useTranslations('Shifts');
   const [calendarView, setCalendarView] = useState<TCalendarView>('week');
   const queryClient = useQueryClient();
+
+  const isAdmin = userRole === 'admin';
 
   // Re-implement fetchShifts as a wrapper to invalidate queries
   const fetchShifts = useCallback(async (preserveDate?: Date) => {
@@ -224,7 +227,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId }: Shift
                 view={calendarView}
                 onViewChange={setCalendarView}
                 fetchShifts={fetchShifts}
-                hideAddButton={!!staffId}
+                hideAddButton={!!staffId || ((userRole !== 'admin' && userRole !== 'assistant') && !staffId)}
               />
               {/* Calendar Settings */}
               {!staffId && <CalendarSettings />}

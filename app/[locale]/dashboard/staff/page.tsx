@@ -26,8 +26,8 @@ export default async function StaffPage() {
     redirect('/auth/login');
   }
 
-  // If user is not admin, redirect to dashboard
-  if (user.role !== 'admin') {
+  // If user is not admin or assistant, redirect to dashboard
+  if (user.role !== 'admin' && user.role !== 'assistant') {
     redirect('/dashboard');
   }
 
@@ -56,6 +56,7 @@ export default async function StaffPage() {
         totalPages: totalPages || 1,
         total: total
       }}
+      userRole={user.role}
     />
   );
 }

@@ -26,8 +26,8 @@ export default async function ClientsPage() {
     redirect('/auth/login');
   }
 
-  // If user is not admin, redirect to dashboard
-  if (user.role !== 'admin') {
+  // If user is not admin or assistant, redirect to dashboard
+  if (user.role !== 'admin' && user.role !== 'assistant') {
     redirect('/dashboard');
   }
 

@@ -1268,6 +1268,7 @@
     },
     "AppointmentDetail": {
         "backToDashboard": "Back to Dashboard",
+        "internalNotes": "Internal Staff Notes",
         "linkedToParent": "Linked to Parent Screening",
         "completing": "Completing...",
         "completeAppointment": "Complete Appointment",
@@ -1317,5 +1318,48 @@
         "completedBy": "Completed by",
         "commentPlaceholder": "Add a comment...",
         "addComment": "Add comment"
+    },
+    "AssistantDashboard": {
+        "title": "Assistant Dashboard",
+        "subtitle": "Overview of upcoming tasks and appointments.",
+        "loading": "Loading dashboard...",
+        "sections": {
+            "overdueTasks": "Overdue Tasks",
+            "upcomingTasks": "Upcoming Tasks",
+            "upcomingAppointments": "Upcoming Appointments"
+        },
+        "tasks": {
+            "empty": "No pending tasks for upcoming appointments.",
+            "for": "For",
+            "noDate": "No date",
+            "editComment": "Edit comment",
+            "markComplete": "Mark as complete"
+        },
+        "appointments": {
+            "empty": "No upcoming appointments found.",
+            "viewAll": "View All Bookings"
+        },
+        "dialog": {
+            "title": "Edit Comment",
+            "description": "Add or update the comment for this task.",
+            "label": "Comment",
+            "placeholder": "Add a comment...",
+            "cancel": "Cancel",
+            "save": "Save changes",
+            "saving": "Saving..."
+        },
+        "toasts": {
+            "loadError": "Failed to load dashboard data",
+            "completeSuccess": "Task marked as complete",
+            "completeError": "Failed to update task",
+            "commentSuccess": "Comment updated",
+            "commentError": "Failed to save comment"
+        },
+        "noteDialog": {
+            "title": "Internal Staff Note",
+            "description": "Add a note for the staff regarding this appointment. This is visible to staff and admins.",
+            "label": "Note Content",
+            "placeholder": "Enter important details for the staff member..."
+        }
     }
 }

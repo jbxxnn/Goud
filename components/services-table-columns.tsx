@@ -26,8 +26,8 @@ const formatDuration = (minutes: number) => {
 export const createServiceColumns = (
   t: (key: string) => string,
   onEdit: (service: Service) => void,
-  onDelete: (service: Service) => void,
-  onToggleActive: (id: string, currentStatus: boolean) => void,
+  onDelete?: (service: Service) => void,
+  onToggleActive?: (id: string, currentStatus: boolean) => void,
   onView?: (service: Service) => void
 ): ColumnDef<Service>[] => [
     {
@@ -146,7 +146,8 @@ export const createServiceColumns = (
           <div className="flex items-center gap-3">
             <Switch
               checked={isActive}
-              onCheckedChange={() => onToggleActive(service.id, isActive)}
+              onCheckedChange={() => onToggleActive?.(service.id, isActive)}
+              disabled={!onToggleActive}
               aria-label={`Toggle ${service.name} status`}
             />
             {/* <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
@@ -173,15 +174,17 @@ export const createServiceColumns = (
             >
               <HugeiconsIcon icon={EditIcon} className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(service)}
-              title={t('table.delete')}
-              className="text-destructive hover:text-destructive hover:bg-secondary"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-            </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(service)}
+                title={t('table.delete')}
+                className="text-destructive hover:text-destructive hover:bg-secondary"
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

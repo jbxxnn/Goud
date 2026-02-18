@@ -4,6 +4,7 @@ import DashboardClient from "./admin-dashboard";
 import ClientDashboard from "./client-dashboard";
 import StaffDashboard from "./staff-dashboard";
 import MidwifeDashboard from "./midwife-dashboard";
+import AssistantDashboard from "./assistant-dashboard";
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
@@ -28,8 +29,10 @@ export default async function ProtectedPage() {
   }
 
   // Render appropriate dashboard based on role
-  if (user.role === 'admin' || user.role === 'assistant') {
+  if (user.role === 'admin') {
     return <DashboardClient />;
+  } else if (user.role === 'assistant') {
+    return <AssistantDashboard />;
   } else if (user.role === 'client') {
     return <ClientDashboard clientId={userId} />;
   } else if (user.role === 'staff') {

@@ -21,11 +21,13 @@ interface ServicesClientProps {
     totalPages: number;
     total: number;
   };
+  userRole: string;
 }
 
 export default function ServicesClient({
   initialServices,
-  initialPagination
+  initialPagination,
+  userRole
 }: ServicesClientProps) {
   const t = useTranslations('Services');
   const tTable = useTranslations('Table');
@@ -38,6 +40,8 @@ export default function ServicesClient({
   const [isViewMode, setIsViewMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+
+  const isAdmin = userRole === 'admin';
 
   // Fetch services with React Query
   const { data: servicesData, isLoading } = useQuery({
@@ -231,12 +235,14 @@ export default function ServicesClient({
                 {t('description')}
               </p>
             </div>
-            <Button
-              onClick={handleAddService}
-              size="default"
-            >
-              {t('addService')}
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={handleAddService}
+                size="default"
+              >
+                {t('addService')}
+              </Button>
+            )}
           </div>
         </PageItem>
 
@@ -259,17 +265,19 @@ export default function ServicesClient({
                   <p className="text-muted-foreground mb-4">
                     {t('getStarted')}
                   </p>
-                  <Button onClick={handleAddService}>
-                    {t('addService')}
-                  </Button>
+                  {isAdmin && (
+                    <Button onClick={handleAddService}>
+                      {t('addService')}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <DataTable
                   columns={createServiceColumns(
                     t,
                     handleEditService,
-                    handleDelete,
-                    handleToggleActive,
+                    isAdmin ? handleDelete : undefined,
+                    isAdmin ? handleToggleActive : undefined,
                     handleViewService
                   )}
                   data={services}

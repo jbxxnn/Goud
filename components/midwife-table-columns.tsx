@@ -18,8 +18,8 @@ import { Midwife, getMidwifeDisplayName, getMidwifeFullDisplay } from '@/lib/typ
 
 interface MidwifeActionsProps {
   onEdit: (midwife: Midwife) => void;
-  onDelete: (midwife: Midwife) => void;
-  onToggleActive: (id: string, currentStatus: boolean) => void;
+  onDelete?: (midwife: Midwife) => void;
+  onToggleActive?: (id: string, currentStatus: boolean) => void;
   onView: (midwife: Midwife) => void;
 }
 
@@ -96,7 +96,8 @@ export function createMidwifeColumns(
           <div className="flex items-center gap-2">
             <Switch
               checked={isActive}
-              onCheckedChange={() => onToggleActive(midwife.id, isActive)}
+              onCheckedChange={() => onToggleActive?.(midwife.id, isActive)}
+              disabled={!onToggleActive}
               aria-label={`Toggle ${midwife.first_name} ${midwife.last_name} status`}
             />
           </div>
@@ -127,14 +128,16 @@ export function createMidwifeColumns(
             >
               <HugeiconsIcon icon={EditIcon} className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(midwife)}
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-            </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(midwife)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },

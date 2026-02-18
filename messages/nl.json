@@ -1268,6 +1268,7 @@
     },
     "AppointmentDetail": {
         "backToDashboard": "Terug naar Dashboard",
+        "internalNotes": "Interne Personeelsnotities",
         "linkedToParent": "Gekoppeld aan moederscreening",
         "completing": "Afronden...",
         "completeAppointment": "Afspraak afronden",
@@ -1301,6 +1302,49 @@
             "completed": "Afspraak gemarkeerd als voltooid",
             "completeError": "Afronden van afspraak mislukt",
             "completeFailed": "Afronden mislukt"
+        }
+    },
+    "AssistantDashboard": {
+        "title": "Assistent Dashboard",
+        "subtitle": "Overzicht van aankomende taken en afspraken.",
+        "loading": "Dashboard laden...",
+        "sections": {
+            "overdueTasks": "Te late taken",
+            "upcomingTasks": "Aankomende taken",
+            "upcomingAppointments": "Aankomende afspraken"
+        },
+        "tasks": {
+            "empty": "Geen openstaande taken voor aankomende afspraken.",
+            "for": "Voor",
+            "noDate": "Geen datum",
+            "editComment": "Bewerk opmerking",
+            "markComplete": "Markeer als voltooid"
+        },
+        "appointments": {
+            "empty": "Geen aankomende afspraken gevonden.",
+            "viewAll": "Bekijk alle boekingen"
+        },
+        "dialog": {
+            "title": "Opmerking bewerken",
+            "description": "Voeg een opmerking toe of werk deze bij.",
+            "label": "Opmerking",
+            "placeholder": "Voeg een opmerking toe...",
+            "cancel": "Annuleren",
+            "save": "Wijzigingen opslaan",
+            "saving": "Opslaan..."
+        },
+        "toasts": {
+            "loadError": "Kan dashboardgegevens niet laden",
+            "completeSuccess": "Taak gemarkeerd als voltooid",
+            "completeError": "Kan taak niet bijwerken",
+            "commentSuccess": "Opmerking bijgewerkt",
+            "commentError": "Kan opmerking niet opslaan"
+        },
+        "noteDialog": {
+            "title": "Interne Personeelsnotitie",
+            "description": "Voeg een notitie toe voor het personeel over deze afspraak. Dit is zichtbaar voor personeel en beheerders.",
+            "label": "Notitie Inhoud",
+            "placeholder": "Voer belangrijke details in voor het personeelslid..."
         }
     }
 }

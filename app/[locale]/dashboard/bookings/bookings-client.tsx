@@ -32,6 +32,7 @@ interface BookingsClientProps {
   clientId?: string; // Optional: if provided, filter bookings for this client only
   staffId?: string; // Optional: if provided, filter bookings for this staff only
   onBookingClick?: (booking: Booking) => void;
+  userRole?: string;
 }
 
 export default function BookingsClient({
@@ -39,7 +40,8 @@ export default function BookingsClient({
   initialPagination,
   clientId,
   staffId,
-  onBookingClick
+  onBookingClick,
+  userRole
 }: BookingsClientProps) {
   const queryClient = useQueryClient();
   const t = useTranslations('Bookings');
@@ -527,6 +529,7 @@ export default function BookingsClient({
           setReschedulingBooking(booking);
           setIsRescheduleModalOpen(true);
         }}
+        userRole={userRole}
       />
 
       {/* Reschedule Modal */}

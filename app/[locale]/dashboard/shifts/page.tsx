@@ -79,11 +79,11 @@ export default async function ShiftsPage() {
     );
   }
 
-  // If user is not admin (and not staff filtered above), redirect to dashboard
-  if (user.role !== 'admin') {
+  // If user is not admin or assistant (and not staff filtered above), redirect to dashboard
+  if (user.role !== 'admin' && user.role !== 'assistant') {
     redirect('/dashboard');
   }
 
-  return <ShiftsClient initialCalendarSettings={initialCalendarSettings} />;
+  return <ShiftsClient initialCalendarSettings={initialCalendarSettings} userRole={user.role} />;
 }
 

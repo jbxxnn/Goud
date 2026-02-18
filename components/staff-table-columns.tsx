@@ -18,8 +18,8 @@ import { Staff, getStaffDisplayName, getStaffRoleDisplay, StaffRole } from '@/li
 
 interface StaffActionsProps {
   onEdit: (staff: Staff) => void;
-  onDelete: (staff: Staff) => void;
-  onToggleActive: (id: string, currentStatus: boolean) => void;
+  onDelete?: (staff: Staff) => void;
+  onToggleActive?: (id: string, currentStatus: boolean) => void;
   onView: (staff: Staff) => void;
 }
 
@@ -113,12 +113,10 @@ export function createStaffColumns(
           <div className="flex items-center gap-2">
             <Switch
               checked={isActive}
-              onCheckedChange={() => onToggleActive(staff.id, isActive)}
+              onCheckedChange={() => onToggleActive?.(staff.id, isActive)}
+              disabled={!onToggleActive}
               aria-label={`Toggle ${staff.first_name} ${staff.last_name} status`}
             />
-            {/* <span className="text-xs text-muted-foreground">
-              {isActive ? 'Active' : 'Inactive'}
-            </span> */}
           </div>
         );
       },
@@ -147,14 +145,16 @@ export function createStaffColumns(
             >
               <HugeiconsIcon icon={EditIcon} className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(staff)}
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-            </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(staff)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         );
       },
