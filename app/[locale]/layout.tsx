@@ -13,8 +13,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Goud Echo",
-  description: "De snelste manier om een afspraak te maken bij Goud Echo",
+  title: "GoudEcho",
+  description: "Goud echo en prenatale screening",
 };
 
 const outfit = Outfit({
