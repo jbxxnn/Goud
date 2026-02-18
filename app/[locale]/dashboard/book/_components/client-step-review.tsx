@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckoutForm } from '@/components/booking/checkout-form';
 import { BookingContactInput } from '@/lib/validation/booking';
 import { buildAddonPayload, buildPolicyAnswerPayload } from '@/components/booking/booking-utils';
@@ -37,7 +37,16 @@ export function ClientStepReview() {
         contactDefaultsVersion,
         emailChecked,
         userRole,
+        isTwin,
+        continuationToken,
     } = useBooking();
+
+    // Force show form for midwives so they can enter client details
+    useEffect(() => {
+        if (userRole === 'midwife') {
+            setShowForm(true);
+        }
+    }, [userRole]);
 
     const t = useTranslations('Booking.flow');
 
@@ -99,6 +108,7 @@ export function ClientStepReview() {
                     // For client dashboard, we rely on the backend to link to the user,
                     // but the API validation might still require these fields.
                     // We use the defaults that were loaded into context.
+                    midwifeClientEmail: payloadValues.midwifeClientEmail || undefined,
                     clientEmail: payloadValues.clientEmail,
                     firstName: payloadValues.firstName,
                     lastName: payloadValues.lastName,
@@ -121,6 +131,9 @@ export function ClientStepReview() {
                     priceEurCents: priceCents,
                     policyAnswers: policyAnswersPayload.length > 0 ? policyAnswersPayload : undefined,
                     addons: addOnPayload.length > 0 ? addOnPayload : undefined,
+                    sessionToken: sessionStorage.getItem('booking_session_token') || undefined,
+                    isTwin,
+                    continuationToken,
                 }),
             });
 

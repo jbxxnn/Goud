@@ -413,7 +413,93 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     if (checkErr || !existing) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     if (existing.status !== 'cancelled') {
+        // Technically we usually only allow deleting cancelled bookings, but if the user
+        // really wants to force delete, they should cancel it first.
+        // For now, we keep this check.
       return NextResponse.json({ error: 'Only cancelled bookings can be deleted' }, { status: 400 });
+    }
+
+    // Clean up related data to avoid foreign key violations
+    // 1. Delete booking addons
+    const { error: addonsError } = await supabase
+      .from('booking_addons')
+      .delete()
+      .eq('booking_id', id);
+
+    if (addonsError) {
+      console.error('Failed to delete booking addons:', addonsError);
+      return NextResponse.json({ error: 'Failed to delete related addons' }, { status: 500 });
+    }
+
+    // 2. Delete checklist items
+    const { error: checklistError } = await supabase
+      .from('booking_checklist_items')
+      .delete()
+      .eq('booking_id', id);
+
+    if (checklistError) {
+      console.error('Failed to delete checklist items:', checklistError);
+      return NextResponse.json({ error: 'Failed to delete related checklist items' }, { status: 500 });
+    }
+
+    // 3. Handle continuations
+    // If this booking is a parent of a continuation, delete the continuation (it relies on this parent)
+    // BUT first, we must unlink any child booking that references this continuation token
+    
+    // Find continuations linked to this parent booking
+    const { data: parentContinuations } = await supabase
+        .from('booking_continuations')
+        .select('id')
+        .eq('parent_booking_id', id);
+
+    if (parentContinuations && parentContinuations.length > 0) {
+        const continuationIds = parentContinuations.map(c => c.id);
+        
+        // Unlink child bookings referencing these continuations
+        const { error: unlinkError } = await supabase
+            .from('bookings')
+            .update({ continuation_id: null })
+            .in('continuation_id', continuationIds);
+
+        if (unlinkError) {
+             console.error('Failed to unlink child bookings from continuations:', unlinkError);
+             return NextResponse.json({ error: 'Failed to unlink related child bookings' }, { status: 500 });
+        }
+
+        // Now safe to delete the continuations
+        const { error: parentContError } = await supabase
+            .from('booking_continuations')
+            .delete()
+            .eq('parent_booking_id', id);
+        
+        if (parentContError) {
+            console.error('Failed to delete parent continuations:', parentContError);
+            return NextResponse.json({ error: 'Failed to delete related continuations' }, { status: 500 });
+        }
+    }
+
+    // If this booking itself claimed a continuation, release it (set claimed_booking_id to null)
+    // blocking the delete of the booking if we don't clear this reference (if the FK is on claimed_booking_id)
+    const { error: claimedContError } = await supabase
+        .from('booking_continuations')
+        .update({ claimed_booking_id: null })
+        .eq('claimed_booking_id', id);
+
+    if (claimedContError) {
+        console.error('Failed to release claimed continuations:', claimedContError);
+        return NextResponse.json({ error: 'Failed to update related continuations' }, { status: 500 });
+    }
+
+    // 4. Handle child bookings (linked via parent_booking_id)
+    // If other bookings reference this one as a parent, unlink them
+    const { error: childBookingError } = await supabase
+        .from('bookings')
+        .update({ parent_booking_id: null })
+        .eq('parent_booking_id', id);
+
+    if (childBookingError) {
+        console.error('Failed to unlink child bookings:', childBookingError);
+        return NextResponse.json({ error: 'Failed to unlink child bookings' }, { status: 500 });
     }
 
     // Permanently delete the cancelled booking
@@ -422,7 +508,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       .delete()
       .eq('id', id);
 
-    if (error) return NextResponse.json({ error: 'Failed to delete booking' }, { status: 500 });
+    if (error) {
+        // If still finding FK violation, log it clearly
+        console.error('Delete booking error:', error);
+        return NextResponse.json({ error: 'Failed to delete booking', details: error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
