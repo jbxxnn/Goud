@@ -514,7 +514,12 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                     if (user) {
                         setUserRole(user.role || null);
                         setContactDefaults((prev) => {
-                            if (user.role === 'midwife') return prev;
+                            if (user.role === 'midwife') {
+                                return {
+                                    ...prev,
+                                    midwifeId: user.midwife_id || undefined,
+                                };
+                            }
                             if (prev.firstName || prev.lastName) return prev;
                             return {
                                 firstName: user.first_name || '',
@@ -800,6 +805,10 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                         if (user) {
                             setUserRole(user.role || null);
                             if (user.role === 'midwife') {
+                                setContactDefaults({
+                                    ...contactDefaults,
+                                    midwifeId: user.midwife_id || undefined,
+                                });
                                 setContactDefaultsVersion(v => v + 1);
                                 setHasAutofilled(true);
                                 return;
