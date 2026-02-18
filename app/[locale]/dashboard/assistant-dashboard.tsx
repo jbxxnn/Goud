@@ -24,6 +24,92 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from '@/components/ui/skeleton';
+
+function AssistantDashboardSkeleton() {
+  return (
+    <div className="container py-8 space-y-8 animate-in fade-in duration-500">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-6 md:col-span-1">
+          {/* Overdue/Past Tasks Skeleton */}
+          <Card className="border-destructive/20 bg-destructive/5" style={{ borderRadius: "10px" }}>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg border border-destructive/10" style={{ borderRadius: "10px" }}>
+                  <Skeleton className="h-4 w-4 rounded-full shrink-0 mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-6 w-6 rounded-md" />
+                    </div>
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming Tasks Skeleton */}
+          <Card style={{ borderRadius: "10px" }}>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{ borderRadius: "10px" }}>
+                  <Skeleton className="h-4 w-4 rounded-full shrink-0 mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-6 w-6 rounded-md" />
+                    </div>
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Upcoming Appointments Skeleton */}
+        <Card style={{ borderRadius: "10px" }} className="md:col-span-1">
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col p-3 border rounded-lg gap-3" style={{ borderRadius: "10px" }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Skeleton className="h-10 w-full mt-2" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 interface ChecklistItem {
   id: string;
@@ -230,7 +316,7 @@ export default function AssistantDashboard() {
   };
 
   if (loading) {
-    return <div className="p-8 flex justify-center">{t('loading')}</div>;
+    return <AssistantDashboardSkeleton />;
   }
 
   return (

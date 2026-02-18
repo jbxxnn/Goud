@@ -86,7 +86,7 @@ export function MediaSection({ bookingId }: MediaSectionProps) {
     };
 
     return (
-        <Card>
+        <Card style={{borderRadius: '10px'}}>
             <CardHeader>
                 <CardTitle className="text-base">Media & Results</CardTitle>
             </CardHeader>

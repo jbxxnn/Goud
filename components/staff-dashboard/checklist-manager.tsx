@@ -133,7 +133,7 @@ export function ChecklistManager({ bookingId }: ChecklistManagerProps) {
     return (
         <div className="space-y-4">
             {/* Add Item Form */}
-            <form onSubmit={handleAddItem} className="flex gap-2">
+            <form onSubmit={handleAddItem} className="flex gap-2 items-center">
                 <Input
                     placeholder={t('addItemPlaceholder')}
                     value={newItemContent}

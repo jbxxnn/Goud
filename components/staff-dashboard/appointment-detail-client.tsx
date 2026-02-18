@@ -176,8 +176,8 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
                 {/* Left Column: Patient Info */}
                 <div className="space-y-6">
-                    <PageItem>
-                        <Card>
+                    <PageItem className='space-y-6'>
+                        <Card style={{borderRadius: '10px'}}>
                             <CardHeader>
                                 <CardTitle className="text-base">{t('patientDetails')}</CardTitle>
                             </CardHeader>
@@ -209,7 +209,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         <MediaSection bookingId={booking.id} />
 
                         {/* Previous History */}
-                        <Card>
+                        <Card style={{borderRadius: '10px'}}>
                             <CardHeader>
                                 <CardTitle className="text-base">{t('previousAppointments')}</CardTitle>
                             </CardHeader>
@@ -243,7 +243,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
 
                     {/* Internal Staff Notes */}
                     {booking.internal_notes && (
-                        <Card className="border-blue-200 bg-blue-50">
+                        <Card className="border-blue-200 bg-blue-50" style={{borderRadius: '10px'}}>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-blue-800 flex items-center gap-2">
                                     <HugeiconsIcon icon={InformationCircleIcon} size={16} />
@@ -257,7 +257,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     )}
 
                     {/* Service & Notes */}
-                    <Card>
+                    <Card style={{borderRadius: '10px'}}>
                         <CardHeader>
                             <CardTitle>{booking.services?.name} {booking.isRepeat && <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
                                 {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}

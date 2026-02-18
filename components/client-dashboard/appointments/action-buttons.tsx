@@ -109,7 +109,7 @@ export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, 
 
     return (
         <>
-            <div className="flex items-center justify-between w-full gap-2">
+            <div className="flex items-center justify-end w-full gap-2">
                 <Button onClick={() => onReschedule(booking)} size="sm">
                     <HugeiconsIcon icon={Calendar01Icon} size={16} className="mr-2" />
                     {t('reschedule')}

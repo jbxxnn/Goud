@@ -303,10 +303,10 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                     </Button>
                 </div>
             ) : (
-                <div className={`border rounded-lg overflow-hidden transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
+                <div className={`border rounded-lg overflow-hidden transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`} style={{borderRadius: '10px'}}>
+                    <Table className='bg-white' style={{borderRadius: '10px'}}>
+                        <TableHeader style={{borderRadius: '10px'}}>
+                            <TableRow style={{borderRadius: '10px'}}>
                                 <TableHead>{t('table.dateTime')}</TableHead>
                                 {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
                                 <TableHead>{t('table.service')}</TableHead>
