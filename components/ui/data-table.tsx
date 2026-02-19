@@ -43,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   showPagination?: boolean
   showColumnToggle?: boolean
   pageSize?: number
+  manualPagination?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -55,6 +56,7 @@ export function DataTable<TData, TValue>({
   showPagination = true,
   showColumnToggle = true,
   pageSize = 10,
+  manualPagination = false,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations('Table');
 
@@ -69,7 +71,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,

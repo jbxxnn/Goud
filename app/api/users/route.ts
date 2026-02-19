@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     let result;
     if (search) {
-      result = await UserService.searchUsers(search, role);
+      result = await UserService.searchUsers(search, role, page, limit);
     } else {
       result = await UserService.getUsers(page, limit, role);
     }

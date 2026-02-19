@@ -169,12 +169,12 @@ export class UserService {
   }
 
   // Search users
-  static async searchUsers(searchTerm: string, role?: string): Promise<UsersResponse> {
+  static async searchUsers(searchTerm: string, role?: string, page: number = 1, limit: number = 50): Promise<UsersResponse> {
     try {
       const supabase = await createClient();
       let query = supabase
         .from('users')
-        .select('*')
+        .select('*', { count: 'exact' })
         .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false });
 
@@ -182,15 +182,26 @@ export class UserService {
         query = query.eq('role', role);
       }
 
-      const { data, error } = await query.limit(20);
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      const { data, error, count } = await query.range(from, to);
 
       if (error) {
         return { success: false, error: error.message };
       }
 
+      const totalPages = count ? Math.ceil(count / limit) : 0;
+
       return {
         success: true,
         data: data || [],
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          total_pages: totalPages,
+        },
       };
     } catch (error) {
       return { 

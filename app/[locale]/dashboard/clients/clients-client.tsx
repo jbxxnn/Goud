@@ -69,7 +69,7 @@ export default function ClientsClient({
 
   // URL & Filter State
   const [page, setPage] = useState(initialPagination.page);
-  const [limit, setLimit] = useState<number>(20); // Default to 20
+  const [limit, setLimit] = useState<number>(50); // Default to 50
   const [searchQuery, setSearchQuery] = useState<string>('');
   const roleOptions = ['client', 'staff', 'midwife', 'admin', 'assistant'] as const;
   type RoleOption = (typeof roleOptions)[number];
@@ -146,14 +146,14 @@ export default function ClientsClient({
       }
       return data;
     },
-    initialData: (page === 1 && limit === 20 && !searchQuery && selectedRole === 'client' && initialClients.length > 0) ? {
+    initialData: (page === 1 && limit === 50 && !searchQuery && selectedRole === 'client' && initialClients.length > 0) ? {
       success: true,
       data: initialClients,
       pagination: {
         page: initialPagination.page,
         total_pages: initialPagination.totalPages,
         total: initialPagination.total,
-        limit: 20
+        limit: 50
       }
     } as any : undefined,
   });
@@ -442,6 +442,8 @@ export default function ClientsClient({
               data={clients}
               emptyMessage={t('table.emptyMessage', { role: selectedRole ? t(`roles.plural.${selectedRole}`) : t('roles.plural.users') })}
               showColumnToggle={false}
+              showPagination={false}
+              manualPagination={true}
             />
           )}
         </div>
