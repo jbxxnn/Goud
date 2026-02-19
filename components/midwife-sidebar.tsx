@@ -1,4 +1,5 @@
 "use client"
+import { useState, useEffect } from "react"
 
 import {
     Sidebar,
@@ -18,6 +19,7 @@ import {
     UserIcon,
     PlusSignIcon,
 } from '@hugeicons/core-free-icons';
+import { Loader2 } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -27,6 +29,12 @@ export function MidwifeSidebar() {
     const pathname = usePathname();
     const { isMobile, setOpenMobile } = useSidebar();
     const t = useTranslations('MidwifeSidebar');
+    const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
+
+    // Clear loading state when pathname changes
+    useEffect(() => {
+        setLoadingUrl(null);
+    }, [pathname]);
 
     // Midwife specific menu items
     // Defined inside component to access translation hook
@@ -83,12 +91,19 @@ export function MidwifeSidebar() {
                                                 href={item.url}
                                                 className="min-h-10 "
                                                 onClick={() => {
+                                                    if (item.url !== "#" && item.url !== pathname) {
+                                                        setLoadingUrl(item.url);
+                                                    }
                                                     if (isMobile) {
                                                         setOpenMobile(false);
                                                     }
                                                 }}
                                             >
-                                                {item.icon}
+                                                {loadingUrl === item.url ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    item.icon
+                                                )}
                                                 <span>{item.title}</span>
                                             </Link>
                                         </SidebarMenuButton>

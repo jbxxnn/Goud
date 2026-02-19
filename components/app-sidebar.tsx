@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
 import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon } from '@hugeicons/core-free-icons';
+import { Loader2 } from "lucide-react";
 
 
 import { usePathname } from 'next/navigation';
@@ -127,6 +129,12 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
+  const [loadingUrl, setLoadingUrl] = useState<string | null>(null);
+
+  // Clear loading state when pathname changes
+  useEffect(() => {
+    setLoadingUrl(null);
+  }, [pathname]);
 
   // Filter menu items based on user role
   const items = allMenuItems.filter(item => {
@@ -181,12 +189,19 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                         href={item.url}
                         className="min-h-10 "
                         onClick={() => {
+                          if (item.url !== "#" && item.url !== pathname) {
+                            setLoadingUrl(item.url);
+                          }
                           if (isMobile) {
                             setOpenMobile(false);
                           }
                         }}
                       >
-                        {item.icon}
+                        {loadingUrl === item.url ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          item.icon
+                        )}
                         <span>{item.title}</span> <span className="text-[10px] bg-primary rounded-full px-1 text-primary-foreground">{item.comingsoon}</span>
                       </Link>
                     </SidebarMenuButton>
