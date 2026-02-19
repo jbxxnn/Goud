@@ -20,7 +20,7 @@ import {
     Image01Icon,
     PlusSignIcon
 } from '@hugeicons/core-free-icons';
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -104,7 +104,7 @@ export function ClientSidebar() {
                                                 }}
                                             >
                                                 {loadingUrl === item.url ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <Loader className="h-4 w-4 animate-spin" />
                                                 ) : (
                                                     item.icon
                                                 )}

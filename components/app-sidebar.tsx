@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
 import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon } from '@hugeicons/core-free-icons';
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 
 
 import { usePathname } from 'next/navigation';
@@ -198,7 +198,7 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                         }}
                       >
                         {loadingUrl === item.url ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader className="h-4 w-4 animate-spin" />
                         ) : (
                           item.icon
                         )}
