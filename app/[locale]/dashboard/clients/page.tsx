@@ -33,7 +33,7 @@ export default async function ClientsPage() {
 
   // Fetch initial clients (default to role='client' to match client component)
   const { UserService } = await import('@/lib/database/users');
-  const initialData = await UserService.getUsers(1, 20, 'client');
+  const initialData = await UserService.getUsers(1, 50, 'client');
 
   return (
     <ClientsClient

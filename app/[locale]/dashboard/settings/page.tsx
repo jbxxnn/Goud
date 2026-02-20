@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { SitewideBreaksManager } from '@/components/settings/sitewide-breaks-manager';
+import { SettingsSidebar } from '@/components/settings/settings-sidebar';
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -22,10 +22,13 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Settings</h1>
+    <div className="container mx-auto py-6 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage global configuration for your workspace.</p>
+      </div>
       
-      <SitewideBreaksManager />
+      <SettingsSidebar />
     </div>
   );
 }

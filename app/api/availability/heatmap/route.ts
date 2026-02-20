@@ -212,6 +212,21 @@ export async function GET(req: NextRequest) {
     }));
 
     const dayMs = 24 * 60 * 60 * 1000;
+
+    // Fetch staff recurring breaks for the staff in scope
+    const { data: staffBreaksData } = await supabase
+      .from('staff_recurring_breaks')
+      .select('staff_id, start_time, end_time, day_of_week')
+      .in('staff_id', shifts.map(s => s.staffId));
+
+    // Fetch shift specific breaks in range
+    const { data: shiftBreaksData } = await supabase
+      .from('shift_breaks')
+      .select('shift_id, start_time, end_time')
+      .in('shift_id', allowedShiftIds)
+      .lt('start_time', endUTC.toISOString())
+      .gt('end_time', startUTC.toISOString());
+
     for (let d = new Date(start); d <= end; d = new Date(d.getTime() + dayMs)) {
       dayList.push(new Date(d));
       const dayKey = d.toISOString().slice(0, 10);
@@ -234,6 +249,34 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
+      const dayOfWeek = d.getDay();
+      
+      const staffRecurringBreaksForDay: TimeInterval[] = (staffBreaksData ?? [])
+        .filter((b: any) => b.day_of_week === null || b.day_of_week === dayOfWeek)
+        .map((b: any) => {
+          const [startH, startM] = b.start_time.split(':');
+          const [endH, endM] = b.end_time.split(':');
+          const breakStart = new Date(d);
+          breakStart.setHours(Number(startH), Number(startM), 0, 0);
+          const breakEnd = new Date(d);
+          breakEnd.setHours(Number(endH), Number(endM), 0, 0);
+          return { start: breakStart, end: breakEnd };
+        });
+
+      const dayStartStr = new Date(d).toISOString();
+      const dayEnd = new Date(d);
+      dayEnd.setUTCHours(23, 59, 59, 999);
+      const dayEndStr = dayEnd.toISOString();
+
+      const shiftBreaksForDay: TimeInterval[] = (shiftBreaksData ?? [])
+        .filter((b: any) => b.end_time > dayStartStr && b.start_time < dayEndStr)
+        .map((b: any) => ({
+          start: new Date(b.start_time),
+          end: new Date(b.end_time),
+        }));
+
+      const breaksForDay = [...staffRecurringBreaksForDay, ...shiftBreaksForDay];
+
       const slots = generateSlotsForDay({
         date: d,
         serviceId,
@@ -242,6 +285,7 @@ export async function GET(req: NextRequest) {
         serviceRules,
         blackouts,
         existingBookings: combinedExisting,
+        breaks: breaksForDay,
       });
       perDaySlots.set(dayKey, slots);
       daySlotsCache.set(dayCacheKey, {

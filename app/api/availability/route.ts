@@ -233,7 +233,6 @@ export async function GET(req: NextRequest) {
       end: new Date(l.end_time),
     }));
 
-    // Fetch staff recurring breaks
     const { data: breaksData, error: breaksErr } = await supabase
       .from('staff_recurring_breaks')
       .select('staff_id, start_time, end_time, day_of_week')
@@ -243,8 +242,20 @@ export async function GET(req: NextRequest) {
       console.log('[availability] breaks error', breaksErr);
     }
 
+    // Fetch shift specific breaks
+    const { data: shiftBreaksData, error: shiftBreaksErr } = await supabase
+      .from('shift_breaks')
+      .select('shift_id, start_time, end_time')
+      .in('shift_id', allowedShiftIds)
+      .lt('start_time', dayEnd.toISOString())
+      .gt('end_time', dayStart.toISOString());
+
+    if (shiftBreaksErr) {
+      console.log('[availability] shift breaks error', shiftBreaksErr);
+    }
+
     const dayOfWeek = date.getDay(); // 0-6
-    const breaksForDay: TimeInterval[] = (breaksData ?? [])
+    const staffRecurringBreaksForDay: TimeInterval[] = (breaksData ?? [])
       .filter((b: any) => b.day_of_week === null || b.day_of_week === dayOfWeek)
       .map((b: any) => {
         // breaks are stored as TIME (HH:MM:SS), need to combine with current Date
@@ -260,8 +271,14 @@ export async function GET(req: NextRequest) {
         return { start, end };
       });
 
-    const allSlots = generateSlotsForDay({
-      date,
+    const shiftBreaksForDay: TimeInterval[] = (shiftBreaksData ?? []).map((b: any) => ({
+      start: new Date(b.start_time),
+      end: new Date(b.end_time),
+    }));
+
+    const breaksForDay = [...staffRecurringBreaksForDay, ...shiftBreaksForDay];
+
+    const allSlots = generateSlotsForDay({      date,
       serviceId,
       locationId,
       shifts,

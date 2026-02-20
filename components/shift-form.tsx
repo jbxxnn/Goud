@@ -19,7 +19,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { toast } from 'sonner';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Trash2, Plus, Loader2, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,21 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const [isLoading, setIsLoading] = useState(true);
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+
+  // Shift breaks state
+  const [shiftBreaks, setShiftBreaks] = useState<any[]>([]);
+  const [isLoadingBreaks, setIsLoadingBreaks] = useState(false);
+  const [isAddingBreak, setIsAddingBreak] = useState(false);
+  const [newBreakName, setNewBreakName] = useState('');
+  const [newBreakStart, setNewBreakStart] = useState('');
+  const [newBreakEnd, setNewBreakEnd] = useState('');
+
+  // Editing shift breaks state
+  const [editingBreakId, setEditingBreakId] = useState<string | null>(null);
+  const [editBreakName, setEditBreakName] = useState('');
+  const [editBreakStart, setEditBreakStart] = useState('');
+  const [editBreakEnd, setEditBreakEnd] = useState('');
+  const [isUpdatingBreak, setIsUpdatingBreak] = useState(false);
 
   const {
     register,
@@ -164,8 +179,133 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       });
 
       setSelectedServices(shift.services.map(s => s.service_id));
+      
+      // Fetch breaks for this shift
+      const fetchBreaks = async () => {
+        setIsLoadingBreaks(true);
+        try {
+          const response = await fetch(`/api/shift-breaks?shift_id=${shift.id}`);
+          const data = await response.json();
+          if (data.success) {
+            setShiftBreaks(data.data || []);
+          }
+        } catch (error) {
+          console.error('Error fetching shift breaks:', error);
+        } finally {
+          setIsLoadingBreaks(false);
+        }
+      };
+      fetchBreaks();
     }
   }, [shift, reset]);
+
+  const deleteShiftBreak = async (id: string) => {
+    try {
+      const response = await fetch(`/api/shift-breaks/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setShiftBreaks(prev => prev.filter(b => b.id !== id));
+        toast.success('Break removed');
+      } else {
+        toast.error('Failed to remove break');
+      }
+    } catch {
+      toast.error('Failed to remove break');
+    }
+  };
+
+  const addShiftBreak = async () => {
+    if (!shift || !newBreakName || !newBreakStart || !newBreakEnd) return;
+    setIsAddingBreak(true);
+    try {
+      const shiftDate = shift.start_time.split('T')[0];
+      const timeZoneSuffix = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1] || 'Z';
+      const startIso = new Date(`${shiftDate}T${newBreakStart}:00${timeZoneSuffix}`).toISOString();
+      const endIso = new Date(`${shiftDate}T${newBreakEnd}:00${timeZoneSuffix}`).toISOString();
+      
+      const payload = {
+        shift_id: shift.id,
+        name: newBreakName,
+        start_time: startIso,
+        end_time: endIso
+      };
+
+      const response = await fetch('/api/shift-breaks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShiftBreaks(prev => [...prev].concat(data.data).sort((a,b) => a.start_time.localeCompare(b.start_time)));
+        setNewBreakName('');
+        setNewBreakStart('');
+        setNewBreakEnd('');
+        toast.success('Break added');
+      } else {
+        toast.error(data.error);
+      }
+    } catch {
+      toast.error('Failed to add break');
+    } finally {
+      setIsAddingBreak(false);
+    }
+  };
+
+  const startEditingBreak = (b: any) => {
+    setEditingBreakId(b.id);
+    setEditBreakName(b.name);
+    // Extract HH:mm from ISO
+    const sDate = new Date(b.start_time);
+    const eDate = new Date(b.end_time);
+    const sHours = String(sDate.getHours()).padStart(2, '0');
+    const sMins = String(sDate.getMinutes()).padStart(2, '0');
+    setEditBreakStart(`${sHours}:${sMins}`);
+    const eHours = String(eDate.getHours()).padStart(2, '0');
+    const eMins = String(eDate.getMinutes()).padStart(2, '0');
+    setEditBreakEnd(`${eHours}:${eMins}`);
+  };
+
+  const cancelEditingBreak = () => {
+    setEditingBreakId(null);
+    setEditBreakName('');
+    setEditBreakStart('');
+    setEditBreakEnd('');
+  };
+
+  const updateShiftBreak = async () => {
+    if (!shift || !editingBreakId || !editBreakName || !editBreakStart || !editBreakEnd) return;
+    setIsUpdatingBreak(true);
+    try {
+      const shiftDate = shift.start_time.split('T')[0];
+      const timeZoneSuffix = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1] || 'Z';
+      const startIso = new Date(`${shiftDate}T${editBreakStart}:00${timeZoneSuffix}`).toISOString();
+      const endIso = new Date(`${shiftDate}T${editBreakEnd}:00${timeZoneSuffix}`).toISOString();
+      
+      const payload = {
+        name: editBreakName,
+        start_time: startIso,
+        end_time: endIso
+      };
+
+      const response = await fetch(`/api/shift-breaks/${editingBreakId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setShiftBreaks(prev => prev.map(b => b.id === editingBreakId ? data.data : b).sort((a,b) => a.start_time.localeCompare(b.start_time)));
+        cancelEditingBreak();
+        toast.success('Break updated');
+      } else {
+        toast.error(data.error);
+      }
+    } catch {
+      toast.error('Failed to update break');
+    } finally {
+      setIsUpdatingBreak(false);
+    }
+  };
 
   const onSubmit = async (data: ShiftFormData) => {
     setIsSubmitting(true);
@@ -666,6 +806,102 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           disabled={isViewMode}
         />
       </div>
+
+      {/* Shift Breaks - Only when editing */}
+      {shift && (
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-semibold">Shift Breaks</Label>
+          </div>
+          {isLoadingBreaks ? (
+            <p className="text-xs text-muted-foreground">Loading breaks...</p>
+          ) : shiftBreaks.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No breaks scheduled for this shift.</p>
+          ) : (
+            <div className="space-y-2">
+              {shiftBreaks.map(b => (
+                <div key={b.id} className="flex flex-col gap-2 border rounded p-2 text-sm bg-muted/20">
+                  {editingBreakId === b.id ? (
+                    <div className="flex items-center space-x-2 w-full">
+                      <Input 
+                        placeholder="Break name" 
+                        value={editBreakName} 
+                        onChange={e => setEditBreakName(e.target.value)} 
+                        className="h-8 flex-1 text-xs"
+                      />
+                      <Input 
+                        type="time" 
+                        value={editBreakStart} 
+                        onChange={e => setEditBreakStart(e.target.value)} 
+                        className="h-8 w-20 text-xs px-2"
+                      />
+                      <span className="text-muted-foreground">-</span>
+                      <Input 
+                        type="time" 
+                        value={editBreakEnd} 
+                        onChange={e => setEditBreakEnd(e.target.value)} 
+                        className="h-8 w-20 text-xs px-2"
+                      />
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700" onClick={updateShiftBreak} disabled={isUpdatingBreak || !editBreakName || !editBreakStart || !editBreakEnd}>
+                        {isUpdatingBreak ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={cancelEditingBreak} disabled={isUpdatingBreak}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <div>
+                        <p className="font-medium">{b.name}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(b.start_time), 'p')} - {format(new Date(b.end_time), 'p')}</p>
+                      </div>
+                      {!isViewMode && (
+                        <div className="flex items-center space-x-1">
+                          <Button type="button" variant="ghost" size="sm" onClick={() => startEditingBreak(b)} className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => deleteShiftBreak(b.id)} className="h-8 w-8 p-0 text-destructive hover:text-destructive/90">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Add Break Form */}
+          {!isViewMode && (
+            <div className="flex items-center space-x-2 mt-2">
+              <Input 
+                placeholder="Break name" 
+                value={newBreakName} 
+                onChange={e => setNewBreakName(e.target.value)} 
+                className="h-9 flex-1 text-sm"
+              />
+              <Input 
+                type="time" 
+                value={newBreakStart} 
+                onChange={e => setNewBreakStart(e.target.value)} 
+                className="h-9 w-24 text-sm"
+              />
+              <span className="text-muted-foreground">-</span>
+              <Input 
+                type="time" 
+                value={newBreakEnd} 
+                onChange={e => setNewBreakEnd(e.target.value)} 
+                className="h-9 w-24 text-sm"
+              />
+              <Button type="button" variant="outline" size="sm" className="h-9" disabled={!newBreakName || !newBreakStart || !newBreakEnd || isAddingBreak} onClick={addShiftBreak}>
+                {isAddingBreak ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Add
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Form Actions */}
       {!isViewMode && (

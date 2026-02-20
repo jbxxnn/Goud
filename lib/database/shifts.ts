@@ -12,6 +12,12 @@ import {
   CreateBlackoutPeriodRequest,
   UpdateBlackoutPeriodRequest,
   BlackoutPeriodSearchParams,
+  SitewideBreak,
+  CreateSitewideBreakRequest,
+  UpdateSitewideBreakRequest,
+  ShiftBreak,
+  CreateShiftBreakRequest,
+  UpdateShiftBreakRequest,
 } from '@/lib/types/shift';
 
 export class ShiftService {
@@ -233,6 +239,65 @@ export class ShiftService {
       if (servicesError) {
         console.error('Error creating service assignments:', servicesError);
       }
+    }
+
+    // Auto-apply active sitewide breaks
+    try {
+      // Very basic local timezone parsing (assuming system local is relevant or shift dates are stored mostly in local time strings)
+      // Extract the date part string from the shift start_time (assuming start_time is an ISO string like "2024-01-01T08:00:00Z")
+      const shiftDate = shift.start_time.split('T')[0];
+      const { data: activeBreaks } = await supabase
+        .from('sitewide_breaks')
+        .select('*')
+        .eq('is_active', true);
+
+      if (activeBreaks && activeBreaks.length > 0) {
+        const shiftBreaksToInsert: any[] = [];
+        
+        for (const b of activeBreaks) {
+          let applies = false;
+          if (b.is_recurring) {
+            applies = true; // Applies daily
+          } else {
+            const bStart = b.start_date || '0000-01-01';
+            const bEnd = b.end_date || '9999-12-31';
+            if (shiftDate >= bStart && shiftDate <= bEnd) {
+              applies = true;
+            }
+          }
+          
+          if (applies) {
+            // Combine the shift date and the break time, adding a Z for UTC timezone (adjust if needed depending on exact timezone handling)
+            // Example: shiftDate=2024-01-01, b.start_time=12:00:00
+            // We'll treat the break as occurring in the exact same timezone offset as the shift.
+            // A foolproof way is replacing the time portion in shift's start_time string
+            const tzOffsetMatch = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/);
+            const timeZoneSuffix = tzOffsetMatch ? tzOffsetMatch[1] : 'Z';
+            
+            const breakStartTs = new Date(`${shiftDate}T${b.start_time}${timeZoneSuffix}`).toISOString();
+            const breakEndTs = new Date(`${shiftDate}T${b.end_time}${timeZoneSuffix}`).toISOString();
+            
+            // Allow break only if it overlaps inside the shift bounds completely or partially
+            // To be precise, we check if breakStart comes after shift.start_time AND before shift.end_time
+            if (breakStartTs >= shift.start_time && breakEndTs <= shift.end_time) {
+              shiftBreaksToInsert.push({
+                shift_id: shift.id,
+                sitewide_break_id: b.id,
+                name: b.name,
+                start_time: breakStartTs,
+                end_time: breakEndTs
+              });
+            }
+          }
+        }
+        
+        if (shiftBreaksToInsert.length > 0) {
+          const { error: brkErr } = await supabase.from('shift_breaks').insert(shiftBreaksToInsert);
+          if (brkErr) console.error('Error auto-applying shift breaks:', brkErr);
+        }
+      }
+    } catch (err) {
+      console.error('Error auto-applying sitewide breaks:', err);
     }
 
     return shift;
@@ -523,6 +588,102 @@ export class ShiftService {
     if (error) {
       throw new Error(`Failed to delete blackout period: ${error.message}`);
     }
+  }
+
+  // =============================================
+  // SITEWIDE BREAKS
+  // =============================================
+
+  static async getSitewideBreaks(activeOnly = false): Promise<SitewideBreak[]> {
+    const supabase = await createClient();
+    let query = supabase.from('sitewide_breaks').select('*').order('start_time', { ascending: true });
+    
+    if (activeOnly) {
+      query = query.eq('is_active', true);
+    }
+    
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching sitewide breaks:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  static async createSitewideBreak(data: CreateSitewideBreakRequest): Promise<SitewideBreak> {
+    const supabase = await createClient();
+    const { data: breakTemplate, error } = await supabase
+      .from('sitewide_breaks')
+      .insert(data)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create sitewide break: ${error.message}`);
+    return breakTemplate;
+  }
+
+  static async updateSitewideBreak(id: string, data: UpdateSitewideBreakRequest): Promise<SitewideBreak> {
+    const supabase = await createClient();
+    const { data: breakTemplate, error } = await supabase
+      .from('sitewide_breaks')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update sitewide break: ${error.message}`);
+    return breakTemplate;
+  }
+
+  static async deleteSitewideBreak(id: string): Promise<void> {
+    const supabase = await createClient();
+    const { error } = await supabase.from('sitewide_breaks').delete().eq('id', id);
+    if (error) throw new Error(`Failed to delete sitewide break: ${error.message}`);
+  }
+
+  // =============================================
+  // SHIFT BREAKS
+  // =============================================
+
+  static async getShiftBreaks(shiftId: string): Promise<ShiftBreak[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('shift_breaks')
+      .select('*')
+      .eq('shift_id', shiftId)
+      .order('start_time', { ascending: true });
+    if (error) {
+      console.error('Error fetching shift breaks:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  static async createShiftBreak(data: CreateShiftBreakRequest): Promise<ShiftBreak> {
+    const supabase = await createClient();
+    const { data: shiftBreak, error } = await supabase
+      .from('shift_breaks')
+      .insert(data)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to create shift break: ${error.message}`);
+    return shiftBreak;
+  }
+
+  static async updateShiftBreak(id: string, data: UpdateShiftBreakRequest): Promise<ShiftBreak> {
+    const supabase = await createClient();
+    const { data: shiftBreak, error } = await supabase
+      .from('shift_breaks')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to update shift break: ${error.message}`);
+    return shiftBreak;
+  }
+
+  static async deleteShiftBreak(id: string): Promise<void> {
+    const supabase = await createClient();
+    const { error } = await supabase.from('shift_breaks').delete().eq('id', id);
+    if (error) throw new Error(`Failed to delete shift break: ${error.message}`);
   }
 }
 

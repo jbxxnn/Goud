@@ -17,7 +17,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Staff, CreateStaffRequest, UpdateStaffRequest, StaffRole } from '@/lib/types/staff';
-import { StaffRecurringBreak } from '@/lib/types/shift';
 import { Location } from '@/lib/types/location_simple';
 import { Service } from '@/lib/types/service';
 import { User } from '@/lib/types/user';
@@ -41,7 +40,6 @@ interface StaffFormData {
   location_ids: string[];
   service_ids: string[];
   services: { service_id: string; is_twin_qualified: boolean }[];
-  recurring_breaks?: StaffRecurringBreak[];
 }
 
 export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
@@ -76,8 +74,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
       bio: '',
       location_ids: [],
       service_ids: [],
-      services: [],
-      recurring_breaks: []
+      services: []
     },
   });
 
@@ -103,8 +100,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               is_active: data.data.is_active,
               location_ids: data.data.location_ids || [],
               service_ids: data.data.service_ids || [],
-              services: data.data.services || [],
-              recurring_breaks: data.data.recurring_breaks || []
+              services: data.data.services || []
             });
           }
         } catch (error) {
@@ -122,8 +118,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
             is_active: staff.is_active,
             location_ids: [],
             service_ids: [],
-            services: [],
-            recurring_breaks: []
+            services: []
           });
         }
       };
@@ -142,8 +137,7 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
         is_active: true,
         location_ids: [],
         service_ids: [],
-        services: [],
-        recurring_breaks: []
+        services: []
       });
     }
   }, [staff, reset]);
@@ -645,15 +639,6 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
               </p>
             </div>
 
-            {/* Recurring Breaks Section */}
-             <div className="md:col-span-2 border-t pt-6">
-              <h3 className="text-sm font-semibold mb-4">Recurring Breaks</h3>
-               <StaffBreaksManager 
-                value={watch('recurring_breaks') || []}
-                onChange={(breaks) => setValue('recurring_breaks', breaks)}
-              />
-            </div>
-
           </div>
         </div>
 
@@ -678,145 +663,3 @@ export default function StaffForm({ staff, onSave, onCancel }: StaffFormProps) {
   );
 }
 
-// Sub-component for managing breaks
-function StaffBreaksManager({ value, onChange }: { value: StaffRecurringBreak[], onChange: (val: StaffRecurringBreak[]) => void }) {
-  const [startTime, setStartTime] = useState('12:00');
-  const [endTime, setEndTime] = useState('12:30');
-  const [selectedDays, setSelectedDays] = useState<number[]>([]); // 0-6
-
-  const days = [
-    { label: 'Sun', value: 0 },
-    { label: 'Mon', value: 1 },
-    { label: 'Tue', value: 2 },
-    { label: 'Wed', value: 3 },
-    { label: 'Thu', value: 4 },
-    { label: 'Fri', value: 5 },
-    { label: 'Sat', value: 6 },
-  ];
-
-  const handleAdd = () => {
-    if (!startTime || !endTime) return;
-    
-    // Create a new break object
-    // If selectedDays is empty, it means 'Everyday' (null in DB, but let's be explicit and add null or handle it)
-    // The requirement was: "If NULL, applies to every day". 
-    // Let's implement logic: if user selects nothing, maybe ask them to select 'Everyday' explicitly?
-    // Or add a checkbox for 'Everyday'.
-    // For now, let's treat empty selectedDays as "Daily" if valid.
-    
-    // Actually, explicit rows are cleaner. If they pick Mon, Wed, Fri -> 3 rows.
-    // If they pick "Everyday", we can store as NULL?
-    // Let's support "Everyday" checkbox.
-    
-    const newBreaks: StaffRecurringBreak[] = [];
-    
-    // If no specific days selected, treat as "Everyday" (null)
-    // BUT user might just have forgotten. 
-    // Let's allow specific days OR everyday.
-    
-    // Let's determine if it's "Everyday"
-    const isEveryday = selectedDays.length === 0; // Use a specific toggle?
-    
-    // Wait, the plan said "If NULL, applies to every day".
-    // Let's just create one entry with null day_of_week if it's everyday.
-    
-    if (selectedDays.length === 0) {
-        // Assume everyday? Or force selection?
-        // Let's add a button "Add Daily Break" vs "Add Weekly Break" logic?
-        // Let's just default to null (Everyday) if nothing selected? 
-        // Better UX: Have "Everyday" toggle. 
-        // For simplicity reusing strict UI:
-         newBreaks.push({
-            id: Math.random().toString(), // temp ID
-            staff_id: '',
-            start_time: startTime + ':00', // Ensure HH:MM:SS format
-            end_time: endTime + ':00',
-            day_of_week: null,
-            created_at: '',
-            updated_at: ''
-          });
-    } else {
-        selectedDays.forEach(d => {
-           newBreaks.push({
-            id: Math.random().toString(),
-            staff_id: '',
-            start_time: startTime + ':00',
-            end_time: endTime + ':00',
-            day_of_week: d,
-            created_at: '',
-            updated_at: ''
-          });
-        });
-    }
-
-    onChange([...value, ...newBreaks]);
-    // Reset
-    setSelectedDays([]);
-  };
-
-  const handleRemove = (index: number) => {
-    const newValue = [...value];
-    newValue.splice(index, 1);
-    onChange(newValue);
-  };
-  
-  const toggleDay = (d: number) => {
-    if (selectedDays.includes(d)) {
-        setSelectedDays(selectedDays.filter(day => day !== d));
-    } else {
-        setSelectedDays([...selectedDays, d]);
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-4 p-4 border rounded-md bg-muted/20">
-        <div>
-            <Label className="text-xs">Start Time</Label>
-            <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-32" />
-        </div>
-        <div>
-            <Label className="text-xs">End Time</Label>
-             <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-32" />
-        </div>
-        <div className="flex-1 min-w-[200px]">
-             <Label className="text-xs mb-2 block">Days (Leave empty for Daily)</Label>
-             <div className="flex gap-1 flex-wrap">
-                {days.map(day => (
-                    <div 
-                        key={day.value}
-                        onClick={() => toggleDay(day.value)}
-                        className={cn(
-                            "cursor-pointer text-xs px-2 py-1 rounded border transition-colors",
-                            selectedDays.includes(day.value) 
-                                ? "bg-primary text-primary-foreground border-primary" 
-                                : "bg-background hover:bg-muted"
-                        )}
-                    >
-                        {day.label}
-                    </div>
-                ))}
-             </div>
-        </div>
-        <Button type="button" onClick={handleAdd} size="sm">Add Break</Button>
-      </div>
-
-      <div className="space-y-2">
-        {value.length === 0 && <p className="text-sm text-muted-foreground italic">No recurring breaks configured.</p>}
-        {value.map((b, i) => (
-            <div key={i} className="flex items-center justify-between p-2 border rounded bg-card text-sm">
-                <div className="flex items-center gap-2">
-                    <Badge variant="outline">{b.start_time.slice(0, 5)} - {b.end_time.slice(0, 5)}</Badge>
-                    <span className="font-medium text-muted-foreground">
-                        {b.day_of_week === null ? 'Everyday' : days.find(d => d.value === b.day_of_week)?.label}
-                    </span>
-                </div>
-                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemove(i)} className="h-6 w-6 text-destructive">
-                    <X className="h-4 w-4" />
-                </Button>
-            </div>
-        ))}
-      </div>
-    </div>
-  );
-}

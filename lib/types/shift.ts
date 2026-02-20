@@ -67,6 +67,30 @@ export interface BlackoutPeriod {
   updated_at: string;
 }
 
+export interface SitewideBreak {
+  id: string;
+  name: string;
+  start_time: string; // HH:mm:ss
+  end_time: string; // HH:mm:ss
+  start_date: string | null; // YYYY-MM-DD
+  end_date: string | null; // YYYY-MM-DD
+  is_recurring: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftBreak {
+  id: string;
+  shift_id: string;
+  sitewide_break_id: string | null;
+  name: string;
+  start_time: string; // ISO timestamp
+  end_time: string; // ISO timestamp
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StaffRecurringBreak {
   id: string;
   staff_id: string;
@@ -125,6 +149,39 @@ export interface UpdateBlackoutPeriodRequest {
   reason?: string;
   description?: string | null;
   is_active?: boolean;
+}
+
+export interface CreateSitewideBreakRequest {
+  name: string;
+  start_time: string; // HH:mm:ss
+  end_time: string; // HH:mm:ss
+  start_date?: string | null; // YYYY-MM-DD
+  end_date?: string | null; // YYYY-MM-DD
+  is_recurring?: boolean;
+}
+
+export interface UpdateSitewideBreakRequest {
+  name?: string;
+  start_time?: string; // HH:mm:ss
+  end_time?: string; // HH:mm:ss
+  start_date?: string | null; // YYYY-MM-DD
+  end_date?: string | null; // YYYY-MM-DD
+  is_recurring?: boolean;
+  is_active?: boolean;
+}
+
+export interface CreateShiftBreakRequest {
+  shift_id: string;
+  sitewide_break_id?: string | null;
+  name: string;
+  start_time: string; // ISO timestamp
+  end_time: string; // ISO timestamp
+}
+
+export interface UpdateShiftBreakRequest {
+  name?: string;
+  start_time?: string; // ISO timestamp
+  end_time?: string; // ISO timestamp
 }
 
 // =============================================
@@ -208,6 +265,18 @@ export interface BlackoutPeriodsResponse {
     total: number;
     totalPages: number;
   };
+  error?: string;
+}
+
+export interface SitewideBreaksResponse {
+  success: boolean;
+  data?: SitewideBreak[];
+  error?: string;
+}
+
+export interface ShiftBreaksResponse {
+  success: boolean;
+  data?: ShiftBreak[];
   error?: string;
 }
 
