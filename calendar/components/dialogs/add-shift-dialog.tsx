@@ -322,15 +322,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
         <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
           <form id="shift-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
             {/* Staff Selection */}
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="staff_id">{t('staffMember')}</Label>
               <Select
                 value={watch('staff_id')}
                 onValueChange={handleStaffChange}
                 disabled={isLoading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
                   <SelectValue placeholder={isLoading ? t('loadingStaff') : t('selectStaff')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -364,14 +365,14 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             </div>
 
             {/* Location Selection */}
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="location_id">{t('location')}</Label>
               <Select
                 value={watch('location_id')}
                 onValueChange={handleLocationChange}
                 disabled={isLoading}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
                   <SelectValue placeholder={isLoading ? t('loadingLocations') : t('selectLocation')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -403,21 +404,22 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                 <p className="text-sm text-destructive mt-1">{errors.location_id.message}</p>
               )}
             </div>
+            </div>
 
             {/* Date and Time */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="block mb-2">{t('startTime')}</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Popover modal={true} open={startDateOpen} onOpenChange={setStartDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                          "justify-start text-left font-normal h-10 px-3 border-input bg-card",
                           !watch('start_time') && "text-muted-foreground"
                         )}
-                        style={{ borderRadius: '0.2rem' }}
+                        style={{ borderRadius: '1rem' }}
                       >
                         <HugeiconsIcon icon={Calendar01Icon} />
                         {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
@@ -433,12 +435,23 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                             date.setHours(current.getHours(), current.getMinutes());
                             setValue('start_time', formatDateTimeLocal(date));
                             setStartDateOpen(false);
+
+                            // Auto-populate End Date to match the new Start Date, preserving existing end time
+                            const currentEnd = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                            const newEndDate = new Date(date);
+                            newEndDate.setHours(currentEnd.getHours(), currentEnd.getMinutes());
+                            setValue('end_time', formatDateTimeLocal(newEndDate));
                           }
                         }}
                         initialFocus
                         captionLayout="dropdown"
                         fromYear={2020}
                         toYear={2030}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          return date < today;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -446,7 +459,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     className="flex-1"
                     style={{ borderRadius: '0.2rem' }}
                     dateInputClassName="h-10"
-                    hourCycle={12}
+                    hourCycle={24}
                     disabled={isLoading}
                     value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
                     onChange={(time) => {
@@ -466,16 +479,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
               <div>
                 <Label className="block mb-2">{t('endTime')}</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Popover modal={true} open={endDateOpen} onOpenChange={setEndDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "flex-1 justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                          "justify-start text-left font-normal h-10 px-3 border-input bg-card",
                           !watch('end_time') && "text-muted-foreground"
                         )}
-                        style={{ borderRadius: '0.2rem' }}
+                        style={{ borderRadius: '1rem' }}
                       >
                         <HugeiconsIcon icon={Calendar01Icon} />
                         {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
@@ -497,6 +510,17 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                         captionLayout="dropdown"
                         fromYear={2020}
                         toYear={2030}
+                        disabled={(date) => {
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          
+                          if (watch('start_time')) {
+                              const startDate = new Date(watch('start_time'));
+                              startDate.setHours(0,0,0,0);
+                              return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                          }
+                          return date < today;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
@@ -504,7 +528,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     className="flex-1"
                     style={{ borderRadius: '0.2rem' }}
                     dateInputClassName="h-10"
-                    hourCycle={12}
+                    hourCycle={24}
                     disabled={isLoading}
                     value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
                     onChange={(time) => {
@@ -535,14 +559,15 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               </div>
 
               {watch('is_recurring') && (
-                <div className="space-y-3 pl-6 border-l-2 border-muted">
-                  <div>
+                <div className="border-l-2 border-muted grid grid-cols-2 gap-2">
+                  <div className="space-y-4">
+                  <div className="space-y-2">
                     <Label htmlFor="recurrence_frequency">{t('frequency')}</Label>
                     <Select
                       value={watch('recurrence_frequency')}
                       onValueChange={(value) => setValue('recurrence_frequency', value as any)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
                         <SelectValue placeholder={t('frequency')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -561,6 +586,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                           <div key={day.value} className="flex items-center space-x-2">
                             <Checkbox
                               id={day.value}
+                              className="rounded-full"
                               checked={(watch('recurrence_days') || []).includes(day.value)}
                               onCheckedChange={(checked) => {
                                 const current = watch('recurrence_days') || [];
@@ -580,12 +606,16 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                       </div>
                     </div>
                   )}
+                  </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="recurrence_until">{t('repeatUntil')}</Label>
                     <Input
                       id="recurrence_until"
                       type="date"
+                      className="bg-card w-full" 
+                      style={{borderRadius: "1rem"}}
+                      min={watch('start_time') ? new Date(watch('start_time')).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
                       {...register('recurrence_until')}
                     />
                     <p className="text-xs text-muted-foreground mt-1">
@@ -627,7 +657,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               )}
 
               {watch('staff_id') && filteredServices.length > 0 && !showServices && (
-                <div className="border rounded-lg p-3 bg-muted/30">
+                <div className="border p-3 bg-muted" style={{borderRadius: "10px"}}>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">
                       {t('servicesSelected', { count: selectedServices.length, s: selectedServices.length !== 1 ? 's' : '' })}
@@ -657,9 +687,10 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                         {t('showingServices', { count: selectedServices.length, total: filteredServices.length })}
                       </p>
                       {filteredServices.map((service) => (
-                        <div key={service.id} className="flex items-start space-x-2">
+                        <div key={service.id} className="flex items-center space-x-2">
                           <Checkbox
                             id={service.id}
+                            className="rounded-full"
                             checked={selectedServices.includes(service.id)}
                             onCheckedChange={() => toggleService(service.id)}
                           />
@@ -667,7 +698,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                             <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
                               {service.name}
                             </label>
-                            {selectedServices.includes(service.id) && (
+                            {/* {selectedServices.includes(service.id) && (
                               <Input
                                 type="number"
                                 min="1"
@@ -679,7 +710,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                                 }}
                                 className="mt-1 h-8 text-xs"
                               />
-                            )}
+                            )} */}
                           </div>
                         </div>
                       ))}
@@ -690,7 +721,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             </div>
 
             {/* Priority */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="priority">{t('priority')}</Label>
                 <Input
@@ -700,10 +731,10 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                   {...register('priority', { valueAsNumber: true })}
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Notes */}
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea
                 id="notes"

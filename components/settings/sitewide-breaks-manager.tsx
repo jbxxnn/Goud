@@ -49,13 +49,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
   const [editBreakEndDateOpen, setEditBreakEndDateOpen] = useState(false);
 
   const formatDateTimeLocal = (isoString: string): string => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const { formatInTimeZone } = require('date-fns-tz');
+    return formatInTimeZone(new Date(isoString), 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm");
+  };
+
+  const createLocalIsoString = (localDateTimeStr: string): string => {
+    const { formatInTimeZone, toDate } = require('date-fns-tz');
+    const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
+    return formatInTimeZone(amsterdamDate, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm:ssXXX");
   };
 
   const [newHoliday, setNewHoliday] = useState({
@@ -146,11 +147,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     try {
       setSubmittingBreak(true);
       
-      // Basic formatting logic 
-      let formattedStartTime = newBreak.start_time;
-      let formattedEndTime = newBreak.end_time;
-      if (formattedStartTime.length === 5) formattedStartTime += ':00';
-      if (formattedEndTime.length === 5) formattedEndTime += ':00';
+      const localDate = newBreak.start_date || format(new Date(), 'yyyy-MM-dd');
+      let formattedStartTime = createLocalIsoString(`${localDate}T${newBreak.start_time}`);
+      let formattedEndTime = createLocalIsoString(`${localDate}T${newBreak.end_time}`);
 
       const payload = {
         name: newBreak.name,
@@ -223,10 +222,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     try {
       setSubmittingEditBreak(true);
       
-      let formattedStartTime = editingBreak.start_time;
-      let formattedEndTime = editingBreak.end_time;
-      if (formattedStartTime.length === 5) formattedStartTime += ':00';
-      if (formattedEndTime.length === 5) formattedEndTime += ':00';
+      const localDate = editingBreak.start_date || format(new Date(), 'yyyy-MM-dd');
+      let formattedStartTime = createLocalIsoString(`${localDate}T${editingBreak.start_time}`);
+      let formattedEndTime = createLocalIsoString(`${localDate}T${editingBreak.end_time}`);
 
       const payload = {
         name: editingBreak.name,

@@ -22,6 +22,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Trash2, Plus, Loader2, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Calendar02Icon } from '@hugeicons/core-free-icons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ShiftFormProps {
   shift?: ShiftWithDetails;
@@ -59,6 +71,12 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const [isLoading, setIsLoading] = useState(true);
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+  const [recurrenceUntilOpen, setRecurrenceUntilOpen] = useState(false);
+  
+  // Exception handling state
+  const [showRecurringDeletePrompt, setShowRecurringDeletePrompt] = useState(false);
+  const [showRecurringEditPrompt, setShowRecurringEditPrompt] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState<ShiftFormData | null>(null);
 
   // Shift breaks state
   const [shiftBreaks, setShiftBreaks] = useState<any[]>([]);
@@ -144,15 +162,17 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     fetchData();
   }, []);
 
-  // Helper function to convert UTC ISO string to local datetime-local format
+  // Helper function to build timezone-aware ISO string from local datetime (enforces Europe/Amsterdam timezone)
   const formatDateTimeLocal = (isoString: string): string => {
-    const date = new Date(isoString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const { formatInTimeZone } = require('date-fns-tz');
+    return formatInTimeZone(new Date(isoString), 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm");
+  };
+
+  // Helper to create true ISO string from local YYYY-MM-DDTHH:mm keeping Europe/Amsterdam offset
+  const createLocalIsoString = (localDateTimeStr: string): string => {
+    const { formatInTimeZone, toDate } = require('date-fns-tz');
+    const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
+    return formatInTimeZone(amsterdamDate, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm:ssXXX");
   };
 
   // Load shift data if editing
@@ -218,9 +238,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     setIsAddingBreak(true);
     try {
       const shiftDate = shift.start_time.split('T')[0];
-      const timeZoneSuffix = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1] || 'Z';
-      const startIso = new Date(`${shiftDate}T${newBreakStart}:00${timeZoneSuffix}`).toISOString();
-      const endIso = new Date(`${shiftDate}T${newBreakEnd}:00${timeZoneSuffix}`).toISOString();
+      const startIso = createLocalIsoString(`${shiftDate}T${newBreakStart}`);
+      const endIso = createLocalIsoString(`${shiftDate}T${newBreakEnd}`);
       
       const payload = {
         shift_id: shift.id,
@@ -277,9 +296,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     setIsUpdatingBreak(true);
     try {
       const shiftDate = shift.start_time.split('T')[0];
-      const timeZoneSuffix = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1] || 'Z';
-      const startIso = new Date(`${shiftDate}T${editBreakStart}:00${timeZoneSuffix}`).toISOString();
-      const endIso = new Date(`${shiftDate}T${editBreakEnd}:00${timeZoneSuffix}`).toISOString();
+      const startIso = createLocalIsoString(`${shiftDate}T${editBreakStart}`);
+      const endIso = createLocalIsoString(`${shiftDate}T${editBreakEnd}`);
       
       const payload = {
         name: editBreakName,
@@ -308,11 +326,22 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   };
 
   const onSubmit = async (data: ShiftFormData) => {
+    if (shift && shift._isRecurringInstance && shift._instanceDate) {
+      // Don't save immediately. Intercept to ask "Only this occurrence" vs "All occurrences"
+      setPendingSubmitData(data);
+      setShowRecurringEditPrompt(true);
+      return;
+    }
+
+    await performSubmit(data, false);
+  };
+
+  const performSubmit = async (data: ShiftFormData, asSingleOccurrence: boolean) => {
     setIsSubmitting(true);
     try {
       // Build recurrence rule if recurring
       let recurrence_rule = null;
-      if (data.is_recurring && data.recurrence_frequency) {
+      if (data.is_recurring && data.recurrence_frequency && !asSingleOccurrence) {
         const recurrenceOptions: RecurrenceOptions = {
           frequency: data.recurrence_frequency,
           daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
@@ -321,21 +350,30 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         recurrence_rule = buildRecurrenceRule(recurrenceOptions);
       }
 
-      const requestBody = {
+      let requestBody: any = {
         staff_id: data.staff_id,
         location_id: data.location_id,
-        start_time: new Date(data.start_time).toISOString(),
-        end_time: new Date(data.end_time).toISOString(),
-        is_recurring: data.is_recurring,
-        recurrence_rule,
+        start_time: createLocalIsoString(data.start_time),
+        end_time: createLocalIsoString(data.end_time),
+        is_recurring: asSingleOccurrence ? false : data.is_recurring,
+        recurrence_rule: asSingleOccurrence ? null : recurrence_rule,
         priority: data.priority,
         notes: data.notes || null,
         service_ids: selectedServices,
         max_concurrent_bookings: data.max_concurrent_bookings,
       };
 
-      const url = shift ? `/api/shifts/${shift.id}` : '/api/shifts';
-      const method = shift ? 'PUT' : 'POST';
+      let url = shift ? `/api/shifts/${shift._originalShiftId || shift.id}` : '/api/shifts';
+      let method = shift ? 'PUT' : 'POST';
+
+      if (asSingleOccurrence && shift?._instanceDate) {
+        // We are creating a brand new shift that acts as an exception to the parent series.
+        // It's a POST, not a PUT, because the single occurrence didn't exist in the DB yet.
+        url = '/api/shifts';
+        method = 'POST';
+        requestBody.parent_shift_id = shift._originalShiftId || shift.id;
+        requestBody.exception_date = shift._instanceDate.split('T')[0];
+      }
 
       const response = await fetch(url, {
         method,
@@ -356,6 +394,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         return;
       }
 
+      setShowRecurringEditPrompt(false);
+      setPendingSubmitData(null);
       onSave();
     } catch (err) {
       console.error('Error saving shift:', err);
@@ -365,7 +405,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     }
   };
 
-  const handleDelete = async () => {
+  const performDelete = async () => {
     if (!shift?.id || !onDelete) return;
 
     setIsDeleting(true);
@@ -385,10 +425,49 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       });
 
       setShowDeleteDialog(false);
+      setShowRecurringDeletePrompt(false);
       onDelete();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete shift';
       toast.error('Failed to delete shift', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCreateDeleteException = async () => {
+    if (!shift?.id || !onDelete || !shift._instanceDate) return;
+
+    setIsDeleting(true);
+    try {
+      // The backend expects the YYYY-MM-DD of the instance to delete
+      const exceptionDate = shift._instanceDate.split('T')[0];
+      
+      const response = await fetch(`/api/shifts/${shift._originalShiftId || shift.id}/exceptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ exception_date: exceptionDate }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete shift instance');
+      }
+
+      toast.success('Shift occurrence deleted', {
+        description: 'This specific occurrence has been removed from the calendar.',
+      });
+
+      setShowRecurringDeletePrompt(false);
+      onDelete();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete shift instance';
+      toast.error('Failed to delete shift instance', {
         description: errorMessage,
       });
     } finally {
@@ -489,7 +568,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   )}
                   disabled={isViewMode}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                 <HugeiconsIcon icon={Calendar02Icon} />
                   {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
                 </Button>
               </PopoverTrigger>
@@ -503,19 +582,30 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                       date.setHours(current.getHours(), current.getMinutes());
                       setValue('start_time', formatDateTimeLocal(date.toISOString()));
                       setStartDateOpen(false);
+
+                      // Auto-populate End Date to match the new Start Date, preserving existing end time
+                      const currentEnd = watch('end_time') ? new Date(watch('end_time')) : new Date();
+                      const newEndDate = new Date(date);
+                      newEndDate.setHours(currentEnd.getHours(), currentEnd.getMinutes());
+                      setValue('end_time', formatDateTimeLocal(newEndDate.toISOString()));
                     }
                   }}
                   initialFocus
                   captionLayout="dropdown"
                   fromYear={2020}
                   toYear={2030}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
                 />
               </PopoverContent>
             </Popover>
             <TimeInput
               className="flex-1"
               dateInputClassName="h-10"
-              hourCycle={12}
+              hourCycle={24}
               value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
               onChange={(time) => {
                 if (time) {
@@ -546,7 +636,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   )}
                   disabled={isViewMode}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <HugeiconsIcon icon={Calendar02Icon} />
                   {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
                 </Button>
               </PopoverTrigger>
@@ -566,13 +656,24 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   captionLayout="dropdown"
                   fromYear={2020}
                   toYear={2030}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (watch('start_time')) {
+                        const startDate = new Date(watch('start_time'));
+                        startDate.setHours(0,0,0,0);
+                        return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                    }
+                    return date < today;
+                  }}
                 />
               </PopoverContent>
             </Popover>
             <TimeInput
               className="flex-1"
               dateInputClassName="h-10"
-              hourCycle={12}
+              hourCycle={24}
               value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
               onChange={(time) => {
                 if (time) {
@@ -600,7 +701,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
             onCheckedChange={(checked) => setValue('is_recurring', checked)}
             disabled={isViewMode}
           />
-          <Label htmlFor="is_recurring">Recurring Shift</Label>
+          <Label htmlFor="is_recurring" className='mb-0'>Recurring Shift</Label>
         </div>
 
         {watch('is_recurring') && (
@@ -654,12 +755,50 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
 
             <div>
               <Label htmlFor="recurrence_until" className="text-xs font-semibold mb-2">Repeat Until (Optional)</Label>
-              <Input
-                id="recurrence_until"
-                type="date"
-                {...register('recurrence_until')}
-                disabled={isViewMode}
-              />
+              <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-10 px-3 bg-background",
+                      !watch('recurrence_until') && "text-muted-foreground"
+                    )}
+                    disabled={isViewMode}
+                  >
+                    <HugeiconsIcon icon={Calendar02Icon} />
+                    <span className="truncate">
+                      {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : "Pick date"}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const safeDate = new Date(date);
+                        safeDate.setHours(12);
+                        setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
+                        setRecurrenceUntilOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      // Recurrence until date should be after the start date
+                      if (watch('start_time')) {
+                          const startDate = new Date(watch('start_time'));
+                          startDate.setHours(0,0,0,0);
+                          return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                      }
+                      return date < today;
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
               <p className="text-xs text-muted-foreground mt-1">
                 Leave empty to repeat indefinitely
               </p>
@@ -706,7 +845,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         )}
 
         {!isLoading && staffId && filteredServices.length > 0 && !showServices && (
-          <div className="border rounded-lg p-3 bg-muted/30">
+          <div className="border rounded-lg p-3 bg-muted" style={{ borderRadius: "10px" }}>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">
                 {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} selected
@@ -740,9 +879,10 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   Showing {selectedServices.length} of {filteredServices.length} services selected
                 </p>
                 {filteredServices.map((service) => (
-                  <div key={service.id} className="flex items-start space-x-2">
+                  <div key={service.id} className="flex items-center space-x-2">
                     <Checkbox
                       id={service.id}
+                      className="rounded-full"
                       checked={selectedServices.includes(service.id)}
                       onCheckedChange={() => toggleService(service.id)}
                       disabled={isViewMode}
@@ -751,7 +891,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                       <label htmlFor={service.id} className="text-sm font-medium cursor-pointer">
                         {service.name}
                       </label>
-                      {selectedServices.includes(service.id) && (
+                      {/* {selectedServices.includes(service.id) && (
                         <Input
                           type="number"
                           min="1"
@@ -764,7 +904,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                           className="mt-1 h-8 text-xs"
                           disabled={isViewMode}
                         />
-                      )}
+                      )} */}
                     </div>
                   </div>
                 ))}
@@ -781,7 +921,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       </div>
 
       {/* Priority */}
-      <div>
+      {/* <div>
         <Label htmlFor="priority" className="text-xs font-semibold mb-2">Priority</Label>
         <Input
           id="priority"
@@ -793,7 +933,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         <p className="text-xs text-muted-foreground mt-1">
           Higher priority shifts take precedence when overlapping
         </p>
-      </div>
+      </div> */}
 
       {/* Notes */}
       <div>
@@ -853,7 +993,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                     <div className="flex items-center justify-between w-full">
                       <div>
                         <p className="font-medium">{b.name}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(b.start_time), 'p')} - {format(new Date(b.end_time), 'p')}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(b.start_time), 'HH:mm')} - {format(new Date(b.end_time), 'HH:mm')}</p>
                       </div>
                       {!isViewMode && (
                         <div className="flex items-center space-x-1">
@@ -910,7 +1050,13 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
             <Button
               type="button"
               variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
+              onClick={() => {
+                if (shift._isRecurringInstance && shift._instanceDate) {
+                  setShowRecurringDeletePrompt(true);
+                } else {
+                  setShowDeleteDialog(true);
+                }
+              }}
               className="mr-auto"
               disabled={isSubmitting || isDeleting}
             >
@@ -926,19 +1072,82 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialogs */}
       {shift && onDelete && (
-        <DeleteConfirmationDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          onConfirm={handleDelete}
-          title="Delete Shift"
-          description="Are you sure you want to delete this shift? This action cannot be undone."
-          itemName={`Shift on ${new Date(shift.start_time).toLocaleDateString()}`}
-          confirmButtonText={isDeleting ? 'Deleting...' : 'Delete'}
-        />
+        <>
+          {/* Standard Delete Dialog for Non-Recurring or Single Shifts */}
+          <DeleteConfirmationDialog
+            isOpen={showDeleteDialog}
+            onClose={() => setShowDeleteDialog(false)}
+            onConfirm={performDelete}
+            title="Delete Shift"
+            description="Are you sure you want to delete this shift? This action cannot be undone."
+            itemName={`Shift on ${new Date(shift.start_time).toLocaleDateString()}`}
+            confirmButtonText={isDeleting ? 'Deleting...' : 'Delete'}
+          />
+
+          {/* Delete Prompt for Recurring Shifts */}
+          <AlertDialog open={showRecurringDeletePrompt} onOpenChange={setShowRecurringDeletePrompt}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Recurring Shift</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This shift is part of a recurring series. Do you want to delete only this occurrence, or the entire series?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCreateDeleteException}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Only this occurrence
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={performDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Entire series
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
+
+      {/* Edit Prompt for Recurring Shifts (Rendered outside shift conditionally based on pendingSubmitData) */}
+      <AlertDialog open={showRecurringEditPrompt} onOpenChange={setShowRecurringEditPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Recurring Shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              This shift is part of a recurring series. Do you want to apply these changes to only this occurrence, or the entire series?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <Button 
+              variant="outline" 
+              onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, true)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Only this occurrence
+            </Button>
+            <Button 
+              onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, false)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Entire series
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
-

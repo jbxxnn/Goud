@@ -14,7 +14,8 @@ export async function GET(
   context: RouteParams
 ) {
   try {
-    const { id } = await context.params;
+    const { id: rawId } = await context.params;
+    const id = String(rawId).split('-instance-')[0];
     const { searchParams } = new URL(request.url);
     const with_details = searchParams.get('with_details') === 'true';
 
@@ -56,7 +57,8 @@ export async function PUT(
   context: RouteParams
 ) {
   try {
-    const { id } = await context.params;
+    const { id: rawId } = await context.params;
+    const id = String(rawId).split('-instance-')[0];
     const body: UpdateShiftRequest = await request.json();
 
     // Validate time range if both times are provided
@@ -130,7 +132,8 @@ export async function DELETE(
   context: RouteParams
 ) {
   try {
-    const { id } = await context.params;
+    const { id: rawId } = await context.params;
+    const id = String(rawId).split('-instance-')[0];
 
     // Check if shift exists
     const shift = await ShiftService.getShiftById(id);

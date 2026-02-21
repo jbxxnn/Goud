@@ -33,7 +33,7 @@ export default function ShiftModal({ isOpen, onClose, shift, onSave, onDelete, i
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" style={{borderRadius: "10px"}}>
         <DialogHeader>
           <DialogTitle className="text-sm font-bold">{getTitle()}</DialogTitle>
         </DialogHeader>

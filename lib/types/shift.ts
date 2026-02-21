@@ -28,6 +28,9 @@ export interface ShiftWithDetails extends Shift {
   location_name: string;
   location_address: string;
   services: ShiftServiceAssignment[];
+  _isRecurringInstance?: boolean;
+  _instanceDate?: string;
+  _originalShiftId?: string;
 }
 
 export interface ShiftServiceAssignment {
@@ -112,6 +115,8 @@ export interface CreateShiftRequest {
   end_time: string;
   recurrence_rule?: string | null;
   is_recurring?: boolean;
+  parent_shift_id?: string | null;
+  exception_date?: string | null;
   priority?: number;
   notes?: string | null;
   service_ids: string[]; // Services to assign to this shift
@@ -125,6 +130,8 @@ export interface UpdateShiftRequest {
   end_time?: string;
   recurrence_rule?: string | null;
   is_recurring?: boolean;
+  parent_shift_id?: string | null;
+  exception_date?: string | null;
   priority?: number;
   notes?: string | null;
   is_active?: boolean;

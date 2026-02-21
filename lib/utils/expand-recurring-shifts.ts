@@ -12,7 +12,8 @@ import { addDays, addWeeks, addMonths, startOfDay, endOfDay } from 'date-fns';
 export function expandRecurringShift(
   shift: ShiftWithDetails,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  exceptions: Set<string> = new Set()
 ): ShiftWithDetails[] {
   // If not recurring, return the original shift
   if (!shift.is_recurring || !shift.recurrence_rule) {
@@ -63,17 +64,25 @@ export function expandRecurringShift(
     
     console.log(`Generated ${occurrences.length} occurrences for shift ${shift.id}`);
 
-    // Create a shift instance for each occurrence
-    const instances: ShiftWithDetails[] = occurrences.map((occurrence, index) => {
+    // Create a shift instance for each occurrence, skipping known exceptions
+    const instances: ShiftWithDetails[] = [];
+    
+    occurrences.forEach((occurrence, index) => {
       // Set the time of day to match the original shift
       const instanceStart = new Date(occurrence);
       instanceStart.setHours(shiftStart.getHours());
       instanceStart.setMinutes(shiftStart.getMinutes());
       instanceStart.setSeconds(shiftStart.getSeconds());
       
+      // Check if this specific date is an exception (compare YYYY-MM-DD string)
+      const dateString = `${instanceStart.getFullYear()}-${String(instanceStart.getMonth() + 1).padStart(2, '0')}-${String(instanceStart.getDate()).padStart(2, '0')}`;
+      if (exceptions.has(dateString)) {
+        return; // Skip this occurrence, it has been overridden or deleted
+      }
+
       const instanceEnd = new Date(instanceStart.getTime() + duration);
 
-      return {
+      instances.push({
         ...shift,
         // Keep the original shift ID but add a suffix to make instances unique for the calendar
         id: `${shift.id}-instance-${index}`,
@@ -82,7 +91,7 @@ export function expandRecurringShift(
         // Mark this as an instance of a recurring shift
         _isRecurringInstance: true,
         _originalShiftId: shift.id,
-      } as ShiftWithDetails & { _isRecurringInstance?: boolean; _originalShiftId?: string };
+      } as ShiftWithDetails & { _isRecurringInstance?: boolean; _originalShiftId?: string });
     });
 
     return instances;
@@ -107,8 +116,35 @@ export function expandRecurringShifts(
 ): ShiftWithDetails[] {
   const expandedShifts: ShiftWithDetails[] = [];
 
+  // Group exceptions by parent shift ID
+  const exceptionsByParent = new Map<string, Set<string>>();
+  
+  // Separate exceptions from the raw list (and add normal shifts directly)
+  const regularShifts: ShiftWithDetails[] = [];
+  
   for (const shift of shifts) {
-    const instances = expandRecurringShift(shift, startDate, endDate);
+    if (shift.parent_shift_id && shift.exception_date) {
+      // Record this exception date for this parent shift
+      if (!exceptionsByParent.has(shift.parent_shift_id)) {
+        exceptionsByParent.set(shift.parent_shift_id, new Set());
+      }
+      exceptionsByParent.get(shift.parent_shift_id)!.add(shift.exception_date);
+    }
+    
+    if (!shift.parent_shift_id) {
+       // It's a normal shift or a parent recurring shift
+       regularShifts.push(shift);
+    } else if (shift.is_active !== false) {
+       // It's an overriding exception (an edited instance, not a deleted tombstone)
+       // Add it directly so it renders on the calendar
+       expandedShifts.push(shift);
+    }
+  }
+
+  // Expand regular recurring shifts, passing down any mapped exception dates
+  for (const shift of regularShifts) {
+    const parentExceptions = exceptionsByParent.get(shift.id) || new Set();
+    const instances = expandRecurringShift(shift, startDate, endDate, parentExceptions);
     expandedShifts.push(...instances);
   }
 

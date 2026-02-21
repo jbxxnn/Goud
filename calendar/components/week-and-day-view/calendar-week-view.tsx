@@ -87,6 +87,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
                   const groupedEvents = groupEvents(dayEvents);
+                  const isPastDate = day < new Date(new Date().setHours(0, 0, 0, 0));
 
                   return (
                     <div
@@ -116,7 +117,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                           >
                             {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b border-[#E8E8E8]"></div>}
 
-                            {hideAddButton ? (
+                            {hideAddButton || isPastDate ? (
                               <div className="absolute inset-x-0 top-0 h-[24px]" />
                             ) : (
                               <DroppableTimeBlock date={day} hour={hour} minute={0}>
@@ -126,7 +127,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                               </DroppableTimeBlock>
                             )}
 
-                            {hideAddButton ? (
+                            {hideAddButton || isPastDate ? (
                               <div className="absolute inset-x-0 top-[24px] h-[24px]" />
                             ) : (
                               <DroppableTimeBlock date={day} hour={hour} minute={15}>
@@ -138,7 +139,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
                             <div className="pointer-events-none absolute inset-x-0 top-1/2 border-b border-dashed"></div>
 
-                            {hideAddButton ? (
+                            {hideAddButton || isPastDate ? (
                               <div className="absolute inset-x-0 top-[48px] h-[24px]" />
                             ) : (
                               <DroppableTimeBlock date={day} hour={hour} minute={30}>
@@ -148,7 +149,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                               </DroppableTimeBlock>
                             )}
 
-                            {hideAddButton ? (
+                            {hideAddButton || isPastDate ? (
                               <div className="absolute inset-x-0 top-[72px] h-[24px]" />
                             ) : (
                               <DroppableTimeBlock date={day} hour={hour} minute={45}>

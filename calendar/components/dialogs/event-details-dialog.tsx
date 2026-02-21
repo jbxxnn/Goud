@@ -44,7 +44,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
               <Calendar className="mt-1 size-4 shrink-0" />
               <div>
                 <p className="text-sm font-medium">{tCommon('startDate')}</p>
-                <p className="text-sm text-muted-foreground">{format(startDate, "MMM d, yyyy h:mm a")}</p>
+                <p className="text-sm text-muted-foreground">{format(startDate, "MMM d, yyyy HH:mm")}</p>
               </div>
             </div>
 
@@ -52,7 +52,7 @@ export function EventDetailsDialog({ event, children }: IProps) {
               <Clock className="mt-1 size-4 shrink-0" />
               <div>
                 <p className="text-sm font-medium">{tCommon('endDate')}</p>
-                <p className="text-sm text-muted-foreground">{format(endDate, "MMM d, yyyy h:mm a")}</p>
+                <p className="text-sm text-muted-foreground">{format(endDate, "MMM d, yyyy HH:mm")}</p>
               </div>
             </div>
 

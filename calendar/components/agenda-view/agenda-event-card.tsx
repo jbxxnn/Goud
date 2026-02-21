@@ -113,7 +113,7 @@ export function AgendaEventCard({ event, eventCurrentDay, eventTotalDays, onShif
                 <div className="flex items-center gap-1">
                     <Clock className="size-3 shrink-0" />
                     <p className="text-xs text-foreground">
-                        {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
+                        {format(startDate, "HH:mm")} - {format(endDate, "HH:mm")}
                     </p>
                 </div>
 

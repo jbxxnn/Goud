@@ -79,7 +79,9 @@ export function DayCell({ cell, events, eventPositions, onShiftDeleted, onShiftU
     </div>
   );
 
-  if (hideAddButton) {
+  const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0));
+
+  if (hideAddButton || isPastDate) {
     return Content;
   }
 

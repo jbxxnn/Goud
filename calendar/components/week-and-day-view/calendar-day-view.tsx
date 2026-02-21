@@ -97,6 +97,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
               <div className="relative">
                 {hours.map((hour, index) => {
                   const isDisabled = !isWorkingHour(selectedDate, hour, workingHours);
+                  const isPastDate = selectedDate < new Date(new Date().setHours(0, 0, 0, 0));
 
                   return (
                     <div
@@ -112,7 +113,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                     >
                       {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b"></div>}
 
-                      {hideAddButton ? (
+                      {hideAddButton || isPastDate ? (
                         <div className="absolute inset-x-0 top-0 h-[24px]" />
                       ) : (
                         <DroppableTimeBlock date={selectedDate} hour={hour} minute={0}>
@@ -122,7 +123,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                         </DroppableTimeBlock>
                       )}
 
-                      {hideAddButton ? (
+                      {hideAddButton || isPastDate ? (
                         <div className="absolute inset-x-0 top-[24px] h-[24px]" />
                       ) : (
                         <DroppableTimeBlock date={selectedDate} hour={hour} minute={15}>
@@ -134,7 +135,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
                       <div className="pointer-events-none absolute inset-x-0 top-1/2 border-b border-dashed"></div>
 
-                      {hideAddButton ? (
+                      {hideAddButton || isPastDate ? (
                         <div className="absolute inset-x-0 top-[48px] h-[24px]" />
                       ) : (
                         <DroppableTimeBlock date={selectedDate} hour={hour} minute={30}>
@@ -144,7 +145,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                         </DroppableTimeBlock>
                       )}
 
-                      {hideAddButton ? (
+                      {hideAddButton || isPastDate ? (
                         <div className="absolute inset-x-0 top-[72px] h-[24px]" />
                       ) : (
                         <DroppableTimeBlock date={selectedDate} hour={hour} minute={45}>
@@ -241,7 +242,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Clock className="size-3.5" />
                         <span className="text-sm">
-                          {format(parseISO(event.startDate), "h:mm a")} - {format(parseISO(event.endDate), "h:mm a")}
+                          {format(parseISO(event.startDate), "HH:mm")} - {format(parseISO(event.endDate), "HH:mm")}
                         </span>
                       </div>
                     </div>

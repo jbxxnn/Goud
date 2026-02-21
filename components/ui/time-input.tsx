@@ -29,8 +29,8 @@ const TimeInput = forwardRef<TTimeInputRef, TTimeInputProps>(
       >
         <DateInput
           className={cn(
-            "peer inline-flex h-9 w-auto items-center overflow-hidden whitespace-nowrap rounded-md border bg-background px-3 py-2 text-sm shadow-black",
-            "data-[focus-within]:outline-none data-[focus-within]:ring-0",
+            "peer inline-flex h-9 w-auto items-center overflow-hidden whitespace-nowrap rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition-all duration-200",
+            "focus-within:outline-none focus-within:border-primary",
             "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
             dateInputClassName
           )}
@@ -40,8 +40,8 @@ const TimeInput = forwardRef<TTimeInputRef, TTimeInputProps>(
             <DateSegment
               segment={segment}
               className={cn(
-                "inline rounded p-0.5 caret-transparent outline outline-0",
-                "data-[focused]:bg-foreground/10 data-[focused]:text-foreground",
+                "inline rounded px-1 min-w-[20px] tabular-nums caret-transparent outline outline-0",
+                "focus:bg-primary focus:text-primary data-[focused]:bg-primary data-[focused]:text-primary",
                 "data-[placeholder]:text-muted-foreground",
                 "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
                 segmentClassName

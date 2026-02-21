@@ -127,7 +127,7 @@ export function BookingDetailsDialog({ event, children, onBookingDeleted, onBook
                                     <p className="text-sm font-medium">{t('columns.dateTime')}</p>
                                     <p className="text-sm text-muted-foreground">
                                         {format(startDate, "MMM d, yyyy")} <br />
-                                        {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
+                                        {format(startDate, "HH:mm")} - {format(endDate, "HH:mm")}
                                     </p>
                                 </div>
                             </div>
