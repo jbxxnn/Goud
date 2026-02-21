@@ -202,11 +202,11 @@ export function BookingFlow() {
                                 ) : (
                                     <div className="animate-in fade-in zoom-in-95 duration-500">
                                         <p className="text-lg font-bold text-gray-900 capitalize">
-                                            {format.dateTime(new Date(date), { weekday: 'long', day: 'numeric', month: 'long' })}
+                                            {format.dateTime(new Date(date), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' })}
                                         </p>
                                         {selectedSlot && (
                                             <p className="text-sm font-bold text-primary mt-0.5">
-                                                {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit' })}
+                                                {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
                                             </p>
                                         )}
                                     </div>

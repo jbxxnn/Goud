@@ -13,8 +13,12 @@ interface TimePickerProps {
 
 function groupSlots(slots: Slot[]): { morning: Slot[]; afternoon: Slot[]; evening: Slot[] } {
     const res = { morning: [] as Slot[], afternoon: [] as Slot[], evening: [] as Slot[] };
+    const tzFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: 'Europe/Amsterdam' });
+    
     for (const s of slots) {
-        const h = new Date(s.startTime).getHours();
+        const hStr = tzFormatter.format(new Date(s.startTime));
+        const h = parseInt(hStr, 10);
+        
         if (h < 12) res.morning.push(s);
         else if (h < 17) res.afternoon.push(s);
         else res.evening.push(s);
@@ -65,7 +69,7 @@ export function TimePicker({
                                             style={{ borderRadius: '1rem' }}
                                             onClick={() => onSelect(s)}
                                         >
-                                            {format.dateTime(new Date(s.startTime), { hour: '2-digit', minute: '2-digit' })}
+                                            {format.dateTime(new Date(s.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
                                         </Button>
                                     ))}
                                 </div>
