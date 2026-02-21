@@ -60,14 +60,16 @@ export function Calendar({
         cells.push({ dateStr: toISODate(nextDate), isOtherMonth: true });
     }
 
-    const monthLabel = format.dateTime(month, { month: 'long', year: 'numeric' });
+    // Secure month label against timezone shift by formatting the 15th of the month at noon UTC
+    const safeMonthDate = new Date(Date.UTC(month.getFullYear(), month.getMonth(), 15, 12, 0, 0));
+    const monthLabel = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(safeMonthDate);
     const formattedMonthLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
-    // Generate weekday labels dynamically based on current date to get correct localized names
-    // We use a known week to extract names. Jan 4, 1970 was a Sunday.
+    // Generate weekday labels dynamically based on a known Sunday at noon UTC.
+    // Jan 7, 2024 is a Sunday. We use noon UTC and format in UTC to avoid any timezone shifts.
     const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(1970, 0, 4 + i);
-        return format.dateTime(d, { weekday: 'short' });
+        const d = new Date(Date.UTC(2024, 0, 7 + i, 12, 0, 0));
+        return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(d);
     });
 
     return (
