@@ -221,12 +221,40 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
 
   const deleteShiftBreak = async (id: string) => {
     try {
-      const response = await fetch(`/api/shift-breaks/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        setShiftBreaks(prev => prev.filter(b => b.id !== id));
-        toast.success('Break removed');
+      if (id.startsWith('inherited-')) {
+        // It's a virtual break. To "delete" it, we must create a local tombstone (override).
+        const sitewideId = id.replace('inherited-', '');
+        const inheritedBreak = shiftBreaks.find(b => b.id === id);
+        if (!inheritedBreak || !shift) return;
+        
+        const payload = {
+          shift_id: shift.id,
+          sitewide_break_id: sitewideId,
+          name: inheritedBreak.name,
+          start_time: inheritedBreak.start_time,
+          end_time: inheritedBreak.start_time // 0 duration marks as deleted/overridden
+        };
+
+        const response = await fetch('/api/shift-breaks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (response.ok) {
+          setShiftBreaks(prev => prev.filter(b => b.id !== id));
+          toast.success('Break removed');
+        } else {
+          toast.error('Failed to remove break');
+        }
       } else {
-        toast.error('Failed to remove break');
+        const response = await fetch(`/api/shift-breaks/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          setShiftBreaks(prev => prev.filter(b => b.id !== id));
+          toast.success('Break removed');
+        } else {
+          toast.error('Failed to remove break');
+        }
       }
     } catch {
       toast.error('Failed to remove break');
@@ -299,17 +327,30 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       const startIso = createLocalIsoString(`${shiftDate}T${editBreakStart}`);
       const endIso = createLocalIsoString(`${shiftDate}T${editBreakEnd}`);
       
-      const payload = {
+      const payload: any = {
         name: editBreakName,
         start_time: startIso,
         end_time: endIso
       };
 
-      const response = await fetch(`/api/shift-breaks/${editingBreakId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let response;
+      if (editingBreakId.startsWith('inherited-')) {
+        // Create an override record
+        payload.shift_id = shift.id;
+        payload.sitewide_break_id = editingBreakId.replace('inherited-', '');
+        response = await fetch('/api/shift-breaks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        response = await fetch(`/api/shift-breaks/${editingBreakId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+      
       const data = await response.json();
       if (data.success) {
         setShiftBreaks(prev => prev.map(b => b.id === editingBreakId ? data.data : b).sort((a,b) => a.start_time.localeCompare(b.start_time)));
@@ -992,7 +1033,12 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   ) : (
                     <div className="flex items-center justify-between w-full">
                       <div>
-                        <p className="font-medium">{b.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{b.name}</p>
+                          {b.id.startsWith('inherited-') && (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Sitewide</span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">{format(new Date(b.start_time), 'HH:mm')} - {format(new Date(b.end_time), 'HH:mm')}</p>
                       </div>
                       {!isViewMode && (

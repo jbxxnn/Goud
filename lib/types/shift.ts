@@ -395,7 +395,12 @@ export function buildRecurrenceRule(options: RecurrenceOptions): string {
   
   if (options.until) {
     // Convert ISO date to RRULE format (YYYYMMDDTHHMMSSZ)
+    // Ensure we capture the entire day by setting to 23:59:59
     const date = new Date(options.until);
+    if (options.until.length <= 10) {
+      // It's likely a YYYY-MM-DD string, set to end of day UTC
+      date.setUTCHours(23, 59, 59, 999);
+    }
     const rruleDate = date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     parts.push(`UNTIL=${rruleDate}`);
   }

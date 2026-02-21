@@ -241,64 +241,7 @@ export class ShiftService {
       }
     }
 
-    // Auto-apply active sitewide breaks
-    try {
-      // Very basic local timezone parsing (assuming system local is relevant or shift dates are stored mostly in local time strings)
-      // Extract the date part string from the shift start_time (assuming start_time is an ISO string like "2024-01-01T08:00:00Z")
-      const shiftDate = shift.start_time.split('T')[0];
-      const { data: activeBreaks } = await supabase
-        .from('sitewide_breaks')
-        .select('*')
-        .eq('is_active', true);
 
-      if (activeBreaks && activeBreaks.length > 0) {
-        const shiftBreaksToInsert: any[] = [];
-        
-        for (const b of activeBreaks) {
-          let applies = false;
-          if (b.is_recurring) {
-            applies = true; // Applies daily
-          } else {
-            const bStart = b.start_date || '0000-01-01';
-            const bEnd = b.end_date || '9999-12-31';
-            if (shiftDate >= bStart && shiftDate <= bEnd) {
-              applies = true;
-            }
-          }
-          
-          if (applies) {
-            // Combine the shift date and the break time, adding a Z for UTC timezone (adjust if needed depending on exact timezone handling)
-            // Example: shiftDate=2024-01-01, b.start_time=12:00:00
-            // We'll treat the break as occurring in the exact same timezone offset as the shift.
-            // A foolproof way is replacing the time portion in shift's start_time string
-            const tzOffsetMatch = shift.start_time.match(/(Z|[+-]\d{2}:\d{2})$/);
-            const timeZoneSuffix = tzOffsetMatch ? tzOffsetMatch[1] : 'Z';
-            
-            const breakStartTs = new Date(`${shiftDate}T${b.start_time}${timeZoneSuffix}`).toISOString();
-            const breakEndTs = new Date(`${shiftDate}T${b.end_time}${timeZoneSuffix}`).toISOString();
-            
-            // Allow break only if it overlaps inside the shift bounds completely or partially
-            // To be precise, we check if breakStart comes after shift.start_time AND before shift.end_time
-            if (breakStartTs >= shift.start_time && breakEndTs <= shift.end_time) {
-              shiftBreaksToInsert.push({
-                shift_id: shift.id,
-                sitewide_break_id: b.id,
-                name: b.name,
-                start_time: breakStartTs,
-                end_time: breakEndTs
-              });
-            }
-          }
-        }
-        
-        if (shiftBreaksToInsert.length > 0) {
-          const { error: brkErr } = await supabase.from('shift_breaks').insert(shiftBreaksToInsert);
-          if (brkErr) console.error('Error auto-applying shift breaks:', brkErr);
-        }
-      }
-    } catch (err) {
-      console.error('Error auto-applying sitewide breaks:', err);
-    }
 
     return shift;
   }
@@ -645,16 +588,91 @@ export class ShiftService {
 
   static async getShiftBreaks(shiftId: string): Promise<ShiftBreak[]> {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    
+    // 1. Fetch the shift to know its date for sitewide break projection
+    const { data: shift, error: shiftError } = await supabase
+      .from('shifts')
+      .select('id, start_time, end_time')
+      .eq('id', shiftId)
+      .single();
+
+    if (shiftError || !shift) {
+      console.error('Error fetching shift for breaks:', shiftError);
+      return [];
+    }
+
+    // 2. Fetch explicit shift breaks (local overrides or custom breaks)
+    const { data: localBreaks, error: localBreaksError } = await supabase
       .from('shift_breaks')
       .select('*')
       .eq('shift_id', shiftId)
       .order('start_time', { ascending: true });
-    if (error) {
-      console.error('Error fetching shift breaks:', error);
+
+    if (localBreaksError) {
+      console.error('Error fetching local shift breaks:', localBreaksError);
       return [];
     }
-    return data || [];
+
+    // 3. Fetch active sitewide breaks
+    const { data: activeGlobalBreaks, error: globalError } = await supabase
+      .from('sitewide_breaks')
+      .select('*')
+      .eq('is_active', true);
+
+    if (globalError || !activeGlobalBreaks) {
+      return localBreaks || [];
+    }
+
+    // 4. Project sitewide breaks onto this shift's date
+    const { toDate } = require('date-fns-tz');
+    const shiftDate = shift.start_time.split('T')[0];
+
+    const inheritedBreaks: ShiftBreak[] = [];
+    
+    for (const b of activeGlobalBreaks) {
+      let applies = false;
+      if (b.is_recurring) {
+        applies = true;
+      } else {
+        const bStart = b.start_date || '0000-01-01';
+        const bEnd = b.end_date || '9999-12-31';
+        if (shiftDate >= bStart && shiftDate <= bEnd) {
+          applies = true;
+        }
+      }
+
+      if (applies) {
+        // Construct ISO timestamps for this specific day using clinic timezone (Europe/Amsterdam)
+        const breakStartTs = toDate(`${shiftDate}T${b.start_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+        const breakEndTs = toDate(`${shiftDate}T${b.end_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+
+        // Only include if it actually overlaps with the shift
+        if (breakStartTs >= shift.start_time && breakEndTs <= shift.end_time) {
+          // Check if there is already a local override for this sitewide break
+          const isOverridden = localBreaks?.some(lb => lb.sitewide_break_id === b.id);
+          
+          if (!isOverridden) {
+            inheritedBreaks.push({
+              id: `inherited-${b.id}`, // Temporary ID for virtual breaks
+              shift_id: shiftId,
+              sitewide_break_id: b.id,
+              name: b.name,
+              start_time: breakStartTs,
+              end_time: breakEndTs,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            } as ShiftBreak);
+          }
+        }
+      }
+    }
+
+    // 5. Merge, filter out tombstones (overrides with 0 duration), and sort
+    const allBreaks = [...(localBreaks || []), ...inheritedBreaks]
+      .filter(b => b.start_time !== b.end_time)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    return allBreaks;
   }
 
   static async createShiftBreak(data: CreateShiftBreakRequest): Promise<ShiftBreak> {

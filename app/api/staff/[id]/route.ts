@@ -43,12 +43,6 @@ export async function GET(
       .select('service_id, is_twin_qualified')
       .eq('staff_id', id);
 
-    // Get staff recurring breaks
-    const { data: staffBreaks } = await supabase
-      .from('staff_recurring_breaks')
-      .select('*')
-      .eq('staff_id', id);
-
     // Add location_ids and service_ids to staff data
     // We also include 'services' for the frontend to access detailed qualifications
     const staffWithRelations = {
@@ -56,7 +50,7 @@ export async function GET(
       location_ids: staffLocations?.map(sl => sl.location_id) || [],
       service_ids: staffServices?.map(ss => ss.service_id) || [],
       services: staffServices || [],
-      recurring_breaks: staffBreaks || []
+      recurring_breaks: []
     };
 
     return NextResponse.json({
@@ -188,32 +182,7 @@ export async function PUT(
       }
     }
 
-    // Update recurring breaks if provided
-    if (recurring_breaks !== undefined) {
-      // Remove existing breaks
-      await supabase
-        .from('staff_recurring_breaks')
-        .delete()
-        .eq('staff_id', id);
-        
-      // Add new breaks
-      if (recurring_breaks.length > 0) {
-        const breaksToInsert = recurring_breaks.map((b: any) => ({
-          staff_id: id,
-          start_time: b.start_time,
-          end_time: b.end_time,
-          day_of_week: b.day_of_week
-        }));
-        
-        const { error: breaksError } = await supabase
-          .from('staff_recurring_breaks')
-          .insert(breaksToInsert);
-          
-        if (breaksError) {
-          console.error('Error updating recurring breaks:', breaksError);
-        }
-      }
-    }
+
 
     // Invalidate cache when staff assignments are updated
     const invalidateCache = location_ids !== undefined || service_ids !== undefined;

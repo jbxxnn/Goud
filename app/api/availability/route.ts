@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { generateSlotsForDay, type BlackoutPeriod, type Shift, type TimeInterval, type ServiceRules } from '@/lib/availability/slots';
 import { daySlotsCache, availabilityCacheHeaders, makeDaySlotsCacheKey } from '@/lib/availability/cache';
+import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
 
 const NO_CACHE_HEADERS: Record<string, string> = { 'Cache-Control': 'no-store' };
 
@@ -138,12 +139,12 @@ export async function GET(req: NextRequest) {
     // Shifts intersecting the day, at location, active, and included in allowedShiftIds
     let shiftsQuery = supabase
       .from('shifts')
-      .select('id, staff_id, location_id, start_time, end_time, is_active')
+      .select('id, staff_id, location_id, start_time, end_time, is_active, is_recurring, recurrence_rule, parent_shift_id, exception_date')
       .eq('location_id', locationId)
-      .eq('is_active', true)
-      .in('id', allowedShiftIds)
-      .lt('start_time', dayEnd.toISOString())
-      .gt('end_time', dayStart.toISOString());
+      // We need to fetch any shift that is directly allowed OR is an exception to an allowed parent shift
+      .or(`id.in.(${allowedShiftIds.join(',')}),parent_shift_id.in.(${allowedShiftIds.join(',')})`)
+      // AND it must either be in range OR be a recurring parent series we can expand
+      .or(`and(start_time.lt.${dayEnd.toISOString()},end_time.gt.${dayStart.toISOString()}),and(is_recurring.eq.true,parent_shift_id.is.null)`);
 
     // Filter by staff
     if (staffId) {
@@ -158,8 +159,10 @@ export async function GET(req: NextRequest) {
       console.log('[availability] shifts error', shiftsErr);
       return NextResponse.json({ error: 'Failed to load shifts' }, { status: 500 });
     }
+    // Expand recurring shifts before mapping
+    const expandedShiftsData = expandRecurringShifts(shiftsData as any, dayStart, dayEnd);
 
-    const shifts: Shift[] = (shiftsData ?? []).map((s: any) => ({
+    const shifts: Shift[] = expandedShiftsData.map((s: any) => ({
       id: s.id,
       staffId: s.staff_id,
       locationId: s.location_id,
@@ -167,6 +170,10 @@ export async function GET(req: NextRequest) {
       endTime: new Date(s.end_time),
       isActive: !!s.is_active,
       qualifiedServiceIds: [serviceId],
+      is_recurring: !!s.is_recurring,
+      recurrence_rule: s.recurrence_rule,
+      parent_shift_id: s.parent_shift_id,
+      exception_date: s.exception_date,
     }));
 
     // Blackouts for the location intersecting the day
@@ -233,19 +240,12 @@ export async function GET(req: NextRequest) {
       end: new Date(l.end_time),
     }));
 
-    const { data: breaksData, error: breaksErr } = await supabase
-      .from('staff_recurring_breaks')
-      .select('staff_id, start_time, end_time, day_of_week')
-      .in('staff_id', shifts.map(s => s.staffId));
 
-    if (breaksErr) {
-      console.log('[availability] breaks error', breaksErr);
-    }
 
     // Fetch shift specific breaks
     const { data: shiftBreaksData, error: shiftBreaksErr } = await supabase
       .from('shift_breaks')
-      .select('shift_id, start_time, end_time')
+      .select('shift_id, start_time, end_time, sitewide_break_id')
       .in('shift_id', allowedShiftIds)
       .lt('start_time', dayEnd.toISOString())
       .gt('end_time', dayStart.toISOString());
@@ -254,29 +254,54 @@ export async function GET(req: NextRequest) {
       console.log('[availability] shift breaks error', shiftBreaksErr);
     }
 
-    const dayOfWeek = date.getDay(); // 0-6
-    const staffRecurringBreaksForDay: TimeInterval[] = (breaksData ?? [])
-      .filter((b: any) => b.day_of_week === null || b.day_of_week === dayOfWeek)
-      .map((b: any) => {
-        // breaks are stored as TIME (HH:MM:SS), need to combine with current Date
-        const [startH, startM] = b.start_time.split(':');
-        const [endH, endM] = b.end_time.split(':');
-        
-        const start = new Date(date);
-        start.setHours(Number(startH), Number(startM), 0, 0);
-        
-        const end = new Date(date);
-        end.setHours(Number(endH), Number(endM), 0, 0);
-        
-        return { start, end };
-      });
+    // Fetch active sitewide breaks
+    const { data: globalBreaksData } = await supabase
+      .from('sitewide_breaks')
+      .select('*')
+      .eq('is_active', true);
 
     const shiftBreaksForDay: TimeInterval[] = (shiftBreaksData ?? []).map((b: any) => ({
       start: new Date(b.start_time),
       end: new Date(b.end_time),
     }));
 
-    const breaksForDay = [...staffRecurringBreaksForDay, ...shiftBreaksForDay];
+    // Project sitewide breaks onto shifts for the day
+    const { toDate } = require('date-fns-tz');
+    const sitewideBreaksToApply: TimeInterval[] = [];
+    const shiftDate = dayStart.toISOString().split('T')[0];
+
+    for (const s of shifts) {
+      for (const gb of globalBreaksData ?? []) {
+        let applies = false;
+        if (gb.is_recurring) {
+          applies = true;
+        } else {
+          const bStart = gb.start_date || '0000-01-01';
+          const bEnd = gb.end_date || '9999-12-31';
+          if (shiftDate >= bStart && shiftDate <= bEnd) {
+            applies = true;
+          }
+        }
+
+        if (applies) {
+          const breakStartTs = toDate(`${shiftDate}T${gb.start_time}`, { timeZone: 'Europe/Amsterdam' });
+          const breakEndTs = toDate(`${shiftDate}T${gb.end_time}`, { timeZone: 'Europe/Amsterdam' });
+
+          // Only apply if it overlaps with the shift and isn't already overridden
+          if (breakStartTs >= s.startTime && breakEndTs <= s.endTime) {
+            const isOverridden = (shiftBreaksData ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
+            if (!isOverridden) {
+              sitewideBreaksToApply.push({
+                start: breakStartTs,
+                end: breakEndTs
+              });
+            }
+          }
+        }
+      }
+    }
+
+    const breaksForDay = [...shiftBreaksForDay, ...sitewideBreaksToApply];
 
     const allSlots = generateSlotsForDay({      date,
       serviceId,

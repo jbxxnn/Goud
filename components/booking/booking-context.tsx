@@ -484,7 +484,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
 
-            const svcRes = await fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] }));
+            const svcRes = await fetch('/api/services?limit=1000&active_only=true').then(r => r.json()).catch(() => ({ data: [] }));
 
             const svcData = Array.isArray(svcRes?.data) ? svcRes.data : [];
             const normalizedServices: Service[] = (svcData as ServiceApiResponse[]).map((service) => ({

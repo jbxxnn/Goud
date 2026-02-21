@@ -148,13 +148,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       setSubmittingBreak(true);
       
       const localDate = newBreak.start_date || format(new Date(), 'yyyy-MM-dd');
-      let formattedStartTime = createLocalIsoString(`${localDate}T${newBreak.start_time}`);
-      let formattedEndTime = createLocalIsoString(`${localDate}T${newBreak.end_time}`);
-
       const payload = {
         name: newBreak.name,
-        start_time: formattedStartTime,
-        end_time: formattedEndTime,
+        start_time: `${newBreak.start_time}:00`, // HH:mm:ss format
+        end_time: `${newBreak.end_time}:00`,   // HH:mm:ss format
         is_recurring: newBreak.is_recurring,
         start_date: newBreak.is_recurring ? null : (newBreak.start_date || null),
         end_date: newBreak.is_recurring ? null : (newBreak.end_date || null),
@@ -223,13 +220,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       setSubmittingEditBreak(true);
       
       const localDate = editingBreak.start_date || format(new Date(), 'yyyy-MM-dd');
-      let formattedStartTime = createLocalIsoString(`${localDate}T${editingBreak.start_time}`);
-      let formattedEndTime = createLocalIsoString(`${localDate}T${editingBreak.end_time}`);
-
       const payload = {
         name: editingBreak.name,
-        start_time: formattedStartTime,
-        end_time: formattedEndTime,
+        start_time: `${editingBreak.start_time}:00`, // HH:mm:ss format
+        end_time: `${editingBreak.end_time}:00`,   // HH:mm:ss format
         is_recurring: editingBreak.is_recurring,
         start_date: editingBreak.is_recurring ? null : (editingBreak.start_date || null),
         end_date: editingBreak.is_recurring ? null : (editingBreak.end_date || null),

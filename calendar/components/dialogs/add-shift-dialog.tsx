@@ -315,7 +315,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     <Dialog open={isOpen} onOpenChange={onToggle}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[90vh] rounded-xl">
+      <DialogContent className="sm:max-w-2xl max-w-2xl max-h-[90vh] rounded-xl">
         <DialogHeader>
           <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>

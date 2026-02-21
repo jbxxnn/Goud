@@ -231,25 +231,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Add recurring breaks if provided
-    // Expects array of StaffRecurringBreak (without id/timestamps)
-    // Check for breaks
-    if (recurring_breaks && recurring_breaks.length > 0) {
-      const breaksToInsert = recurring_breaks.map((b: any) => ({
-        staff_id: staff.id,
-        start_time: b.start_time,
-        end_time: b.end_time,
-        day_of_week: b.day_of_week
-      }));
-      
-      const { error: breaksError } = await supabase
-        .from('staff_recurring_breaks')
-        .insert(breaksToInsert);
-        
-      if (breaksError) {
-        console.error('Error creating recurring breaks:', breaksError);
-      }
-    }
+
 
     // Invalidate cache by returning a cache-busting header
     // This tells clients to fetch fresh data on next request
