@@ -167,13 +167,14 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     return shifts.map((shift) => {
       const calendarEvent = shiftToCalendarEvent(shift, locationColors);
       return {
-        id: calendarEvent.id, // Use shift ID as string
+        id: calendarEvent.id,
         startDate: calendarEvent.startDate,
         endDate: calendarEvent.endDate,
         title: calendarEvent.title,
         color: calendarEvent.color,
         description: calendarEvent.description,
         user: calendarEvent.user,
+        metadata: calendarEvent.metadata,
       };
     });
   }, [shifts, locationColors, locationsLoading]);

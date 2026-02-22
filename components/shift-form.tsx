@@ -19,7 +19,7 @@ import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialo
 import { toast } from 'sonner';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2, Plus, Loader2, Pencil, Check, X } from "lucide-react";
+import { CalendarIcon, Trash2, Plus, Loader, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -77,6 +77,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const [showRecurringDeletePrompt, setShowRecurringDeletePrompt] = useState(false);
   const [showRecurringEditPrompt, setShowRecurringEditPrompt] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<ShiftFormData | null>(null);
+  const [deleteActionType, setDeleteActionType] = useState<'single' | 'following' | 'series' | null>(null);
+  const [submitActionType, setSubmitActionType] = useState<'single' | 'following' | 'series' | null>(null);
 
   // Shift breaks state
   const [shiftBreaks, setShiftBreaks] = useState<any[]>([]);
@@ -204,7 +206,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       const fetchBreaks = async () => {
         setIsLoadingBreaks(true);
         try {
-          const response = await fetch(`/api/shift-breaks?shift_id=${shift.id}`);
+          const dateParam = (shift as any)._instanceDate ? `&date=${(shift as any)._instanceDate.split('T')[0]}` : '';
+          const response = await fetch(`/api/shift-breaks?shift_id=${shift.id}${dateParam}`);
           const data = await response.json();
           if (data.success) {
             setShiftBreaks(data.data || []);
@@ -227,13 +230,18 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         const inheritedBreak = shiftBreaks.find(b => b.id === id);
         if (!inheritedBreak || !shift) return;
         
-        const payload = {
+        const payload: any = {
           shift_id: shift.id,
           sitewide_break_id: sitewideId,
           name: inheritedBreak.name,
           start_time: inheritedBreak.start_time,
           end_time: inheritedBreak.start_time // 0 duration marks as deleted/overridden
         };
+
+        if (shift.id.includes('-instance-')) {
+          payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
+          payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
+        }
 
         const response = await fetch('/api/shift-breaks', {
           method: 'POST',
@@ -269,12 +277,17 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       const startIso = createLocalIsoString(`${shiftDate}T${newBreakStart}`);
       const endIso = createLocalIsoString(`${shiftDate}T${newBreakEnd}`);
       
-      const payload = {
+      const payload: any = {
         shift_id: shift.id,
         name: newBreakName,
         start_time: startIso,
         end_time: endIso
       };
+
+      if (shift.id.includes('-instance-')) {
+        payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
+        payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
+      }
 
       const response = await fetch('/api/shift-breaks', {
         method: 'POST',
@@ -338,6 +351,11 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         // Create an override record
         payload.shift_id = shift.id;
         payload.sitewide_break_id = editingBreakId.replace('inherited-', '');
+
+        if (shift.id.includes('-instance-')) {
+          payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
+          payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
+        }
         response = await fetch('/api/shift-breaks', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -374,15 +392,16 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       return;
     }
 
-    await performSubmit(data, false);
+    await performSubmit(data, 'series');
   };
 
-  const performSubmit = async (data: ShiftFormData, asSingleOccurrence: boolean) => {
+  const performSubmit = async (data: ShiftFormData, actionType: 'single' | 'following' | 'series') => {
     setIsSubmitting(true);
+    setSubmitActionType(actionType);
     try {
       // Build recurrence rule if recurring
       let recurrence_rule = null;
-      if (data.is_recurring && data.recurrence_frequency && !asSingleOccurrence) {
+      if (data.is_recurring && data.recurrence_frequency && actionType !== 'single') {
         const recurrenceOptions: RecurrenceOptions = {
           frequency: data.recurrence_frequency,
           daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
@@ -396,8 +415,8 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         location_id: data.location_id,
         start_time: createLocalIsoString(data.start_time),
         end_time: createLocalIsoString(data.end_time),
-        is_recurring: asSingleOccurrence ? false : data.is_recurring,
-        recurrence_rule: asSingleOccurrence ? null : recurrence_rule,
+        is_recurring: actionType === 'single' ? false : data.is_recurring,
+        recurrence_rule: actionType === 'single' ? null : recurrence_rule,
         priority: data.priority,
         notes: data.notes || null,
         service_ids: selectedServices,
@@ -407,12 +426,16 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       let url = shift ? `/api/shifts/${shift._originalShiftId || shift.id}` : '/api/shifts';
       let method = shift ? 'PUT' : 'POST';
 
-      if (asSingleOccurrence && shift?._instanceDate) {
+      if (actionType === 'single' && shift?._instanceDate) {
         // We are creating a brand new shift that acts as an exception to the parent series.
         // It's a POST, not a PUT, because the single occurrence didn't exist in the DB yet.
         url = '/api/shifts';
         method = 'POST';
         requestBody.parent_shift_id = shift._originalShiftId || shift.id;
+        requestBody.exception_date = shift._instanceDate.split('T')[0];
+      } else if (actionType === 'following' && shift?._instanceDate) {
+        // Modifying this and following occurrences
+        requestBody.split_action = 'following';
         requestBody.exception_date = shift._instanceDate.split('T')[0];
       }
 
@@ -428,7 +451,9 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
 
       if (!result.success) {
         if (result.conflicts) {
-          alert(`Shift conflicts detected:\n${result.conflicts.map((c: { message: string }) => c.message).join('\n')}`);
+          toast.error('Shift conflicts detected', {
+            description: result.conflicts.map((c: { message: string }) => c.message).join('\n'),
+          });
         } else {
           throw new Error(result.error || 'Failed to save shift');
         }
@@ -440,81 +465,69 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       onSave();
     } catch (err) {
       console.error('Error saving shift:', err);
-      alert(err instanceof Error ? err.message : 'Failed to save shift');
+      toast.error('Failed to save shift', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
     } finally {
       setIsSubmitting(false);
+      setSubmitActionType(null);
     }
   };
 
-  const performDelete = async () => {
+  const performDeleteAction = async (actionType: 'single' | 'following' | 'series') => {
     if (!shift?.id || !onDelete) return;
 
     setIsDeleting(true);
+    setDeleteActionType(actionType);
     try {
-      const response = await fetch(`/api/shifts/${shift.id}`, {
-        method: 'DELETE',
-      });
+      if (actionType === 'single' && shift._instanceDate) {
+        // Handle single occurrence deletion (tombstone)
+        const exceptionDate = shift._instanceDate.split('T')[0];
+        const response = await fetch(`/api/shifts/${shift._originalShiftId || shift.id}/exceptions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ exception_date: exceptionDate }),
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Failed to delete shift instance');
+      } else {
+        // Handle series or following deletion
+        const url = `/api/shifts/${shift._originalShiftId || shift.id}`;
+        const body = actionType === 'following' && shift._instanceDate 
+          ? JSON.stringify({ split_action: 'following', exception_date: shift._instanceDate.split('T')[0] }) 
+          : undefined;
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete shift');
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: body ? { 'Content-Type': 'application/json' } : undefined,
+          body
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error || 'Failed to delete shift');
       }
 
-      toast.success('Shift deleted', {
-        description: 'The shift has been deleted successfully.',
+      toast.success(actionType === 'single' ? 'Shift occurrence deleted' : 'Shift deleted', {
+        description: actionType === 'single' 
+          ? 'This specific occurrence has been removed from the calendar.' 
+          : actionType === 'following' 
+            ? 'This and all following occurrences have been deleted.'
+            : 'The shift has been deleted successfully.',
       });
 
       setShowDeleteDialog(false);
       setShowRecurringDeletePrompt(false);
       onDelete();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete shift';
       toast.error('Failed to delete shift', {
-        description: errorMessage,
+        description: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
       setIsDeleting(false);
+      setDeleteActionType(null);
     }
   };
 
-  const handleCreateDeleteException = async () => {
-    if (!shift?.id || !onDelete || !shift._instanceDate) return;
 
-    setIsDeleting(true);
-    try {
-      // The backend expects the YYYY-MM-DD of the instance to delete
-      const exceptionDate = shift._instanceDate.split('T')[0];
-      
-      const response = await fetch(`/api/shifts/${shift._originalShiftId || shift.id}/exceptions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ exception_date: exceptionDate }),
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete shift instance');
-      }
-
-      toast.success('Shift occurrence deleted', {
-        description: 'This specific occurrence has been removed from the calendar.',
-      });
-
-      setShowRecurringDeletePrompt(false);
-      onDelete();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete shift instance';
-      toast.error('Failed to delete shift instance', {
-        description: errorMessage,
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev =>
@@ -740,29 +753,86 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
             id="is_recurring"
             checked={watch('is_recurring')}
             onCheckedChange={(checked) => setValue('is_recurring', checked)}
-            disabled={isViewMode}
+            disabled={isViewMode || !!shift?._isRecurringInstance}
           />
           <Label htmlFor="is_recurring" className='mb-0'>Recurring Shift</Label>
         </div>
 
         {watch('is_recurring') && (
           <div className="space-y-4 pl-6 border-l-2 border-muted">
-            <div>
-              <Label htmlFor="recurrence_frequency" className="text-xs font-semibold mb-2">Frequency *</Label>
-              <Select
-                value={watch('recurrence_frequency')}
-                onValueChange={(value) => setValue('recurrence_frequency', value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY')}
-                disabled={isViewMode}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DAILY">Daily</SelectItem>
-                  <SelectItem value="WEEKLY">Weekly</SelectItem>
-                  <SelectItem value="MONTHLY">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="flex-1 w-full">
+                <Label htmlFor="recurrence_frequency" className="text-xs font-semibold mb-2">Frequency *</Label>
+                <Select
+                  value={watch('recurrence_frequency')}
+                  onValueChange={(value) => setValue('recurrence_frequency', value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY')}
+                  disabled={isViewMode || !!shift?._isRecurringInstance}
+                >
+                  <SelectTrigger className="w-full h-10" style={{borderRadius: "1rem"}}>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    <SelectItem value="DAILY">Daily</SelectItem>
+                    <SelectItem value="WEEKLY">Weekly</SelectItem>
+                    <SelectItem value="MONTHLY">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1 w-full">
+                <Label htmlFor="recurrence_until" className="text-xs font-semibold mb-2 block">Repeat Until (Optional)</Label>
+                <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-10 px-3 border-input bg-background",
+                        !watch('recurrence_until') && "text-muted-foreground"
+                      )}
+                      disabled={isViewMode || !!shift?._isRecurringInstance}
+                    >
+                      <HugeiconsIcon icon={Calendar02Icon} />
+                      {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : <span>Pick date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const safeDate = new Date(date);
+                          safeDate.setHours(12);
+                          setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
+                          setRecurrenceUntilOpen(false);
+                        } else {
+                          setValue('recurrence_until', undefined);
+                          setRecurrenceUntilOpen(false);
+                        }
+                      }}
+                      initialFocus
+                      captionLayout="dropdown"
+                      fromYear={new Date().getFullYear() - 1}
+                      toYear={new Date().getFullYear() + 10}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        // Recurrence until date should be after the start date
+                        if (watch('start_time')) {
+                            const startDate = new Date(watch('start_time'));
+                            startDate.setHours(0,0,0,0);
+                            return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                        }
+                        return date < today;
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leave empty to repeat indefinitely
+                </p>
+              </div>
             </div>
 
             {watch('recurrence_frequency') === 'WEEKLY' && (
@@ -783,7 +853,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                               : current.filter((d) => d !== day.value)
                           );
                         }}
-                        disabled={isViewMode}
+                        disabled={isViewMode || !!shift?._isRecurringInstance}
                       />
                       <label htmlFor={day.value} className="text-sm">
                         {day.label}
@@ -793,57 +863,6 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                 </div>
               </div>
             )}
-
-            <div>
-              <Label htmlFor="recurrence_until" className="text-xs font-semibold mb-2">Repeat Until (Optional)</Label>
-              <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-10 px-3 bg-background",
-                      !watch('recurrence_until') && "text-muted-foreground"
-                    )}
-                    disabled={isViewMode}
-                  >
-                    <HugeiconsIcon icon={Calendar02Icon} />
-                    <span className="truncate">
-                      {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : "Pick date"}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const safeDate = new Date(date);
-                        safeDate.setHours(12);
-                        setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
-                        setRecurrenceUntilOpen(false);
-                      }
-                    }}
-                    initialFocus
-                    disabled={(date) => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      
-                      // Recurrence until date should be after the start date
-                      if (watch('start_time')) {
-                          const startDate = new Date(watch('start_time'));
-                          startDate.setHours(0,0,0,0);
-                          return date.getTime() < Math.max(today.getTime(), startDate.getTime());
-                      }
-                      return date < today;
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground mt-1">
-                Leave empty to repeat indefinitely
-              </p>
-            </div>
           </div>
         )}
       </div>
@@ -1010,21 +1029,21 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                         onChange={e => setEditBreakName(e.target.value)} 
                         className="h-8 flex-1 text-xs"
                       />
-                      <Input 
-                        type="time" 
-                        value={editBreakStart} 
-                        onChange={e => setEditBreakStart(e.target.value)} 
-                        className="h-8 w-20 text-xs px-2"
+                      <TimeInput 
+                        dateInputClassName="h-8 w-20 text-xs px-2 font-normal"
+                        hourCycle={24}
+                        value={editBreakStart && editBreakStart.includes(':') ? new Time(parseInt(editBreakStart.split(':')[0]), parseInt(editBreakStart.split(':')[1])) : null} 
+                        onChange={(time) => setEditBreakStart(time ? `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}` : '')} 
                       />
                       <span className="text-muted-foreground">-</span>
-                      <Input 
-                        type="time" 
-                        value={editBreakEnd} 
-                        onChange={e => setEditBreakEnd(e.target.value)} 
-                        className="h-8 w-20 text-xs px-2"
+                      <TimeInput 
+                        dateInputClassName="h-8 w-20 text-xs px-2 font-normal"
+                        hourCycle={24}
+                        value={editBreakEnd && editBreakEnd.includes(':') ? new Time(parseInt(editBreakEnd.split(':')[0]), parseInt(editBreakEnd.split(':')[1])) : null} 
+                        onChange={(time) => setEditBreakEnd(time ? `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}` : '')} 
                       />
                       <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700" onClick={updateShiftBreak} disabled={isUpdatingBreak || !editBreakName || !editBreakStart || !editBreakEnd}>
-                        {isUpdatingBreak ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {isUpdatingBreak ? <Loader className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                       </Button>
                       <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={cancelEditingBreak} disabled={isUpdatingBreak}>
                         <X className="w-4 h-4" />
@@ -1067,21 +1086,21 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                 onChange={e => setNewBreakName(e.target.value)} 
                 className="h-9 flex-1 text-sm"
               />
-              <Input 
-                type="time" 
-                value={newBreakStart} 
-                onChange={e => setNewBreakStart(e.target.value)} 
-                className="h-9 w-24 text-sm"
+              <TimeInput 
+                dateInputClassName="h-9 w-24 text-sm font-normal"
+                hourCycle={24}
+                value={newBreakStart && newBreakStart.includes(':') ? new Time(parseInt(newBreakStart.split(':')[0]), parseInt(newBreakStart.split(':')[1])) : null} 
+                onChange={(time) => setNewBreakStart(time ? `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}` : '')} 
               />
               <span className="text-muted-foreground">-</span>
-              <Input 
-                type="time" 
-                value={newBreakEnd} 
-                onChange={e => setNewBreakEnd(e.target.value)} 
-                className="h-9 w-24 text-sm"
+              <TimeInput 
+                dateInputClassName="h-9 w-24 text-sm font-normal"
+                hourCycle={24}
+                value={newBreakEnd && newBreakEnd.includes(':') ? new Time(parseInt(newBreakEnd.split(':')[0]), parseInt(newBreakEnd.split(':')[1])) : null} 
+                onChange={(time) => setNewBreakEnd(time ? `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}` : '')} 
               />
               <Button type="button" variant="outline" size="sm" className="h-9" disabled={!newBreakName || !newBreakStart || !newBreakEnd || isAddingBreak} onClick={addShiftBreak}>
-                {isAddingBreak ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {isAddingBreak ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Add
               </Button>
             </div>
@@ -1125,7 +1144,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           <DeleteConfirmationDialog
             isOpen={showDeleteDialog}
             onClose={() => setShowDeleteDialog(false)}
-            onConfirm={performDelete}
+            onConfirm={() => performDeleteAction('series')}
             title="Delete Shift"
             description="Are you sure you want to delete this shift? This action cannot be undone."
             itemName={`Shift on ${new Date(shift.start_time).toLocaleDateString()}`}
@@ -1143,22 +1162,32 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                 <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                <Button 
-                  variant="outline" 
-                  onClick={handleCreateDeleteException}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Only this occurrence
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  onClick={performDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Entire series
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => performDeleteAction('single')}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting && deleteActionType === 'single' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Only this occurrence
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => performDeleteAction('following')}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting && deleteActionType === 'following' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                    This and following
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => performDeleteAction('series')}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting && deleteActionType === 'series' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Entire series
+                  </Button>
+                </div>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -1176,21 +1205,31 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
             <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <Button 
-              variant="outline" 
-              onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, true)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Only this occurrence
-            </Button>
-            <Button 
-              onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, false)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Entire series
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, 'single')}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && submitActionType === 'single' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                Only this occurrence
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, 'following')}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && submitActionType === 'following' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                This and following
+              </Button>
+              <Button 
+                onClick={() => pendingSubmitData && performSubmit(pendingSubmitData, 'series')}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && submitActionType === 'series' ? <Loader className="h-4 w-4 animate-spin mr-2" /> : null}
+                Entire series
+              </Button>
+            </div>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

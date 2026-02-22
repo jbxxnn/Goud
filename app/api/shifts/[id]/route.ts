@@ -59,7 +59,16 @@ export async function PUT(
   try {
     const { id: rawId } = await context.params;
     const id = String(rawId).split('-instance-')[0];
-    const body: UpdateShiftRequest = await request.json();
+    const body: any = await request.json();
+
+    if (body.split_action === 'following' && body.exception_date) {
+      // Split the series and clone starting from the exception_date
+      const newSplitShift = await ShiftService.splitShift(id, body.exception_date, 'update', body);
+      return NextResponse.json({
+        success: true,
+        data: newSplitShift,
+      });
+    }
 
     // Validate time range if both times are provided
     if (body.start_time && body.end_time) {
@@ -135,6 +144,17 @@ export async function DELETE(
     const { id: rawId } = await context.params;
     const id = String(rawId).split('-instance-')[0];
 
+    // Check if body contains split_action
+    let split_action, exception_date;
+    try {
+      // Request might not have a body, so we wrap it in a try-catch
+      const body = await request.json();
+      split_action = body.split_action;
+      exception_date = body.exception_date;
+    } catch {
+      // Ignored
+    }
+
     // Check if shift exists
     const shift = await ShiftService.getShiftById(id);
     if (!shift) {
@@ -147,7 +167,11 @@ export async function DELETE(
       );
     }
 
-    await ShiftService.deleteShift(id);
+    if (split_action === 'following' && exception_date) {
+      await ShiftService.splitShift(id, exception_date, 'delete');
+    } else {
+      await ShiftService.deleteShift(id);
+    }
 
     return NextResponse.json({
       success: true,

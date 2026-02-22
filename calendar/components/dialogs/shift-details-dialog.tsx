@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 import ShiftModal from "@/components/shift-modal";
 import { ShiftWithDetails } from "@/lib/types/shift";
 import { toast } from "sonner";
@@ -39,13 +39,15 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
       if (data.success && data.data) {
         let shiftData = data.data;
         const isInstance = String(event.id).includes('-instance-');
+        const isModifiedOccurrence = !!shiftData.parent_shift_id;
         
-        if (isInstance) {
+        if (isInstance || isModifiedOccurrence) {
           // Override the parent shift's dates with this specific instance's dates for the UI 
           shiftData = {
             ...shiftData,
             _isRecurringInstance: true,
             _instanceDate: event.startDate, // Keep track of the specific date we clicked
+            _originalShiftId: shiftData.parent_shift_id || baseId, // Pass the true parent for "Entire Series" edits
             start_time: event.startDate,
             end_time: event.endDate
           };
@@ -75,7 +77,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
       <div onClick={handleClick} className="contents relative cursor-pointer w-full h-full">
         {loading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 rounded-md backdrop-blur-sm">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <Loader className="h-5 w-5 animate-spin text-primary" />
           </div>
         )}
         {children}

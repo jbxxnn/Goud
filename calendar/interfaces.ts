@@ -14,6 +14,7 @@ export interface IEvent {
   color: TEventColor;
   description: string;
   user: IUser;
+  metadata?: any;
 }
 
 export interface ICalendarCell {

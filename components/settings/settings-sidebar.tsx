@@ -35,7 +35,7 @@ export function SettingsSidebar() {
                   ? "bg-primary text-primary-foreground" 
                   : item.disabled
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-muted hover:bg-muted hover:text-foreground"
+                    : "text-foreground hover:bg-muted hover:text-foreground"
               )}
               style={{borderRadius: '10px'}}
             >

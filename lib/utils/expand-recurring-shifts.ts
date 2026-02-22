@@ -90,8 +90,9 @@ export function expandRecurringShift(
         end_time: instanceEnd.toISOString(),
         // Mark this as an instance of a recurring shift
         _isRecurringInstance: true,
+        _instanceDate: `${dateString}T00:00:00.000Z`,
         _originalShiftId: shift.id,
-      } as ShiftWithDetails & { _isRecurringInstance?: boolean; _originalShiftId?: string });
+      } as ShiftWithDetails & { _isRecurringInstance?: boolean; _instanceDate?: string; _originalShiftId?: string });
     });
 
     return instances;

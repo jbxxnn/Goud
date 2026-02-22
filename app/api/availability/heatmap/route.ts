@@ -223,14 +223,21 @@ export async function GET(req: NextRequest) {
 
 
 
-    // Fetch shift specific breaks in range
-    const { data: shiftBreaksData } = await supabase
-      .from('shift_breaks')
-      .select('shift_id, start_time, end_time, sitewide_break_id')
-      .in('shift_id', allowedShiftIds)
-      .lt('start_time', endUTC.toISOString())
-      .gt('end_time', startUTC.toISOString());
+    // Fetch shift specific breaks for all relevant shifts
+    // 1. Get breaks that are already in the date range (exceptions/overrides)
+    // 2. Get breaks on parent shifts (to inherit pattern-level breaks)
+    const allRelevantShiftIds = shiftsData ? shiftsData.map((s: any) => s.id) : allowedShiftIds;
+    const parentShiftIds = shiftsData ? shiftsData.map((s: any) => s.parent_shift_id).filter(Boolean) : [];
+    const searchShiftIds = Array.from(new Set([...allRelevantShiftIds, ...parentShiftIds]));
 
+    const { data: rawShiftBreaks, error: shiftBreaksErr } = await supabase
+      .from('shift_breaks')
+      .select('shift_id, start_time, end_time, sitewide_break_id, name')
+      .in('shift_id', searchShiftIds);
+
+    if (shiftBreaksErr) {
+      console.log('[availability/heatmap] shift breaks error', shiftBreaksErr);
+    }
     // Fetch active sitewide breaks
     const { data: globalBreaksData } = await supabase
       .from('sitewide_breaks')
@@ -264,20 +271,38 @@ export async function GET(req: NextRequest) {
       dayEnd.setUTCHours(23, 59, 59, 999);
       const dayEndStr = dayEnd.toISOString();
 
-      const shiftBreaksForDay: TimeInterval[] = (shiftBreaksData ?? [])
-        .filter((b: any) => b.end_time > dayStartStr && b.start_time < dayEndStr)
-        .map((b: any) => ({
+      const dayKeyStr = dayKey;
+      const { toDate } = require('date-fns-tz');
+      
+      const shiftBreaksForDay: TimeInterval[] = [];
+      
+      // Project parent and instance-specific breaks for this day
+      // 1. Add breaks already on this day (exceptions/overrides)
+      const currentDayRawBreaks = (rawShiftBreaks ?? []).filter(b => b.start_time.split('T')[0] === dayKeyStr);
+      for (const b of currentDayRawBreaks) {
+        shiftBreaksForDay.push({
           start: new Date(b.start_time),
           end: new Date(b.end_time),
-        }));
+        });
+      }
+
+      // 2. Project parent breaks onto this day
+      const parentBreaksToProject = (rawShiftBreaks ?? []).filter(b => {
+        const bStart = b.start_time.split('T')[0];
+        return bStart !== dayKeyStr && parentShiftIds.includes(b.shift_id);
+      });
+
+      for (const b of parentBreaksToProject) {
+        const pStart = new Date(b.start_time);
+        const pEnd = new Date(b.end_time);
+        const startIso = toDate(`${dayKeyStr}T${pStart.getUTCHours().toString().padStart(2,'0')}:${pStart.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' });
+        const endIso = toDate(`${dayKeyStr}T${pEnd.getUTCHours().toString().padStart(2,'0')}:${pEnd.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' });
+        shiftBreaksForDay.push({ start: startIso, end: endIso });
+      }
 
       // Project sitewide breaks onto shifts for the day
-      const { toDate } = require('date-fns-tz');
       const sitewideBreaksToApply: TimeInterval[] = [];
-      const dayKeyStr = d.toISOString().split('T')[0];
-
       for (const s of shifts) {
-        // Only process shifts that apply to this day
         const sStart = new Date(s.startTime);
         const sEnd = new Date(s.endTime);
         if (sEnd <= new Date(dayStartStr) || sStart >= new Date(dayEndStr)) continue;
@@ -289,23 +314,17 @@ export async function GET(req: NextRequest) {
           } else {
             const bStart = gb.start_date || '0000-01-01';
             const bEnd = gb.end_date || '9999-12-31';
-            if (dayKeyStr >= bStart && dayKeyStr <= bEnd) {
-              applies = true;
-            }
+            if (dayKeyStr >= bStart && dayKeyStr <= bEnd) applies = true;
           }
 
           if (applies) {
             const breakStartTs = toDate(`${dayKeyStr}T${gb.start_time}`, { timeZone: 'Europe/Amsterdam' });
             const breakEndTs = toDate(`${dayKeyStr}T${gb.end_time}`, { timeZone: 'Europe/Amsterdam' });
 
-            // Only apply if it overlaps with the shift and isn't already overridden
             if (breakStartTs >= sStart && breakEndTs <= sEnd) {
-              const isOverridden = (shiftBreaksData ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
+              const isOverridden = (rawShiftBreaks ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
               if (!isOverridden) {
-                sitewideBreaksToApply.push({
-                  start: breakStartTs,
-                  end: breakEndTs
-                });
+                sitewideBreaksToApply.push({ start: breakStartTs, end: breakEndTs });
               }
             }
           }

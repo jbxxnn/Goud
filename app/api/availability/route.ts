@@ -242,16 +242,57 @@ export async function GET(req: NextRequest) {
 
 
 
-    // Fetch shift specific breaks
-    const { data: shiftBreaksData, error: shiftBreaksErr } = await supabase
+    // Fetch shift specific breaks for all relevant shifts
+    // 1. Get breaks that are already on the specific day (exceptions/overrides)
+    // 2. Get breaks on parent shifts (to inherit pattern-level breaks)
+    const allRelevantShiftIds = shiftsData ? shiftsData.map((s: any) => s.id) : allowedShiftIds;
+    const parentShiftIds = shiftsData ? shiftsData.map((s: any) => s.parent_shift_id).filter(Boolean) : [];
+    const searchShiftIds = Array.from(new Set([...allRelevantShiftIds, ...parentShiftIds]));
+
+    const { data: rawShiftBreaks, error: shiftBreaksErr } = await supabase
       .from('shift_breaks')
-      .select('shift_id, start_time, end_time, sitewide_break_id')
-      .in('shift_id', allowedShiftIds)
-      .lt('start_time', dayEnd.toISOString())
-      .gt('end_time', dayStart.toISOString());
+      .select('shift_id, start_time, end_time, sitewide_break_id, name')
+      .in('shift_id', searchShiftIds);
 
     if (shiftBreaksErr) {
       console.log('[availability] shift breaks error', shiftBreaksErr);
+    }
+
+    // Process breaks: Project parent breaks onto the current day
+    const shiftBreaksForDay: TimeInterval[] = [];
+    const { toDate } = require('date-fns-tz');
+    const shiftDateStr = date; // This is the requested date YYYY-MM-DD
+    
+    // First, add breaks already on the specific day (exceptions/overrides)
+    const currentDayBreaks = (rawShiftBreaks ?? []).filter(b => {
+      const bStart = b.start_time.split('T')[0];
+      return bStart === shiftDateStr;
+    });
+    
+    for (const b of currentDayBreaks) {
+      shiftBreaksForDay.push({
+        start: new Date(b.start_time),
+        end: new Date(b.end_time),
+      });
+    }
+
+    // Second, project parent breaks onto the current day
+    const parentBreaks = (rawShiftBreaks ?? []).filter(b => {
+      const bStart = b.start_time.split('T')[0];
+      return bStart !== shiftDateStr && parentShiftIds.includes(b.shift_id);
+    });
+
+    for (const b of parentBreaks) {
+      const pStart = new Date(b.start_time);
+      const pEnd = new Date(b.end_time);
+      
+      const startIso = toDate(`${shiftDateStr}T${pStart.getUTCHours().toString().padStart(2,'0')}:${pStart.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' });
+      const endIso = toDate(`${shiftDateStr}T${pEnd.getUTCHours().toString().padStart(2,'0')}:${pEnd.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' });
+      
+      shiftBreaksForDay.push({
+        start: startIso,
+        end: endIso
+      });
     }
 
     // Fetch active sitewide breaks
@@ -260,13 +301,7 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('is_active', true);
 
-    const shiftBreaksForDay: TimeInterval[] = (shiftBreaksData ?? []).map((b: any) => ({
-      start: new Date(b.start_time),
-      end: new Date(b.end_time),
-    }));
-
     // Project sitewide breaks onto shifts for the day
-    const { toDate } = require('date-fns-tz');
     const sitewideBreaksToApply: TimeInterval[] = [];
     const shiftDate = dayStart.toISOString().split('T')[0];
 
@@ -289,7 +324,7 @@ export async function GET(req: NextRequest) {
 
           // Only apply if it overlaps with the shift and isn't already overridden
           if (breakStartTs >= s.startTime && breakEndTs <= s.endTime) {
-            const isOverridden = (shiftBreaksData ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
+            const isOverridden = (rawShiftBreaks ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
             if (!isOverridden) {
               sitewideBreaksToApply.push({
                 start: breakStartTs,
@@ -301,6 +336,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Finalize breaks for slot generation
     const breaksForDay = [...shiftBreaksForDay, ...sitewideBreaksToApply];
 
     const allSlots = generateSlotsForDay({      date,

@@ -18,6 +18,8 @@ import {
   ShiftBreak,
   CreateShiftBreakRequest,
   UpdateShiftBreakRequest,
+  parseRecurrenceRule,
+  buildRecurrenceRule,
 } from '@/lib/types/shift';
 
 export class ShiftService {
@@ -38,6 +40,50 @@ export class ShiftService {
     }
 
     return data;
+  }
+
+  /**
+   * Delete a shift by ID.
+   * If the shift is an exception to a recurring shift, it will be soft-deleted (marked inactive)
+   * instead of hard-deleted to prevent the recurring logic from recreating it.
+   */
+  static async deleteShift(id: string): Promise<boolean> {
+    const supabase = await createClient();
+    
+    // First check if this shift is an exception to a recurring shift
+    const { data: shift } = await supabase
+      .from('shifts')
+      .select('parent_shift_id, is_recurring')
+      .eq('id', id)
+      .single();
+
+    if (shift && shift.parent_shift_id && !shift.is_recurring) {
+      // It's an exception. Instead of deleting it (which would make the parent recurring
+      // logic generate that day again), we convert it to a "tombstone" exception by making it inactive.
+      const { error } = await supabase
+        .from('shifts')
+        .update({ is_active: false })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error soft-deleting exception shift:', error);
+        throw new Error('Failed to delete exception shift');
+      }
+      return true;
+    }
+
+    // Standard delete for normal shifts or parent recurring shifts
+    const { error } = await supabase
+      .from('shifts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting shift:', error);
+      throw new Error('Failed to delete shift');
+    }
+
+    return true;
   }
 
   /**
@@ -269,6 +315,12 @@ export class ShiftService {
       throw new Error(`Failed to update shift: ${shiftError.message}`);
     }
 
+    // If we are updating a recurring series, wipe out all its exceptions
+    // so the series returns to a uniform state with the new details.
+    if (shift.is_recurring) {
+      await supabase.from('shifts').delete().eq('parent_shift_id', id);
+    }
+
     // Update service assignments if provided
     if (service_ids !== undefined) {
       // Remove existing assignments
@@ -296,15 +348,67 @@ export class ShiftService {
   }
 
   /**
-   * Delete a shift
+   * Split a recurring shift series at a specific date.
+   * Modifies the original shift to end the day before the split date.
+   * If action is 'update', clones the original shift (applying new data) starting from the split date.
+   * Also wipes out any child exceptions from the original series that fall on or after the split date.
    */
-  static async deleteShift(id: string): Promise<void> {
+  static async splitShift(id: string, exception_date: string, action: 'update' | 'delete', updateData?: CreateShiftRequest): Promise<Shift | null> {
     const supabase = await createClient();
-    const { error } = await supabase.from('shifts').delete().eq('id', id);
 
-    if (error) {
-      throw new Error(`Failed to delete shift: ${error.message}`);
+    // 1. Fetch the original parent shift
+    const originalShift = await this.getShiftById(id);
+    if (!originalShift || !originalShift.is_recurring) {
+      throw new Error('Shift not found or is not recurring');
     }
+
+    // 2. Calculate the day before the exception date
+    const splitDateObj = new Date(exception_date);
+    const dayBeforeObj = new Date(splitDateObj);
+    dayBeforeObj.setDate(dayBeforeObj.getDate() - 1);
+    
+    const dayBeforeStr = dayBeforeObj.toISOString().split('T')[0];
+
+    // 3. Delete any child exceptions on or after the exception_date
+    const { error: deleteExceptionsError } = await supabase
+      .from('shifts')
+      .delete()
+      .eq('parent_shift_id', id)
+      .gte('exception_date', exception_date);
+
+    if (deleteExceptionsError) {
+      console.error('Error wiping following exceptions:', deleteExceptionsError);
+    }
+
+    // 4. Update the original parent shift to terminate on the day before the split
+    if (!originalShift.recurrence_rule) {
+      throw new Error('Original shift does not have a recurrence_rule to split');
+    }
+    const rruleOptions = parseRecurrenceRule(originalShift.recurrence_rule);
+    if (!rruleOptions) {
+      throw new Error('Could not parse recurrence_rule of the parent shift');
+    }
+    
+    rruleOptions.until = dayBeforeStr;
+    const newRrule = buildRecurrenceRule(rruleOptions);
+
+    const { error: updateParentError } = await supabase
+      .from('shifts')
+      .update({ recurrence_rule: newRrule })
+      .eq('id', id);
+
+    if (updateParentError) {
+      throw new Error(`Failed to update parent shift recurrence_rule: ${updateParentError.message}`);
+    }
+
+    // 5. If updating, create the newly split series using updateData
+    if (action === 'update' && updateData) {
+      // Clean up payload fields that might break Supabase insert
+      const { split_action, exception_date: _, ...cleanUpdateData } = updateData as any;
+      return await this.createShift(cleanUpdateData as CreateShiftRequest);
+    }
+
+    return null;
   }
 
   /**
@@ -586,14 +690,22 @@ export class ShiftService {
   // SHIFT BREAKS
   // =============================================
 
-  static async getShiftBreaks(shiftId: string): Promise<ShiftBreak[]> {
+  static async getShiftBreaks(shiftId: string, instanceDate?: string): Promise<ShiftBreak[]> {
     const supabase = await createClient();
+    const { toDate } = require('date-fns-tz');
     
-    // 1. Fetch the shift to know its date for sitewide break projection
+    // 1. Handle virtual recurring shift instances logic
+    let actualShiftId = shiftId;
+    const isVirtualInstance = shiftId.includes('-instance-');
+    if (isVirtualInstance) {
+      actualShiftId = shiftId.split('-instance-')[0];
+    }
+
+    // Fetch the shift to know its date for sitewide/parent break projection
     const { data: shift, error: shiftError } = await supabase
       .from('shifts')
       .select('id, start_time, end_time')
-      .eq('id', shiftId)
+      .eq('id', actualShiftId)
       .single();
 
     if (shiftError || !shift) {
@@ -601,11 +713,18 @@ export class ShiftService {
       return [];
     }
 
+    const sDate = instanceDate || shift.start_time.split('T')[0];
+
     // 2. Fetch explicit shift breaks (local overrides or custom breaks)
-    const { data: localBreaks, error: localBreaksError } = await supabase
+    const idsToSearch = [shiftId];
+    if (isVirtualInstance) {
+      idsToSearch.push(actualShiftId);
+    }
+
+    const { data: rawLocalBreaks, error: localBreaksError } = await supabase
       .from('shift_breaks')
       .select('*')
-      .eq('shift_id', shiftId)
+      .in('shift_id', idsToSearch)
       .order('start_time', { ascending: true });
 
     if (localBreaksError) {
@@ -613,73 +732,155 @@ export class ShiftService {
       return [];
     }
 
+    // Separate virtual overrides from parent pattern breaks
+    const instanceBreaks = (rawLocalBreaks || []).filter(b => b.shift_id === shiftId);
+    const parentBreaks = (rawLocalBreaks || []).filter(b => b.shift_id === actualShiftId);
+    
+    // Project parent breaks onto the instance date
+    const projectedParentBreaks = parentBreaks.map(pb => {
+      if (!isVirtualInstance) return pb;
+      const { formatInTimeZone, toDate } = require('date-fns-tz');
+      const pStart = new Date(pb.start_time);
+      const pEnd = new Date(pb.end_time);
+      
+      const pStartLocal = formatInTimeZone(pStart, 'Europe/Amsterdam', 'HH:mm:ss');
+      const pEndLocal = formatInTimeZone(pEnd, 'Europe/Amsterdam', 'HH:mm:ss');
+      const startIso = toDate(`${sDate}T${pStartLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+      const endIso = toDate(`${sDate}T${pEndLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+      return { ...pb, start_time: startIso, end_time: endIso };
+    });
+
+    // Merge: Instance breaks take precedence
+    const localBreaks = isVirtualInstance ? [...instanceBreaks, ...projectedParentBreaks] : rawLocalBreaks || [];
+
     // 3. Fetch active sitewide breaks
     const { data: activeGlobalBreaks, error: globalError } = await supabase
       .from('sitewide_breaks')
       .select('*')
       .eq('is_active', true);
 
-    if (globalError || !activeGlobalBreaks) {
-      return localBreaks || [];
-    }
-
-    // 4. Project sitewide breaks onto this shift's date
-    const { toDate } = require('date-fns-tz');
-    const shiftDate = shift.start_time.split('T')[0];
-
     const inheritedBreaks: ShiftBreak[] = [];
-    
-    for (const b of activeGlobalBreaks) {
-      let applies = false;
-      if (b.is_recurring) {
-        applies = true;
-      } else {
-        const bStart = b.start_date || '0000-01-01';
-        const bEnd = b.end_date || '9999-12-31';
-        if (shiftDate >= bStart && shiftDate <= bEnd) {
+    if (!globalError && activeGlobalBreaks) {
+      for (const b of activeGlobalBreaks) {
+        let applies = false;
+        if (b.is_recurring) {
           applies = true;
+        } else {
+          const bStart = b.start_date || '0000-01-01';
+          const bEnd = b.end_date || '9999-12-31';
+          if (sDate >= bStart && sDate <= bEnd) {
+            applies = true;
+          }
         }
-      }
 
-      if (applies) {
-        // Construct ISO timestamps for this specific day using clinic timezone (Europe/Amsterdam)
-        const breakStartTs = toDate(`${shiftDate}T${b.start_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
-        const breakEndTs = toDate(`${shiftDate}T${b.end_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+        if (applies) {
+          const breakStartTs = toDate(`${sDate}T${b.start_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+          const breakEndTs = toDate(`${sDate}T${b.end_time}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
 
-        // Only include if it actually overlaps with the shift
-        if (breakStartTs >= shift.start_time && breakEndTs <= shift.end_time) {
-          // Check if there is already a local override for this sitewide break
-          const isOverridden = localBreaks?.some(lb => lb.sitewide_break_id === b.id);
-          
-          if (!isOverridden) {
-            inheritedBreaks.push({
-              id: `inherited-${b.id}`, // Temporary ID for virtual breaks
-              shift_id: shiftId,
-              sitewide_break_id: b.id,
-              name: b.name,
-              start_time: breakStartTs,
-              end_time: breakEndTs,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            } as ShiftBreak);
+          // Overlap check
+          const pStart = new Date(shift.start_time);
+          const pEnd = new Date(shift.end_time);
+          const { formatInTimeZone } = require('date-fns-tz');
+          const pStartLocal = formatInTimeZone(pStart, 'Europe/Amsterdam', 'HH:mm:ss');
+          const pEndLocal = formatInTimeZone(pEnd, 'Europe/Amsterdam', 'HH:mm:ss');
+          const shiftStartOnDate = toDate(`${sDate}T${pStartLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+          const shiftEndOnDate = toDate(`${sDate}T${pEndLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+
+          if (breakStartTs >= shiftStartOnDate && breakEndTs <= shiftEndOnDate) {
+            const isOverridden = localBreaks.some(lb => lb.sitewide_break_id === b.id);
+            if (!isOverridden) {
+              inheritedBreaks.push({
+                id: `inherited-${b.id}`,
+                shift_id: shiftId,
+                sitewide_break_id: b.id,
+                name: b.name,
+                start_time: breakStartTs,
+                end_time: breakEndTs,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              } as ShiftBreak);
+            }
           }
         }
       }
     }
 
-    // 5. Merge, filter out tombstones (overrides with 0 duration), and sort
-    const allBreaks = [...(localBreaks || []), ...inheritedBreaks]
+    // 5. Final merge and sort
+    return [...localBreaks, ...inheritedBreaks]
       .filter(b => b.start_time !== b.end_time)
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    return allBreaks;
   }
 
   static async createShiftBreak(data: CreateShiftBreakRequest): Promise<ShiftBreak> {
     const supabase = await createClient();
+    
+    let targetShiftId = data.shift_id;
+
+    // Handle virtual IDs by realizing the shift if parent_shift_id and exception_date are provided
+    if (data.shift_id.includes('-instance-') && data.parent_shift_id && data.exception_date) {
+      // 1. Check if it already exists
+      const { data: existingShift } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('parent_shift_id', data.parent_shift_id)
+        .eq('exception_date', data.exception_date)
+        .single();
+      
+      if (existingShift) {
+        targetShiftId = existingShift.id;
+      } else {
+        // 2. We need the parent shift details to clone it
+        const { data: parentShift } = await supabase
+          .from('shifts')
+          .select('*')
+          .eq('id', data.parent_shift_id)
+          .single();
+        
+        if (parentShift) {
+          // 3. Calculate timestamps for the exception date using parent's hours
+          // We must update the date part to match exception_date while keeping time
+          const { toDate } = require('date-fns-tz');
+          const pStart = new Date(parentShift.start_time);
+          const pEnd = new Date(parentShift.end_time);
+          
+          const sDate = data.exception_date;
+          const startIso = toDate(`${sDate}T${pStart.getUTCHours().toString().padStart(2,'0')}:${pStart.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' }).toISOString();
+          const endIso = toDate(`${sDate}T${pEnd.getUTCHours().toString().padStart(2,'0')}:${pEnd.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' }).toISOString();
+
+          // 4. Create the realized shift (exception)
+          const { data: newShift, error: shiftError } = await supabase
+            .from('shifts')
+            .insert({
+              staff_id: parentShift.staff_id,
+              location_id: parentShift.location_id,
+              start_time: startIso,
+              end_time: endIso,
+              is_recurring: false,
+              parent_shift_id: parentShift.id,
+              exception_date: data.exception_date,
+              is_active: true,
+              notes: parentShift.notes,
+              priority: parentShift.priority
+            })
+            .select('id')
+            .single();
+          
+          if (!shiftError && newShift) {
+            targetShiftId = newShift.id;
+          }
+        }
+      }
+    }
+
     const { data: shiftBreak, error } = await supabase
       .from('shift_breaks')
-      .insert(data)
+      .insert({
+        shift_id: targetShiftId,
+        sitewide_break_id: data.sitewide_break_id,
+        name: data.name,
+        start_time: data.start_time,
+        end_time: data.end_time
+      })
       .select()
       .single();
     if (error) throw new Error(`Failed to create shift break: ${error.message}`);

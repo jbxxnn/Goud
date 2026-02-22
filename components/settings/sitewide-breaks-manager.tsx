@@ -290,7 +290,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateHoliday} className="grid gap-2 md:grid-cols-4 2xl:grid-cols-4 items-end mb-6">
+              <form onSubmit={handleCreateHoliday} className="grid gap-2 md:grid-cols-3 2xl:grid-cols-3 items-end mb-6">
                 <div className="grid gap-2 min-w-0">
                   <Label>Start Date & Time</Label>
                   <div className="flex gap-2 min-w-0">
@@ -315,14 +315,16 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={newHoliday.start_date ? new Date(newHoliday.start_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const current = newHoliday.start_date ? new Date(newHoliday.start_date) : new Date();
-                              date.setHours(current.getHours(), current.getMinutes());
+                              const hasStart = !!newHoliday.start_date;
+                              const currentStart = hasStart ? new Date(newHoliday.start_date) : null;
+                              date.setHours(currentStart ? currentStart.getHours() : 0, currentStart ? currentStart.getMinutes() : 0);
                               const newStartDateStr = formatDateTimeLocal(date.toISOString());
                               
                               // Auto-populate end date with same date
-                              const endCurrent = newHoliday.end_date ? new Date(newHoliday.end_date) : new Date();
+                              const hasEnd = !!newHoliday.end_date;
+                              const currentEnd = hasEnd ? new Date(newHoliday.end_date) : null;
                               const newEndDate = new Date(date);
-                              newEndDate.setHours(endCurrent.getHours(), endCurrent.getMinutes());
+                              newEndDate.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
                               const newEndDateStr = formatDateTimeLocal(newEndDate.toISOString());
                               
                               setNewHoliday({ 
@@ -380,8 +382,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={newHoliday.end_date ? new Date(newHoliday.end_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const current = newHoliday.end_date ? new Date(newHoliday.end_date) : new Date();
-                              date.setHours(current.getHours(), current.getMinutes());
+                              const hasEnd = !!newHoliday.end_date;
+                              const currentEnd = hasEnd ? new Date(newHoliday.end_date) : null;
+                              date.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
                               setNewHoliday({ ...newHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
                               setEndDateOpen(false);
                             }
@@ -755,13 +758,15 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={editingHoliday.start_date ? new Date(editingHoliday.start_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const current = editingHoliday.start_date ? new Date(editingHoliday.start_date) : new Date();
-                              date.setHours(current.getHours(), current.getMinutes());
+                              const hasStart = !!editingHoliday.start_date;
+                              const currentStart = hasStart ? new Date(editingHoliday.start_date) : null;
+                              date.setHours(currentStart ? currentStart.getHours() : 0, currentStart ? currentStart.getMinutes() : 0);
                               const newStartDateStr = formatDateTimeLocal(date.toISOString());
                               
-                              const endCurrent = editingHoliday.end_date ? new Date(editingHoliday.end_date) : new Date();
+                              const hasEnd = !!editingHoliday.end_date;
+                              const currentEnd = hasEnd ? new Date(editingHoliday.end_date) : null;
                               const newEndDate = new Date(date);
-                              newEndDate.setHours(endCurrent.getHours(), endCurrent.getMinutes());
+                              newEndDate.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
                               const newEndDateStr = formatDateTimeLocal(newEndDate.toISOString());
                               
                               setEditingHoliday({ 
@@ -819,8 +824,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={editingHoliday.end_date ? new Date(editingHoliday.end_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const current = editingHoliday.end_date ? new Date(editingHoliday.end_date) : new Date();
-                              date.setHours(current.getHours(), current.getMinutes());
+                              const hasEnd = !!editingHoliday.end_date;
+                              const currentEnd = hasEnd ? new Date(editingHoliday.end_date) : null;
+                              date.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
                               setEditingHoliday({ ...editingHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
                               setEditHolidayEndDateOpen(false);
                             }

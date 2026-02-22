@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -70,6 +71,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   const [showServices, setShowServices] = useState(false);
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+  const [recurrenceUntilOpen, setRecurrenceUntilOpen] = useState(false);
 
   const {
     register,
@@ -229,7 +231,9 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
       if (!result.success) {
         if (result.conflicts) {
-          alert(`${t('conflicts')}:\n${result.conflicts.map((c: any) => c.message).join('\n')}`);
+          toast.error(t('conflicts'), {
+            description: result.conflicts.map((c: any) => c.message).join('\n'),
+          });
         } else {
           throw new Error(result.error || 'Failed to save shift');
         }
@@ -246,7 +250,9 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       }
     } catch (err) {
       console.error('Error saving shift:', err);
-      alert(err instanceof Error ? err.message : 'Failed to save shift');
+      toast.error('Failed to save shift', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -567,7 +573,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                       value={watch('recurrence_frequency')}
                       onValueChange={(value) => setValue('recurrence_frequency', value as any)}
                     >
-                      <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
+                      <SelectTrigger className="bg-card h-10" style={{borderRadius: "1rem"}}>
                         <SelectValue placeholder={t('frequency')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -608,16 +614,56 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                   )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex-1 w-full">
                     <Label htmlFor="recurrence_until">{t('repeatUntil')}</Label>
-                    <Input
-                      id="recurrence_until"
-                      type="date"
-                      className="bg-card w-full" 
-                      style={{borderRadius: "1rem"}}
-                      min={watch('start_time') ? new Date(watch('start_time')).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
-                      {...register('recurrence_until')}
-                    />
+                    <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card",
+                            !watch('recurrence_until') && "text-muted-foreground"
+                          )}
+                          style={{ borderRadius: '1rem' }}
+                        >
+                          <HugeiconsIcon icon={Calendar01Icon} />
+                          {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : <span>Pick date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              const safeDate = new Date(date);
+                              safeDate.setHours(12);
+                              setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
+                              setRecurrenceUntilOpen(false);
+                            } else {
+                              setValue('recurrence_until', undefined);
+                              setRecurrenceUntilOpen(false);
+                            }
+                          }}
+                          initialFocus
+                          captionLayout="dropdown"
+                          fromYear={new Date().getFullYear() - 1}
+                          toYear={new Date().getFullYear() + 10}
+                          disabled={(date) => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            
+                            // Recurrence until date should be after the start date
+                            if (watch('start_time')) {
+                                const startDate = new Date(watch('start_time'));
+                                startDate.setHours(0,0,0,0);
+                                return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                            }
+                            return date < today;
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <p className="text-xs text-muted-foreground mt-1">
                       {t('repeatIndefinitely')}
                     </p>

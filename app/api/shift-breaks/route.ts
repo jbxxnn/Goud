@@ -4,13 +4,14 @@ import { ShiftService } from '@/lib/database/shifts';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const date = searchParams.get('date');
     const shiftId = searchParams.get('shift_id');
     
     if (!shiftId) {
       return NextResponse.json({ success: false, error: 'shift_id is required' }, { status: 400 });
     }
 
-    const shiftBreaks = await ShiftService.getShiftBreaks(shiftId);
+    const shiftBreaks = await ShiftService.getShiftBreaks(shiftId, date || undefined);
     return NextResponse.json({ success: true, data: shiftBreaks });
   } catch (error: any) {
     console.error('Error in GET /api/shift-breaks:', error);

@@ -179,6 +179,8 @@ export interface UpdateSitewideBreakRequest {
 
 export interface CreateShiftBreakRequest {
   shift_id: string;
+  parent_shift_id?: string;
+  exception_date?: string;
   sitewide_break_id?: string | null;
   name: string;
   start_time: string; // ISO timestamp
@@ -310,6 +312,8 @@ export interface CalendarEvent {
     services: string[]; // Service names
     is_recurring: boolean;
     recurrence_rule?: string | null;
+    _instanceDate?: string;
+    _originalShiftId?: string;
   };
 }
 
@@ -375,6 +379,8 @@ export function shiftToCalendarEvent(
       services: shift.services.map(s => s.service_name),
       is_recurring: shift.is_recurring,
       recurrence_rule: shift.recurrence_rule,
+      _instanceDate: shift._instanceDate,
+      _originalShiftId: shift._originalShiftId,
     },
   };
 }
