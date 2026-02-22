@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { UserSelect } from "@/calendar/components/header/user-select";
+import { LocationSelect } from "@/calendar/components/header/location-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { AddShiftDialog } from "@/calendar/components/dialogs/add-shift-dialog";
@@ -102,6 +103,7 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
             </Button>
           </div>
 
+          <LocationSelect />
           <UserSelect />
 
           {!hideAddButton && (

@@ -304,6 +304,10 @@ export interface CalendarEvent {
     id: string;
     name: string;
   };
+  location?: {
+    id: string;
+    name: string;
+  };
   // Additional metadata
   metadata?: {
     shift_id: string;
@@ -371,6 +375,10 @@ export function shiftToCalendarEvent(
     user: {
       id: shift.staff_id,
       name: `${shift.staff_first_name} ${shift.staff_last_name}`,
+    },
+    location: {
+      id: shift.location_id,
+      name: shift.location_name,
     },
     metadata: {
       shift_id: shift.id,

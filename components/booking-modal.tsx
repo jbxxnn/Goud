@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Save, X } from 'lucide-react';
+import { Pencil, Save, X, Loader } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { RepeatPrescriber } from './repeat-prescriber';
 import { differenceInMinutes } from 'date-fns';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface PolicyField {
   id: string;
@@ -31,64 +32,78 @@ interface BookingModalProps {
   onReschedule?: (booking: Booking) => void;
   onUpdate?: (booking: Booking) => void;
   onComplete?: (booking: Booking) => void;
+  onNoShow?: (booking: Booking) => void | Promise<void>;
   userRole?: string;
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string, locale: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('nl-NL', {
+  return date.toLocaleDateString(locale === 'nl' ? 'nl-NL' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
 };
 
-const formatTime = (dateString: string) => {
+const formatTime = (dateString: string, locale: string) => {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('nl-NL', {
+  return date.toLocaleTimeString(locale === 'nl' ? 'nl-NL' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit'
   });
 };
 
-const formatDuration = (minutes: number) => {
+const formatDuration = (minutes: number, t: (key: string, values?: any) => string) => {
   if (minutes < 60) {
-    return `${minutes} minutes`;
+    return t('durationFormats.minutes', { minutes });
   }
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return remainingMinutes > 0 ? `${hours} hour ${remainingMinutes} minutes` : `${hours} hour`;
+  if (hours === 1) {
+    return remainingMinutes > 0 
+      ? t('durationFormats.hourMinutes', { hour: 1, minutes: remainingMinutes }) 
+      : t('durationFormats.hour', { hour: 1 });
+  }
+  return remainingMinutes > 0 
+    ? t('durationFormats.hourMinutes', { hour: hours, minutes: remainingMinutes }) 
+    : t('durationFormats.hours', { hours });
 };
 
-const getStatusBadge = (status: string) => {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
-    pending: { variant: 'secondary', label: 'Pending' },
-    confirmed: { variant: 'default', label: 'Confirmed' },
-    cancelled: { variant: 'destructive', label: 'Cancelled' },
-    ongoing: { variant: 'secondary', label: 'Ongoing', className: 'bg-accent text-accent-foreground hover:bg-accent/80' },
-    completed: { variant: 'default', label: 'Completed', className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+const getStatusBadge = (status: string, t: (key: string) => string) => {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'noShow' | 'outline', label: string, className?: string }> = {
+    pending: { variant: 'secondary', label: t('pending') },
+    confirmed: { variant: 'default', label: t('confirmed') },
+    cancelled: { variant: 'destructive', label: t('cancelled') },
+    ongoing: { variant: 'secondary', label: t('ongoing'), className: 'bg-accent text-accent-foreground hover:bg-accent/80' },
+    completed: { variant: 'default', label: t('completed'), className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+    no_show: { variant: 'noShow', label: t('no_show') },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
-const getPaymentBadge = (status: string) => {
+const getPaymentBadge = (status: string, t: (key: string) => string) => {
   const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
-    unpaid: { variant: 'secondary', label: 'Unpaid' },
-    paid: { variant: 'default', label: 'Paid', className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
-    refunded: { variant: 'secondary', label: 'Refunded', className: 'bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90' },
+    unpaid: { variant: 'secondary', label: t('paymentStatus.unpaid') },
+    paid: { variant: 'default', label: t('paymentStatus.paid'), className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+    refunded: { variant: 'secondary', label: t('paymentStatus.refunded'), className: 'bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90' },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
-export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, userRole }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, onNoShow, userRole }: BookingModalProps) {
+  const t = useTranslations('BookingModal');
+  const tStatus = useTranslations('BookingStatus');
+  const locale = useLocale();
+
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isEditingInternalNotes, setIsEditingInternalNotes] = useState(false);
   const [internalNotesValue, setInternalNotesValue] = useState('');
   const [isSavingInternalNotes, setIsSavingInternalNotes] = useState(false);
+  const [isMarkingNoShow, setIsMarkingNoShow] = useState(false);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
 
   useEffect(() => {
@@ -134,15 +149,15 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const service = booking?.services;
   const location = booking?.locations;
   const staff = booking?.staff;
-  const clientName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Unknown' : 'N/A';
-  const staffName = staff ? [staff.first_name, staff.last_name].filter(Boolean).join(' ') || 'Unknown' : 'Unassigned';
-  const serviceDuration = service?.duration ? formatDuration(service.duration) : 'N/A';
+  const clientName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || t('placeholders.unknown') : t('placeholders.na');
+  const staffName = staff ? [staff.first_name, staff.last_name].filter(Boolean).join(' ') || t('placeholders.unknown') : t('placeholders.unassigned');
+  const serviceDuration = service?.duration ? formatDuration(service.duration, t) : t('placeholders.na');
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
-          <SheetTitle>Booking Details</SheetTitle>
+          <SheetTitle>{t('title')}</SheetTitle>
         </SheetHeader>
 
         {!booking ? (
@@ -150,11 +165,11 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
             {/* Status & Payment Skeleton */}
             <div className="flex items-center gap-4">
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Status</div>
+                <div className="text-sm text-muted-foreground mb-1">{t('status')}</div>
                 <Skeleton className="h-5 w-20" style={{ borderRadius: "0.5rem" }} />
               </div>
               <div>
-                <div className="text-sm text-muted-foreground mb-1">Payment</div>
+                <div className="text-sm text-muted-foreground mb-1">{t('payment')}</div>
                 <Skeleton className="h-5 w-16" style={{ borderRadius: "0.5rem" }} />
               </div>
             </div>
@@ -164,15 +179,15 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               <Skeleton className="h-6 w-40 mb-4" style={{ borderRadius: '0.5rem' }} /> {/* Header */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Name</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('name')}</div>
                   <Skeleton className="h-5 w-32" style={{ borderRadius: "0.5rem" }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Email</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('email')}</div>
                   <Skeleton className="h-5 w-48" style={{ borderRadius: "0.5rem" }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Phone</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('phone')}</div>
                   <Skeleton className="h-5 w-32" style={{ borderRadius: "0.5rem" }} />
                 </div>
               </div>
@@ -183,27 +198,27 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               <Skeleton className="h-6 w-40 mb-4" style={{ borderRadius: '0.5rem' }} /> {/* Header */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Date</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('date')}</div>
                   <Skeleton className="h-5 w-24" style={{ borderRadius: '0.5rem' }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Time</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('time')}</div>
                   <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Service</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('service')}</div>
                   <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Duration</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('duration')}</div>
                   <Skeleton className="h-5 w-24" style={{ borderRadius: '0.5rem' }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Location</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('location')}</div>
                   <Skeleton className="h-5 w-40" style={{ borderRadius: '0.5rem' }} />
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Staff</div>
+                  <div className="text-sm text-muted-foreground mb-1">{t('staff')}</div>
                   <Skeleton className="h-5 w-32" style={{ borderRadius: '0.5rem' }} />
                 </div>
               </div>
@@ -230,30 +245,30 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               {/* Status & Payment */}
               <div className="flex items-center gap-4">
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Status</div>
-                  {getStatusBadge(booking.status)}
+                  <div className="text-sm text-muted-foreground mb-1">{t('status')}</div>
+                  {getStatusBadge(booking.status, tStatus)}
                 </div>
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">Payment</div>
-                  {getPaymentBadge(booking.payment_status)}
+                  <div className="text-sm text-muted-foreground mb-1">{t('payment')}</div>
+                  {getPaymentBadge(booking.payment_status, t)}
                 </div>
               </div>
 
               {/* Client Information */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Client Information</h3>
+                <h3 className="font-semibold text-lg">{t('clientInfo')}</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <div className="text-muted-foreground">Name</div>
+                    <div className="text-muted-foreground">{t('name')}</div>
                     <div className="font-medium">{clientName}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Email</div>
-                    <div className="font-medium">{user?.email || 'N/A'}</div>
+                    <div className="text-muted-foreground">{t('email')}</div>
+                    <div className="font-medium">{user?.email || t('placeholders.na')}</div>
                   </div>
                   {user?.phone && (
                     <div>
-                      <div className="text-muted-foreground">Phone</div>
+                      <div className="text-muted-foreground">{t('phone')}</div>
                       <div className="font-medium">{user.phone}</div>
                     </div>
                   )}
@@ -262,19 +277,19 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
               {/* Appointment Details */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Appointment Details</h3>
+                <h3 className="font-semibold text-lg">{t('appointmentDetails')}</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <div className="text-muted-foreground">Date</div>
-                    <div className="font-medium">{formatDate(booking.start_time)}</div>
+                    <div className="text-muted-foreground">{t('date')}</div>
+                    <div className="font-medium">{formatDate(booking.start_time, locale)}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Time</div>
-                    <div className="font-medium">{formatTime(booking.start_time)} - {formatTime(booking.end_time)}</div>
+                    <div className="text-muted-foreground">{t('time')}</div>
+                    <div className="font-medium">{formatTime(booking.start_time, locale)} - {formatTime(booking.end_time, locale)}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Service</div>
-                    <div className="font-medium">{service?.name || 'N/A'} {booking.parent_booking_id && (
+                    <div className="text-muted-foreground">{t('service')}</div>
+                    <div className="font-medium">{service?.name || t('placeholders.na')} {booking.parent_booking_id && (
                       <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
                         {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
                       </Badge>
@@ -282,15 +297,15 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Duration</div>
+                    <div className="text-muted-foreground">{t('duration')}</div>
                     <div className="font-medium">{serviceDuration}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Location</div>
-                    <div className="font-medium">{location?.name || 'N/A'}</div>
+                    <div className="text-muted-foreground">{t('location')}</div>
+                    <div className="font-medium">{location?.name || t('placeholders.na')}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Staff</div>
+                    <div className="text-muted-foreground">{t('staff')}</div>
                     <div className="font-medium">{staffName}</div>
                   </div>
                 </div>
@@ -298,7 +313,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
               {/* Price Breakdown */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Price Breakdown</h3>
+                <h3 className="font-semibold text-lg">{t('priceBreakdown')}</h3>
                 <div className="space-y-2 text-sm">
                   {/* Calculate base service price */}
                   {(() => {
@@ -314,14 +329,14 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     return (
                       <>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Base Service</span>
+                          <span className="text-muted-foreground">{t('baseService')}</span>
                           <span className="font-medium">{formatEuroCents(basePrice)}</span>
                         </div>
 
                         {/* Policy Extras */}
                         {policyTotal > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Service Policy</span>
+                            <span className="text-muted-foreground">{t('servicePolicy')}</span>
                             <span className="font-medium">{formatEuroCents(policyTotal)}</span>
                           </div>
                         )}
@@ -329,13 +344,13 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         {/* Add-ons */}
                         {addonsTotal > 0 && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Add-ons</span>
+                            <span className="text-muted-foreground">{t('addons')}</span>
                             <span className="font-medium">{formatEuroCents(addonsTotal)}</span>
                           </div>
                         )}
 
                         <div className="flex justify-between font-semibold border-t pt-2 mt-2">
-                          <span>Total</span>
+                          <span>{t('total')}</span>
                           <span>{formatEuroCents(booking.price_eur_cents)}</span>
                         </div>
                       </>
@@ -347,7 +362,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               {/* Add-ons Details */}
               {booking.addons && booking.addons.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">Selected Add-ons</h3>
+                  <h3 className="font-semibold text-lg">{t('selectedAddons')}</h3>
                   <div className="space-y-2">
                     {booking.addons.map((addon) => (
                       <div key={addon.id} className="flex justify-between items-start p-3 bg-muted rounded-md text-sm">
@@ -357,7 +372,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                             <div className="text-muted-foreground text-xs mt-1">{addon.description}</div>
                           )}
                           {addon.quantity > 1 && (
-                            <div className="text-muted-foreground text-xs mt-1">Quantity: {addon.quantity}</div>
+                            <div className="text-muted-foreground text-xs mt-1">{t('quantity', { quantity: addon.quantity })}</div>
                           )}
                         </div>
                         <div className="font-medium ml-4">{formatEuroCents(addon.price_eur_cents * addon.quantity)}</div>
@@ -398,7 +413,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
                 return (
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">Policy Responses</h3>
+                    <h3 className="font-semibold text-lg">{t('policyResponses')}</h3>
                     <div className="space-y-2">
                       {answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
                         // Handle both fieldId and field_id formats
@@ -407,7 +422,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         const questionText = field?.title || fieldId || 'Unknown Field';
 
                         // Format the answer value
-                        let answerText = 'N/A';
+                        let answerText = t('placeholders.na');
                         const rawValue = answer.value;
 
                         if (rawValue !== undefined && rawValue !== null) {
@@ -430,7 +445,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                               answerText = rawValue.map((v: unknown) => String(v)).join(', ');
                             }
                           } else if (typeof rawValue === 'boolean') {
-                            answerText = rawValue ? 'Yes' : 'No';
+                            answerText = rawValue ? t('boolean.yes') : t('boolean.no');
                           } else if (typeof rawValue === 'string' && rawValue.length > 0) {
                             // Check if it's a UUID (36 chars with dashes)
                             if (rawValue.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
@@ -457,7 +472,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                             <div className="text-muted-foreground">{answerText}</div>
                             {answer.priceEurCents && answer.priceEurCents > 0 && (
                               <div className="text-muted-foreground mt-1">
-                                Additional Cost: {formatEuroCents(answer.priceEurCents)}
+                                {t('additionalCost', { price: formatEuroCents(answer.priceEurCents) })}
                               </div>
                             )}
                           </div>
@@ -471,7 +486,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               {/* Notes */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Notes</h3>
+                  <h3 className="font-semibold text-lg">{t('notes')}</h3>
                   {!isEditingNotes && ['confirmed', 'ongoing'].includes(booking.status) && (
                     <Button
                       type="button"
@@ -480,7 +495,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClick={() => setIsEditingNotes(true)}
                     >
                       <Pencil className="w-4 h-4 mr-2" />
-                      {booking.notes ? 'Edit' : 'Add Notes'}
+                      {booking.notes ? t('edit') : t('addNotes')}
                     </Button>
                   )}
                 </div>
@@ -490,7 +505,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     <Textarea
                       value={notesValue}
                       onChange={(e) => setNotesValue(e.target.value)}
-                      placeholder="Add internal notes about this booking..."
+                      placeholder={t('notesPlaceholder')}
                       rows={4}
                       className="resize-none"
                     />
@@ -505,7 +520,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         }}
                       >
                         <X className="w-4 h-4 mr-2" />
-                        Cancel
+                        {t('cancel')}
                       </Button>
                       <Button
                         type="button"
@@ -521,17 +536,17 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
                             const data = await response.json();
                             if (!response.ok) {
-                              throw new Error(data.error || 'Failed to update notes');
+                              throw new Error(data.error || t('toasts.notesUpdateError'));
                             }
 
-                            toast.success('Notes updated successfully');
+                            toast.success(t('toasts.notesUpdateSuccess'));
                             setIsEditingNotes(false);
                             if (onUpdate && data.booking) {
                               onUpdate(data.booking);
                             }
                           } catch (error) {
-                            toast.error('Failed to update notes', {
-                              description: error instanceof Error ? error.message : 'Unknown error',
+                            toast.error(t('toasts.notesUpdateError'), {
+                              description: error instanceof Error ? error.message : t('placeholders.unknown'),
                             });
                           } finally {
                             setIsSavingNotes(false);
@@ -540,7 +555,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         disabled={isSavingNotes}
                       >
                         <Save className="w-4 h-4 mr-2" />
-                        {isSavingNotes ? 'Saving...' : 'Save'}
+                        {isSavingNotes ? t('saving') : t('save')}
                       </Button>
                     </div>
                   </div>
@@ -551,7 +566,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     </div>
                   ) : (
                     <div className="text-sm p-3 bg-muted rounded-md text-muted-foreground italic">
-                      No notes added yet
+                      {t('noNotes')}
                     </div>
                   )
                 )}
@@ -560,7 +575,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               {/* Staff Notes (Assistant <-> Staff) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Staff Notes</h3>
+                  <h3 className="font-semibold text-lg">{t('staffNotes')}</h3>
                   {!isEditingInternalNotes && userRole !== 'client' && (
                     <Button
                       type="button"
@@ -569,7 +584,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClick={() => setIsEditingInternalNotes(true)}
                     >
                       <Pencil className="w-4 h-4 mr-2" />
-                      {booking.internal_notes ? 'Edit' : 'Add Note'}
+                      {booking.internal_notes ? t('edit') : t('addNote')}
                     </Button>
                   )}
                 </div>
@@ -579,7 +594,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     <Textarea
                       value={internalNotesValue}
                       onChange={(e) => setInternalNotesValue(e.target.value)}
-                      placeholder={userRole === 'assistant' ? "Leave a note for the staff member..." : "Internal notes for staff..."}
+                      placeholder={userRole === 'assistant' ? t('staffNotesPlaceholderAssistant') : t('staffNotesPlaceholderStaff')}
                       rows={3}
                       className="resize-none"
                     />
@@ -594,7 +609,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         }}
                       >
                         <X className="w-4 h-4 mr-2" />
-                        Cancel
+                        {t('cancel')}
                       </Button>
                       <Button
                         type="button"
@@ -610,17 +625,17 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
                             const data = await response.json();
                             if (!response.ok) {
-                              throw new Error(data.error || 'Failed to update staff notes');
+                              throw new Error(data.error || t('toasts.staffNotesUpdateError'));
                             }
 
-                            toast.success('Staff notes updated successfully');
+                            toast.success(t('toasts.staffNotesUpdateSuccess'));
                             setIsEditingInternalNotes(false);
                             if (onUpdate && data.booking) {
                               onUpdate(data.booking);
                             }
                           } catch (error) {
-                            toast.error('Failed to update staff notes', {
-                              description: error instanceof Error ? error.message : 'Unknown error',
+                            toast.error(t('toasts.staffNotesUpdateError'), {
+                              description: error instanceof Error ? error.message : t('placeholders.unknown'),
                             });
                           } finally {
                             setIsSavingInternalNotes(false);
@@ -629,7 +644,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                         disabled={isSavingInternalNotes}
                       >
                         <Save className="w-4 h-4 mr-2" />
-                        {isSavingInternalNotes ? 'Saving...' : 'Save'}
+                        {isSavingInternalNotes ? t('saving') : t('save')}
                       </Button>
                     </div>
                   </div>
@@ -640,7 +655,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     </div>
                   ) : (
                     <div className="text-sm p-3 bg-muted rounded-md text-muted-foreground italic">
-                      No staff notes
+                      {t('noStaffNotes')}
                     </div>
                   )
                 )}
@@ -648,19 +663,19 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
               {/* Booking Metadata */}
               <div className="space-y-2 pt-4 border-t">
-                <h3 className="font-semibold text-lg">Booking Information</h3>
+                <h3 className="font-semibold text-lg">{t('bookingInfo')}</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <div className="text-muted-foreground">Booking ID</div>
+                    <div className="text-muted-foreground">{t('bookingId')}</div>
                     <div className="font-medium font-mono text-xs">{booking.id}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Created</div>
-                    <div className="font-medium">{new Date(booking.created_at).toLocaleString('nl-NL')}</div>
+                    <div className="text-muted-foreground">{t('created')}</div>
+                    <div className="font-medium">{formatDate(booking.created_at, locale)}</div>
                   </div>
                   <div>
-                    <div className="text-muted-foreground">Last Updated</div>
-                    <div className="font-medium">{new Date(booking.updated_at).toLocaleString('nl-NL')}</div>
+                    <div className="text-muted-foreground">{t('lastUpdated')}</div>
+                    <div className="font-medium">{formatDate(booking.updated_at, locale)}</div>
                   </div>
                 </div>
               </div>
@@ -682,7 +697,33 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     }}
                     className="bg-secondary-foreground hover:bg-secondary-foreground/70"
                   >
-                    Cancel Appointment
+                    {t('btnCancel')}
+                  </Button>
+                )}
+                {onNoShow && ['confirmed', 'completed', 'ongoing'].includes(booking.status) && (
+                  <Button
+                    variant="outline"
+                    className="border-orange-500 text-orange-500 hover:bg-orange-50 min-w-[124px]"
+                    disabled={isMarkingNoShow}
+                    onClick={async () => {
+                      try {
+                        setIsMarkingNoShow(true);
+                        await onNoShow(booking);
+                        onClose();
+                      } catch (err) {
+                        // Only reset on error so user can try again
+                        setIsMarkingNoShow(false);
+                      }
+                    }}
+                  >
+                    {isMarkingNoShow ? (
+                      <>
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
+                        {t('btnMarking')}
+                      </>
+                    ) : (
+                      t('btnNoShow')
+                    )}
                   </Button>
                 )}
                 {onReschedule && ['pending', 'confirmed'].includes(booking.status) && (
@@ -693,7 +734,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onReschedule(booking);
                     }}
                   >
-                    Reschedule
+                    {t('btnReschedule')}
                   </Button>
                 )}
                 {onComplete && booking.status === 'ongoing' && (
@@ -704,7 +745,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onComplete(booking);
                     }}
                   >
-                    Complete Appointment
+                    {t('btnComplete')}
                   </Button>
                 )}
                 {onDelete && ['cancelled', 'completed'].includes(booking.status) && (
@@ -716,7 +757,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     }}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    Delete Booking
+                    {t('btnDelete')}
                   </Button>
                 )}
                 {booking.service_id && booking.status === 'completed' && userRole !== 'assistant' && (

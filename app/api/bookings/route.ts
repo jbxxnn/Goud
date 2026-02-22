@@ -382,26 +382,87 @@ export async function GET(req: NextRequest) {
     const dateTo = searchParams.get('dateTo');
     const search = searchParams.get('search');
     const staffId = searchParams.get('staffId');
+    const locationId = searchParams.get('locationId');
 
     const supabase = getServiceSupabase();
 
     // If search query provided, first find matching user IDs
     let matchingUserIds: string[] | null = null;
+    let exactDateFilter = '';
+    let partialDateUserIds: string[] = [];
+    let numbers: string[] = [];
+    let searchTerm = '';
+    let terms: string[] = [];
+
     if (search && search.trim()) {
-      const searchTerm = search.trim();
-      const { data: matchingUsers, error: userSearchError } = await supabase
-        .from('users')
-        .select('id')
-        .or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
+      searchTerm = search.trim();
+      
+      const isDutchDate = /^\d{1,2}[\s\-./]\d{1,2}[\s\-./]\d{2,4}$/.test(searchTerm);
+      const isIsoDate = /^\d{4}[\s\-./]\d{1,2}[\s\-./]\d{1,2}$/.test(searchTerm);
+      const isPartialDate = /^[0-9\-\/.\s]+$/.test(searchTerm);
+      
+      if (isDutchDate) {
+          const parts = searchTerm.split(/[\s\-./]+/);
+          let y = parts[2];
+          if (y.length === 2) y = parseInt(y) > 20 ? `19${y}` : `20${y}`;
+          const m = parts[1].padStart(2, '0');
+          const d = parts[0].padStart(2, '0');
+          exactDateFilter = `${y}-${m}-${d}`;
+      } else if (isIsoDate) {
+          const parts = searchTerm.split(/[\s\-./]+/);
+          const y = parts[0];
+          const m = parts[1].padStart(2, '0');
+          const d = parts[2].padStart(2, '0');
+          exactDateFilter = `${y}-${m}-${d}`;
+      } else if (isPartialDate) {
+          // It's a partial date like "2026" or "02-20". Supabase doesn't support ilike on dates.
+          // We will fetch all booking IDs and their dates, and filter them in JS.
+          const { data: partialBookings } = await supabase.from('bookings').select('id, birth_date').not('birth_date', 'is', null);
+          if (partialBookings) {
+             const cleanSearch = searchTerm.replace(/[\s./]/g, '-');
+             const matchedIds = partialBookings
+                 .filter(b => b.birth_date && b.birth_date.includes(cleanSearch))
+                 .map(b => b.id);
+             
+             if (matchedIds.length > 0) {
+                 exactDateFilter = `partial_ids:${matchedIds.join(',')}`;
+             } else {
+                 exactDateFilter = 'partial_ids:none';
+             }
+          }
+      }
+
+      let queryBuilder = supabase.from('users').select('id');
+      // Instead of keeping users.birth_date, we will just use the `first_name`, `last_name`, and `email` for users table search
+      terms = searchTerm.split(/\s+/).filter(Boolean);
+      const orConditions = terms.map(term => `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`);
+      
+      orConditions.forEach(condition => {
+          queryBuilder = queryBuilder.or(condition);
+      });
+
+      const { data: matchingUsers, error: userSearchError } = await queryBuilder;
+      
+      console.log('SearchTerm:', searchTerm);
+      console.log('Terms:', terms);
+      console.log('exactDateFilter:', exactDateFilter);
+      console.log('partialDateUserIds:', partialDateUserIds);
+      console.log('matchingUsers from regex/name:', matchingUsers);
 
       if (userSearchError) {
         return NextResponse.json({ error: 'Failed to search users' }, { status: 500 });
       }
 
-      matchingUserIds = matchingUsers?.map(u => u.id) || [];
-      if (matchingUserIds.length === 0) {
-        // No matching users, return empty result
+      let matchingUserIdsSet = new Set<string>();
+      if (matchingUsers) {
+        matchingUsers.forEach(u => matchingUserIdsSet.add(u.id));
+      }
+
+      matchingUserIds = Array.from(matchingUserIdsSet);
+      if (matchingUserIds.length === 0 && !exactDateFilter) {
+        // No matching users and no valid date filter constructed, return empty
         return NextResponse.json({
+          debug_info: { searchTerm, terms, exactDateFilter, partialDateUserIds, matchingUsers },
           success: true,
           data: [],
           pagination: {
@@ -453,14 +514,47 @@ export async function GET(req: NextRequest) {
       query = query.eq('client_id', patientId);
     }
 
-    // If search provided, filter by matching user IDs
+    // If search provided, filter by matching user IDs for the PATIENT and exact DOB
     if (matchingUserIds !== null && matchingUserIds.length > 0) {
-      query = query.in('created_by', matchingUserIds);
+      const idList = `(${matchingUserIds.join(',')})`;
+      
+      if (exactDateFilter) {
+          if (exactDateFilter.startsWith('partial_ids:')) {
+             const val = exactDateFilter.split(':')[1];
+             if (val !== 'none') {
+                query = query.or(`client_id.in.${idList},created_by.in.${idList},id.in.(${val})`);
+             } else {
+                query = query.or(`client_id.in.${idList},created_by.in.${idList}`);
+             }
+          } else {
+             query = query.or(`client_id.in.${idList},created_by.in.${idList},birth_date.eq.${exactDateFilter}`);
+          }
+      } else {
+          query = query.or(`client_id.in.${idList},created_by.in.${idList}`);
+      }
+    } else if (exactDateFilter) {
+        // No user match, but date match
+        if (exactDateFilter.startsWith('partial_ids:')) {
+           const val = exactDateFilter.split(':')[1];
+           if (val !== 'none') {
+               query = query.or(`id.in.(${val})`);
+           } else {
+               // Force empty result because date didn't match anything
+               query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+           }
+        } else {
+           query = query.or(`birth_date.eq.${exactDateFilter}`);
+        }
     }
 
     // Filter by staffId if provided
     if (staffId) {
       query = query.eq('staff_id', staffId);
+    }
+
+    // Filter by locationId if provided
+    if (locationId && locationId !== 'all') {
+      query = query.eq('location_id', locationId);
     }
 
     // Filter by status if provided
@@ -491,8 +585,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message, details: error }, { status: 500 });
     }
 
+    let finalData = data || [];
+    let finalCount = count || 0;
+
     // Fetch add-ons for all bookings
-    const bookingIds = (data || []).map((b) => b.id);
+    const bookingIds = finalData.map((b) => b.id);
     const addonsMap: Record<string, Array<{
       id: string;
       name: string;
@@ -548,16 +645,16 @@ export async function GET(req: NextRequest) {
     }
 
     // Attach addons to each booking
-    const bookingsWithAddons = (data || []).map((booking) => ({
+    const bookingsWithAddons = finalData.map((booking) => ({
       ...booking,
       addons: addonsMap[booking.id] || [],
     }));
 
     // Manual fetch for 'users' (client info)
-    // Priority: created_by (Booker) -> client_id (Owner/Patient)
+    // Priority MUST be created_by (Booker) -> client_id (Patient fallback)
     // We fetch users for both fields to ensure we have the data.
-    const createdByIds = (data || []).map(b => b.created_by).filter(Boolean) as string[];
-    const clientIds = (data || []).map(b => b.client_id).filter(Boolean) as string[];
+    const createdByIds = finalData.map(b => b.created_by).filter(Boolean) as string[];
+    const clientIds = finalData.map(b => b.client_id).filter(Boolean) as string[];
     const userIds = [...new Set([...createdByIds, ...clientIds])];
 
     let usersMap: Record<string, any> = {};
@@ -581,7 +678,7 @@ export async function GET(req: NextRequest) {
       isRepeat: !!b.parent_booking_id
     }));
 
-    const totalPages = count ? Math.ceil(count / limit) : 0;
+    const totalPagesValue = finalCount ? Math.ceil(finalCount / limit) : 0;
 
     return NextResponse.json({
       success: true,
@@ -589,8 +686,8 @@ export async function GET(req: NextRequest) {
       pagination: {
         page,
         limit,
-        total: count || 0,
-        total_pages: totalPages,
+        total: finalCount,
+        total_pages: totalPagesValue,
       },
     });
   } catch (e: unknown) {

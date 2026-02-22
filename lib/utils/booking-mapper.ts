@@ -66,5 +66,9 @@ export function bookingToCalendarEvent(booking: Booking): IEvent {
         color,
         description,
         user,
+        location: booking.locations ? {
+            id: booking.locations.id,
+            name: booking.locations.name
+        } : undefined,
     } as IEvent;
 }

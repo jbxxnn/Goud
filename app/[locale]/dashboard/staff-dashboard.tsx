@@ -15,7 +15,6 @@ export default function StaffDashboard({ staff }: StaffDashboardProps) {
 
     return (
         <div className="container py-6 space-y-6">
-            <h1 className="text-2xl font-bold">Staff Dashboard</h1>
             <BookingsClient 
                 initialBookings={[]}
                 initialPagination={{

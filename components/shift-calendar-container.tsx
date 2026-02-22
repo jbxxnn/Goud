@@ -22,7 +22,7 @@ interface IProps {
 }
 
 export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated, hideAddButton }: IProps) {
-  const { selectedDate, selectedUserId, events } = useCalendar();
+  const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
@@ -34,7 +34,8 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
         const yearEnd = new Date(selectedDate.getFullYear(), 11, 31, 23, 59, 59, 999);
         const isInSelectedYear = eventStartDate <= yearEnd && eventEndDate >= yearStart;
         const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-        return isInSelectedYear && isUserMatch;
+        const isLocationMatch = !selectedLocationId || selectedLocationId === "all" || event.location?.id === selectedLocationId;
+        return isInSelectedYear && isUserMatch && isLocationMatch;
       }
 
       if (view === "month" || view === "agenda") {
@@ -42,7 +43,8 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
         const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59, 999);
         const isInSelectedMonth = eventStartDate <= monthEnd && eventEndDate >= monthStart;
         const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-        return isInSelectedMonth && isUserMatch;
+        const isLocationMatch = !selectedLocationId || selectedLocationId === "all" || event.location?.id === selectedLocationId;
+        return isInSelectedMonth && isUserMatch && isLocationMatch;
       }
 
       if (view === "week") {
@@ -58,7 +60,8 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
 
         const isInSelectedWeek = eventStartDate <= weekEnd && eventEndDate >= weekStart;
         const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-        return isInSelectedWeek && isUserMatch;
+        const isLocationMatch = !selectedLocationId || selectedLocationId === "all" || event.location?.id === selectedLocationId;
+        return isInSelectedWeek && isUserMatch && isLocationMatch;
       }
 
       if (view === "day") {
@@ -66,10 +69,11 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
         const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
         const isInSelectedDay = eventStartDate <= dayEnd && eventEndDate >= dayStart;
         const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-        return isInSelectedDay && isUserMatch;
+        const isLocationMatch = !selectedLocationId || selectedLocationId === "all" || event.location?.id === selectedLocationId;
+        return isInSelectedDay && isUserMatch && isLocationMatch;
       }
     });
-  }, [selectedDate, selectedUserId, events, view]);
+  }, [selectedDate, selectedUserId, selectedLocationId, events, view]);
 
   const singleDayEvents = filteredEvents.filter(event => {
     const startDate = parseISO(event.startDate);

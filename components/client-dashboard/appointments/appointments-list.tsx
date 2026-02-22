@@ -177,15 +177,15 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'confirmed':
-                return 'bg-blue-600 text-white hover:bg-blue-600/80 border-blue-200';
+                return 'bg-blue-600 text-white hover:bg-blue-600 border-blue-200';
             case 'pending':
-                return 'bg-yellow-600 text-white hover:bg-yellow-600/80 border-yellow-200';
+                return 'bg-yellow-600 text-white hover:bg-yellow-600 border-yellow-200';
             case 'cancelled':
-                return 'bg-red-600 text-white hover:bg-red-600/80 border-red-200';
+                return 'bg-red-600 text-white hover:bg-red-600 border-red-200';
             case 'completed':
-                return 'bg-green-600 text-white hover:bg-green-600/80 border-green-200';
+                return 'bg-green-600 text-white hover:bg-green-600 border-green-200';
             default:
-                return 'bg-gray-600 text-white hover:bg-gray-600/80';
+                return 'bg-gray-600 text-white hover:bg-gray-600';
         }
     };
 
@@ -239,7 +239,8 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                 placeholder={t('searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                className="w-full pl-9 h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                style={{ borderRadius: '1rem' }}
                             />
                         </div>
                     </div>
@@ -249,7 +250,8 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        style={{ borderRadius: '1rem' }}
                     >
                         <option value="all">{t('filters.allStatuses')}</option>
                         <option value="pending">{t('filters.pending')}</option>
@@ -264,16 +266,18 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder={t('filters.from')}
+                        style={{ borderRadius: '1rem' }}
                     />
                     <span className="text-muted-foreground">-</span>
                     <input
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         placeholder={t('filters.to')}
+                        style={{ borderRadius: '1rem' }}
                     />
                 </div>
 
@@ -310,7 +314,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                 <TableHead>{t('table.dateTime')}</TableHead>
                                 {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
                                 <TableHead>{t('table.service')}</TableHead>
-                                <TableHead>{t('table.staff')}</TableHead>
+                                {/* <TableHead>{t('table.staff')}</TableHead> */}
                                 <TableHead>{t('table.location')}</TableHead>
                                 <TableHead>{t('table.status')}</TableHead>
                                 <TableHead className="text-right">{t('table.actions')}</TableHead>
@@ -366,7 +370,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>{booking.staff?.first_name || t('table.staff')}</TableCell>
+                                    {/* <TableCell>{booking.staff?.first_name || t('table.staff')}</TableCell> */}
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span>{booking.locations?.name || t('table.location')}</span>

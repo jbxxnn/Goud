@@ -14,12 +14,13 @@ import { Booking, BookingStatus } from '@/lib/types/booking';
 import { differenceInMinutes } from 'date-fns';
 
 const getStatusBadge = (status: BookingStatus, t: any) => {
-    const variants: Record<BookingStatus, { variant: 'confirmed' | 'pending' | 'destructive' | 'ongoing' | 'completed' | 'default' | 'secondary' | 'outline', label: string }> = {
+    const variants: Record<BookingStatus, { variant: 'confirmed' | 'pending' | 'destructive' | 'ongoing' | 'completed' | 'default' | 'noShow' | 'secondary' | 'outline', label: string }> = {
         pending: { variant: 'pending', label: t('pending') },
         confirmed: { variant: 'confirmed', label: t('confirmed') },
         cancelled: { variant: 'destructive', label: t('cancelled') },
         ongoing: { variant: 'ongoing', label: t('ongoing') },
         completed: { variant: 'completed', label: t('completed') },
+        no_show: { variant: 'noShow', label: t('no_show') },
     };
     const config = variants[status] || { variant: 'secondary', label: status || 'Unknown' };
     return <Badge variant={config.variant}>{config.label}</Badge>;

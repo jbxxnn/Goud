@@ -78,7 +78,7 @@ export type BookingState = {
     isTwin: boolean;
 };
 
-export type BookingStatus = 'confirmed' | 'pending' | 'cancelled' | 'ongoing' | 'completed';
+export type BookingStatus = 'confirmed' | 'pending' | 'cancelled' | 'ongoing' | 'completed' | 'no_show';
 
 export interface Booking {
     id: string;
@@ -111,6 +111,7 @@ export interface Booking {
         duration?: number;
     } | null;
     locations: {
+        id: string;
         name: string;
         address?: string;
     } | null;

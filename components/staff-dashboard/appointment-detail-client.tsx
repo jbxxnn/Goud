@@ -44,8 +44,9 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     const queryClient = useQueryClient();
     // const [notes, setNotes] = useState(booking.internal_notes || '');
     // const [isSaving, setIsSaving] = useState(false);
+    // const [isCompleting, setIsCompleting] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
-
+    const [isNoShowing, setIsNoShowing] = useState(false);
     // Gestational Age Calculation
     const calculateGA = () => {
         if (!booking.due_date) return null;
@@ -144,10 +145,35 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         {booking.status === 'completed' && (
                             <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                         )}
-                        {booking.status === 'confirmed' && (
-                            <Button
-                                disabled={isCompleting}
-                                onClick={async () => {
+                        {['confirmed', 'completed', 'ongoing'].includes(booking.status) && (
+                            <>
+                                <Button
+                                    disabled={isNoShowing || isCompleting}
+                                    variant="outline"
+                                    onClick={async () => {
+                                        try {
+                                            setIsNoShowing(true);
+                                            const res = await fetch(`/api/bookings/${booking.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ status: 'no_show' })
+                                            });
+                                            if (!res.ok) throw new Error('Failed to mark as no show');
+                                            toast.success(t('toasts.noShow', { fallback: 'Marked as no show' }));
+                                            queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                                            router.refresh();
+                                        } catch (e) {
+                                            toast.error(t('toasts.noShowError', { fallback: 'Failed to mark as no show' }));
+                                            setIsNoShowing(false);
+                                        }
+                                    }}
+                                >
+                                    {isNoShowing ? t('markingNoShow', { fallback: 'Marking...' }) : t('markNoShow', { fallback: 'Mark No Show' })}
+                                </Button>
+                                {booking.status === 'confirmed' && (
+                                <Button
+                                    disabled={isCompleting}
+                                    onClick={async () => {
                                     try {
                                         setIsCompleting(true);
                                         const res = await fetch(`/api/bookings/${booking.id}`, {
@@ -167,6 +193,8 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             >
                                 {isCompleting ? t('completing') : t('completeAppointment')}
                             </Button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

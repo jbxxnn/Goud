@@ -9,17 +9,18 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive",
         outline: "text-foreground",
-        confirmed: "bg-blue-600 border-blue-600 text-white hover:bg-blue-200/80",
-        pending: "bg-yellow-600 border-yellow-600 text-white hover:bg-yellow-200/80",
-        cancelled: "bg-red-600 border-red-600 text-white hover:bg-red-200/80",
-        ongoing: "bg-blue-600 border-blue-600 text-white hover:bg-blue-200/80",
-        completed: "bg-green-600 border-green-600 text-white hover:bg-green-200/80",
+        confirmed: "bg-blue-600 border-blue-600 text-white hover:bg-blue-200",
+        pending: "bg-yellow-600 border-yellow-600 text-white hover:bg-yellow-200",
+        cancelled: "bg-red-600 border-red-600 text-white hover:bg-red-200",
+        ongoing: "bg-blue-600 border-blue-600 text-white hover:bg-blue-200",
+        completed: "bg-green-600 border-green-600 text-white hover:bg-green-200",
+        noShow: "bg-gray-600 border-gray-600 text-white hover:bg-gray-200",
       },
     },
     defaultVariants: {

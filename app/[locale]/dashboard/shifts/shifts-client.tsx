@@ -174,6 +174,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
         color: calendarEvent.color,
         description: calendarEvent.description,
         user: calendarEvent.user,
+        location: calendarEvent.location,
         metadata: calendarEvent.metadata,
       };
     });
@@ -221,6 +222,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
           {users.length > 0 ? (
             <CalendarProvider
               users={users}
+              locations={locations}
               events={events as unknown as IEvent[]}
               initialSettings={initialCalendarSettings}
             >

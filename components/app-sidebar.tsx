@@ -86,17 +86,17 @@ const allMenuItems: MenuItem[] = [
     roles: ['admin', 'assistant'], // Admin and Assistant
   },
   {
-    title: "Leave Requests",
-    url: "#",
-    comingsoon: "coming soon",
-    icon: <HugeiconsIcon icon={Calendar02Icon} />,
-    roles: ['admin'], // Admin only
-  },
-  {
     title: "Settings",
     url: "/dashboard/settings",
     // comingsoon: "coming soon",
     icon: <HugeiconsIcon icon={DashboardSquare03Icon} />,
+    roles: ['admin'], // Admin only
+  },
+  {
+    title: "Leave Requests",
+    url: "#",
+    comingsoon: "coming soon",
+    icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin'], // Admin only
   },
   {

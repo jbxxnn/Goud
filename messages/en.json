@@ -906,6 +906,8 @@
             "pending": "Pending",
             "confirmed": "Confirmed",
             "cancelled": "Cancelled",
+            "location": "Location",
+            "allLocations": "All Locations",
             "from": "From",
             "to": "To",
             "search": "Search",
@@ -930,7 +932,8 @@
             "cancelError": "Failed to cancel booking",
             "deleteSuccess": "Booking deleted",
             "deleteSuccessDesc": "The booking has been permanently deleted.",
-            "deleteError": "Failed to delete booking"
+            "deleteError": "Failed to delete booking",
+            "noShowSuccess": "Successfully marked as no show"
         },
         "dialog": {
             "deleteTitle": "Delete Booking",
@@ -982,7 +985,8 @@
         "pending": "Pending",
         "cancelled": "Cancelled",
         "ongoing": "Ongoing",
-        "completed": "Completed"
+        "completed": "Completed",
+        "no_show": "No Show"
     },
     "Table": {
         "searchPlaceholder": "Search...",
@@ -1292,6 +1296,8 @@
         "error": "An error occurred"
     },
     "AppointmentDetail": {
+        "markNoShow": "Mark No Show",
+        "markingNoShow": "Marking...",
         "backToDashboard": "Back to Dashboard",
         "internalNotes": "Internal Staff Notes",
         "linkedToParent": "Linked to Parent Screening",
@@ -1326,7 +1332,9 @@
             "notesFailed": "Failed to save notes",
             "completed": "Appointment marked as completed",
             "completeError": "Failed to complete appointment",
-            "completeFailed": "Failed to complete"
+            "completeFailed": "Failed to complete",
+            "noShow": "Marked as no show",
+            "noShowError": "Failed to mark as no show"
         },
         "medicalNotesAndChecklist": "Medical / Internal Notes & Checklist"
     },
@@ -1351,7 +1359,7 @@
         "sections": {
             "overdueTasks": "Overdue Tasks",
             "upcomingTasks": "Upcoming Tasks",
-            "upcomingAppointments": "Upcoming Appointments"
+            "noShowAppointments": "No Show Appointments"
         },
         "tasks": {
             "empty": "No pending tasks for upcoming appointments.",
@@ -1361,7 +1369,7 @@
             "markComplete": "Mark as complete"
         },
         "appointments": {
-            "empty": "No upcoming appointments found.",
+            "empty": "No no-show appointments found.",
             "viewAll": "View All Bookings"
         },
         "dialog": {
@@ -1385,6 +1393,80 @@
             "description": "Add a note for the staff regarding this appointment. This is visible to staff and admins.",
             "label": "Note Content",
             "placeholder": "Enter important details for the staff member..."
+        }
+    },
+    "BookingModal": {
+        "title": "Booking Details",
+        "status": "Status",
+        "payment": "Payment",
+        "clientInfo": "Client Information",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "appointmentDetails": "Appointment Details",
+        "date": "Date",
+        "time": "Time",
+        "service": "Service",
+        "duration": "Duration",
+        "location": "Location",
+        "staff": "Staff",
+        "priceBreakdown": "Price Breakdown",
+        "baseService": "Base Service",
+        "servicePolicy": "Service Policy",
+        "addons": "Add-ons",
+        "total": "Total",
+        "selectedAddons": "Selected Add-ons",
+        "quantity": "Quantity: {quantity}",
+        "policyResponses": "Policy Responses",
+        "additionalCost": "Additional Cost: {price}",
+        "notes": "Notes",
+        "addNotes": "Add Notes",
+        "edit": "Edit",
+        "notesPlaceholder": "Add internal notes about this booking...",
+        "cancel": "Cancel",
+        "saving": "Saving...",
+        "save": "Save",
+        "noNotes": "No notes added yet",
+        "staffNotes": "Staff Notes",
+        "addNote": "Add Note",
+        "staffNotesPlaceholderAssistant": "Leave a note for the staff member...",
+        "staffNotesPlaceholderStaff": "Internal notes for staff...",
+        "noStaffNotes": "No staff notes",
+        "bookingInfo": "Booking Information",
+        "bookingId": "Booking ID",
+        "created": "Created",
+        "lastUpdated": "Last Updated",
+        "btnCancel": "Cancel Appointment",
+        "btnNoShow": "Mark No Show",
+        "btnMarking": "Marking...",
+        "btnReschedule": "Reschedule",
+        "btnComplete": "Complete Appointment",
+        "btnDelete": "Delete Booking",
+        "paymentStatus": {
+            "unpaid": "Unpaid",
+            "paid": "Paid",
+            "refunded": "Refunded"
+        },
+        "boolean": {
+            "yes": "Yes",
+            "no": "No"
+        },
+        "durationFormats": {
+            "minutes": "{minutes} minutes",
+            "hour": "{hour} hour",
+            "hours": "{hours} hours",
+            "hourMinutes": "{hour} hour {minutes} minutes"
+        },
+        "placeholders": {
+            "unknown": "Unknown",
+            "na": "N/A",
+            "unassigned": "Unassigned"
+        },
+        "toasts": {
+            "notesUpdateSuccess": "Notes updated successfully",
+            "notesUpdateError": "Failed to update notes",
+            "staffNotesUpdateSuccess": "Staff notes updated successfully",
+            "staffNotesUpdateError": "Failed to update staff notes"
         }
     }
 }

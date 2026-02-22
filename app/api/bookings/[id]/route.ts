@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .from('bookings')
       .select(`
         *,
-        users:users!client_id (
+        users:users!created_by (
           id,
           email,
           first_name,
@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         id,
         status,
         start_time,
-        users!client_id ( email, first_name ),
+        users!created_by ( email, first_name ),
         services ( name ),
         locations ( name )
       `)
@@ -251,7 +251,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .from('bookings')
       .select(`
         *,
-        users:users!client_id (
+        users:users!created_by (
           id,
           email,
           first_name,

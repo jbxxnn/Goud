@@ -906,6 +906,8 @@
             "pending": "In afwachting",
             "confirmed": "Bevestigd",
             "cancelled": "Geannuleerd",
+            "location": "Locatie",
+            "allLocations": "Alle Locaties",
             "from": "Van",
             "to": "Tot",
             "search": "Zoeken",
@@ -930,7 +932,8 @@
             "cancelError": "Annuleren van boeking mislukt",
             "deleteSuccess": "Boeking verwijderd",
             "deleteSuccessDesc": "De boeking is permanent verwijderd.",
-            "deleteError": "Verwijderen van boeking mislukt"
+            "deleteError": "Verwijderen van boeking mislukt",
+            "noShowSuccess": "Succesvol gemarkeerd als no-show"
         },
         "dialog": {
             "deleteTitle": "Boeking verwijderen",
@@ -982,7 +985,8 @@
         "pending": "In afwachting",
         "cancelled": "Geannuleerd",
         "ongoing": "Bezig",
-        "completed": "Voltooid"
+        "completed": "Voltooid",
+        "no_show": "No-Show"
     },
     "Table": {
         "searchPlaceholder": "Zoeken...",
@@ -1292,6 +1296,8 @@
         "error": "Er is een fout opgetreden"
     },
     "AppointmentDetail": {
+        "markNoShow": "Markeer als No-Show",
+        "markingNoShow": "Bezig...",
         "backToDashboard": "Terug naar Dashboard",
         "internalNotes": "Interne Personeelsnotities",
         "linkedToParent": "Gekoppeld aan moederscreening",
@@ -1326,7 +1332,9 @@
             "notesFailed": "Opslaan van notities mislukt",
             "completed": "Afspraak gemarkeerd als voltooid",
             "completeError": "Afronden van afspraak mislukt",
-            "completeFailed": "Afronden mislukt"
+            "completeFailed": "Afronden mislukt",
+            "noShow": "Gemarkeerd als no-show",
+            "noShowError": "Markeren als no-show mislukt"
         }
     },
     "AssistantDashboard": {
@@ -1336,7 +1344,7 @@
         "sections": {
             "overdueTasks": "Te late taken",
             "upcomingTasks": "Aankomende taken",
-            "upcomingAppointments": "Aankomende afspraken"
+            "noShowAppointments": "No-Show afspraken"
         },
         "tasks": {
             "empty": "Geen openstaande taken voor aankomende afspraken.",
@@ -1346,7 +1354,7 @@
             "markComplete": "Markeer als voltooid"
         },
         "appointments": {
-            "empty": "Geen aankomende afspraken gevonden.",
+            "empty": "Geen no-show afspraken gevonden.",
             "viewAll": "Bekijk alle boekingen"
         },
         "dialog": {
@@ -1370,6 +1378,80 @@
             "description": "Voeg een notitie toe voor het personeel over deze afspraak. Dit is zichtbaar voor personeel en beheerders.",
             "label": "Notitie Inhoud",
             "placeholder": "Voer belangrijke details in voor het personeelslid..."
+        }
+    },
+    "BookingModal": {
+        "title": "Boekingsdetails",
+        "status": "Status",
+        "payment": "Betaling",
+        "clientInfo": "Cliëntgegevens",
+        "name": "Naam",
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "appointmentDetails": "Afspraakgegevens",
+        "date": "Datum",
+        "time": "Tijd",
+        "service": "Dienst",
+        "duration": "Duur",
+        "location": "Locatie",
+        "staff": "Personeel",
+        "priceBreakdown": "Prijsopgave",
+        "baseService": "Basisprijs",
+        "servicePolicy": "Servicebeleid",
+        "addons": "Extra's",
+        "total": "Totaal",
+        "selectedAddons": "Geselecteerde Extra's",
+        "quantity": "Aantal: {quantity}",
+        "policyResponses": "Beleidsantwoorden",
+        "additionalCost": "Extra kosten: {price}",
+        "notes": "Notities",
+        "addNotes": "Notities toevoegen",
+        "edit": "Bewerken",
+        "notesPlaceholder": "Voeg interne notities toe over deze boeking...",
+        "cancel": "Annuleren",
+        "saving": "Opslaan...",
+        "save": "Opslaan",
+        "noNotes": "Nog geen notities toegevoegd",
+        "staffNotes": "Notities voor personeel",
+        "addNote": "Notitie toevoegen",
+        "staffNotesPlaceholderAssistant": "Laat een notitie achter voor het personeelslid...",
+        "staffNotesPlaceholderStaff": "Interne notities voor personeel...",
+        "noStaffNotes": "Geen notities voor personeel",
+        "bookingInfo": "Boekingsinformatie",
+        "bookingId": "Boekings-ID",
+        "created": "Aangemaakt",
+        "lastUpdated": "Laatst bijgewerkt",
+        "btnCancel": "Afspraak annuleren",
+        "btnNoShow": "Markeren als No-show",
+        "btnMarking": "Markeren...",
+        "btnReschedule": "Verplaatsen",
+        "btnComplete": "Afspraak voltooien",
+        "btnDelete": "Boeking verwijderen",
+        "paymentStatus": {
+            "unpaid": "Onbetaald",
+            "paid": "Betaald",
+            "refunded": "Terugbetaald"
+        },
+        "boolean": {
+            "yes": "Ja",
+            "no": "Nee"
+        },
+        "durationFormats": {
+            "minutes": "{minutes} minuten",
+            "hour": "{hour} uur",
+            "hours": "{hours} uren",
+            "hourMinutes": "{hour} uur {minutes} minuten"
+        },
+        "placeholders": {
+            "unknown": "Onbekend",
+            "na": "n.v.t.",
+            "unassigned": "Niet toegewezen"
+        },
+        "toasts": {
+            "notesUpdateSuccess": "Notities succesvol bijgewerkt",
+            "notesUpdateError": "Notities bijwerken mislukt",
+            "staffNotesUpdateSuccess": "Personeelsnotities succesvol bijgewerkt",
+            "staffNotesUpdateError": "Personeelsnotities bijwerken mislukt"
         }
     }
 }

@@ -79,7 +79,7 @@ function AssistantDashboardSkeleton() {
           </Card>
         </div>
 
-        {/* Upcoming Appointments Skeleton */}
+        {/* No Show Appointments Skeleton */}
         <Card style={{ borderRadius: "10px" }} className="md:col-span-1">
           <CardHeader>
             <Skeleton className="h-6 w-48" />
@@ -178,12 +178,8 @@ export default function AssistantDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const now = new Date().toISOString();
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999); // End of today
-
-      // 1. Fetch upcoming bookings (next 7 days for now, or just future)
-      // Let's fetch next 50 upcoming bookings
+      
+      // 1. Fetch no-show bookings
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -193,9 +189,8 @@ export default function AssistantDashboard() {
           services(name, duration),
           locations(name)
         `)
-        .gte('start_time', now)
-        .neq('status', 'cancelled')
-        .order('start_time', { ascending: true })
+        .eq('status', 'no_show')
+        .order('start_time', { ascending: false })
         .limit(20);
 
       if (bookingsError) throw bookingsError;
@@ -217,7 +212,7 @@ export default function AssistantDashboard() {
           )
         `)
         .eq('is_completed', false)
-        .neq('bookings.status', 'cancelled')
+        .neq('booking.status', 'cancelled')
         .order('created_at', { ascending: true });
 
       if (tasksError) throw tasksError;
@@ -234,10 +229,6 @@ export default function AssistantDashboard() {
         if (task.booking?.status === 'cancelled') return;
 
         const bookingTime = new Date(task.booking?.start_time || '').getTime();
-        
-        // Ensure consistent structure for the task.booking object
-        // The join returns it as 'booking', so we just use that.
-        // We cast to any to avoid TS wars with strict types for now
         
         if (bookingTime >= nowTs) {
           upcoming.push(task);
@@ -441,12 +432,12 @@ export default function AssistantDashboard() {
           </Card>
         </div>
 
-        {/* UPCOMING APPOINTMENTS SECTION */}
+        {/* NO SHOW APPOINTMENTS SECTION */}
         <Card style={{borderRadius: "10px"}} className="md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={Calendar02Icon} className="h-5 w-5" />
-              {t('sections.upcomingAppointments')}
+              {t('sections.noShowAppointments')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -455,7 +446,7 @@ export default function AssistantDashboard() {
                 <p className="text-muted-foreground text-sm">{t('appointments.empty')}</p>
               ) : (
                 upcomingBookings.map(booking => (
-                  <div key={booking.id} className="flex flex-col p-3 border rounded-lg gap-2" style={{borderRadius: "10px"}}>
+                  <div key={booking.id} className="flex flex-col p-2 bg-muted border rounded-lg gap-2" style={{borderRadius: "10px"}}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="bg-primary/10 p-2 rounded-full">
@@ -479,7 +470,7 @@ export default function AssistantDashboard() {
                             {format(new Date(booking.start_time), 'MMM d')}
                           </p>
                         </div>
-                        <Button 
+                        {/* <Button 
                           variant="ghost" 
                           size="sm" 
                           className="h-6 px-2 text-xs"
@@ -487,7 +478,7 @@ export default function AssistantDashboard() {
                         >
                           <Pencil className="h-3 w-3 mr-1" />
                           {booking.internal_notes ? 'Edit Note' : 'Add Note'}
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
                     {booking.internal_notes && (

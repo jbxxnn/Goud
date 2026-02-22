@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { IEvent, IUser } from "@/calendar/interfaces";
+import type { IEvent, IUser, ILocation } from "@/calendar/interfaces";
 import type { TBadgeVariant, TVisibleHours, TWorkingHours } from "@/calendar/types";
 
 interface ICalendarContext {
@@ -12,9 +12,12 @@ interface ICalendarContext {
   setSelectedDate: (date: Date | undefined) => void;
   selectedUserId: IUser["id"] | "all";
   setSelectedUserId: (userId: IUser["id"] | "all") => void;
+  selectedLocationId: string | "all";
+  setSelectedLocationId: (locationId: string | "all") => void;
   badgeVariant: TBadgeVariant;
   setBadgeVariant: (variant: TBadgeVariant) => Promise<void>;
   users: IUser[];
+  locations?: ILocation[];
   workingHours: TWorkingHours;
   setWorkingHours: (hours: TWorkingHours) => Promise<void>;
   visibleHours: TVisibleHours;
@@ -42,12 +45,13 @@ const VISIBLE_HOURS = { from: 7, to: 18 };
 interface CalendarProviderProps {
   children: React.ReactNode;
   users: IUser[];
+  locations?: ILocation[];
   events: IEvent[];
   initialSettings?: Record<string, unknown> | null;
   entityType?: 'shift' | 'booking';
 }
 
-export function CalendarProvider({ children, users, events, initialSettings, entityType = 'shift' }: CalendarProviderProps) {
+export function CalendarProvider({ children, users, locations = [], events, initialSettings, entityType = 'shift' }: CalendarProviderProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -136,6 +140,7 @@ export function CalendarProvider({ children, users, events, initialSettings, ent
   };
 
   const [selectedUserId, setSelectedUserId] = useState<IUser["id"] | "all">("all");
+  const [selectedLocationId, setSelectedLocationId] = useState<string | "all">("all");
 
   // This localEvents doesn't need to exists in a real scenario.
   // It's used here just to simulate the update of the events.
@@ -289,9 +294,12 @@ export function CalendarProvider({ children, users, events, initialSettings, ent
         setSelectedDate: handleSelectDate,
         selectedUserId,
         setSelectedUserId,
+        selectedLocationId,
+        setSelectedLocationId,
         badgeVariant,
         setBadgeVariant: handleSetBadgeVariant,
         users,
+        locations,
         visibleHours,
         setVisibleHours: handleSetVisibleHours,
         workingHours,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '@hugeicons/core-free-icons';
@@ -22,6 +23,22 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 interface BookingsClientProps {
   initialBookings: Booking[];
@@ -55,6 +72,18 @@ export default function BookingsClient({
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
   const [calendarView, setCalendarView] = useState<TCalendarView>('month');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [locations, setLocations] = useState<{ id: string, name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from('locations').select('id, name').eq('is_active', true).order('name');
+      if (data) setLocations(data);
+    };
+    fetchLocations();
+  }, []);
 
   // Modal states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -66,8 +95,8 @@ export default function BookingsClient({
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
   // Bookings Query
-  const { data: bookingsData, isLoading: bookingsLoading } = useQuery<BookingsResponse>({
-    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, searchQuery, clientId, staffId],
+  const { data: bookingsData, isLoading: bookingsLoading, isFetching: bookingsFetching } = useQuery<BookingsResponse>({
+    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, debouncedSearchQuery, clientId, staffId, locationFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -77,9 +106,10 @@ export default function BookingsClient({
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
-      if (searchQuery) params.append('search', searchQuery);
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
       if (clientId) params.append('clientId', clientId);
       if (staffId) params.append('staffId', staffId);
+      if (locationFilter && locationFilter !== 'all') params.append('locationId', locationFilter);
 
       const response = await fetch(`/api/bookings?${params}`);
       const data: BookingsResponse = await response.json();
@@ -140,6 +170,31 @@ export default function BookingsClient({
       toast.error(t('toasts.cancelError'), {
         description: errorMessage,
       });
+    }
+  };
+
+  // No Show booking
+  const handleNoShow = async (booking: Booking) => {
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'no_show' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to mark as no show');
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      toast.success(t('toasts.noShowSuccess', { fallback: 'Successfully marked as no show' }));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error marking as no show';
+      toast.error(errorMessage);
+      throw err;
     }
   };
 
@@ -307,8 +362,8 @@ export default function BookingsClient({
                 title="Status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border rounded-md px-3 py-1.5 text-sm h-11"
-                style={{ borderRadius: '0.2rem' }}
+                className="border bg-card px-3 py-1.5 text-sm h-10"
+                style={{ borderRadius: '1rem' }}
               >
                 <option value="all">{t('filters.all')}</option>
                 <option value="pending">{t('filters.pending')}</option>
@@ -317,12 +372,28 @@ export default function BookingsClient({
               </select>
             </div>
             <div className="flex items-center gap-2">
+              <label className="text-sm font-medium">{t('filters.location', { fallback: 'Location' })}:</label>
+              <select
+                title={t('filters.location', { fallback: 'Location' })}
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="border bg-card px-3 py-1.5 text-sm h-10"
+                style={{ borderRadius: '1rem' }}
+              >
+                <option value="all">{t('filters.allLocations', { fallback: 'All Locations' })}</option>
+                {locations.map(loc => (
+                  <option key={loc.id} value={loc.id}>{loc.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{t('filters.from')}:</label>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-40"
+                className="w-40 h-10"
+                style={{ borderRadius: '1rem' }}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -331,19 +402,28 @@ export default function BookingsClient({
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-40"
+                className="w-40 h-10"
+                style={{ borderRadius: '1rem' }}
               />
             </div>
             {!clientId && (
               <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                 <label className="text-sm font-medium">{t('filters.search')}:</label>
-                <Input
-                  type="text"
-                  placeholder={t('filters.searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
+                <div className="relative flex-1">
+                  <Input
+                    type="text"
+                    placeholder={t('filters.searchPlaceholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-10 pr-10"
+                    style={{ borderRadius: '1rem' }}
+                  />
+                  {bookingsFetching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                      <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>
@@ -378,7 +458,7 @@ export default function BookingsClient({
                     // This allows using generic keys like 'confirmed' directly or 'columns.client'
                     if (key.startsWith('columns.') || key.startsWith('cells.')) return t(key);
                     // For status keys
-                    if (['pending', 'confirmed', 'cancelled', 'ongoing', 'completed'].includes(key)) return tStatus(key);
+                    if (['pending', 'confirmed', 'cancelled', 'ongoing', 'completed', 'no_show'].includes(key)) return tStatus(key);
                     // Fallback or other keys
                     return t(key);
                   },
@@ -402,6 +482,7 @@ export default function BookingsClient({
           <div className="bg-background">
             <CalendarProvider
               users={calendarUsersList}
+              locations={locations}
               events={calendarEvents}
               initialSettings={{}} // You might want to persist settings
               entityType="booking"
@@ -517,6 +598,7 @@ export default function BookingsClient({
         onCancel={(booking) => {
           handleCancel(booking);
         }}
+        onNoShow={(booking) => handleNoShow(booking)}
         onDelete={!clientId ? (booking) => {
           handleDelete(booking);
         } : undefined}
