@@ -107,6 +107,7 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
   cancelled: '#6b7280',
   ongoing: '#3B82F6',
   completed: '#10B981',
+  no_show: '#ef4444',
 };
 
 const PIE_COLORS = ['#0EA5E9', '#10B981', '#6366F1', '#F97316', '#A855F7'];
