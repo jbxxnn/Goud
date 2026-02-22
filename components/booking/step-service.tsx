@@ -17,7 +17,7 @@ export function StepService() {
         services,
         loadingServices,
         serviceId,
-        setServiceId,
+        changeService,
         selectedService,
         policyResponses,
         policyErrors,
@@ -246,7 +246,7 @@ export function StepService() {
             <div className="space-y-4">
                 <div className="space-y-2">
                     {/* <Label htmlFor="service-select" className="text-sm font-bold text-gray-700">Services</Label> */}
-                    <Select value={serviceId} onValueChange={setServiceId}>
+                    <Select value={serviceId} onValueChange={changeService}>
                         <SelectTrigger
                             id="service-select"
                             className={`w-full transition-all duration-300 ${!serviceId && !loadingServices ? "ring-2 ring-primary ring-offset-2 animate-ring-pulse" : ""}`}

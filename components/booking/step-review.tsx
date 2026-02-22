@@ -52,7 +52,36 @@ export function StepReview() {
             try {
                 const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(emailForLogin)}`);
                 const payload = await response.json();
-                // We could fetch user details here if needed
+                const user = payload?.user;
+                if (user) {
+                    setUserRole(user.role || null);
+                    if (user.role === 'midwife') {
+                        setContactDefaults({
+                            ...contactDefaults,
+                            midwifeId: user.midwife_id || "",
+                        });
+                        setContactDefaultsVersion((v: number) => v + 1);
+                    } else {
+                        setContactDefaults({
+                            firstName: user.first_name || '',
+                            lastName: user.last_name || '',
+                            phone: user.phone || undefined,
+                            address: user.address || undefined,
+                            postalCode: user.postal_code || undefined,
+                            houseNumber: user.house_number || undefined,
+                            streetName: user.street_name || undefined,
+                            city: user.city || undefined,
+                            birthDate: user.birth_date || undefined,
+                            midwifeId: user.midwife_id || "",
+                            dueDate: undefined,
+                            notes: undefined,
+                            gravida: undefined,
+                            para: undefined,
+                            otherMidwifeName: undefined,
+                        });
+                        setContactDefaultsVersion((v: number) => v + 1);
+                    }
+                }
             } catch (e) {
                 console.error('Error fetching user details after login:', e);
             }
@@ -78,9 +107,9 @@ export function StepReview() {
             setUserRole(null);
             setPassword('');
             setContactDefaults({
-                firstName: '', lastName: '', phone: undefined, address: undefined,
+                firstName: '', lastName: '', phone: '', address: undefined,
                 postalCode: undefined, houseNumber: undefined, streetName: undefined,
-                city: undefined, birthDate: undefined, midwifeId: undefined,
+                city: undefined, birthDate: undefined, midwifeId: "",
                 dueDate: undefined, notes: undefined
             });
             setContactDefaultsVersion(v => v + 1);
@@ -137,6 +166,7 @@ export function StepReview() {
                     streetName: values.streetName || undefined,
                     city: values.city || undefined,
                     notes: values.notes || undefined,
+                    otherMidwifeName: values.otherMidwifeName || undefined,
                     serviceId,
                     locationId,
                     staffId: selectedSlot.staffId,
@@ -217,6 +247,7 @@ export function StepReview() {
                 onSubmit={handleBookingSubmit}
                 finalizing={finalizing}
                 onValidationChange={setIsFormValid}
+                serviceId={serviceId}
             />
             {errorMsg && (
                 <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-100">

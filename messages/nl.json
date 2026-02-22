@@ -250,7 +250,8 @@
             "actions": "Acties",
             "searchPlaceholder": "Zoek verloskundigen...",
             "empty": "Geen verloskundigen gevonden.",
-            "noContact": "Geen contactinfo"
+            "noContact": "Geen contactinfo",
+            "recommended": "Aanbevolen"
         },
         "form": {
             "firstName": "Voornaam *",
@@ -265,6 +266,8 @@
             "phonePlaceholder": "Vul telefoonnummer in (optioneel)",
             "active": "Actief",
             "activeHint": "Inactieve verloskundigen verschijnen niet in boekingsformulieren",
+            "recommended": "Aanbevolen Optie",
+            "recommendedHint": "Aanbevolen verloskundigen verschijnen bovenaan de selectielijsten",
             "validation": {
                 "firstNameRequired": "Voornaam is verplicht",
                 "firstNameLength": "Voornaam moet minder dan 100 tekens zijn",
@@ -796,6 +799,7 @@
                 "accountFound": "Account gevonden. Log in om door te gaan.",
                 "loggedIn": "U bent ingelogd.",
                 "accountCreationNotice": "We maken een account voor u aan met dit e-mailadres (zonder wachtwoord).",
+                "forgotPassword": "Wachtwoord vergeten?",
                 "password": "Wachtwoord",
                 "passwordPlaceholder": "Voer uw wachtwoord in",
                 "loggingIn": "Bezig met inloggen…",
@@ -807,6 +811,11 @@
                 "lastName": "Achternaam",
                 "lastNamePlaceholder": "Uw achternaam",
                 "phone": "Telefoon",
+                "phonePlaceholder": "06 12345678",
+                "gravida": "Gravida",
+                "gravidaPlaceholder": "bijv. 2",
+                "para": "Para",
+                "paraPlaceholder": "bijv. 1",
                 "optional": "Optioneel",
                 "street": "Straatnaam",
                 "streetPlaceholder": "Straat",
@@ -819,10 +828,12 @@
                 "dueDate": "Uitgerekende datum",
                 "selectDate": "Selecteer datum",
                 "birthDate": "Geboortedatum",
-                "midwife": "Je eigen verloskundige",
-                "midwifePlaceholder": "Selecteer verloskundige (optioneel)",
+                "midwife": "Je eigen verloskundige *",
+                "midwifePlaceholder": "Selecteer verloskundige",
                 "unknownMidwife": "Onbekende verloskundige",
-                "otherMidwife": "Anders / Niet in lijst",
+                "otherMidwife": "Anders, namelijk: - Naam & plaats van je verloskundigenpraktijk",
+                "otherMidwifeName": "Naam verloskundige praktijk / verloskundige",
+                "otherMidwifeNamePlaceholder": "Naam van de verloskundige",
                 "notes": "Opmerkingen",
                 "notesPlaceholder": "Bijzonderheden of vragen? (Optioneel)"
             },
@@ -1264,6 +1275,20 @@
         "submitting": "Inloggen...",
         "dontHaveAccount": "Heeft u nog geen account?",
         "signUp": "Aanmelden",
+        "error": "Er is een fout opgetreden"
+    },
+    "ForgotPassword": {
+        "title": "Wachtwoord Resetten",
+        "description": "Vul je e-mailadres in en we sturen je een link om je wachtwoord te resetten",
+        "email": "E-mailadres",
+        "emailPlaceholder": "m@voorbeeld.nl",
+        "submit": "Reset e-mail versturen",
+        "submitting": "Verzenden...",
+        "alreadyHaveAccount": "Heb je al een account?",
+        "login": "Inloggen",
+        "successTitle": "Controleer Je E-mail",
+        "successDescription": "Instructies voor wachtwoordherstel verzonden",
+        "successMessage": "Als je bent geregistreerd met je e-mailadres en wachtwoord, ontvang je een e-mail om je wachtwoord te resetten.",
         "error": "Er is een fout opgetreden"
     },
     "AppointmentDetail": {

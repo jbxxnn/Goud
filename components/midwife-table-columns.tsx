@@ -12,7 +12,8 @@ import {
   UserIcon,
   CallIcon,
   MailIcon,
-  BuildingIcon
+  BuildingIcon,
+  StarIcon
 } from '@hugeicons/core-free-icons';
 import { Midwife, getMidwifeDisplayName, getMidwifeFullDisplay } from '@/lib/types/midwife';
 
@@ -46,8 +47,16 @@ export function createMidwifeColumns(
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm">
-                {getMidwifeDisplayName(midwife)}
+              <div className="flex items-center gap-2">
+                <div className="font-medium text-sm">
+                  {getMidwifeDisplayName(midwife)}
+                </div>
+                {midwife.is_recommended && (
+                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 gap-1 text-primary bg-primary/10 hover:bg-primary/20">
+                    <HugeiconsIcon icon={StarIcon} className="w-2.5 h-2.5 fill-current" />
+                    {t('table.recommended')}
+                  </Badge>
+                )}
               </div>
               {midwife.practice_name && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">

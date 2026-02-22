@@ -212,9 +212,9 @@ function BookingConfirmationContent() {
   const basePrice = booking.price_eur_cents - addonsTotal - policyTotal;
 
   // Format date for header display
-  const headerDate = format.dateTime(new Date(booking.start_time), { year: 'numeric', month: 'long', day: 'numeric' });
-  const headerTime = `${format.dateTime(new Date(booking.start_time), { hour: '2-digit', minute: '2-digit' })} - ${format.dateTime(new Date(booking.end_time), { hour: '2-digit', minute: '2-digit' })}`;
-  const dayName = format.dateTime(new Date(booking.start_time), { weekday: 'long' });
+  const headerDate = format.dateTime(new Date(booking.start_time), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Amsterdam' });
+  const headerTime = `${format.dateTime(new Date(booking.start_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })} - ${format.dateTime(new Date(booking.end_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}`;
+  const dayName = format.dateTime(new Date(booking.start_time), { weekday: 'long', timeZone: 'Europe/Amsterdam' });
 
   return (
     <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
@@ -268,7 +268,7 @@ function BookingConfirmationContent() {
               )}
 
               {/* Staff */}
-              {staff && (
+              {/* {staff && (
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-gray-500 mb-1">{t('staff')}</div>
@@ -277,7 +277,7 @@ function BookingConfirmationContent() {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
 
           </div>

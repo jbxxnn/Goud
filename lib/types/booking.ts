@@ -101,6 +101,9 @@ export interface Booking {
     is_twin?: boolean;
     parent_booking_id?: string | null;
     continuation_id?: string | null;
+    gravida?: string | null;
+    para?: string | null;
+    other_midwife_name?: string | null;
 
     // Relations
     services: {

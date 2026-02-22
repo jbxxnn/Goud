@@ -1,5 +1,6 @@
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { BookingAddonSelection, BookingPolicyAnswer } from '@/lib/validation/booking';
+import { expandRecurringShift } from '@/lib/utils/expand-recurring-shifts';
 
 export type CreateBookingInput = {
   clientId: string;
@@ -24,17 +25,21 @@ export type CreateBookingInput = {
   isTwin?: boolean;
   parentBookingId?: string;
   continuationId?: string;
+  gravida?: string;
+  para?: string;
+  otherMidwifeName?: string;
 };
 
 export async function createBooking(input: CreateBookingInput) {
   const supabase = getServiceSupabase();
+  const baseShiftId = input.shiftId.split('-instance-')[0];
 
   // Load shift and service rules for validation
   const [{ data: shift, error: shiftErr }, { data: service, error: svcErr }] = await Promise.all([
     supabase
       .from('shifts')
-      .select('id, staff_id, location_id, start_time, end_time, is_active')
-      .eq('id', input.shiftId)
+      .select('id, staff_id, location_id, start_time, end_time, is_active, is_recurring, recurrence_rule, parent_shift_id, exception_date')
+      .eq('id', baseShiftId)
       .maybeSingle(),
     supabase
       .from('services')
@@ -53,7 +58,7 @@ export async function createBooking(input: CreateBookingInput) {
   const { data: ss, error: ssErr } = await supabase
     .from('shift_services')
     .select('id')
-    .eq('shift_id', input.shiftId)
+    .eq('shift_id', baseShiftId)
     .eq('service_id', input.serviceId)
     .maybeSingle();
   if (ssErr || !ss) throw new Error('Service not available for this shift');
@@ -62,9 +67,29 @@ export async function createBooking(input: CreateBookingInput) {
   const start = new Date(input.startTime);
   const end = new Date(input.endTime);
   if (!(start < end)) throw new Error('Invalid time range');
-  const shiftStart = new Date(shift.start_time);
-  const shiftEnd = new Date(shift.end_time);
-  if (start < shiftStart || end > shiftEnd) throw new Error('Outside shift hours');
+
+  let validStart = new Date(shift.start_time);
+  let validEnd = new Date(shift.end_time);
+
+  if (input.shiftId.includes('-instance-') || shift.is_recurring) {
+    const windowStart = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const instances = expandRecurringShift(shift as any, windowStart, windowEnd);
+
+    const instance = instances.find(inst => {
+      const s = new Date(inst.start_time);
+      const e = new Date(inst.end_time);
+      return start >= s && end <= e;
+    });
+
+    if (!instance) {
+      throw new Error('Outside shift hours');
+    }
+    validStart = new Date(instance.start_time);
+    validEnd = new Date(instance.end_time);
+  }
+
+  if (start < validStart || end > validEnd) throw new Error('Outside shift hours');
 
   const now = new Date();
   const leadMinutes = Number(service.lead_time) || 0;
@@ -80,7 +105,7 @@ export async function createBooking(input: CreateBookingInput) {
       service_id: input.serviceId,
       location_id: input.locationId,
       staff_id: input.staffId,
-      shift_id: input.shiftId,
+      shift_id: baseShiftId,
       start_time: input.startTime,
       end_time: input.endTime,
       price_eur_cents: input.priceEurCents,
@@ -99,6 +124,9 @@ export async function createBooking(input: CreateBookingInput) {
       is_twin: input.isTwin || false,
       parent_booking_id: input.parentBookingId || null,
       continuation_id: input.continuationId || null,
+      gravida: input.gravida || null,
+      para: input.para || null,
+      other_midwife_name: input.otherMidwifeName || null,
     })
     .select('*')
     .single();
@@ -152,6 +180,7 @@ export async function createBooking(input: CreateBookingInput) {
       if (addonInsertError) {
         throw new Error('Kon add-ons niet opslaan');
       }
+      return { ...booking, booking_addons: inserts };
     }
   }
 

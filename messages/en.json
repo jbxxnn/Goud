@@ -250,7 +250,8 @@
             "actions": "Actions",
             "searchPlaceholder": "Search midwives...",
             "empty": "No midwife records found.",
-            "noContact": "No contact info"
+            "noContact": "No contact info",
+            "recommended": "Recommended"
         },
         "form": {
             "firstName": "First Name *",
@@ -265,6 +266,8 @@
             "phonePlaceholder": "Enter phone (optional)",
             "active": "Active",
             "activeHint": "Inactive midwives will not appear in booking forms",
+            "recommended": "Recommended Option",
+            "recommendedHint": "Recommended midwives appear at the top of selection lists",
             "validation": {
                 "firstNameRequired": "First name is required",
                 "firstNameLength": "First name must be less than 100 characters",
@@ -796,6 +799,7 @@
                 "accountFound": "Account found. Log in to continue.",
                 "loggedIn": "You are logged in.",
                 "accountCreationNotice": "We'll create an account for you with this email (no password).",
+                "forgotPassword": "Forgot password?",
                 "password": "Password",
                 "passwordPlaceholder": "Enter your password",
                 "loggingIn": "Logging in...",
@@ -807,6 +811,11 @@
                 "lastName": "Last name",
                 "lastNamePlaceholder": "Your last name",
                 "phone": "Phone",
+                "phonePlaceholder": "06 12345678",
+                "gravida": "Gravida",
+                "gravidaPlaceholder": "e.g. 2",
+                "para": "Para",
+                "paraPlaceholder": "e.g. 1",
                 "optional": "Optional",
                 "street": "Street name",
                 "streetPlaceholder": "Street",
@@ -819,10 +828,12 @@
                 "dueDate": "Due date",
                 "selectDate": "Select date",
                 "birthDate": "Birth date",
-                "midwife": "Your own midwife",
-                "midwifePlaceholder": "Select midwife (optional)",
+                "midwife": "Your own midwife *",
+                "midwifePlaceholder": "Select midwife",
                 "unknownMidwife": "Unknown midwife",
-                "otherMidwife": "Other / Not in list",
+                "otherMidwife": "Other, namely: - Name & location of your midwifery practice",
+                "otherMidwifeName": "Midwife practice name / Midwife name",
+                "otherMidwifeNamePlaceholder": "Name of the midwife",
                 "notes": "Notes",
                 "notesPlaceholder": "Details or questions? (Optional)"
             },
@@ -1264,6 +1275,20 @@
         "submitting": "Logging in...",
         "dontHaveAccount": "Don't have an account?",
         "signUp": "Sign up",
+        "error": "An error occurred"
+    },
+    "ForgotPassword": {
+        "title": "Reset Your Password",
+        "description": "Type in your email and we'll send you a link to reset your password",
+        "email": "Email",
+        "emailPlaceholder": "m@example.com",
+        "submit": "Send reset email",
+        "submitting": "Sending...",
+        "alreadyHaveAccount": "Already have an account?",
+        "login": "Login",
+        "successTitle": "Check Your Email",
+        "successDescription": "Password reset instructions sent",
+        "successMessage": "If you registered using your email and password, you will receive a password reset email.",
         "error": "An error occurred"
     },
     "AppointmentDetail": {

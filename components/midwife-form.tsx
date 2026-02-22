@@ -23,6 +23,7 @@ interface MidwifeFormData {
   email: string;
   practice_name: string;
   is_active: boolean;
+  is_recommended: boolean;
 }
 
 export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: externalIsSubmitting }: MidwifeFormProps) {
@@ -45,6 +46,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
       email: '',
       practice_name: '',
       is_active: true,
+      is_recommended: false,
     },
   });
 
@@ -58,6 +60,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
         email: midwife.email || '',
         practice_name: midwife.practice_name || '',
         is_active: midwife.is_active,
+        is_recommended: midwife.is_recommended || false,
       });
     } else {
       reset({
@@ -67,6 +70,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
         email: '',
         practice_name: '',
         is_active: true,
+        is_recommended: false,
       });
     }
   }, [midwife, reset]);
@@ -83,6 +87,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
         email: data.email.trim() || undefined,
         practice_name: data.practice_name.trim() || undefined,
         is_active: data.is_active,
+        is_recommended: data.is_recommended,
       };
       await onSave(payload);
     } finally {
@@ -202,6 +207,24 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('activeHint')}
+            </p>
+          </div>
+
+          {/* Recommended Status */}
+          <div className="md:col-span-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_recommended"
+                {...register('is_recommended')}
+                checked={watch('is_recommended')}
+                onCheckedChange={(checked) => setValue('is_recommended', checked)}
+              />
+              <Label htmlFor="is_recommended" className="text-xs font-semibold cursor-pointer">
+                {t('recommended')}
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('recommendedHint')}
             </p>
           </div>
         </div>

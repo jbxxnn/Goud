@@ -33,11 +33,14 @@ export async function POST(req: NextRequest) {
       dueDate,
       birthDate,
       midwifeId,
+      otherMidwifeName,
       houseNumber,
       postalCode,
       streetName,
       city,
       notes,
+      gravida,
+      para,
       serviceId,
       locationId,
       staffId,
@@ -168,7 +171,7 @@ export async function POST(req: NextRequest) {
       // midwifeId logic:
       // If midwife is booking (midwifeClientEmail present), we might want to set the client's midwife_id to THIS midwife.
       // Assuming 'midwifeId' in payload is the selected midwife from dropdown.
-      if (midwifeId !== undefined && midwifeId !== null && midwifeId !== '' && typeof midwifeId === 'string') {
+      if (midwifeId !== undefined && midwifeId !== null && midwifeId !== '' && midwifeId !== 'other' && typeof midwifeId === 'string') {
         updates.midwife_id = midwifeId.trim();
       }
 
@@ -176,6 +179,8 @@ export async function POST(req: NextRequest) {
         await supabase.from('users').update(updates).eq('id', targetUpdateUserId);
       }
     }
+
+    let finalNotes = notes || '';
 
     const booking = await createBooking({
       clientId: resolvedClientId!,
@@ -186,10 +191,10 @@ export async function POST(req: NextRequest) {
       startTime,
       endTime: finalEndTime,
       priceEurCents: finalPrice,
-      notes,
+      notes: finalNotes,
       dueDate,
       birthDate,
-      midwifeId,
+      midwifeId: midwifeId === 'other' ? undefined : midwifeId,
       houseNumber,
       postalCode,
       streetName,
@@ -200,6 +205,9 @@ export async function POST(req: NextRequest) {
       isTwin,
       parentBookingId,
       continuationId,
+      gravida,
+      para,
+      otherMidwifeName,
     });
 
     // Mark continuation as claimed
@@ -245,18 +253,30 @@ export async function POST(req: NextRequest) {
         // Better to fetch to be accurate.
         const { data: addonsDetails } = await supabase
           .from('booking_addons')
-          .select(`
-            price_eur_cents, 
-            service_addons(name),
-            service_addon_options(name)
-          `)
+          .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
           .eq('booking_id', booking.id);
 
-        if (addonsDetails) {
+        if (addonsDetails && addonsDetails.length > 0) {
+          const addonIds = [...new Set(addonsDetails.map(a => a.addon_id).filter(Boolean))];
+          const optionIds = [...new Set(addonsDetails.map(a => a.option_id).filter(Boolean))];
+
+          let serviceAddons: any[] = [];
+          let serviceOptions: any[] = [];
+
+          if (addonIds.length > 0) {
+            const { data: saData } = await supabase.from('service_addons').select('id, name').in('id', addonIds);
+            serviceAddons = saData || [];
+          }
+          if (optionIds.length > 0) {
+            const { data: soData } = await supabase.from('service_addon_options').select('id, name').in('id', optionIds);
+            serviceOptions = soData || [];
+          }
+
           emailAddons = addonsDetails.map(a => {
-            const sa = Array.isArray(a.service_addons) ? a.service_addons[0] : a.service_addons;
-            const sao = Array.isArray(a.service_addon_options) ? a.service_addon_options[0] : a.service_addon_options;
+            const sa = serviceAddons.find(s => s.id === a.addon_id);
+            const sao = serviceOptions.find(o => o.id === a.option_id);
             const displayName = sao ? `${sa?.name} - ${sao.name}` : (sa?.name || 'Add-on');
+            
             return {
               name: displayName,
               price: formatEuroCents(a.price_eur_cents)

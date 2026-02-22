@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('midwives')
       .select('*', { count: 'exact' })
+      .order('is_recommended', { ascending: false, nullsFirst: false })
       .order('first_name', { ascending: true })
       .order('last_name', { ascending: true });
 
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { first_name, last_name, phone, email, practice_name, is_active = true } = body;
+    const { first_name, last_name, phone, email, practice_name, is_active = true, is_recommended = false } = body;
 
     if (!first_name || !last_name) {
       return NextResponse.json(
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
         email: email || null,
         practice_name: practice_name || null,
         is_active,
+        is_recommended,
       })
       .select()
       .single();

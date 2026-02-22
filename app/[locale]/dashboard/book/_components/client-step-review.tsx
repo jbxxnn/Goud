@@ -99,6 +99,9 @@ export function ClientStepReview() {
                 streetName: contactDefaults.streetName,
                 city: contactDefaults.city,
                 notes: contactDefaults.notes,
+                gravida: contactDefaults.gravida,
+                para: contactDefaults.para,
+                otherMidwifeName: contactDefaults.otherMidwifeName,
             };
 
             const resp = await fetch('/api/bookings', {
@@ -122,6 +125,9 @@ export function ClientStepReview() {
                     streetName: payloadValues.streetName || undefined,
                     city: payloadValues.city || undefined,
                     notes: payloadValues.notes || undefined,
+                    gravida: payloadValues.gravida || undefined,
+                    para: payloadValues.para || undefined,
+                    otherMidwifeName: payloadValues.otherMidwifeName || undefined,
                     serviceId,
                     locationId,
                     staffId: selectedSlot.staffId,
@@ -223,6 +229,7 @@ export function ClientStepReview() {
                                 onLogout={() => { }} // Not needed
                                 onSubmit={handleBookingSubmit}
                                 finalizing={finalizing}
+                                serviceId={serviceId}
                             />
                         </div>
                     </div>

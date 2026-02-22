@@ -6,6 +6,7 @@ export interface Midwife {
   email: string | null;
   practice_name: string | null;
   is_active: boolean;
+  is_recommended: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface CreateMidwifeRequest {
   email?: string;
   practice_name?: string;
   is_active?: boolean;
+  is_recommended?: boolean;
 }
 
 export interface UpdateMidwifeRequest {
@@ -26,6 +28,7 @@ export interface UpdateMidwifeRequest {
   email?: string;
   practice_name?: string;
   is_active?: boolean;
+  is_recommended?: boolean;
 }
 
 export interface MidwifeResponse {

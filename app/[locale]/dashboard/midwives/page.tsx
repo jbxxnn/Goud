@@ -44,6 +44,7 @@ export default async function MidwivesPage() {
   const { data: midwivesData } = await supabase
     .from('midwives')
     .select('*')
+    .order('is_recommended', { ascending: false, nullsFirst: false })
     .order('first_name', { ascending: true })
     .order('last_name', { ascending: true })
     .range(0, limit - 1);

@@ -1,0 +1,73 @@
+{
+  "booking": {
+    "id": "8bc4abd3-ada5-42d5-b704-ea1e82cc68bb",
+    "client_id": "c25386aa-ef17-4d1f-baaf-9f1e8b5f6448",
+    "service_id": "4bf46337-e195-42b1-ae93-ea5c40c08438",
+    "location_id": "fa3f7c63-ff63-46c0-af34-43919f17383c",
+    "staff_id": "a2fea27f-d17a-4bb2-8e8d-e5df3773f948",
+    "shift_id": "dd915973-1366-49ff-9681-941e4cabe978",
+    "start_time": "2026-02-26T07:45:00+00:00",
+    "end_time": "2026-02-26T08:00:00+00:00",
+    "price_eur_cents": 9885,
+    "status": "confirmed",
+    "payment_status": "paid",
+    "notes": "Testing Addons again",
+    "created_at": "2026-02-22T14:28:49.542047+00:00",
+    "updated_at": "2026-02-22T14:29:09.661875+00:00",
+    "policy_answers": [
+      {
+        "value": [
+          "f1dbaca2-b62e-4855-94ff-6dd82a71367d"
+        ],
+        "fieldId": "9b3596b9-375c-43a2-bc66-2bb2c464bd61",
+        "fieldType": "multi_choice"
+      }
+    ],
+    "due_date": "2026-02-26",
+    "birth_date": "2026-02-18",
+    "midwife_id": "64077785-a227-48de-b6ef-2f79a9a72de1",
+    "house_number": "ZA100",
+    "postal_code": "920211",
+    "street_name": "behind mypa college",
+    "city": "Minna",
+    "created_by": "b1665c42-1400-4833-bb11-9c0cb14da595",
+    "internal_notes": null,
+    "reminder_sent": false,
+    "mollie_payment_id": "tr_AJCBbd8DuRY7naqNXkWMJ",
+    "payment_link": "https://www.mollie.com/checkout/select-issuer/ideal/AJCBbd8DuRY7naqNXkWMJ",
+    "is_twin": false,
+    "parent_booking_id": null,
+    "continuation_id": null,
+    "gravida": null,
+    "para": null,
+    "other_midwife_name": null,
+    "users": {
+      "id": "c25386aa-ef17-4d1f-baaf-9f1e8b5f6448",
+      "email": "midwife@goudecho.nl",
+      "phone": "08179269110",
+      "last_name": "Goud",
+      "first_name": "Midwife"
+    },
+    "services": {
+      "id": "4bf46337-e195-42b1-ae93-ea5c40c08438",
+      "name": "Geslachtsbepaling echo",
+      "duration": 15
+    },
+    "locations": {
+      "id": "fa3f7c63-ff63-46c0-af34-43919f17383c",
+      "name": "Ermelo"
+    },
+    "staff": {
+      "id": "a2fea27f-d17a-4bb2-8e8d-e5df3773f948",
+      "last_name": "Hollander",
+      "first_name": "Arjanne"
+    },
+    "addons": [],
+    "created_by_user": {
+      "first_name": "jibrin",
+      "last_name": "faruna",
+      "email": "sleekjamz@gmail.com",
+      "phone": "06 12345678"
+    }
+  }
+}

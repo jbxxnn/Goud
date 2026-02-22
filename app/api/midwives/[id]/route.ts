@@ -49,7 +49,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { first_name, last_name, phone, email, practice_name, is_active } = body;
+    const { first_name, last_name, phone, email, practice_name, is_active, is_recommended } = body;
 
     const supabase = getServiceSupabase();
     
@@ -60,6 +60,7 @@ export async function PUT(
     if (email !== undefined) updates.email = email || null;
     if (practice_name !== undefined) updates.practice_name = practice_name || null;
     if (is_active !== undefined) updates.is_active = is_active;
+    if (is_recommended !== undefined) updates.is_recommended = is_recommended;
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { z } from 'zod';
+import { daySlotsCache, heatmapCache } from '@/lib/availability/cache';
 
 const lockSchema = z.object({
     serviceId: z.string().uuid(),
     locationId: z.string().uuid(),
     staffId: z.string().uuid(),
-    shiftId: z.string().uuid(),
+    shiftId: z.string().min(1),
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
     sessionToken: z.string().min(1),
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
         }
 
         const { serviceId, locationId, staffId, shiftId, startTime, endTime, sessionToken } = result.data;
+        const baseShiftId = shiftId.split('-instance-')[0];
         const start = new Date(startTime);
         const end = new Date(endTime);
         const supabase = getServiceSupabase();
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
         const { count: bookingCount, error: bookingErr } = await supabase
             .from('bookings')
             .select('*', { count: 'exact', head: true })
-            .eq('shift_id', shiftId)
+            .eq('shift_id', baseShiftId)
             .neq('status', 'cancelled')
             .lt('start_time', end.toISOString())
             .gt('end_time', start.toISOString());
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
         const { count: lockCount, error: lockErr } = await supabase
             .from('booking_locks')
             .select('*', { count: 'exact', head: true })
-            .eq('shift_id', shiftId) // Check for locks on this SHIFT (resource), not just service
+            .eq('shift_id', baseShiftId) // Check for locks on this SHIFT (resource), not just service
             .gt('expires_at', new Date().toISOString())
             .neq('session_token', sessionToken) // Allow re-locking by same session
             .lt('start_time', end.toISOString())
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
                 service_id: serviceId,
                 location_id: locationId,
                 staff_id: staffId,
-                shift_id: shiftId,
+                shift_id: baseShiftId,
                 start_time: startTime,
                 end_time: endTime,
                 expires_at: expiresAt.toISOString(),
@@ -90,6 +92,10 @@ export async function POST(req: NextRequest) {
             console.error('Lock insert error', insertErr);
             throw new Error('Failed to acquire lock');
         }
+
+        // Clear availability caches so the newly locked slot disappears immediately for others
+        daySlotsCache.clear();
+        heatmapCache.clear();
 
         return NextResponse.json({
             success: true,
@@ -123,6 +129,10 @@ export async function DELETE(req: NextRequest) {
             console.error('[booking-lock-delete] error', error);
             return NextResponse.json({ error: 'Failed to release lock' }, { status: 500 });
         }
+
+        // Clear availability caches so the released slot appears immediately
+        daySlotsCache.clear();
+        heatmapCache.clear();
 
         return NextResponse.json({ success: true });
     } catch (error) {

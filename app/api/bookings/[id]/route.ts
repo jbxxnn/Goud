@@ -36,34 +36,44 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    // Fetch add-ons for this booking
+    // Fetch add-ons for this booking without PostgREST joins to circumvent missing FK constraint
     const { data: addonsData } = await supabase
       .from('booking_addons')
-      .select(`
-        booking_id,
-        quantity,
-        price_eur_cents,
-        service_addons (
-          id,
-          name,
-          description,
-          price
-        )
-      `)
+      .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
       .eq('booking_id', id);
 
-    const addons = (addonsData || []).map((addon) => {
-      const serviceAddon = Array.isArray(addon.service_addons)
-        ? addon.service_addons[0]
-        : addon.service_addons;
-      return {
-        id: serviceAddon?.id || '',
-        name: serviceAddon?.name || '',
-        description: serviceAddon?.description || null,
-        quantity: addon.quantity || 1,
-        price_eur_cents: addon.price_eur_cents || 0,
-      };
-    });
+    let addons: any[] = [];
+    if (addonsData && addonsData.length > 0) {
+      const addonIds = [...new Set(addonsData.map((a: any) => a.addon_id).filter(Boolean))];
+      const optionIds = [...new Set(addonsData.map((a: any) => a.option_id).filter(Boolean))];
+
+      let serviceAddons: any[] = [];
+      let serviceOptions: any[] = [];
+
+      if (addonIds.length > 0) {
+        const { data: saData } = await supabase.from('service_addons').select('id, name, description, price').in('id', addonIds);
+        serviceAddons = saData || [];
+      }
+      
+      if (optionIds.length > 0) {
+        const { data: soData } = await supabase.from('service_addon_options').select('id, name').in('id', optionIds);
+        serviceOptions = soData || [];
+      }
+
+      addons = addonsData.map((addon) => {
+        const sa = serviceAddons.find(s => s.id === addon.addon_id);
+        const so = serviceOptions.find(o => o.id === addon.option_id);
+        
+        return {
+          id: sa?.id || addon.booking_id || '',
+          name: so ? `${sa?.name} - ${so.name}` : (sa?.name || 'Add-on'),
+          description: sa?.description || null,
+          quantity: addon.quantity || 1,
+          price_eur_cents: addon.price_eur_cents || Math.round((sa?.price || 0) * 100),
+          option_id: addon.option_id
+        };
+      });
+    }
 
     // Fetch created_by user details if present
     let createdByUser = null;
@@ -292,31 +302,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // Fetch add-ons if they exist
     const { data: addonsData } = await supabase
       .from('booking_addons')
-      .select(`
-        booking_id,
-        quantity,
-        price_eur_cents,
-        service_addons (
-          id,
-          name,
-          description,
-          price
-        )
-      `)
+      .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
       .eq('booking_id', id);
 
-    const addons = (addonsData || []).map((addon) => {
-      const serviceAddon = Array.isArray(addon.service_addons)
-        ? addon.service_addons[0]
-        : addon.service_addons;
-      return {
-        id: serviceAddon?.id || '',
-        name: serviceAddon?.name || '',
-        description: serviceAddon?.description || null,
-        quantity: addon.quantity || 1,
-        price_eur_cents: addon.price_eur_cents || 0,
-      };
-    });
+    let addons: any[] = [];
+    if (addonsData && addonsData.length > 0) {
+      const addonIds = [...new Set(addonsData.map((a: any) => a.addon_id).filter(Boolean))];
+      const optionIds = [...new Set(addonsData.map((a: any) => a.option_id).filter(Boolean))];
+
+      let serviceAddons: any[] = [];
+      let serviceOptions: any[] = [];
+
+      if (addonIds.length > 0) {
+        const { data: saData } = await supabase.from('service_addons').select('id, name, description, price').in('id', addonIds);
+        serviceAddons = saData || [];
+      }
+      
+      if (optionIds.length > 0) {
+        const { data: soData } = await supabase.from('service_addon_options').select('id, name').in('id', optionIds);
+        serviceOptions = soData || [];
+      }
+
+      addons = addonsData.map((addon) => {
+        const sa = serviceAddons.find(s => s.id === addon.addon_id);
+        const so = serviceOptions.find(o => o.id === addon.option_id);
+
+        return {
+          id: sa?.id || addon.booking_id || '',
+          name: so ? `${sa?.name} - ${so.name}` : (sa?.name || 'Add-on'),
+          description: sa?.description || null,
+          quantity: addon.quantity || 1,
+          price_eur_cents: addon.price_eur_cents || Math.round((sa?.price || 0) * 100),
+          option_id: addon.option_id
+        };
+      });
+    }
 
     // Merge with existing related data
     const updatedBooking = {

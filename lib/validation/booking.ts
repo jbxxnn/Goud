@@ -20,13 +20,12 @@ const optionalText = (label: string, max = 255) =>
     .or(z.literal(''))
     .transform((value) => (value === '' ? undefined : value));
 
-const optionalPhone = z
+const requiredPhone = z
   .string()
   .trim()
+  .min(1, 'Telefoonnummer is verplicht')
   .max(32, 'Telefoonnummer mag maximaal 32 tekens bevatten')
-  .regex(/^[\d\s+().-]*$/, 'Telefoonnummer bevat ongeldige tekens')
-  .or(z.literal(''))
-  .transform((value) => (value === '' ? undefined : value));
+  .regex(/^[\d\s+().-]*$/, 'Telefoonnummer bevat ongeldige tekens');
 
 const optionalDate = z
   .string()
@@ -50,22 +49,41 @@ const optionalUuid = z
   .transform((value) => (value === '' ? undefined : value))
   .optional();
 
+const requiredMidwifeId = z
+  .string()
+  .trim()
+  .min(1, 'Selecteer een verloskundige')
+  .refine((val) => val === 'other' || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val), {
+    message: 'Ongeldig ID',
+  });
+
 export const bookingContactSchema = z.object({
   clientEmail: emailSchema,
   firstName: requiredName('Voornaam'),
   lastName: requiredName('Achternaam'),
-  phone: optionalPhone.optional(),
+  phone: requiredPhone,
   address: optionalText('Adres').optional(),
   // New fields
   dueDate: optionalDate,
   birthDate: optionalDate,
-  midwifeId: optionalUuid,
+  midwifeId: requiredMidwifeId,
+  otherMidwifeName: optionalText('Naam verloskundige', 100).optional(),
   houseNumber: optionalText('Huisnummer', 20).optional(),
   postalCode: optionalText('Postcode', 20).optional(),
   streetName: optionalText('Straatnaam', 255).optional(),
   city: optionalText('Woonplaats', 100).optional(),
   notes: optionalText('Notities', 500).optional(),
+  gravida: optionalText('Gravida', 10).optional(),
+  para: optionalText('Para', 10).optional(),
   midwifeClientEmail: emailSchema.optional().or(z.literal('')),
+}).superRefine((data, ctx) => {
+  if (data.midwifeId === 'other' && !data.otherMidwifeName) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Naam van de verloskundige is verplicht',
+      path: ['otherMidwifeName'],
+    });
+  }
 });
 
 export type BookingContactInput = z.infer<typeof bookingContactSchema>;

@@ -62,6 +62,7 @@ interface BookingContextProps {
     // Actions
     setStep: (step: 1 | 2 | 3 | 4) => void;
     setServiceId: (id: string) => void;
+    changeService: (id: string) => void;
     setIsTwin: (value: boolean) => void;
     setLocationId: (id: string) => void;
     setDate: (date: string) => void;
@@ -76,7 +77,7 @@ interface BookingContextProps {
     toggleAddonSelection: (addonId: string) => void;
     toggleAddonOptionSelection: (addonId: string, optionId: string) => void;
     setClientEmail: (email: string) => void;
-    setContactDefaults: (defaults: Omit<BookingContactInput, 'clientEmail'>) => void;
+    setContactDefaults: React.Dispatch<React.SetStateAction<Omit<BookingContactInput, 'clientEmail'>>>;
     setIsLoggedIn: (value: boolean) => void;
     setEmailChecked: (value: null | { exists: boolean }) => void;
     setFinalizing: (value: boolean) => void;
@@ -303,14 +304,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
     const [contactDefaults, setContactDefaults] = useState<Omit<BookingContactInput, 'clientEmail'>>({
         firstName: '',
         lastName: '',
-        phone: undefined,
+        phone: '',
         address: undefined,
         postalCode: undefined,
         houseNumber: undefined,
         streetName: undefined,
         city: undefined,
         birthDate: undefined,
-        midwifeId: undefined,
+        midwifeId: "",
         dueDate: undefined,
         notes: undefined,
     });
@@ -461,8 +462,9 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                         setContactDefaults({
                             firstName: u.first_name || '',
                             lastName: u.last_name || '',
-                            phone: u.phone || undefined,
+                            phone: u.phone || '',
                             notes: undefined,
+                            midwifeId: "",
                         });
 
                         if (parentBooking.is_twin) {
@@ -524,14 +526,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                             return {
                                 firstName: user.first_name || '',
                                 lastName: user.last_name || '',
-                                phone: user.phone || undefined,
+                                phone: user.phone || '',
                                 address: user.address || undefined,
                                 postalCode: user.postal_code || undefined,
                                 houseNumber: user.house_number || undefined,
                                 streetName: user.street_name || undefined,
                                 city: user.city || undefined,
                                 birthDate: user.birth_date || undefined,
-                                midwifeId: user.midwife_id || undefined,
+                                midwifeId: user.midwife_id || "",
                                 dueDate: prev.dueDate,
                                 notes: prev.notes,
                             };
@@ -805,10 +807,10 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                         if (user) {
                             setUserRole(user.role || null);
                             if (user.role === 'midwife') {
-                                setContactDefaults({
-                                    ...contactDefaults,
-                                    midwifeId: user.midwife_id || undefined,
-                                });
+                                setContactDefaults(prev => ({
+                                    ...prev,
+                                    midwifeId: user.midwife_id || "",
+                                }));
                                 setContactDefaultsVersion(v => v + 1);
                                 setHasAutofilled(true);
                                 return;
@@ -816,14 +818,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                             setContactDefaults({
                                 firstName: user.first_name || '',
                                 lastName: user.last_name || '',
-                                phone: user.phone || undefined,
+                                phone: user.phone || '',
                                 address: user.address || undefined,
                                 postalCode: user.postal_code || undefined,
                                 houseNumber: user.house_number || undefined,
                                 streetName: user.street_name || undefined,
                                 city: user.city || undefined,
                                 birthDate: user.birth_date || undefined,
-                                midwifeId: user.midwife_id || undefined,
+                                midwifeId: user.midwife_id || "",
                                 dueDate: contactDefaults.dueDate,
                                 notes: contactDefaults.notes,
                             });
@@ -913,6 +915,22 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         window.location.reload();
     };
 
+    const changeService = async (newId: string) => {
+        setServiceId(newId);
+        
+        if (selectedSlot) {
+            setSelectedSlot(null);
+            setDate('');
+            try {
+                await fetch(`/api/bookings/lock?sessionToken=${sessionTokenRef.current}`, {
+                    method: 'DELETE',
+                });
+            } catch (e) {
+                console.error('Failed to release lock on service change', e);
+            }
+        }
+    };
+
     const handleEmailChange = async (value: string) => {
         setClientEmail(value);
         setEmailChecked(null);
@@ -923,9 +941,9 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         // Helper to clear
         const clear = () => {
             setContactDefaults({
-                firstName: '', lastName: '', phone: undefined, address: undefined,
+                firstName: '', lastName: '', phone: '', address: undefined,
                 postalCode: undefined, houseNumber: undefined, streetName: undefined,
-                city: undefined, birthDate: undefined, midwifeId: undefined,
+                city: undefined, birthDate: undefined, midwifeId: "",
                 dueDate: undefined, notes: undefined
             });
             setContactDefaultsVersion(v => v + 1);
@@ -966,7 +984,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                         setContactDefaults({
                             firstName: user.first_name || '',
                             lastName: user.last_name || '',
-                            phone: user.phone || undefined,
+                            phone: user.phone || '',
                             address: user.address || undefined,
                             postalCode: user.postal_code || undefined,
                             houseNumber: user.house_number || undefined,
@@ -1080,7 +1098,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         <BookingContext.Provider
             value={{
                 step, setStep,
-                services, loadingServices, serviceId, setServiceId, selectedService,
+                services, loadingServices, serviceId, setServiceId, changeService, selectedService,
                 locations, loadingLocations, locationId, setLocationId,
                 date, setDate,
                 monthCursor, setMonthCursor,
