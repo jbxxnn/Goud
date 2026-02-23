@@ -180,9 +180,12 @@ export async function POST(request: NextRequest) {
             .from('bookings')
             .select(`
                 *,
-                users:users!client_id (
+                client:users!client_id (
                     first_name,
                     last_name,
+                    email
+                ),
+                created_by_user:users!created_by (
                     email
                 ),
                 services:services!service_id (
@@ -193,12 +196,18 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (fullBooking) {
-            const client = fullBooking.users;
+            const client = fullBooking.client;
             const clientName = [client?.first_name, client?.last_name].filter(Boolean).join(' ') || 'Client';
             const clientEmail = client?.email;
+            const createdByEmail = fullBooking.created_by_user?.email;
+
             const serviceName = fullBooking.services?.name || 'Service';
 
-            if (clientEmail) {
+            let emailRecipients: string[] = [];
+            if (clientEmail) emailRecipients.push(clientEmail);
+            if (createdByEmail && createdByEmail !== clientEmail) emailRecipients.push(createdByEmail);
+
+            if (emailRecipients.length > 0) {
                 // Determine base URL
                 const protocol = request.headers.get('x-forwarded-proto') || 'http';
                 const host = request.headers.get('host') || 'goudecho.nl';
@@ -208,7 +217,7 @@ export async function POST(request: NextRequest) {
                 // We import dynamically or use the function we just added
                 const { sendRepeatBookingEmail } = await import('@/lib/email');
 
-                await sendRepeatBookingEmail(clientEmail, {
+                await sendRepeatBookingEmail(emailRecipients, {
                     clientName,
                     serviceName,
                     link: fullLink

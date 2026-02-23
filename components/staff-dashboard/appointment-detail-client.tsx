@@ -40,6 +40,7 @@ interface AppointmentDetailClientProps {
 
 export function AppointmentDetailClient({ booking, currentUser, previousBookings = [] }: AppointmentDetailClientProps) {
     const t = useTranslations('AppointmentDetail');
+    const tModal = useTranslations('BookingModal');
     const router = useRouter();
     const queryClient = useQueryClient();
     // const [notes, setNotes] = useState(booking.internal_notes || '');
@@ -309,6 +310,78 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Price Breakdown */}
+                    <Card style={{borderRadius: '10px'}}>
+                        <CardHeader>
+                            <CardTitle className="text-base">{tModal('priceBreakdown')}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {(() => {
+                                const addonsTotal = (booking.booking_addons || []).reduce((sum: number, addon: any) => sum + ((addon.price_eur_cents || 0) * (addon.quantity || 1)), 0);
+                                const policyTotal = (() => {
+                                    if (!booking.policy_answers || !Array.isArray(booking.policy_answers)) return 0;
+                                    return booking.policy_answers.reduce((sum: number, answer: { priceEurCents?: number }) => {
+                                        return sum + (answer.priceEurCents || 0);
+                                    }, 0);
+                                })();
+                                const basePrice = booking.price_eur_cents - addonsTotal - policyTotal;
+
+                                return (
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">{tModal('baseService')}</span>
+                                            <span className="font-medium">€{(basePrice / 100).toFixed(2)}</span>
+                                        </div>
+
+                                        {policyTotal > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">{tModal('servicePolicy')}</span>
+                                                <span className="font-medium">€{(policyTotal / 100).toFixed(2)}</span>
+                                            </div>
+                                        )}
+
+                                        {addonsTotal > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">{tModal('addons')}</span>
+                                                <span className="font-medium">€{(addonsTotal / 100).toFixed(2)}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center pt-3 mt-3 border-t">
+                                            <span className="font-semibold text-base">{tModal('total')}</span>
+                                            <span className="font-bold text-lg text-primary">€{(booking.price_eur_cents / 100).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </CardContent>
+                    </Card>
+
+                    {/* Selected Addons */}
+                    {booking.booking_addons && booking.booking_addons.length > 0 && (
+                        <Card style={{borderRadius: '10px'}}>
+                            <CardHeader>
+                                <CardTitle className="text-base">{tModal('selectedAddons')}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {booking.booking_addons.map((addon: any) => (
+                                    <div key={addon.id} className="flex justify-between items-start p-3 bg-muted/30 border border-muted-foreground/10 rounded-lg text-sm">
+                                        <div className="flex-1">
+                                            <div className="font-medium">{addon.service_addons?.name}</div>
+                                            {addon.service_addons?.description && (
+                                                <div className="text-muted-foreground text-xs mt-1">{addon.service_addons.description}</div>
+                                            )}
+                                            {addon.quantity > 1 && (
+                                                <div className="text-muted-foreground text-xs mt-1">{tModal('quantity', { quantity: addon.quantity })}</div>
+                                            )}
+                                        </div>
+                                        <div className="font-medium ml-4">€{(((addon.price_eur_cents || 0) * (addon.quantity || 1)) / 100).toFixed(2)}</div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
 
 
 

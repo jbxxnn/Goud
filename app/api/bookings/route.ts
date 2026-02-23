@@ -285,10 +285,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const emailRecipient = midwifeClientEmail || clientEmail;
+      // Determine email recipient(s)
+      let emailRecipients: string[] = [];
+      if (clientEmail) {
+         emailRecipients.push(clientEmail);
+      }
+      if (midwifeClientEmail && midwifeClientEmail !== clientEmail) {
+         emailRecipients.push(midwifeClientEmail);
+      }
+      // Depending on Auth setup, createdByUserId might belong to an email we don't know directly here.
+      // Easiest is to just use clientEmail and midwifeClientEmail which are passed in the payload.
+      if (emailRecipients.length === 0) {
+         console.warn('No email recipient found for confirmation email.');
+      }
 
-      if (emailRecipient && serviceData && locationData) {
-        await sendBookingConfirmationEmail(emailRecipient, {
+      if (emailRecipients.length > 0 && serviceData && locationData) {
+        await sendBookingConfirmationEmail(emailRecipients, {
           clientName: firstName,
           serviceName: serviceData.name,
           date: formattedDate,

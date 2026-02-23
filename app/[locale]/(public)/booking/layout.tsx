@@ -26,7 +26,9 @@ export default function RootLayout({
         <>
             <nav className="w-full flex justify-center bg-secondary border-b border-b-foreground/10 h-9 sticky top-0 z-50 px-4">
                 <div className="w-full max-w-full flex text-lg p-2 px-2 text-sm bg-secondary">
-                    <Link href="/">⃪⃪ </Link>
+                    <Link href="/">
+                        <Image src="/Goudecho.png" alt="Logo" width={100} height={100} className="pointer-events-cursor" />
+                    </Link>
                 </div>
                 <LanguageSwitcher />
             </nav>

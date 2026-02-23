@@ -968,8 +968,8 @@
             "free": "Free",
             "generating": "Generating...",
             "generateButton": "Generate Booking Link",
-            "linkReady": "Link Ready",
-            "linkExpiry": "Share this link with the client. It expires in 30 days.",
+            "linkReady": "Email Sent & Link Ready",
+            "linkExpiry": "The client has been sent an email with the booking link. You can also share this link directly. It expires in 30 days.",
             "generateAnother": "Generate Another",
             "done": "Done",
             "toasts": {

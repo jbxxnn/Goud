@@ -118,7 +118,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         id,
         status,
         start_time,
-        users!client_id ( email, first_name ),
+        client:users!client_id ( email, first_name ),
+        created_by_user:users!created_by ( email ),
         services ( name ),
         locations ( name )
       `)
@@ -177,11 +178,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Send Reschedule Email
     try {
-      // Safe access for array/object returns
-      const userOrUsers = existing.users as any;
-      const userData = Array.isArray(userOrUsers) ? userOrUsers[0] : userOrUsers;
-      const clientEmail = userData?.email;
-      const clientName = userData?.first_name || 'Client';
+      // We need to fetch both client and booker emails if they differ
+      const clientEmail = (existing.client as any)?.email;
+      const clientName = (existing.client as any)?.first_name || 'Client';
+      const createdByEmail = (existing.created_by_user as any)?.email;
+
+      let emailRecipients: string[] = [];
+      if (clientEmail) emailRecipients.push(clientEmail);
+      if (createdByEmail && createdByEmail !== clientEmail) emailRecipients.push(createdByEmail);
+
+      if (emailRecipients.length === 0) {
+         console.warn('No email recipient found for reschedule email.');
+      }
 
       const serviceOrServices = existing.services as any;
       const serviceData = Array.isArray(serviceOrServices) ? serviceOrServices[0] : serviceOrServices;
@@ -207,9 +215,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
         : undefined;
 
-      if (clientEmail) {
+      if (emailRecipients.length > 0) {
         const { sendBookingRescheduledEmail } = await import('@/lib/email');
-        await sendBookingRescheduledEmail(clientEmail, {
+        await sendBookingRescheduledEmail(emailRecipients, {
           clientName,
           serviceName,
           oldDate,
@@ -361,10 +369,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 // Helper to trigger cancellation email
 async function triggerCancellationEmail(existingBooking: any) {
   try {
-    const userOrUsers = existingBooking.users as any;
-    const userData = Array.isArray(userOrUsers) ? userOrUsers[0] : userOrUsers;
-    const clientEmail = userData?.email;
-    const clientName = userData?.first_name || 'Client';
+    // We need to fetch both client and booker emails if they differ
+    const clientEmail = (existingBooking.client as any)?.email;
+    const clientName = (existingBooking.client as any)?.first_name || 'Client';
+    const createdByEmail = (existingBooking.created_by_user as any)?.email;
+
+    let emailRecipients: string[] = [];
+    if (clientEmail) emailRecipients.push(clientEmail);
+    if (createdByEmail && createdByEmail !== clientEmail) emailRecipients.push(createdByEmail);
+
+    if (emailRecipients.length === 0) {
+        console.warn('No email recipient found for cancellation email.');
+    }
 
     const serviceOrServices = existingBooking.services as any;
     const serviceData = Array.isArray(serviceOrServices) ? serviceOrServices[0] : serviceOrServices;
@@ -378,9 +394,9 @@ async function triggerCancellationEmail(existingBooking: any) {
     const date = dateObj.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const time = dateObj.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
-    if (clientEmail) {
+    if (emailRecipients.length > 0) {
       const { sendBookingCancellationEmail } = await import('@/lib/email');
-      await sendBookingCancellationEmail(clientEmail, {
+      await sendBookingCancellationEmail(emailRecipients, {
         clientName,
         serviceName,
         date,

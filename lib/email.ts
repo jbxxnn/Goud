@@ -52,7 +52,7 @@ export type BookingConfirmationDetails = {
 };
 
 export async function sendBookingConfirmationEmail(
-    to: string,
+    to: string | string[],
     details: BookingConfirmationDetails
 ) {
     if (!process.env.RESEND_API_KEY) {
@@ -70,7 +70,7 @@ export async function sendBookingConfirmationEmail(
 
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
-            to: [to],
+            to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: emailHtml,
         });
@@ -94,7 +94,7 @@ export type BookingReminderDetails = {
 };
 
 export async function sendBookingReminderEmail(
-    to: string,
+    to: string | string[],
     details: BookingReminderDetails
 ) {
     if (!process.env.RESEND_API_KEY) {
@@ -112,7 +112,7 @@ export async function sendBookingReminderEmail(
 
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
-            to: [to],
+            to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: emailHtml,
         });
@@ -138,7 +138,7 @@ export type BookingRescheduledDetails = {
 };
 
 export async function sendBookingRescheduledEmail(
-    to: string,
+    to: string | string[],
     details: BookingRescheduledDetails
 ) {
     if (!process.env.RESEND_API_KEY) {
@@ -156,7 +156,7 @@ export async function sendBookingRescheduledEmail(
 
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
-            to: [to],
+            to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: emailHtml,
         });
@@ -179,7 +179,7 @@ export type BookingCancellationDetails = {
 };
 
 export async function sendBookingCancellationEmail(
-    to: string,
+    to: string | string[],
     details: BookingCancellationDetails
 ) {
     if (!process.env.RESEND_API_KEY) {
@@ -197,7 +197,7 @@ export async function sendBookingCancellationEmail(
 
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
-            to: [to],
+            to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: emailHtml,
         });
@@ -217,7 +217,7 @@ export type RepeatBookingDetails = {
 };
 
 export async function sendRepeatBookingEmail(
-    to: string,
+    to: string | string[],
     details: RepeatBookingDetails
 ) {
     if (!process.env.RESEND_API_KEY) {
@@ -238,7 +238,7 @@ export async function sendRepeatBookingEmail(
 
         const data = await resend.emails.send({
             from: `Goud Echo <${fromEmail}>`,
-            to: [to],
+            to: Array.isArray(to) ? to : [to],
             subject: subject,
             html: emailHtml,
         });

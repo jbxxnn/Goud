@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RepeatPrescriber } from './repeat-prescriber';
 import { differenceInMinutes } from 'date-fns';
 import { useTranslations, useLocale } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PolicyField {
   id: string;
@@ -93,7 +94,13 @@ const getPaymentBadge = (status: string, t: (key: string) => string) => {
 };
 
 export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, onNoShow, userRole }: BookingModalProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  if (isOpen) {
+    console.log('BookingModal rendered with booking:', booking);
+  }
   const t = useTranslations('BookingModal');
+  const queryClient = useQueryClient();
   const tStatus = useTranslations('BookingStatus');
   const locale = useLocale();
 
@@ -389,6 +396,8 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   </div>
                 </div>
               )}
+
+              
 
               {/* Policy Answers */}
               {booking.policy_answers && (() => {

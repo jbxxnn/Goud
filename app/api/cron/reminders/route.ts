@@ -42,7 +42,8 @@ export async function GET(req: NextRequest) {
         price_eur_cents,
         notes,
         created_by,
-        users!bookings_created_by_fkey ( email, first_name ),
+        client:users!client_id ( email, first_name ),
+        created_by_user:users!created_by ( email ),
         services ( name ),
         locations ( name, address )
       `)
@@ -68,15 +69,19 @@ export async function GET(req: NextRequest) {
 
         for (const booking of bookings) {
             // Handle possibility of array or object return from Supabase
-            // TS believes it's an array, runtime might be object or array depending on Supabase version/config
-            const userOrUsers = booking.users as any;
-            const userData = Array.isArray(userOrUsers) ? userOrUsers[0] : userOrUsers;
+            const clientData = Array.isArray(booking.client) ? booking.client[0] : booking.client;
+            const createdByData = Array.isArray(booking.created_by_user) ? booking.created_by_user[0] : booking.created_by_user;
+            
+            const clientEmail = (clientData as any)?.email;
+            const clientName = (clientData as any)?.first_name || 'Client';
+            const createdByEmail = (createdByData as any)?.email;
 
-            const clientEmail = userData?.email;
-            const clientName = userData?.first_name || 'Client';
+            let emailRecipients: string[] = [];
+            if (clientEmail) emailRecipients.push(clientEmail);
+            if (createdByEmail && createdByEmail !== clientEmail) emailRecipients.push(createdByEmail);
 
-            if (!clientEmail) {
-                console.warn(`[Cron] Booking ${booking.id} has no client email. Skipping.`);
+            if (emailRecipients.length === 0) {
+                console.warn(`[Cron] Booking ${booking.id} has no client or booker email. Skipping.`);
                 results.push({ id: booking.id, status: 'skipped_no_email' });
                 continue;
             }
@@ -106,7 +111,7 @@ export async function GET(req: NextRequest) {
                 : undefined;
 
             try {
-                await sendBookingReminderEmail(clientEmail, {
+                await sendBookingReminderEmail(emailRecipients, {
                     clientName,
                     serviceName,
                     date: formattedDate,

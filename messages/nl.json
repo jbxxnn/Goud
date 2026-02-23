@@ -968,8 +968,8 @@
             "free": "Gratis",
             "generating": "Genereren...",
             "generateButton": "Boekingslink genereren",
-            "linkReady": "Link gereed",
-            "linkExpiry": "Deel deze link met de cliënt. Deze verloopt na 30 dagen.",
+            "linkReady": "E-mail verzonden & Link gereed",
+            "linkExpiry": "De cliënt heeft een e-mail ontvangen met de boekingslink. U kunt deze link ook direct delen. Deze verloopt na 30 dagen.",
             "generateAnother": "Nog een genereren",
             "done": "Klaar",
             "toasts": {
