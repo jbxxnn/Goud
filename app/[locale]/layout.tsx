@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "GoudEcho",
   description: "Goud echo en prenatale screening",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 const outfit = Outfit({
