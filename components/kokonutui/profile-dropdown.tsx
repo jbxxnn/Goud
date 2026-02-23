@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Settings, FileText, LogOut, User } from "lucide-react";
+import { Settings, FileText, LogOut, User, Calendar } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,19 +61,13 @@ export default function ProfileDropdown({
     const menuItems: MenuItem[] = [
         {
             label: "Profiel",
-            href: "/dashboard/settings",
+            href: "/dashboard/profile",
             icon: <User className="w-4 h-4" />,
         },
         {
-            label: "Instellingen",
-            href: "/dashboard/settings",
-            icon: <Settings className="w-4 h-4" />,
-        },
-        {
-            label: "Voorwaarden & Beleid",
-            href: "#",
-            icon: <FileText className="w-4 h-4" />,
-            external: true,
+            label: "Nieuwe Echo Boeken",
+            href: "/dashboard/book",
+            icon: <Calendar className="w-4 h-4" />,
         },
     ];
 

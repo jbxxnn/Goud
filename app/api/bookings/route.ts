@@ -475,6 +475,74 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const anyUserId = searchParams.get('anyUserId');
+    const patientId = searchParams.get('patientId');
+
+    // --- Status Counts Logic ---
+    const statusKeys = ['pending', 'confirmed', 'cancelled', 'ongoing', 'completed', 'no_show'];
+    
+    const buildBaseFilter = (q: any) => {
+        let filtered = q;
+        if (anyUserId) {
+          filtered = filtered.or(`created_by.eq.${anyUserId},client_id.eq.${anyUserId}`);
+        }
+        if (clientId && !anyUserId) {
+          filtered = filtered.eq('created_by', clientId);
+        }
+        if (patientId && !anyUserId) {
+          filtered = filtered.eq('client_id', patientId);
+        }
+
+        if (matchingUserIds !== null && matchingUserIds.length > 0) {
+          const idList = `(${matchingUserIds.join(',')})`;
+          if (exactDateFilter) {
+              if (exactDateFilter.startsWith('partial_ids:')) {
+                 const val = exactDateFilter.split(':')[1];
+                 if (val !== 'none') {
+                    filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList},id.in.(${val})`);
+                 } else {
+                    filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList}`);
+                 }
+              } else {
+                 filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList},birth_date.eq.${exactDateFilter}`);
+              }
+          } else {
+              filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList}`);
+          }
+        } else if (exactDateFilter) {
+            if (exactDateFilter.startsWith('partial_ids:')) {
+               const val = exactDateFilter.split(':')[1];
+               if (val !== 'none') {
+                   filtered = filtered.or(`id.in.(${val})`);
+               } else {
+                   filtered = filtered.eq('id', '00000000-0000-0000-0000-000000000000');
+               }
+            } else {
+               filtered = filtered.or(`birth_date.eq.${exactDateFilter}`);
+            }
+        }
+
+        if (staffId) filtered = filtered.eq('staff_id', staffId);
+        if (locationId && locationId !== 'all') filtered = filtered.eq('location_id', locationId);
+        if (dateFrom) filtered = filtered.gte('start_time', dateFrom);
+        if (dateTo) filtered = filtered.lte('start_time', dateTo);
+        
+        return filtered;
+    };
+
+    const statusCountsPromise = Promise.all([
+        buildBaseFilter(supabase.from('bookings').select('*', { count: 'exact', head: true })),
+        ...statusKeys.map(s => buildBaseFilter(supabase.from('bookings').select('*', { count: 'exact', head: true })).eq('status', s))
+    ]).then(results => {
+        const counts: Record<string, number> = {
+            all: results[0].count || 0
+        };
+        statusKeys.forEach((s, i) => {
+            counts[s] = results[i+1].count || 0;
+        });
+        return counts;
+    });
+
     let query = supabase
       .from('bookings')
       .select(`
@@ -494,70 +562,10 @@ export async function GET(req: NextRequest) {
           first_name,
           last_name
         )
-      `, { count: 'exact' })
-      .order('start_time', { ascending: false });
+      `, { count: 'exact' });
 
-    // If anyUserId provided, filter by created_by OR client_id (Inclusive for "My Bookings" or "Client Bookings")
-    const anyUserId = searchParams.get('anyUserId');
-    if (anyUserId) {
-      query = query.or(`created_by.eq.${anyUserId},client_id.eq.${anyUserId}`);
-    }
+    query = buildBaseFilter(query);
 
-    // If clientId provided, filter by created_by (Legacy behavior for Client Dashboard - bookings they CREATED)
-    if (clientId && !anyUserId) {
-      query = query.eq('created_by', clientId);
-    }
-
-    // If patientId provided, filter by client_id (For Midwife Dashboard - bookings where they are the CLIENT/PATIENT)
-    const patientId = searchParams.get('patientId');
-    if (patientId && !anyUserId) {
-      query = query.eq('client_id', patientId);
-    }
-
-    // If search provided, filter by matching user IDs for the PATIENT and exact DOB
-    if (matchingUserIds !== null && matchingUserIds.length > 0) {
-      const idList = `(${matchingUserIds.join(',')})`;
-      
-      if (exactDateFilter) {
-          if (exactDateFilter.startsWith('partial_ids:')) {
-             const val = exactDateFilter.split(':')[1];
-             if (val !== 'none') {
-                query = query.or(`client_id.in.${idList},created_by.in.${idList},id.in.(${val})`);
-             } else {
-                query = query.or(`client_id.in.${idList},created_by.in.${idList}`);
-             }
-          } else {
-             query = query.or(`client_id.in.${idList},created_by.in.${idList},birth_date.eq.${exactDateFilter}`);
-          }
-      } else {
-          query = query.or(`client_id.in.${idList},created_by.in.${idList}`);
-      }
-    } else if (exactDateFilter) {
-        // No user match, but date match
-        if (exactDateFilter.startsWith('partial_ids:')) {
-           const val = exactDateFilter.split(':')[1];
-           if (val !== 'none') {
-               query = query.or(`id.in.(${val})`);
-           } else {
-               // Force empty result because date didn't match anything
-               query = query.eq('id', '00000000-0000-0000-0000-000000000000');
-           }
-        } else {
-           query = query.or(`birth_date.eq.${exactDateFilter}`);
-        }
-    }
-
-    // Filter by staffId if provided
-    if (staffId) {
-      query = query.eq('staff_id', staffId);
-    }
-
-    // Filter by locationId if provided
-    if (locationId && locationId !== 'all') {
-      query = query.eq('location_id', locationId);
-    }
-
-    // Filter by status if provided
     if (status) {
       if (status.includes(',')) {
         const statuses = status.split(',').map(s => s.trim());
@@ -567,18 +575,15 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Filter by date range if provided
-    if (dateFrom) {
-      query = query.gte('start_time', dateFrom);
-    }
-    if (dateTo) {
-      query = query.lte('start_time', dateTo);
-    }
+    query = query.order('start_time', { ascending: false });
 
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    const { data, error, count } = await query.range(from, to);
+    const [ { data, error, count }, statusCounts ] = await Promise.all([
+        query.range(from, to),
+        statusCountsPromise
+    ]);
 
     if (error) {
       console.error('Supabase Query Error:', error);
@@ -689,6 +694,7 @@ export async function GET(req: NextRequest) {
         total: finalCount,
         total_pages: totalPagesValue,
       },
+      statusCounts
     });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });

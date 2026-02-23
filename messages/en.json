@@ -1150,6 +1150,7 @@
             "confirmed": "Confirmed",
             "cancelled": "Cancelled",
             "completed": "Completed",
+            "no_show": "No show",
             "reset": "Reset",
             "from": "From",
             "to": "To"

@@ -293,7 +293,15 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
                         {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
                       </Badge>
-                    )}</div>
+                    )}
+                     {booking.is_twin && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
+                                                >
+                                                    Tweeling
+                                                </Badge>
+                                            )}</div>
 
                   </div>
                   <div>

@@ -43,6 +43,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [dateFrom, setDateFrom] = useState<string>('');
     const [dateTo, setDateTo] = useState<string>('');
+    const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
     const fetchBookings = useCallback(async (isInitial = false) => {
         try {
@@ -80,6 +81,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
             }
 
             setBookings(result.data || []);
+            setStatusCounts(result.statusCounts || {});
         } catch (err) {
             console.error(err);
             toast.error(t('toasts.loadError'));
@@ -184,6 +186,8 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                 return 'bg-red-600 text-white hover:bg-red-600 border-red-200';
             case 'completed':
                 return 'bg-green-600 text-white hover:bg-green-600 border-green-200';
+            case 'no_show':
+                return 'bg-gray-600 text-white hover:bg-gray-600 border-gray-200';
             default:
                 return 'bg-gray-600 text-white hover:bg-gray-600';
         }
@@ -198,7 +202,8 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
             pending: t('filters.pending'),
             confirmed: t('filters.confirmed'),
             cancelled: t('filters.cancelled'),
-            completed: t('filters.completed')
+            completed: t('filters.completed'),
+            no_show: t('filters.no_show')
         };
         return mappedStatuses[statusKey] || status.charAt(0).toUpperCase() + status.slice(1);
     };
@@ -253,11 +258,12 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                         className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         style={{ borderRadius: '1rem' }}
                     >
-                        <option value="all">{t('filters.allStatuses')}</option>
-                        <option value="pending">{t('filters.pending')}</option>
-                        <option value="confirmed">{t('filters.confirmed')}</option>
-                        <option value="cancelled">{t('filters.cancelled')}</option>
-                        <option value="completed">{t('filters.completed')}</option>
+                        <option value="all">{t('filters.allStatuses')} ({statusCounts.all || 0})</option>
+                        <option value="pending">{t('filters.pending')} ({statusCounts.pending || 0})</option>
+                        <option value="confirmed">{t('filters.confirmed')} ({statusCounts.confirmed || 0})</option>
+                        <option value="cancelled">{t('filters.cancelled')} ({statusCounts.cancelled || 0})</option>
+                        <option value="completed">{t('filters.completed')} ({statusCounts.completed || 0})</option>
+                        <option value="no_show">{t('filters.no_show')} ({statusCounts.no_show || 0})</option>
                     </select>
                 </div>
 
@@ -363,9 +369,10 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                             {booking.isRepeat && (
                                                 <Badge
                                                     variant="secondary"
-                                                    className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider"
+                                                    className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 text-[10px] tracking-wider"
                                                 >
                                                     {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                                                    <p>m</p>
                                                 </Badge>
                                             )}
                                         </div>

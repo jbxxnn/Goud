@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .from('bookings')
       .select(`
         *,
-        users:users!created_by (
+        users:users!client_id (
           id,
           email,
           first_name,
@@ -34,7 +34,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .eq('id', id)
       .maybeSingle();
 
-    if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (error || !data) {
+      if (error) console.error('Error fetching booking:', error);
+      return NextResponse.json({ error: 'Not found', details: error }, { status: 404 });
+    }
 
     // Fetch add-ons for this booking without PostgREST joins to circumvent missing FK constraint
     const { data: addonsData } = await supabase
@@ -91,6 +94,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         ...data,
         addons,
         created_by_user: createdByUser,
+        isRepeat: !!data.parent_booking_id
       }
     });
   } catch (e: any) {
@@ -114,7 +118,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         id,
         status,
         start_time,
-        users!created_by ( email, first_name ),
+        users!client_id ( email, first_name ),
         services ( name ),
         locations ( name )
       `)
@@ -251,7 +255,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .from('bookings')
       .select(`
         *,
-        users:users!created_by (
+        users:users!client_id (
           id,
           email,
           first_name,

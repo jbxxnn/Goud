@@ -182,5 +182,6 @@ export interface BookingsResponse {
         total: number;
         total_pages: number;
     };
+    statusCounts?: Record<string, number>;
 }
 

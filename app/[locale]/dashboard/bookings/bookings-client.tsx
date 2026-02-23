@@ -126,6 +126,7 @@ export default function BookingsClient({
   const bookings = bookingsData?.data || [];
   const totalPages = bookingsData?.pagination?.total_pages || 0;
   const total = bookingsData?.pagination?.total || 0;
+  const statusCounts = bookingsData?.statusCounts || {};
   const loading = bookingsLoading;
 
   // Derive calendar events
@@ -365,10 +366,13 @@ export default function BookingsClient({
                 className="border bg-card px-3 py-1.5 text-sm h-10"
                 style={{ borderRadius: '1rem' }}
               >
-                <option value="all">{t('filters.all')}</option>
-                <option value="pending">{t('filters.pending')}</option>
-                <option value="confirmed">{t('filters.confirmed')}</option>
-                <option value="cancelled">{t('filters.cancelled')}</option>
+                <option value="all">{t('filters.all')} ({statusCounts.all || 0})</option>
+                <option value="pending">{tStatus('pending')} ({statusCounts.pending || 0})</option>
+                <option value="confirmed">{tStatus('confirmed')} ({statusCounts.confirmed || 0})</option>
+                <option value="ongoing">{tStatus('ongoing')} ({statusCounts.ongoing || 0})</option>
+                <option value="completed">{tStatus('completed')} ({statusCounts.completed || 0})</option>
+                <option value="cancelled">{tStatus('cancelled')} ({statusCounts.cancelled || 0})</option>
+                <option value="no_show">{tStatus('no_show')} ({statusCounts.no_show || 0})</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -466,11 +470,7 @@ export default function BookingsClient({
                   handleCancel,
                   handleDelete,
                   !clientId && !staffId, // canDelete: true only if admin
-                  // (booking) => {
-                  // (booking) => {
-                  //   setReschedulingBooking(booking);
-                  //   setIsRescheduleModalOpen(true);
-                  // }
+                  !staffId // showStaff: hide if we are in a staff-specific view
                 )}
                 data={bookings}
                 emptyMessage={t('table.emptyMessage')}

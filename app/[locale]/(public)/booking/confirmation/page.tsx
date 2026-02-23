@@ -7,6 +7,8 @@ import { Booking } from '@/lib/types/booking';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { Badge } from '@/components/ui/badge';
+import { differenceInMinutes } from 'date-fns';
 import { CheckmarkCircle03Icon, Calendar02Icon, DashboardSquare02Icon } from '@hugeicons/core-free-icons';
 
 
@@ -248,7 +250,26 @@ function BookingConfirmationContent() {
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium text-gray-500 mb-1">{t('service')}</div>
-                  <div className="text-base font-semibold text-gray-900">{service?.name || t('na')}</div>
+                  <div className="text-base font-semibold text-gray-900">
+                    {service?.name || t('na')}
+                    {booking.is_twin && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5 ml-2"
+                                                >
+                                                    Tweeling
+                                                </Badge>
+                                            )}
+                                            {booking.isRepeat && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 text-[10px] tracking-wider ml-2"
+                                                >
+                                                    {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                                                    <p>m</p>
+                                                </Badge>
+                                            )}
+                  </div>
                   {/* {service?.duration && (
                     <div className="text-sm text-gray-500 mt-1">
                       {formatDuration(service.duration)}

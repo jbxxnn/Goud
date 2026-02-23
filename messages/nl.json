@@ -1150,6 +1150,7 @@
             "confirmed": "Bevestigd",
             "cancelled": "Geannuleerd",
             "completed": "Voltooid",
+            "no_show": "No show",
             "reset": "Reset",
             "from": "Van",
             "to": "Tot"

@@ -19,7 +19,7 @@ const getStatusBadge = (status: BookingStatus, t: any) => {
         confirmed: { variant: 'confirmed', label: t('confirmed') },
         cancelled: { variant: 'destructive', label: t('cancelled') },
         ongoing: { variant: 'ongoing', label: t('ongoing') },
-        completed: { variant: 'completed', label: t('completed') },
+        completed: { variant: 'completed', label: t('completed') }, 
         no_show: { variant: 'noShow', label: t('no_show') },
     };
     const config = variants[status] || { variant: 'secondary', label: status || 'Unknown' };
@@ -58,8 +58,10 @@ export const createBookingColumns = (
     onCancel: (booking: Booking) => void,
     onDelete: (booking: Booking) => void,
     canDelete: boolean = true, // Default to true for admin users
+    showStaff: boolean = true,
     // onReschedule?: (booking: Booking) => void
-): ColumnDef<Booking>[] => [
+): ColumnDef<Booking>[] => {
+    const columns: ColumnDef<Booking>[] = [
         {
             id: 'select',
             header: ({ table }) => (
@@ -124,9 +126,18 @@ export const createBookingColumns = (
                     <div>
                         <div className="font-medium flex items-center gap-2">
                             {service.name}
+                             {booking.is_twin && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
+                                                >
+                                                    Tweeling
+                                                </Badge>
+                                            )}
                             {booking.parent_booking_id && (
-                                <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
+                                <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 text-[10px] tracking-wider">
                                     {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                                    <p>m</p>
                                 </Badge>
                             )}
                         </div>
@@ -150,7 +161,10 @@ export const createBookingColumns = (
                 );
             },
         },
-        {
+    ];
+
+    if (showStaff) {
+        columns.push({
             accessorKey: 'staff',
             header: t('columns.staff'),
             cell: ({ row }) => {
@@ -160,7 +174,10 @@ export const createBookingColumns = (
                 const fullName = [staff.first_name, staff.last_name].filter(Boolean).join(' ') || t('cells.unknown');
                 return <div className="font-medium">{fullName}</div>;
             },
-        },
+        });
+    }
+
+    columns.push(
         {
             accessorKey: 'status',
             header: t('columns.status'),
@@ -222,5 +239,8 @@ export const createBookingColumns = (
                 );
             },
         },
-    ];
+    );
+
+    return columns;
+};
 
