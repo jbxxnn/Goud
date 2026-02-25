@@ -54,6 +54,7 @@ export default function ClientDetailClient({
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBackLoading, setIsBackLoading] = useState(false);
   const [midwives, setMidwives] = useState<Midwife[]>([]);
   const t = useTranslations('Clients.details');
   const tCommon = useTranslations('Common');
@@ -248,10 +249,18 @@ export default function ClientDetailClient({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push('/dashboard/clients')}
+            onClick={() => {
+              setIsBackLoading(true);
+              router.push('/dashboard/clients');
+            }}
             className="h-8 w-8"
+            disabled={isBackLoading}
           >
-            <HugeiconsIcon icon={ArrowLeftIcon} className="h-4 w-4" />
+            {isBackLoading ? (
+              <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 animate-spin" />
+            ) : (
+              <HugeiconsIcon icon={ArrowLeftIcon} className="h-4 w-4" />
+            )}
           </Button>
           <div>
             <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>

@@ -49,6 +49,9 @@ export function RepeatPrescriber({ bookingId, serviceId }: RepeatPrescriberProps
                 if (data.success) {
                     const active = data.data.filter((t: any) => t.active);
                     setRepeatTypes(active);
+                    if (active.length === 1) {
+                        setSelectedType(active[0].id);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching repeat types', error);
@@ -96,7 +99,7 @@ export function RepeatPrescriber({ bookingId, serviceId }: RepeatPrescriberProps
 
     const handleReset = () => {
         setGeneratedLink(null);
-        setSelectedType(null);
+        setSelectedType(repeatTypes.length === 1 ? repeatTypes[0].id : null);
         setCopied(false);
     };
 

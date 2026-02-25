@@ -11,6 +11,12 @@
         "booking": "Book Appointment",
         "dashboard": "Dashboard"
     },
+    "Auth": {
+        "greeting": "Hey, {name}!",
+        "signIn": "Sign in",
+        "signUp": "Sign up",
+        "logout": "Logout"
+    },
     "Dashboard": {
         "menu": {
             "bookNewEcho": "Book New Echo",
@@ -1041,8 +1047,9 @@
         "columns": {
             "client": "Client",
             "contact": "Contact",
-            "memberSince": "Member Since",
-            "lastLogin": "Last Login",
+            "city": "City",
+            "address": "Address",
+            "birthDate": "Date of Birth",
             "actions": "Actions"
         },
         "cells": {
@@ -1404,6 +1411,12 @@
         "name": "Name",
         "email": "Email",
         "phone": "Phone",
+        "address": "Address",
+        "birthDate": "Date of Birth",
+        "dueDate": "Due Date",
+        "midwife": "Midwife",
+        "gravida": "Gravida",
+        "para": "Para",
         "appointmentDetails": "Appointment Details",
         "date": "Date",
         "time": "Time",

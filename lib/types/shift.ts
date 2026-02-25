@@ -1,3 +1,4 @@
+import { format, parseISO } from 'date-fns';
 // Shift Management Types
 
 // =============================================
@@ -121,6 +122,7 @@ export interface CreateShiftRequest {
   notes?: string | null;
   service_ids: string[]; // Services to assign to this shift
   max_concurrent_bookings?: { [service_id: string]: number | null }; // Per-service booking limits
+  skip_conflicting_occurrences?: boolean; // If true, create but skip conflicting dates
 }
 
 export interface UpdateShiftRequest {
@@ -330,11 +332,13 @@ export interface ShiftConflict {
   message: string;
   conflicting_shift?: Shift;
   blackout_period?: BlackoutPeriod;
+  occurrence_date?: string; // For recurring shifts, which occurrence date has the conflict
 }
 
 export interface ShiftValidationResult {
   valid: boolean;
   conflicts: ShiftConflict[];
+  skippable?: boolean; // True if conflicts are only on recurring occurrences that can be skipped
 }
 
 // =============================================
@@ -368,7 +372,7 @@ export function shiftToCalendarEvent(
   return {
     id: shift.id,
     title: `${shift.staff_first_name} ${shift.staff_last_name} - ${shift.location_name}`,
-    description: shift.services.map(s => s.service_name).join(', '),
+    description: `${format(parseISO(shift.start_time), 'HH:mm')} - ${format(parseISO(shift.end_time), 'HH:mm')} • ${shift.services.map(s => s.service_name).join(', ')}`,
     startDate: shift.start_time,
     endDate: shift.end_time,
     color: color,

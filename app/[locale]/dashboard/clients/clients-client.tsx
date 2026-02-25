@@ -66,6 +66,7 @@ export default function ClientsClient({
   const t = useTranslations('Clients');
   const tTable = useTranslations('Table');
   const router = useRouter();
+  const [loadingClientId, setLoadingClientId] = useState<string | null>(null);
 
   // URL & Filter State
   const [page, setPage] = useState(initialPagination.page);
@@ -167,6 +168,7 @@ export default function ClientsClient({
 
   // View client details
   const handleView = (client: User) => {
+    setLoadingClientId(client.id);
     router.push(`/dashboard/clients/${client.id}`);
   };
 
@@ -438,7 +440,7 @@ export default function ClientsClient({
             </div>
           ) : (
             <DataTable
-              columns={createClientColumns({ onView: handleView, t })}
+              columns={createClientColumns({ onView: handleView, loadingClientId, t })}
               data={clients}
               emptyMessage={t('table.emptyMessage', { role: selectedRole ? t(`roles.plural.${selectedRole}`) : t('roles.plural.users') })}
               showColumnToggle={false}

@@ -51,6 +51,8 @@ interface IProps extends HTMLAttributes<HTMLDivElement>, Omit<VariantProps<typeo
     isReadOnly?: boolean;
 }
 
+
+
 export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
 
@@ -59,7 +61,8 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     const durationInMinutes = differenceInMinutes(end, start);
     const heightInPixels = (durationInMinutes / 60) * 96 - 8;
 
-    const color = (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
+    const isHexColor = event.color.startsWith('#');
+    const color = (isHexColor ? 'gray' : (badgeVariant === "dot" ? `${event.color}-dot` : event.color)) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
 
     const calendarWeekEventCardClasses = cn(calendarWeekEventCardVariants({ color, className }), durationInMinutes < 35 && "py-0 justify-center");
 
@@ -77,18 +80,32 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
         }
     };
 
+    const customStyle: React.CSSProperties = {
+        height: `${heightInPixels}px`,
+    };
+
+    if (isHexColor) {
+        customStyle.backgroundColor = `${event.color}33`;
+        customStyle.borderColor = event.color;
+        customStyle.color = event.color;
+    }
+
+    const startTime = format(start, "HH:mm");
+    const endTime = format(end, "HH:mm");
+
     const BlockContent = (
         <div
             role="button"
             tabIndex={0}
             className={calendarWeekEventCardClasses}
-            style={{ height: `${heightInPixels}px` }}
+            style={customStyle}
             onKeyDown={handleKeyDown}
             onClick={onEventClick ? handleClick : undefined}
+            title={`${startTime} - ${endTime}`}
         >
             <div className="flex items-center gap-1.5 truncate">
                 {["mixed", "dot"].includes(badgeVariant) && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
                         <circle cx="4" cy="4" r="4" />
                     </svg>
                 )}
@@ -98,7 +115,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
 
             {durationInMinutes > 25 && (
                 <p>
-                    {format(start, "HH:mm")} - {format(end, "HH:mm")}
+                    {startTime} - {endTime}
                 </p>
             )}
         </div>

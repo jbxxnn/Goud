@@ -371,19 +371,27 @@ function BookingConfirmationContent() {
                     answers = booking.policy_answers;
                   } else if (typeof booking.policy_answers === 'object' && booking.policy_answers !== null) {
                     // Convert object format { fieldId: { value, priceEurCents } } to array
-                    answers = Object.entries(booking.policy_answers).map(([fieldId, data]: [string, unknown]) => {
-                      const dataObj = data as { value?: unknown; priceEurCents?: number; price_eur_cents?: number } | unknown;
+                    answers = Object.entries(booking.policy_answers).map(([fieldId, data]: [string, any]) => {
+                      const dataObj = data;
                       let priceEurCents: number | undefined = undefined;
-                      if (typeof dataObj === 'object' && dataObj !== null) {
-                        if ('priceEurCents' in dataObj && typeof dataObj.priceEurCents === 'number') {
-                          priceEurCents = dataObj.priceEurCents;
-                        } else if ('price_eur_cents' in dataObj && typeof dataObj.price_eur_cents === 'number') {
-                          priceEurCents = dataObj.price_eur_cents;
-                        }
+                      let fieldTitle: string | undefined = undefined;
+                      let valueTitle: string | undefined = undefined;
+                      let value: any = undefined;
+
+                      if (dataObj && typeof dataObj === 'object') {
+                        priceEurCents = dataObj.priceEurCents || dataObj.price_eur_cents;
+                        fieldTitle = dataObj.fieldTitle || dataObj.field_title;
+                        valueTitle = dataObj.valueTitle || dataObj.value_title;
+                        value = 'value' in dataObj ? dataObj.value : dataObj;
+                      } else {
+                        value = dataObj;
                       }
+
                       return {
                         fieldId,
-                        value: (typeof dataObj === 'object' && dataObj !== null && 'value' in dataObj) ? dataObj.value : dataObj,
+                        fieldTitle,
+                        value,
+                        valueTitle,
                         priceEurCents,
                       };
                     });
@@ -391,17 +399,28 @@ function BookingConfirmationContent() {
 
                   if (answers.length === 0) return null;
 
-                  return answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
-                    // Handle both fieldId and field_id formats
+                  return answers.map((answer: { 
+                    fieldId?: string; 
+                    field_id?: string; 
+                    fieldTitle?: string; 
+                    field_title?: string;
+                    value?: unknown; 
+                    valueTitle?: string;
+                    value_title?: string;
+                    priceEurCents?: number;
+                    price_eur_cents?: number;
+                  }, index: number) => {
+                    // Handle both camelCase and snake_case formats
                     const fieldId = answer.fieldId || answer.field_id;
                     const field = fieldId ? policyFields[fieldId] : null;
-                    const questionText = field?.title || fieldId || t('unknownField');
+                    const questionText = field?.title || answer.fieldTitle || answer.field_title || fieldId || t('unknownField');
+                    const vTitle = answer.valueTitle || answer.value_title;
 
                     // Format the answer value
-                    let answerText = t('na');
+                    let answerText = vTitle || t('na');
                     const rawValue = answer.value;
 
-                    if (rawValue !== undefined && rawValue !== null) {
+                    if (!vTitle && rawValue !== undefined && rawValue !== null) {
                       if (Array.isArray(rawValue)) {
                         // Handle array of values (for multi_choice fields)
                         if (field?.field_type === 'multi_choice' && field.choices && rawValue.length > 0) {

@@ -19,7 +19,8 @@ import {
     ImageUploadIcon,
     ArrowLeft01Icon,
     Link01Icon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    Loading03Icon
 } from '@hugeicons/core-free-icons';
 import { format, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
 import { toast } from 'sonner';
@@ -31,6 +32,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RepeatPrescriber } from '@/components/repeat-prescriber';
 import { useTranslations } from 'next-intl';
 import { ChecklistManager } from './checklist-manager';
+import { MidwifeLabel } from '../midwife-label';
+import { useLocale } from 'next-intl';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -41,6 +44,7 @@ interface AppointmentDetailClientProps {
 export function AppointmentDetailClient({ booking, currentUser, previousBookings = [] }: AppointmentDetailClientProps) {
     const t = useTranslations('AppointmentDetail');
     const tModal = useTranslations('BookingModal');
+    const locale = useLocale();
     const router = useRouter();
     const queryClient = useQueryClient();
     // const [notes, setNotes] = useState(booking.internal_notes || '');
@@ -48,6 +52,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     // const [isCompleting, setIsCompleting] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [isNoShowing, setIsNoShowing] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
     // Gestational Age Calculation
     const calculateGA = () => {
         if (!booking.due_date) return null;
@@ -95,8 +100,20 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     return (
         <PageContainer className="container py-6 max-w-5xl mx-auto space-y-6">
             <PageItem>
-                <Button variant="ghost" className="mb-2" onClick={() => router.back()}>
-                    <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
+                <Button 
+                    variant="ghost" 
+                    className="mb-2" 
+                    onClick={() => {
+                        setIsNavigating(true);
+                        router.back();
+                    }}
+                    disabled={isNavigating}
+                >
+                    {isNavigating ? (
+                        <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 h-4 w-4" />
+                    )}
                     {t('backToDashboard')}
                 </Button>
             </PageItem>
@@ -118,9 +135,13 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                     variant="outline"
                                     size="sm"
                                     className="h-6 text-[10px] px-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-                                    onClick={() => router.push(`/dashboard/appointments/${booking.parent_booking_id}`)}
+                                    onClick={() => {
+                                        setIsNavigating(true);
+                                        router.push(`/dashboard/appointments/${booking.parent_booking_id}`);
+                                    }}
+                                    disabled={isNavigating}
                                 >
-                                    <HugeiconsIcon icon={Link01Icon} size={12} className="mr-1" />
+                                    <HugeiconsIcon icon={isNavigating ? Loading03Icon : Link01Icon} size={12} className={`mr-1 ${isNavigating ? 'animate-spin' : ''}`} />
                                     {t('linkedToParent')}
                                 </Button>
                             )}
@@ -150,7 +171,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             <>
                                 <Button
                                     disabled={isNoShowing || isCompleting}
-                                    variant="outline"
+                                    className='bg-gray-800'
                                     onClick={async () => {
                                         try {
                                             setIsNoShowing(true);
@@ -220,10 +241,66 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                     <div>{booking.users?.phone || 'N/A'}</div>
                                 </div>
                                 <Separator />
+                                
+                                {(booking.users?.street_name || booking.users?.city || booking.users?.address) && (
+                                    <div>
+                                        <div className="text-sm font-medium text-muted-foreground">{tModal('address')}</div>
+                                        <div className="text-sm">
+                                            {booking.users.street_name ? (
+                                                `${booking.users.street_name} ${booking.users.house_number || ''}, ${booking.users.postal_code || ''} ${booking.users.city || ''}`
+                                            ) : (
+                                                booking.users.address || 'N/A'
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(booking.users?.birth_date || booking.birth_date) && (
+                                    <div>
+                                        <div className="text-sm font-medium text-muted-foreground">{tModal('birthDate')}</div>
+                                        <div className="text-sm">
+                                            {format(new Date(booking.users?.birth_date || booking.birth_date!), 'PPP', { locale: locale === 'nl' ? require('date-fns/locale/nl').nl : undefined })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Separator />
+                                
                                 <div>
                                     <div className="text-sm font-medium text-muted-foreground">{t('dueDate')}</div>
-                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP') : t('notSet')}</div>
+                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP', { locale: locale === 'nl' ? require('date-fns/locale/nl').nl : undefined }) : t('notSet')}</div>
                                 </div>
+
+                                {(booking.midwife_id || booking.other_midwife_name) && (
+                                    <div>
+                                        <div className="text-sm font-medium text-muted-foreground">{tModal('midwife')}</div>
+                                        <div className="text-sm">
+                                            {booking.midwife_id ? (
+                                                <MidwifeLabel id={booking.midwife_id} />
+                                            ) : (
+                                                booking.other_midwife_name
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(booking.gravida || booking.para) && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {booking.gravida && (
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">{tModal('gravida')}</div>
+                                                <div className="text-sm">{booking.gravida}</div>
+                                            </div>
+                                        )}
+                                        {booking.para && (
+                                            <div>
+                                                <div className="text-sm font-medium text-muted-foreground">{tModal('para')}</div>
+                                                <div className="text-sm">{booking.para}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {ga && (
                                     <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
                                         <div className="text-sm font-medium text-primary">{t('gestationalAge')}</div>
@@ -246,9 +323,20 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                 {previousBookings && previousBookings.length > 0 ? (
                                     <div className="space-y-3">
                                         {previousBookings.map((prev: any) => (
-                                            <div key={prev.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/appointments/${prev.id}`)}>
+                                            <div 
+                                                key={prev.id} 
+                                                className={`flex items-center justify-between p-3 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer ${isNavigating ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                                                onClick={() => {
+                                                    if (isNavigating) return;
+                                                    setIsNavigating(true);
+                                                    router.push(`/dashboard/appointments/${prev.id}`);
+                                                }}
+                                            >
                                                 <div className="space-y-1">
-                                                    <div className="font-medium text-sm">{prev.services?.name}</div>
+                                                    <div className="font-medium text-sm flex items-center gap-2">
+                                                        {prev.services?.name}
+                                                        {isNavigating && <HugeiconsIcon icon={Loading03Icon} size={12} className="animate-spin text-muted-foreground" />}
+                                                    </div>
                                                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                                                         <span>{format(new Date(prev.start_time), 'PPP')}</span>
                                                         <span>•</span>

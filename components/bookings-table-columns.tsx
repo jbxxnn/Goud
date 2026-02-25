@@ -8,7 +8,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
     // EditIcon, 
     Delete02Icon,
-    EyeIcon
+    EyeIcon,
+    Loading03Icon
 } from '@hugeicons/core-free-icons';
 import { Booking, BookingStatus } from '@/lib/types/booking';
 import { differenceInMinutes } from 'date-fns';
@@ -59,6 +60,7 @@ export const createBookingColumns = (
     onDelete: (booking: Booking) => void,
     canDelete: boolean = true, // Default to true for admin users
     showStaff: boolean = true,
+    loadingBookingId?: string | null
     // onReschedule?: (booking: Booking) => void
 ): ColumnDef<Booking>[] => {
     const columns: ColumnDef<Booking>[] = [
@@ -198,8 +200,13 @@ export const createBookingColumns = (
                             size="icon"
                             onClick={() => onView(booking)}
                             className="h-8 w-8"
+                            disabled={loadingBookingId === booking.id}
                         >
-                            <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
+                            {loadingBookingId === booking.id ? (
+                                <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 animate-spin text-muted-foreground" />
+                            ) : (
+                                <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
+                            )}
                         </Button>
                         {/* {onReschedule && booking.status !== 'cancelled' && (
             <Button

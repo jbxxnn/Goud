@@ -93,6 +93,7 @@ export default function BookingsClient({
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
 
   // Bookings Query
   const { data: bookingsData, isLoading: bookingsLoading, isFetching: bookingsFetching } = useQuery<BookingsResponse>({
@@ -237,6 +238,7 @@ export default function BookingsClient({
   // View booking
   const handleView = (booking: Booking) => {
     if (onBookingClick) {
+      setLoadingBookingId(booking.id);
       onBookingClick(booking);
       return;
     }
@@ -470,7 +472,8 @@ export default function BookingsClient({
                   handleCancel,
                   handleDelete,
                   !clientId && !staffId, // canDelete: true only if admin
-                  !staffId // showStaff: hide if we are in a staff-specific view
+                  !staffId, // showStaff: hide if we are in a staff-specific view
+                  loadingBookingId
                 )}
                 data={bookings}
                 emptyMessage={t('table.emptyMessage')}

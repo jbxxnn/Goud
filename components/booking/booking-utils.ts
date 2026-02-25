@@ -103,11 +103,27 @@ export function buildPolicyAnswerPayload(fields: PolicyField[], responses: Polic
         if (Array.isArray(value) && value.length === 0) {
             continue;
         }
+        
+        let valueTitle: string | undefined = undefined;
+        if (field.field_type === 'multi_choice') {
+            if (Array.isArray(value)) {
+                valueTitle = value
+                    .map(id => field.choices.find(c => c.id === id)?.title || id)
+                    .join(', ');
+            } else if (typeof value === 'string') {
+                valueTitle = field.choices.find(c => c.id === value)?.title || value;
+            }
+        } else if (typeof value === 'boolean') {
+            valueTitle = value ? 'Ja' : 'Nee';
+        }
+
         const priceCents = calculatePolicyFieldPriceCents(field, value);
         answers.push({
             fieldId: field.id,
+            fieldTitle: field.title,
             fieldType: field.field_type,
             value,
+            valueTitle,
             priceEurCents: priceCents > 0 ? priceCents : undefined,
         });
     }

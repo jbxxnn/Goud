@@ -97,12 +97,17 @@ export async function POST(request: NextRequest) {
 
     // Validate shift for conflicts
     const validation = await ShiftService.validateShift(body);
-    if (!validation.valid) {
+    
+    // If not valid, check if it's skippable and if the user requested to skip
+    const shouldSkip = body.skip_conflicting_occurrences && validation.skippable;
+    
+    if (!validation.valid && !shouldSkip) {
       return NextResponse.json(
         {
           success: false,
           error: 'Shift conflicts detected',
           conflicts: validation.conflicts,
+          skippable: validation.skippable,
         },
         { status: 409 }
       );

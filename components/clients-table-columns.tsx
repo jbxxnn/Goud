@@ -8,16 +8,19 @@ import {
   UserIcon,
   CallIcon,
   MailIcon,
+  Loading03Icon,
 } from '@hugeicons/core-free-icons';
 import { User, getUserDisplayName } from '@/lib/types/user';
 
 interface ClientActionsProps {
   onView: (client: User) => void;
+  loadingClientId?: string | null;
   t: any;
 }
 
 export function createClientColumns({
   onView,
+  loadingClientId,
   t
 }: ClientActionsProps): ColumnDef<User>[] {
   return [
@@ -67,33 +70,29 @@ export function createClientColumns({
       },
     },
     {
-      accessorKey: 'created_at',
-      header: t('columns.memberSince'),
+      accessorKey: 'city',
+      header: t('columns.city'),
       cell: ({ row }) => {
-        const date = new Date(row.getValue('created_at'));
-        return (
-          <div className="text-sm">
-            {date.toLocaleDateString('nl-NL', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </div>
-        );
+        return <div className="text-sm">{row.getValue('city') || '-'}</div>;
       },
     },
     {
-      accessorKey: 'last_login',
-      header: t('columns.lastLogin'),
+      header: t('columns.address'),
       cell: ({ row }) => {
-        const lastLogin = row.getValue('last_login') as string | null;
-        if (!lastLogin) {
-          return <span className="text-sm text-muted-foreground">{t('cells.never')}</span>;
-        }
-        const date = new Date(lastLogin);
+        const client = row.original;
+        const address = [client.street_name, client.house_number].filter(Boolean).join(' ');
+        return <div className="text-sm truncate max-w-[150px]" title={address}>{address || '-'}</div>;
+      },
+    },
+    {
+      accessorKey: 'birth_date',
+      header: t('columns.birthDate'),
+      cell: ({ row }) => {
+        const dob = row.getValue('birth_date') as string | null;
+        if (!dob) return <div className="text-sm">-</div>;
         return (
           <div className="text-sm">
-            {date.toLocaleDateString('nl-NL', {
+            {new Date(dob).toLocaleDateString('nl-NL', {
               year: 'numeric',
               month: 'short',
               day: 'numeric'
@@ -107,6 +106,7 @@ export function createClientColumns({
       header: t('columns.actions'),
       cell: ({ row }) => {
         const client = row.original;
+        const isLoading = loadingClientId === client.id;
         return (
           <div className="flex items-center gap-2">
             <Button
@@ -115,8 +115,13 @@ export function createClientColumns({
               onClick={() => onView(client)}
               className="h-8 w-8"
               title={t('cells.viewDetails')}
+              disabled={isLoading}
             >
-              <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
+              {isLoading ? (
+                <HugeiconsIcon icon={Loading03Icon} className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <HugeiconsIcon icon={EyeIcon} className="h-4 w-4" />
+              )}
             </Button>
           </div>
         );

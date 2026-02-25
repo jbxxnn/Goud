@@ -11,6 +11,12 @@
         "booking": "Afspraak maken",
         "dashboard": "Dashboard"
     },
+    "Auth": {
+        "greeting": "Hoi, {name}!",
+        "signIn": "Inloggen",
+        "signUp": "Registreren",
+        "logout": "Uitloggen"
+    },
     "Dashboard": {
         "menu": {
             "bookNewEcho": "Nieuwe Echo Boeken",
@@ -1041,8 +1047,9 @@
         "columns": {
             "client": "Cliënt",
             "contact": "Contact",
-            "memberSince": "Lid Sinds",
-            "lastLogin": "Laatste Login",
+            "city": "Stad",
+            "address": "Adres",
+            "birthDate": "Geboortedatum",
             "actions": "Acties"
         },
         "cells": {
@@ -1315,6 +1322,7 @@
         "addons": "Extra's:",
         "standardAppointment": "Standaard afspraak",
         "medicalNotes": "Medische / Interne notities",
+        "medicalNotesAndChecklist": "Medische notities & checklist",
         "saving": "Opslaan...",
         "saveNotes": "Notities opslaan",
         "notesPlaceholder": "Voer hier medische observaties, metingen of privénotities in...",
@@ -1337,6 +1345,20 @@
             "noShow": "Gemarkeerd als no-show",
             "noShowError": "Markeren als no-show mislukt"
         }
+    },
+    "Checklist": {
+        "itemAdded": "Checklist item toegevoegd",
+        "errorAdding": "Toevoegen van item mislukt",
+        "itemDeleted": "Checklist item verwijderd",
+        "errorDeleting": "Verwijderen van item mislukt",
+        "errorUpdating": "Bijwerken van item mislukt",
+        "commentSaved": "Opmerking opgeslagen",
+        "errorCommenting": "Opslaan van opmerking mislukt",
+        "addItemPlaceholder": "Nieuw checklist item toevoegen...",
+        "noItems": "Nog geen checklist items.",
+        "completedBy": "Voltooid door",
+        "commentPlaceholder": "Opmerking toevoegen...",
+        "addComment": "Opmerking toevoegen"
     },
     "AssistantDashboard": {
         "title": "Assistent Dashboard",
@@ -1389,6 +1411,12 @@
         "name": "Naam",
         "email": "E-mail",
         "phone": "Telefoon",
+        "address": "Adres",
+        "birthDate": "Geboortedatum",
+        "dueDate": "Uitgerekende datum",
+        "midwife": "Verloskundige",
+        "gravida": "Gravida",
+        "para": "Para",
         "appointmentDetails": "Afspraakgegevens",
         "date": "Datum",
         "time": "Tijd",

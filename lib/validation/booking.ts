@@ -98,8 +98,10 @@ const policyAnswerValueSchema = z.union([
 
 export const bookingPolicyAnswerSchema = z.object({
   fieldId: z.string().uuid('Ongeldig veld-ID'),
+  fieldTitle: z.string().optional(),
   fieldType: z.enum(['multi_choice', 'text_input', 'number_input', 'date_time', 'checkbox', 'file_upload']).optional(),
   value: policyAnswerValueSchema,
+  valueTitle: z.string().optional(),
   priceEurCents: z
     .number()
     .int('Prijs moet een geheel getal zijn')

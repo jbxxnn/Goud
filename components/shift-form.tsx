@@ -623,7 +623,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   disabled={isViewMode}
                 >
                  <HugeiconsIcon icon={Calendar02Icon} />
-                  {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
+                  {watch('start_time') ? format(new Date(watch('start_time')), "dd/MM/yyyy") : <span>Pick date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -691,7 +691,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   disabled={isViewMode}
                 >
                   <HugeiconsIcon icon={Calendar02Icon} />
-                  {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
+                  {watch('end_time') ? format(new Date(watch('end_time')), "dd/MM/yyyy") : <span>Pick date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -792,7 +792,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                       disabled={isViewMode || !!shift?._isRecurringInstance}
                     >
                       <HugeiconsIcon icon={Calendar02Icon} />
-                      {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : <span>Pick date</span>}
+                      {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "dd/MM/yyyy") : <span>Pick date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">

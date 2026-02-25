@@ -25,6 +25,16 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { buildRecurrenceRule, RecurrenceOptions } from "@/lib/types/shift";
 import { Staff } from "@/lib/types/staff";
@@ -72,6 +82,10 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [recurrenceUntilOpen, setRecurrenceUntilOpen] = useState(false);
+  const [conflictData, setConflictData] = useState<{
+    conflicts: any[];
+    formData: ShiftFormData;
+  } | null>(null);
 
   const {
     register,
@@ -230,6 +244,14 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       const result = await response.json();
 
       if (!result.success) {
+        if (result.skippable && result.conflicts) {
+          setConflictData({
+            conflicts: result.conflicts,
+            formData: data
+          });
+          return;
+        }
+        
         if (result.conflicts) {
           toast.error(t('conflicts'), {
             description: result.conflicts.map((c: any) => c.message).join('\n'),
@@ -317,7 +339,68 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     { value: 'SU', label: 'Sun' },
   ];
 
+  const handleSkipAndCreate = async () => {
+    if (!conflictData) return;
+    
+    setIsSubmitting(true);
+    try {
+      const data = conflictData.formData;
+      
+      let recurrence_rule = null;
+      if (data.is_recurring && data.recurrence_frequency) {
+        const recurrenceOptions: RecurrenceOptions = {
+          frequency: data.recurrence_frequency,
+          daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
+          until: data.recurrence_until,
+        };
+        recurrence_rule = buildRecurrenceRule(recurrenceOptions);
+      }
+
+      const requestBody = {
+        staff_id: data.staff_id,
+        location_id: data.location_id,
+        start_time: new Date(data.start_time).toISOString(),
+        end_time: new Date(data.end_time).toISOString(),
+        is_recurring: data.is_recurring,
+        recurrence_rule,
+        priority: data.priority,
+        notes: data.notes || null,
+        service_ids: selectedServices,
+        max_concurrent_bookings: data.max_concurrent_bookings,
+        skip_conflicting_occurrences: true,
+      };
+
+      const response = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save shift after skipping conflicts');
+      }
+
+      // Success
+      setConflictData(null);
+      onClose();
+      reset();
+      setSelectedServices([]);
+      if (onShiftCreated) onShiftCreated();
+      toast.success('Shift created with skipped occurrences');
+    } catch (err) {
+      console.error('Error saving shift with skips:', err);
+      toast.error('Failed to save shift', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onToggle}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
@@ -428,7 +511,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                         style={{ borderRadius: '1rem' }}
                       >
                         <HugeiconsIcon icon={Calendar01Icon} />
-                        {watch('start_time') ? format(new Date(watch('start_time')), "P") : <span>Pick date</span>}
+                        {watch('start_time') ? format(new Date(watch('start_time')), "dd/MM/yyyy") : <span>Pick date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -491,13 +574,13 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "justify-start text-left font-normal h-10 px-3 border-input bg-card",
+                          "hidden justify-start text-left font-normal h-10 px-3 border-input bg-card",
                           !watch('end_time') && "text-muted-foreground"
                         )}
                         style={{ borderRadius: '1rem' }}
                       >
                         <HugeiconsIcon icon={Calendar01Icon} />
-                        {watch('end_time') ? format(new Date(watch('end_time')), "P") : <span>Pick date</span>}
+                        {watch('end_time') ? format(new Date(watch('end_time')), "dd/MM/yyyy") : <span>Pick date</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -627,7 +710,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                           style={{ borderRadius: '1rem' }}
                         >
                           <HugeiconsIcon icon={Calendar01Icon} />
-                          {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "P") : <span>Pick date</span>}
+                          {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "dd/MM/yyyy") : <span>Pick date</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -809,6 +892,32 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={!!conflictData} onOpenChange={(open) => !open && setConflictData(null)}>
+      <AlertDialogContent className="rounded-xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Shift Conflicts Detected</AlertDialogTitle>
+          <AlertDialogDescription asChild className="space-y-2">
+            <div>
+              <p>Some occurrences of this recurring shift conflict with holiday breaks or existing schedules:</p>
+              <ul className="list-disc pl-4 text-xs max-h-32 overflow-y-auto">
+                {conflictData?.conflicts.map((c, i) => (
+                  <li key={i}>{c.message}</li>
+                ))}
+              </ul>
+              <p>Would you like to create the shift and automatically skip these conflicting dates?</p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setConflictData(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSkipAndCreate} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating...' : 'Skip and Create'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 

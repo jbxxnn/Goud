@@ -21,6 +21,8 @@ import {
   parseRecurrenceRule,
   buildRecurrenceRule,
 } from '@/lib/types/shift';
+import { RRule } from 'rrule';
+import { addMonths, startOfDay, endOfDay, format } from 'date-fns';
 
 export class ShiftService {
   /**
@@ -251,7 +253,7 @@ export class ShiftService {
    * Create a new shift
    */
   static async createShift(shiftData: CreateShiftRequest): Promise<Shift> {
-    const { service_ids, max_concurrent_bookings, ...shiftFields } = shiftData;
+    const { service_ids, max_concurrent_bookings, skip_conflicting_occurrences, ...shiftFields } = shiftData;
 
     const supabase = await createClient();
 
@@ -268,6 +270,37 @@ export class ShiftService {
 
     if (shiftError) {
       throw new Error(`Failed to create shift: ${shiftError.message}`);
+    }
+
+    // If skip_conflicting_occurrences is true, we need to create inactive exception records 
+    // for all dates that have conflicts
+    if (shiftData.skip_conflicting_occurrences && shiftFields.is_recurring) {
+      const validation = await this.validateShift({ ...shiftData, id: shift.id });
+      const skipDates = [...new Set(validation.conflicts.map(c => c.occurrence_date).filter(Boolean) as string[])];
+      
+      if (skipDates.length > 0) {
+        // Create tombstone records for skipped dates
+        const exceptions = skipDates.map(date => ({
+          parent_shift_id: shift.id,
+          staff_id: shift.staff_id,
+          location_id: shift.location_id,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          exception_date: date,
+          is_active: false,
+          is_recurring: false,
+          priority: shift.priority,
+          notes: 'Automatically skipped due to conflict'
+        }));
+
+        const { error: exceptionsError } = await supabase
+          .from('shifts')
+          .insert(exceptions);
+
+        if (exceptionsError) {
+          console.error('Error creating skipped occurrences:', exceptionsError);
+        }
+      }
     }
 
     // Add service assignments if provided
@@ -420,62 +453,138 @@ export class ShiftService {
     const conflicts: ShiftConflict[] = [];
     const supabase = await createClient();
 
-    // Check for overlapping shifts with the same staff member
-    let query = supabase
-      .from('shifts')
-      .select('*')
-      .eq('staff_id', shiftData.staff_id!)
-      .eq('is_active', true);
+    // 1. Determine validation range
+    const startTime = new Date(shiftData.start_time!);
+    const endTime = new Date(shiftData.end_time!);
+    let validationEnd = endTime;
 
-    // Exclude current shift if updating
-    if ('id' in shiftData) {
-      query = query.neq('id', shiftData.id);
-    }
-
-    const { data: existingShifts, error } = await query;
-
-    if (error) {
-      console.error('Error validating shift:', error);
-      return { valid: true, conflicts: [] }; // Fail open
-    }
-
-    // Check for time overlaps
-    const newShift: Partial<Shift> = {
-      start_time: shiftData.start_time!,
-      end_time: shiftData.end_time!,
-    } as Shift;
-
-    for (const existingShift of existingShifts || []) {
-      if (shiftsOverlap(newShift as Shift, existingShift)) {
-        conflicts.push({
-          type: 'staff_overlap',
-          message: `Staff member is already scheduled during this time`,
-          conflicting_shift: existingShift,
-        });
+    const isRecurring = !!shiftData.is_recurring && !!shiftData.recurrence_rule;
+    
+    if (isRecurring) {
+      const rruleOptions = parseRecurrenceRule(shiftData.recurrence_rule!);
+      if (rruleOptions?.until) {
+        // Ensure until date is end of day for comparison
+        validationEnd = endOfDay(new Date(rruleOptions.until));
+      } else {
+        // Default validation window: 6 months
+        validationEnd = addMonths(startTime, 6);
       }
     }
 
-    // Check for blackout periods
-    const { data: blackouts } = await supabase
-      .from('blackout_periods')
-      .select('*')
-      .eq('is_active', true)
-      .or(`staff_id.eq.${shiftData.staff_id},staff_id.is.null`)
-      .or(`location_id.eq.${shiftData.location_id},location_id.is.null`)
-      .lte('start_date', shiftData.end_time!)
-      .gte('end_date', shiftData.start_time!);
+    // 2. Fetch all potential blockers for the entire range in parallel
+    // We check for staff overlaps and blackout periods
+    const [existingShiftsRes, blackoutsRes] = await Promise.all([
+      supabase
+        .from('shifts')
+        .select('*')
+        .eq('staff_id', shiftData.staff_id!)
+        .eq('is_active', true)
+        .lte('start_time', validationEnd.toISOString())
+        .gte('end_time', startTime.toISOString()),
+      supabase
+        .from('blackout_periods')
+        .select('*')
+        .eq('is_active', true)
+        .or(`staff_id.eq.${shiftData.staff_id},staff_id.is.null`)
+        .or(`location_id.eq.${shiftData.location_id},location_id.is.null`)
+        .lte('start_date', validationEnd.toISOString())
+        .gte('end_date', startTime.toISOString())
+    ]);
 
-    for (const blackout of blackouts || []) {
-      conflicts.push({
-        type: 'blackout_period',
-        message: `This time period is blocked: ${blackout.reason}`,
-        blackout_period: blackout,
-      });
+    const existingShifts = existingShiftsRes.data || [];
+    const blackouts = blackoutsRes.data || [];
+
+    // Exclude current shift if updating
+    const otherShifts = 'id' in shiftData 
+      ? existingShifts.filter(s => s.id !== shiftData.id)
+      : existingShifts;
+
+    // 3. Expand shift occurrences if recurring
+    const instancesToValidate: { start: Date; end: Date; dateStr: string }[] = [];
+    if (isRecurring) {
+      try {
+        const duration = endTime.getTime() - startTime.getTime();
+        let rruleString = shiftData.recurrence_rule!;
+        
+        // Add DTSTART and RRULE prefix if missing (required by rrule lib)
+        if (!rruleString.startsWith('RRULE:') && !rruleString.startsWith('DTSTART:')) {
+          const year = startTime.getFullYear();
+          const month = String(startTime.getMonth() + 1).padStart(2, '0');
+          const day = String(startTime.getDate()).padStart(2, '0');
+          const hours = String(startTime.getHours()).padStart(2, '0');
+          const minutes = String(startTime.getMinutes()).padStart(2, '0');
+          const seconds = String(startTime.getSeconds()).padStart(2, '0');
+          const dtstart = `${year}${month}${day}T${hours}${minutes}${seconds}`;
+          rruleString = `DTSTART:${dtstart}\nRRULE:${rruleString}`;
+        } else if (!rruleString.startsWith('RRULE:') && !rruleString.includes('RRULE:')) {
+          rruleString = `RRULE:${rruleString}`;
+        }
+
+        const rrule = RRule.fromString(rruleString);
+        // Get occurrences in range
+        const occurrences = rrule.between(startOfDay(startTime), endOfDay(validationEnd), true);
+
+        occurrences.forEach(occ => {
+          const iStart = new Date(occ);
+          // Set same time as original start
+          iStart.setHours(startTime.getHours(), startTime.getMinutes(), startTime.getSeconds());
+          const iEnd = new Date(iStart.getTime() + duration);
+          instancesToValidate.push({
+            start: iStart,
+            end: iEnd,
+            dateStr: format(iStart, 'yyyy-MM-dd')
+          });
+        });
+      } catch (e) {
+        console.error('Error expanding shift for validation:', e);
+        // Fallback to single instance if expansion fails
+        instancesToValidate.push({ start: startTime, end: endTime, dateStr: format(startTime, 'yyyy-MM-dd') });
+      }
+    } else {
+      instancesToValidate.push({ start: startTime, end: endTime, dateStr: format(startTime, 'yyyy-MM-dd') });
     }
+
+    // 4. Check for conflicts on each instance
+    for (const instance of instancesToValidate) {
+      const iShift = { start_time: instance.start.toISOString(), end_time: instance.end.toISOString() } as Shift;
+
+      // Check staff overlaps
+      for (const existing of otherShifts) {
+        if (shiftsOverlap(iShift, existing)) {
+          conflicts.push({
+            type: 'staff_overlap',
+            message: `Staff member is already scheduled during occurrence on ${instance.dateStr}`,
+            conflicting_shift: existing,
+            occurrence_date: instance.dateStr
+          });
+        }
+      }
+
+      // Check blackout periods
+      for (const blackout of blackouts) {
+        const bStart = new Date(blackout.start_date);
+        const bEnd = new Date(blackout.end_date);
+        // Overlap check
+        if (instance.start < bEnd && bStart < instance.end) {
+          conflicts.push({
+            type: 'blackout_period',
+            message: `Occurrence on ${instance.dateStr} is blocked by holiday: ${blackout.reason}`,
+            blackout_period: blackout,
+            occurrence_date: instance.dateStr
+          });
+        }
+      }
+    }
+
+    // A shift is skippable if it is recurring and all its conflicts are on specific occurrences
+    // (meaning skipping those dates would result in a valid (empty) series or a partially valid series)
+    // For single shifts, conflicts are always hard errors.
+    const skippable = isRecurring && conflicts.length > 0;
 
     return {
       valid: conflicts.length === 0,
       conflicts,
+      skippable
     };
   }
 

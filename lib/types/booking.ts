@@ -108,11 +108,13 @@ export interface Booking {
     // Relations
     services: {
         name: string;
+        service_code?: string | null;
         duration?: number;
     } | null;
     locations: {
         id: string;
         name: string;
+        color?: string;
         address?: string;
     } | null;
     staff: {
@@ -124,6 +126,13 @@ export interface Booking {
         last_name: string | null;
         email: string;
         phone: string | null;
+        address?: string | null;
+        house_number?: string | null;
+        street_name?: string | null;
+        postal_code?: string | null;
+        city?: string | null;
+        birth_date?: string | null;
+        midwife_id?: string | null;
     } | null;
     created_by_user?: {
         first_name: string | null;
@@ -148,7 +157,11 @@ export interface Booking {
     policy_answers: Array<{
         fieldId?: string;
         field_id?: string;
+        fieldTitle?: string;
+        field_title?: string;
         value: any;
+        valueTitle?: string;
+        value_title?: string;
         priceEurCents?: number;
         price_eur_cents?: number;
     }> | Record<string, any> | null;

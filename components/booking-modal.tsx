@@ -15,7 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { RepeatPrescriber } from './repeat-prescriber';
 import { differenceInMinutes } from 'date-fns';
 import { useTranslations, useLocale } from 'next-intl';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { MidwifeLabel } from './midwife-label';
 
 interface PolicyField {
   id: string;
@@ -92,6 +93,7 @@ const getPaymentBadge = (status: string, t: (key: string) => string) => {
   const config = variants[status] || { variant: 'secondary' as const, label: status };
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
+
 
 export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, onNoShow, userRole }: BookingModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -279,6 +281,54 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       <div className="font-medium">{user.phone}</div>
                     </div>
                   )}
+                  {(user?.street_name || user?.city || user?.address) && (
+                    <div className="col-span-2">
+                      <div className="text-muted-foreground">{t('address')}</div>
+                      <div className="font-medium">
+                        {user.street_name ? (
+                          `${user.street_name} ${user.house_number || ''}, ${user.postal_code || ''} ${user.city || ''}`
+                        ) : (
+                          user.address || t('placeholders.na')
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {(user?.birth_date || booking.birth_date) && (
+                    <div>
+                      <div className="text-muted-foreground">{t('birthDate')}</div>
+                      <div className="font-medium">{formatDate(user?.birth_date || booking.birth_date!, locale)}</div>
+                    </div>
+                  )}
+                  {booking.due_date && (
+                    <div>
+                      <div className="text-muted-foreground">{t('dueDate')}</div>
+                      <div className="font-medium">{formatDate(booking.due_date, locale)}</div>
+                    </div>
+                  )}
+                  {(booking.midwife_id || booking.other_midwife_name) && (
+                    <div>
+                      <div className="text-muted-foreground">{t('midwife')}</div>
+                      <div className="font-medium">
+                        {booking.midwife_id ? (
+                          <MidwifeLabel id={booking.midwife_id} />
+                        ) : (
+                          booking.other_midwife_name
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {booking.gravida && (
+                    <div>
+                      <div className="text-muted-foreground">{t('gravida')}</div>
+                      <div className="font-medium">{booking.gravida}</div>
+                    </div>
+                  )}
+                  {booking.para && (
+                    <div>
+                      <div className="text-muted-foreground">{t('para')}</div>
+                      <div className="font-medium">{booking.para}</div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -408,19 +458,28 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   answers = booking.policy_answers;
                 } else if (typeof booking.policy_answers === 'object' && booking.policy_answers !== null) {
                   // Convert object format { fieldId: { value, priceEurCents } } to array
-                  answers = Object.entries(booking.policy_answers).map(([fieldId, data]: [string, unknown]) => {
-                    const dataObj = data as { value?: unknown; priceEurCents?: number; price_eur_cents?: number } | unknown;
+                  answers = Object.entries(booking.policy_answers).map(([fieldId, data]: [string, any]) => {
+                    const dataObj = data;
+                    
                     let priceEurCents: number | undefined = undefined;
-                    if (typeof dataObj === 'object' && dataObj !== null) {
-                      if ('priceEurCents' in dataObj && typeof dataObj.priceEurCents === 'number') {
-                        priceEurCents = dataObj.priceEurCents;
-                      } else if ('price_eur_cents' in dataObj && typeof dataObj.price_eur_cents === 'number') {
-                        priceEurCents = dataObj.price_eur_cents;
-                      }
+                    let fieldTitle: string | undefined = undefined;
+                    let valueTitle: string | undefined = undefined;
+                    let value: any = undefined;
+
+                    if (dataObj && typeof dataObj === 'object') {
+                      priceEurCents = dataObj.priceEurCents || dataObj.price_eur_cents;
+                      fieldTitle = dataObj.fieldTitle || dataObj.field_title;
+                      valueTitle = dataObj.valueTitle || dataObj.value_title;
+                      value = 'value' in dataObj ? dataObj.value : dataObj;
+                    } else {
+                      value = dataObj;
                     }
+
                     return {
                       fieldId,
-                      value: (typeof dataObj === 'object' && dataObj !== null && 'value' in dataObj) ? dataObj.value : dataObj,
+                      fieldTitle,
+                      value,
+                      valueTitle,
                       priceEurCents,
                     };
                   });
@@ -432,17 +491,28 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   <div className="space-y-2">
                     <h3 className="font-semibold text-lg">{t('policyResponses')}</h3>
                     <div className="space-y-2">
-                      {answers.map((answer: { fieldId?: string; field_id?: string; value?: unknown; priceEurCents?: number }, index: number) => {
-                        // Handle both fieldId and field_id formats
+                      {answers.map((answer: { 
+                        fieldId?: string; 
+                        field_id?: string; 
+                        fieldTitle?: string; 
+                        field_title?: string;
+                        value?: unknown; 
+                        valueTitle?: string;
+                        value_title?: string;
+                        priceEurCents?: number;
+                        price_eur_cents?: number;
+                      }, index: number) => {
+                        // Handle both camelCase and snake_case formats
                         const fieldId = answer.fieldId || answer.field_id;
                         const field = fieldId ? policyFields[fieldId] : null;
-                        const questionText = field?.title || fieldId || 'Unknown Field';
+                        const questionText = field?.title || answer.fieldTitle || answer.field_title || fieldId || 'Unknown Field';
+                        const vTitle = answer.valueTitle || answer.value_title;
 
                         // Format the answer value
-                        let answerText = t('placeholders.na');
+                        let answerText = vTitle || t('placeholders.na');
                         const rawValue = answer.value;
 
-                        if (rawValue !== undefined && rawValue !== null) {
+                        if (!vTitle && rawValue !== undefined && rawValue !== null) {
                           if (Array.isArray(rawValue)) {
                             // Handle array of values (for multi_choice fields)
                             if (field?.field_type === 'multi_choice' && field.choices && rawValue.length > 0) {

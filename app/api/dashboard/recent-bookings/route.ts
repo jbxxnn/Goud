@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
             last_name
           ),
           locations:locations!location_id (
-            name
+            name,
+            color
           )
         `
       )

@@ -6,6 +6,7 @@ import {
 } from '@/components/ui/dialog';
 import ShiftForm from './shift-form';
 import { ShiftWithDetails } from '@/lib/types/shift';
+import { format } from 'date-fns';
 
 interface ShiftModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function ShiftModal({ isOpen, onClose, shift, onSave, onDelete, i
       const staffName = `${shift.staff_first_name} ${shift.staff_last_name}`;
       const date = new Date(shift.start_time);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-      const dateStr = date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      const dateStr = format(date, 'dd/MM/yyyy');
       return `Edit Shift: ${staffName}, ${dayName}, ${dateStr}`;
     }
     return 'Create Shift';

@@ -559,9 +559,16 @@ export async function GET(req: NextRequest) {
       .from('bookings')
       .select(`
         *,
+        birth_date,
+        due_date,
+        midwife_id,
+        gravida,
+        para,
+        other_midwife_name,
         services (
           id,
           name,
+          service_code,
           duration
         ),
         locations (
@@ -679,7 +686,7 @@ export async function GET(req: NextRequest) {
     if (userIds.length > 0) {
       const { data: usersData } = await supabase
         .from('users')
-        .select('id, email, first_name, last_name, phone')
+        .select('id, email, first_name, last_name, phone, address, house_number, street_name, postal_code, city, birth_date, midwife_id')
         .in('id', userIds);
 
       if (usersData) {

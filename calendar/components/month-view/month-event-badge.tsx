@@ -9,6 +9,7 @@ import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-deta
 
 import { cn } from "@/lib/utils";
 
+
 import type { IEvent } from "@/calendar/interfaces";
 import type { VariantProps } from "class-variance-authority";
 
@@ -87,7 +88,8 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
     const renderBadgeText = ["first", "none"].includes(position);
 
-    const color = (badgeVariant === "dot" ? `${event.color}-dot` : event.color) as VariantProps<typeof eventBadgeVariants>["color"];
+    const isHexColor = event.color.startsWith('#');
+    const color = (isHexColor ? 'gray' : (badgeVariant === "dot" ? `${event.color}-dot` : event.color)) as VariantProps<typeof eventBadgeVariants>["color"];
 
     const eventBadgeClasses = cn(eventBadgeVariants({ color, multiDayPosition: position, className }));
 
@@ -105,11 +107,30 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
         }
     };
 
+    const customStyle: React.CSSProperties = {};
+
+    if (isHexColor) {
+        customStyle.backgroundColor = `${event.color}33`;
+        customStyle.borderColor = event.color;
+        customStyle.color = event.color;
+    }
+
+    const startTime = format(new Date(event.startDate), "HH:mm");
+    const endTime = format(new Date(event.endDate), "HH:mm");
+
     const BadgeContent = (
-        <div role="button" tabIndex={0} className={eventBadgeClasses} onKeyDown={handleKeyDown} onClick={onEventClick ? handleClick : undefined}>
+        <div 
+            role="button" 
+            tabIndex={0} 
+            className={eventBadgeClasses} 
+            style={customStyle} 
+            onKeyDown={handleKeyDown} 
+            onClick={onEventClick ? handleClick : undefined}
+            title={`${startTime} - ${endTime}`}
+        >
             <div className="flex items-center gap-1.5 truncate">
                 {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0">
+                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
                         <circle cx="4" cy="4" r="4" />
                     </svg>
                 )}
@@ -126,7 +147,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
                 )}
             </div>
 
-            {renderBadgeText && <span>{format(new Date(event.startDate), "HH:mm")}</span>}
+            {renderBadgeText && <span>{startTime}</span>}
         </div>
     );
 

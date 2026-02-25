@@ -44,7 +44,8 @@ export async function GET(req: NextRequest) {
         ),
         locations:locations!location_id (
           id,
-          name
+          name,
+          color
         ),
         staff:staff!staff_id (
           id,
