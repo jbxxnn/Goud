@@ -251,6 +251,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (status !== undefined) updates.status = status;
     if (notes !== undefined) updates.notes = notes === null || notes === '' ? null : notes;
     if (body.internal_notes !== undefined) updates.internal_notes = body.internal_notes === null || body.internal_notes === '' ? null : body.internal_notes;
+    if (body.no_show_resolved_at !== undefined) updates.no_show_resolved_at = body.no_show_resolved_at;
+    if (body.no_show_resolved_by !== undefined) updates.no_show_resolved_by = body.no_show_resolved_by;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

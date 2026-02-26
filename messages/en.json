@@ -1387,14 +1387,23 @@
             "placeholder": "Add a comment...",
             "cancel": "Cancel",
             "save": "Save changes",
-            "saving": "Saving..."
+            "saving": "Saving...",
+            "complete": "Complete & Resolve"
+        },
+        "resolveDialog": {
+            "title": "Resolve No-Show",
+            "description": "Document what actions were taken and mark as resolved.",
+            "label": "Actions Taken",
+            "placeholder": "E.g., Called client, left voicemail..."
         },
         "toasts": {
             "loadError": "Failed to load dashboard data",
             "completeSuccess": "Task marked as complete",
             "completeError": "Failed to update task",
             "commentSuccess": "Comment updated",
-            "commentError": "Failed to save comment"
+            "commentError": "Failed to save comment",
+            "resolveSuccess": "No-show resolved successfully",
+            "resolveError": "Failed to resolve no-show"
         },
         "noteDialog": {
             "title": "Internal Staff Note",

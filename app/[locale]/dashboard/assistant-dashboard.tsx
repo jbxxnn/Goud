@@ -122,6 +122,7 @@ interface ChecklistItem {
 
 interface DashboardBooking extends Booking {
   users: any; // Override strictly typed Booking to allow array or object from Supabase
+  noShowCount?: number;
 }
 
 export default function AssistantDashboard() {
@@ -134,11 +135,17 @@ export default function AssistantDashboard() {
   // Comment editing state
   const [editingTask, setEditingTask] = useState<ChecklistItem | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [isTaskCompleted, setIsTaskCompleted] = useState(false);
 
   // Internal Note editing state
   const [editingInternalNote, setEditingInternalNote] = useState<DashboardBooking | null>(null);
   const [internalNoteText, setInternalNoteText] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
+
+  // No-show resolution state
+  const [resolvingBooking, setResolvingBooking] = useState<DashboardBooking | null>(null);
+  const [resolutionNote, setResolutionNote] = useState("");
+  const [isResolving, setIsResolving] = useState(false);
   
   const supabase = createClient();
 
@@ -185,17 +192,55 @@ export default function AssistantDashboard() {
         .select(`
           *,
           internal_notes,
-          users(first_name, last_name, email, phone),
+          users!created_by(first_name, last_name, email, phone),
           services(name, duration),
-          locations(name)
+          locations(name),
+          staff(first_name, last_name)
         `)
         .eq('status', 'no_show')
+        .is('no_show_resolved_at', null)
         .order('start_time', { ascending: false })
         .limit(20);
 
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        console.error('Bookings Fetch Error:', bookingsError);
+        throw bookingsError;
+      }
 
-      setUpcomingBookings(bookings as any || []);
+      // 1.5 Fetch no-show counts for these clients
+      const userIds = Array.from(new Set([
+        ...(bookings?.map(b => b.client_id) || []),
+        ...(bookings?.map(b => b.created_by) || [])
+      ])).filter(Boolean) as string[];
+
+      let bookingsWithCounts = bookings as any[] || [];
+      
+      if (userIds.length > 0) {
+        const { data: countsData } = await supabase
+          .from('bookings')
+          .select('client_id, created_by, id')
+          .eq('status', 'no_show')
+          .or(`client_id.in.(${userIds.join(',')}),created_by.in.(${userIds.join(',')})`);
+        
+        const countMap = (countsData || []).reduce((acc: Record<string, number>, curr) => {
+          // Count for each user ID involved
+          if (curr.client_id) acc[curr.client_id] = (acc[curr.client_id] || 0) + 1;
+          if (curr.created_by && curr.created_by !== curr.client_id) {
+            acc[curr.created_by] = (acc[curr.created_by] || 0) + 1;
+          }
+          return acc;
+        }, {});
+
+        bookingsWithCounts = bookingsWithCounts.map(b => {
+          const mainId = b.created_by || b.client_id;
+          return {
+            ...b,
+            noShowCount: mainId ? (countMap[mainId] || 0) : 0
+          };
+        });
+      }
+
+      setUpcomingBookings(bookingsWithCounts);
 
       // 2. Fetch ALL pending checklist items for non-cancelled bookings
       // We need to join with bookings to check the date and status
@@ -207,15 +252,19 @@ export default function AssistantDashboard() {
             id,
             start_time,
             status,
-            users (first_name, last_name, email, phone),
-            services (name, duration)
+            users!created_by (first_name, last_name, email, phone),
+            services (name, duration),
+            staff (first_name, last_name)
           )
         `)
         .eq('is_completed', false)
         .neq('booking.status', 'cancelled')
         .order('created_at', { ascending: true });
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('Tasks Fetch Error:', tasksError);
+        throw tasksError;
+      }
 
       console.log('Fetched tasks for assistant dashboard:', allTasks, allTasks?.[0]);
 
@@ -252,7 +301,7 @@ export default function AssistantDashboard() {
     fetchData();
   }, []);
 
-  const handleTaskComplete = async (taskId: string) => {
+  const handleTaskComplete = async (taskId: string, skipToast = false) => {
     try {
       const { error } = await supabase
         .from('booking_checklist_items')
@@ -264,7 +313,9 @@ export default function AssistantDashboard() {
 
       if (error) throw error;
 
-      toast.success(t('toasts.completeSuccess'));
+      if (!skipToast) {
+        toast.success(t('toasts.completeSuccess'));
+      }
       // Remove from local state
       setUpcomingTasks(prev => prev.filter(t => t.id !== taskId));
       setPastTasks(prev => prev.filter(t => t.id !== taskId));
@@ -277,32 +328,81 @@ export default function AssistantDashboard() {
   const openCommentDialog = (task: ChecklistItem) => {
     setEditingTask(task);
     setCommentText(task.comment || "");
+    setIsTaskCompleted(false);
   };
 
   const handleSaveComment = async () => {
     if (!editingTask) return;
 
     try {
+      // If marked as completed, we handle that first
+      if (isTaskCompleted) {
+        await handleTaskComplete(editingTask.id, true);
+      }
+
       const { error } = await supabase
         .from('booking_checklist_items')
         .update({ 
           comment: commentText,
-          // Update updated_at if you have it, but for now just comment
         })
         .eq('id', editingTask.id);
 
       if (error) throw error;
 
-      toast.success(t('toasts.commentSuccess'));
+      if (isTaskCompleted) {
+        toast.success(t('toasts.completeSuccess'));
+      } else {
+        toast.success(t('toasts.commentSuccess'));
+      }
       
-      // Update local state
-      setUpcomingTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
-      setPastTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
+      // Update local state (if not removed by completion)
+      if (!isTaskCompleted) {
+        setUpcomingTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
+        setPastTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
+      }
       
       setEditingTask(null);
     } catch (error) {
       console.error('Error saving comment:', error);
       toast.error(t('toasts.commentError'));
+    }
+  };
+
+  const openResolutionDialog = (booking: DashboardBooking) => {
+    setResolvingBooking(booking);
+    setResolutionNote(booking.internal_notes || "");
+  };
+
+  const handleResolveNoShow = async () => {
+    if (!resolvingBooking) return;
+
+    try {
+      setIsResolving(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('bookings')
+        .update({ 
+          internal_notes: resolutionNote.trim() || null,
+          no_show_resolved_at: new Date().toISOString(),
+          no_show_resolved_by: user?.id
+        })
+        .eq('id', resolvingBooking.id);
+
+      if (error) throw error;
+
+      toast.success(t('toasts.resolveSuccess', { fallback: 'No-show resolved successfully' }));
+      
+      // Remove from local state live
+      setUpcomingBookings(prev => prev.filter(b => b.id !== resolvingBooking.id));
+      
+      setResolvingBooking(null);
+    } catch (error) {
+      console.error('Error resolving no-show:', error);
+      toast.error(t('toasts.resolveError', { fallback: 'Failed to resolve no-show' }));
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -334,19 +434,11 @@ export default function AssistantDashboard() {
                 <div className="space-y-4">
                   {pastTasks.map(task => (
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg border border-destructive/20" style={{borderRadius: "10px"}}>
-                      <Checkbox 
-                        id={`task-${task.id}`} 
-                        onCheckedChange={() => handleTaskComplete(task.id)}
-                        className="rounded-full"
-                      />
-                      <div className="space-y-1">
+                      <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">
-                          <label 
-                            htmlFor={`task-${task.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mt-1"
-                          >
+                          <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
                             {task.content}
-                          </label>
+                          </p>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -362,10 +454,22 @@ export default function AssistantDashboard() {
                              &quot;{task.comment}&quot;
                           </div>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                          {t('tasks.for')}: <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline text-primary">
+                        <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
+                          {task.booking?.staff && (
+                            <>
+                              <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                              <span className="text-muted-foreground/50">•</span>
+                            </>
+                          )}
+                          <span>{task.booking?.services?.name}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
                             {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                          </Link>  • {task.booking?.services?.name} • <span className="text-primary">{task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}</span>
+                          </Link>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span className="text-primary">
+                            {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -390,19 +494,11 @@ export default function AssistantDashboard() {
                 <div className="space-y-4">
                   {upcomingTasks.map(task => (
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{borderRadius: "10px"}}>
-                      <Checkbox 
-                        id={`task-${task.id}`} 
-                        onCheckedChange={() => handleTaskComplete(task.id)}
-                        className="rounded-full"
-                      />
-                      <div className="space-y-1">
+                      <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">
-                          <label 
-                            htmlFor={`task-${task.id}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mt-1"
-                          >
+                          <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
                             {task.content}
-                          </label>
+                          </p>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -418,10 +514,22 @@ export default function AssistantDashboard() {
                              &quot;{task.comment}&quot;
                           </div>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                          {t('tasks.for')}: <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline text-primary">
+                        <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
+                          {task.booking?.staff && (
+                            <>
+                              <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                              <span className="text-muted-foreground/50">•</span>
+                            </>
+                          )}
+                          <span>{task.booking?.services?.name}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
                             {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                          </Link> • {task.booking?.services?.name} • <span className="text-primary">{task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}</span>
+                          </Link>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span className="text-primary">
+                            {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -446,54 +554,65 @@ export default function AssistantDashboard() {
                 <p className="text-muted-foreground text-sm">{t('appointments.empty')}</p>
               ) : (
                 upcomingBookings.map(booking => (
-                  <div key={booking.id} className="flex flex-col p-2 bg-muted border rounded-lg gap-2" style={{borderRadius: "10px"}}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-full">
+                  <div 
+                    key={booking.id} 
+                    className="flex flex-col p-3 bg-muted border rounded-lg gap-2 cursor-pointer hover:bg-muted/80 transition-colors" 
+                    style={{borderRadius: "10px"}}
+                    onClick={() => openResolutionDialog(booking)}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="bg-primary/10 p-2 rounded-full shrink-0">
                           <HugeiconsIcon icon={UserIcon} className="h-4 w-4 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">
                             {Array.isArray(booking.users) ? booking.users[0]?.first_name : booking.users?.first_name} {Array.isArray(booking.users) ? booking.users[0]?.last_name : booking.users?.last_name}
+                            {booking.noShowCount && booking.noShowCount > 0 && (
+                              <span className="ml-1.5 text-destructive font-bold">
+                                ({booking.noShowCount})
+                              </span>
+                            )}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {booking.services?.name}
-                          </p>
+                          <div className="text-xs text-muted-foreground flex flex-wrap gap-x-1 mt-0.5">
+                            {booking.staff && (
+                              <>
+                                <span className="font-medium text-primary line-clamp-1">{booking.staff.first_name} {booking.staff.last_name}</span>
+                                <span className="text-muted-foreground/50">•</span>
+                              </>
+                            )}
+                            <span className="line-clamp-1">{booking.services?.name}</span>
+                            {booking.locations?.name && (
+                              <>
+                                <span className="text-muted-foreground/50">•</span>
+                                <span className="line-clamp-1 italic">{booking.locations.name}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <div>
-                          <p className="text-sm font-medium">
-                            {format(new Date(booking.start_time), 'HH:mm')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(booking.start_time), 'MMM d')}
-                          </p>
-                        </div>
-                        {/* <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 px-2 text-xs"
-                          onClick={() => openInternalNoteDialog(booking)}
-                        >
-                          <Pencil className="h-3 w-3 mr-1" />
-                          {booking.internal_notes ? 'Edit Note' : 'Add Note'}
-                        </Button> */}
+                      <div className="text-right shrink-0 flex flex-col justify-center">
+                        <p className="text-sm font-bold text-foreground">
+                          {format(new Date(booking.start_time), 'HH:mm')}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                          {format(new Date(booking.start_time), 'MMM d')}
+                        </p>
                       </div>
                     </div>
                     {booking.internal_notes && (
-                      <div className="text-xs italic text-blue-600 bg-blue-50 p-2 rounded border border-blue-100 flex items-start gap-2">
-                         <HugeiconsIcon icon={InformationCircleIcon} className="h-4 w-4 shrink-0 mt-0.5" />
-                         <span>{booking.internal_notes}</span>
+                      <div className="text-[11px] leading-relaxed italic text-blue-700 bg-blue-50/80 p-2 rounded-md border border-blue-100/50 flex items-start gap-2 mt-1">
+                         <HugeiconsIcon icon={InformationCircleIcon} className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                         <span className="line-clamp-2">{booking.internal_notes}</span>
                       </div>
                     )}
                   </div>
                 ))
               )}
               <div className="pt-2">
-                <Button variant="outline" className="w-full" asChild>
+                {/* <Button variant="outline" className="w-full" asChild>
                   <Link href="/dashboard/bookings">{t('appointments.viewAll')}</Link>
-                </Button>
+                </Button> */}
               </div>
             </div>
           </CardContent>
@@ -504,11 +623,49 @@ export default function AssistantDashboard() {
         <DialogContent className="sm:max-w-[425px]" style={{borderRadius: "10px"}}>
           <DialogHeader>
             <DialogTitle>{t('dialog.title')}</DialogTitle>
-            <DialogDescription>
-              {t('dialog.description')}
+            <DialogDescription className="text-foreground font-medium">
+              {editingTask?.content}
             </DialogDescription>
           </DialogHeader>
+
+          {editingTask?.booking && (
+            <div className="bg-muted/50 p-3 space-y-2 text-xs border" style={{borderRadius: "10px"}}>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={UserIcon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Staff:</span>
+                <span>
+                  {editingTask.booking.staff ? 
+                    `${editingTask.booking.staff.first_name} ${editingTask.booking.staff.last_name}` : 
+                    'Unassigned'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={CheckListIcon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Service:</span>
+                <span>{editingTask.booking.services?.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={UserIcon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Client:</span>
+                <span>
+                  {Array.isArray(editingTask.booking.users) ? editingTask.booking.users[0]?.first_name : editingTask.booking.users?.first_name}{' '}
+                  {Array.isArray(editingTask.booking.users) ? editingTask.booking.users[0]?.last_name : editingTask.booking.users?.last_name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={Calendar02Icon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Date/Time:</span>
+                <span>
+                  {editingTask.booking.start_time ? 
+                    format(new Date(editingTask.booking.start_time), 'PPP, HH:mm') : 
+                    'No date'}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-4 py-4">
+            
             <div className="grid gap-2">
               <Label htmlFor="comment">{t('dialog.label')}</Label>
               <Textarea
@@ -516,9 +673,23 @@ export default function AssistantDashboard() {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder={t('dialog.placeholder')}
-                className="col-span-3"
+                className="col-span-3 min-h-[100px]"
                 style={{borderRadius: "10px"}}
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="complete-task" 
+                checked={isTaskCompleted}
+                onCheckedChange={(checked) => setIsTaskCompleted(checked === true)}
+                className="rounded-full"
+              />
+              <Label 
+                htmlFor="complete-task"
+                className="text-sm font-medium leading-none cursor-pointer"
+              >
+                {t('tasks.markComplete', { fallback: 'Mark as Completed' })}
+              </Label>
             </div>
           </div>
           <DialogFooter>
@@ -554,6 +725,65 @@ export default function AssistantDashboard() {
             <Button variant="outline" onClick={() => setEditingInternalNote(null)} disabled={isSavingNote}>{t('dialog.cancel')}</Button>
             <Button onClick={handleSaveInternalNote} disabled={isSavingNote}>
               {isSavingNote ? t('dialog.saving') : t('dialog.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resolvingBooking} onOpenChange={(open) => !open && setResolvingBooking(null)}>
+        <DialogContent className="sm:max-w-[425px]" style={{borderRadius: "10px"}}>
+          <DialogHeader>
+            <DialogTitle>{t('resolveDialog.title', { fallback: 'Resolve No-Show' })}</DialogTitle>
+            <DialogDescription>
+              {t('resolveDialog.description', { fallback: 'Document what actions were taken and mark as resolved.' })}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {resolvingBooking && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                <p className="font-semibold">
+                  {Array.isArray(resolvingBooking.users) ? resolvingBooking.users[0]?.first_name : resolvingBooking.users?.first_name} {Array.isArray(resolvingBooking.users) ? resolvingBooking.users[0]?.last_name : resolvingBooking.users?.last_name}
+                </p>
+                <p className="text-muted-foreground italic">{resolvingBooking.services?.name}</p>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
+                    {format(new Date(resolvingBooking.start_time), 'PPP, HH:mm')}
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HugeiconsIcon icon={UserIcon} className="h-3 w-3" />
+                    {resolvingBooking.staff ? 
+                      `${resolvingBooking.staff.first_name} ${resolvingBooking.staff.last_name}` : 
+                      'Unassigned'}
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <HugeiconsIcon icon={InformationCircleIcon} className="h-3 w-3" />
+                    {resolvingBooking.locations?.name || 'Unknown Location'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="resolution-note">{t('resolveDialog.label', { fallback: 'Actions Taken' })}</Label>
+                <Textarea
+                  id="resolution-note"
+                  value={resolutionNote}
+                  onChange={(e) => setResolutionNote(e.target.value)}
+                  placeholder={t('resolveDialog.placeholder', { fallback: 'E.g., Called client, left voicemail...' })}
+                  className="min-h-[100px]"
+                  style={{borderRadius: "10px"}}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResolvingBooking(null)} disabled={isResolving}>
+              {t('dialog.cancel')}
+            </Button>
+            <Button onClick={handleResolveNoShow} disabled={isResolving}>
+              {isResolving ? t('dialog.saving') : t('dialog.complete', { fallback: 'Complete & Resolve' })}
             </Button>
           </DialogFooter>
         </DialogContent>

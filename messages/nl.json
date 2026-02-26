@@ -1387,14 +1387,23 @@
             "placeholder": "Voeg een opmerking toe...",
             "cancel": "Annuleren",
             "save": "Wijzigingen opslaan",
-            "saving": "Opslaan..."
+            "saving": "Opslaan...",
+            "complete": "Voltooien & Oplossen"
+        },
+        "resolveDialog": {
+            "title": "No-Show Oplossen",
+            "description": "Documenteer welke acties zijn ondernomen en markeer als opgelost.",
+            "label": "Ondernomen Acties",
+            "placeholder": "Bijv. Cliënt gebeld, voicemail achtergelaten..."
         },
         "toasts": {
             "loadError": "Kan dashboardgegevens niet laden",
             "completeSuccess": "Taak gemarkeerd als voltooid",
             "completeError": "Kan taak niet bijwerken",
             "commentSuccess": "Opmerking bijgewerkt",
-            "commentError": "Kan opmerking niet opslaan"
+            "commentError": "Kan opmerking niet opslaan",
+            "resolveSuccess": "No-show succesvol opgelost",
+            "resolveError": "No-show oplossen mislukt"
         },
         "noteDialog": {
             "title": "Interne Personeelsnotitie",
