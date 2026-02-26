@@ -8,7 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { Calendar02Icon, CheckListIcon, UserIcon, Edit02Icon, InformationCircleIcon } from '@hugeicons/core-free-icons';
+import { InformationCircleIcon,
+  Loading03Icon,
+  UserIcon,
+  CheckListIcon,
+  Edit02Icon,
+  Calendar02Icon,
+  Task01Icon,
+} from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
@@ -113,11 +120,15 @@ function AssistantDashboardSkeleton() {
 
 interface ChecklistItem {
   id: string;
-  booking_id: string;
+  booking_id?: string | null;
   content: string;
   is_completed: boolean;
   comment?: string | null;
-  booking?: DashboardBooking;
+  booking?: DashboardBooking | null;
+  isGeneral?: boolean;
+  created_at?: string;
+  due_date?: string | null;
+  creator?: { first_name: string; last_name: string } | null;
 }
 
 interface DashboardBooking extends Booking {
@@ -243,8 +254,7 @@ export default function AssistantDashboard() {
       setUpcomingBookings(bookingsWithCounts);
 
       // 2. Fetch ALL pending checklist items for non-cancelled bookings
-      // We need to join with bookings to check the date and status
-      const { data: allTasks, error: tasksError } = await supabase
+      const { data: bookingTasks, error: tasksError } = await supabase
         .from('booking_checklist_items')
         .select(`
           *,
@@ -262,27 +272,52 @@ export default function AssistantDashboard() {
         .order('created_at', { ascending: true });
 
       if (tasksError) {
-        console.error('Tasks Fetch Error:', tasksError);
+        console.error('Booking Tasks Fetch Error:', tasksError);
         throw tasksError;
       }
 
-      console.log('Fetched tasks for assistant dashboard:', allTasks, allTasks?.[0]);
+      // 3. Fetch general tasks
+      const { data: generalTasks, error: generalTasksError } = await supabase
+        .from('assistant_tasks')
+        .select('*, creator:users!created_by(first_name, last_name)')
+        .eq('is_completed', false)
+        .order('created_at', { ascending: true });
 
-      // Split into upcoming and past tasks
+      if (generalTasksError) {
+        console.error('General Tasks Fetch Error:', generalTasksError);
+        throw generalTasksError;
+      }
+
+      // Combine and split into upcoming and past tasks
       const upcoming: ChecklistItem[] = [];
       const past: ChecklistItem[] = [];
       const nowTs = new Date().getTime();
 
-      (allTasks as any)?.forEach((task: any) => {
-        // Double check status because of potential !inner join quirks or if neq ignored
+      // Process booking tasks
+      (bookingTasks as any)?.forEach((task: any) => {
         if (task.booking?.status === 'cancelled') return;
-
         const bookingTime = new Date(task.booking?.start_time || '').getTime();
         
         if (bookingTime >= nowTs) {
           upcoming.push(task);
         } else {
           past.push(task);
+        }
+      });
+
+      // Process general tasks
+      (generalTasks as any)?.forEach((task: any) => {
+        const item: ChecklistItem = {
+          ...task,
+          isGeneral: true
+        };
+
+        // If it has a due date in the future, it's upcoming
+        // Otherwise (past due date or no due date), it's "overdue/past" (meaning it needs attention now)
+        if (task.due_date && new Date(task.due_date).getTime() > nowTs) {
+          upcoming.push(item);
+        } else {
+          past.push(item);
         }
       });
 
@@ -301,15 +336,16 @@ export default function AssistantDashboard() {
     fetchData();
   }, []);
 
-  const handleTaskComplete = async (taskId: string, skipToast = false) => {
+  const handleTaskComplete = async (task: ChecklistItem, skipToast = false) => {
     try {
+      const table = task.isGeneral ? 'assistant_tasks' : 'booking_checklist_items';
       const { error } = await supabase
-        .from('booking_checklist_items')
+        .from(table)
         .update({ 
           is_completed: true,
           completed_at: new Date().toISOString()
         })
-        .eq('id', taskId);
+        .eq('id', task.id);
 
       if (error) throw error;
 
@@ -317,8 +353,8 @@ export default function AssistantDashboard() {
         toast.success(t('toasts.completeSuccess'));
       }
       // Remove from local state
-      setUpcomingTasks(prev => prev.filter(t => t.id !== taskId));
-      setPastTasks(prev => prev.filter(t => t.id !== taskId));
+      setUpcomingTasks(prev => prev.filter(t => t.id !== task.id));
+      setPastTasks(prev => prev.filter(t => t.id !== task.id));
     } catch (error) {
       console.error('Error completing task:', error);
       toast.error(t('toasts.completeError'));
@@ -337,11 +373,12 @@ export default function AssistantDashboard() {
     try {
       // If marked as completed, we handle that first
       if (isTaskCompleted) {
-        await handleTaskComplete(editingTask.id, true);
+        await handleTaskComplete(editingTask, true);
       }
 
+      const table = editingTask.isGeneral ? 'assistant_tasks' : 'booking_checklist_items';
       const { error } = await supabase
-        .from('booking_checklist_items')
+        .from(table)
         .update({ 
           comment: commentText,
         })
@@ -436,9 +473,19 @@ export default function AssistantDashboard() {
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg border border-destructive/20" style={{borderRadius: "10px"}}>
                       <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
-                            {task.content}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            {task.isGeneral ? (
+                              <HugeiconsIcon icon={Task01Icon} className="h-4 w-4 text-primary shrink-0" />
+                            ) : null}
+                            <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
+                              {task.content}
+                            </p>
+                            {task.isGeneral && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5 uppercase font-bold tracking-wider bg-primary/10 text-primary border-primary/20 shrink-0">
+                                {t('tasks.general', { fallback: 'General' })}
+                              </Badge>
+                            )}
+                          </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -455,21 +502,30 @@ export default function AssistantDashboard() {
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                          {task.booking?.staff && (
+                          {!task.isGeneral ? (
                             <>
-                              <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                              {task.booking?.staff && (
+                                <>
+                                  <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                                  <span className="text-muted-foreground/50">•</span>
+                                </>
+                              )}
+                              <span>{task.booking?.services?.name}</span>
                               <span className="text-muted-foreground/50">•</span>
+                              <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
+                                {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
+                              </Link>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span className="text-primary">
+                                {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                              </span>
                             </>
+                          ) : (
+                            <span className="text-primary italic">
+                              {task.created_at ? t('tasks.droppedOn', { date: format(new Date(task.created_at), 'MMM d, HH:mm') }) : ''}
+                              {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
+                            </span>
                           )}
-                          <span>{task.booking?.services?.name}</span>
-                          <span className="text-muted-foreground/50">•</span>
-                          <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
-                            {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                          </Link>
-                          <span className="text-muted-foreground/50">•</span>
-                          <span className="text-primary">
-                            {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
-                          </span>
                         </p>
                       </div>
                     </div>
@@ -496,9 +552,19 @@ export default function AssistantDashboard() {
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{borderRadius: "10px"}}>
                       <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
-                            {task.content}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            {task.isGeneral ? (
+                              <HugeiconsIcon icon={Task01Icon} className="h-4 w-4 text-primary shrink-0" />
+                            ) : null}
+                            <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
+                              {task.content}
+                            </p>
+                            {task.isGeneral && (
+                              <Badge variant="outline" className="text-[10px] h-4 px-1.5 uppercase font-bold tracking-wider bg-primary/10 text-primary border-primary/20 shrink-0">
+                                {t('tasks.general', { fallback: 'General' })}
+                              </Badge>
+                            )}
+                          </div>
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -515,21 +581,30 @@ export default function AssistantDashboard() {
                           </div>
                         )}
                         <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                          {task.booking?.staff && (
+                          {!task.isGeneral ? (
                             <>
-                              <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                              {task.booking?.staff && (
+                                <>
+                                  <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                                  <span className="text-muted-foreground/50">•</span>
+                                </>
+                              )}
+                              <span>{task.booking?.services?.name}</span>
                               <span className="text-muted-foreground/50">•</span>
+                              <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
+                                {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
+                              </Link>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span className="text-primary">
+                                {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                              </span>
                             </>
+                          ) : (
+                            <span className="text-primary italic">
+                              {task.created_at ? t('tasks.droppedOn', { date: format(new Date(task.created_at), 'MMM d, HH:mm') }) : ''}
+                              {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
+                            </span>
                           )}
-                          <span>{task.booking?.services?.name}</span>
-                          <span className="text-muted-foreground/50">•</span>
-                          <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
-                            {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                          </Link>
-                          <span className="text-muted-foreground/50">•</span>
-                          <span className="text-primary">
-                            {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
-                          </span>
                         </p>
                       </div>
                     </div>
@@ -622,7 +697,14 @@ export default function AssistantDashboard() {
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
         <DialogContent className="sm:max-w-[425px]" style={{borderRadius: "10px"}}>
           <DialogHeader>
-            <DialogTitle>{t('dialog.title')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {editingTask?.isGeneral ? (
+                <HugeiconsIcon icon={Task01Icon} className="h-5 w-5 text-primary" />
+              ) : (
+                <HugeiconsIcon icon={CheckListIcon} className="h-5 w-5 text-primary" />
+              )}
+              {editingTask?.isGeneral ? t('dialog.generalTitle', { fallback: 'General Task' }) : t('dialog.title')}
+            </DialogTitle>
             <DialogDescription className="text-foreground font-medium">
               {editingTask?.content}
             </DialogDescription>

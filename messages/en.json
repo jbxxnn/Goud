@@ -24,6 +24,7 @@
         }
     },
     "AdminDashboard": {
+        "title": "Admin Dashboard",
         "metrics": {
             "revenue": {
                 "label": "Total revenue",
@@ -1374,7 +1375,10 @@
             "for": "For",
             "noDate": "No date",
             "editComment": "Edit comment",
-            "markComplete": "Mark as complete"
+            "markComplete": "Mark as complete",
+            "general": "General",
+            "droppedOn": "Dropped on {date}",
+            "droppedBy": "by {name}"
         },
         "appointments": {
             "empty": "No no-show appointments found.",
@@ -1382,6 +1386,7 @@
         },
         "dialog": {
             "title": "Edit Comment",
+            "generalTitle": "General Task",
             "description": "Add or update the comment for this task.",
             "label": "Comment",
             "placeholder": "Add a comment...",
@@ -1490,6 +1495,25 @@
             "notesUpdateError": "Failed to update notes",
             "staffNotesUpdateSuccess": "Staff notes updated successfully",
             "staffNotesUpdateError": "Failed to update staff notes"
+        }
+    },
+    "StaffDashboard": {
+        "title": "Staff Dashboard"
+    },
+    "CreateTaskDialog": {
+        "trigger": "Drop Task",
+        "title": "Drop Task for Assistants",
+        "description": "Enter a task that assistants need to handle. It will appear on their dashboard.",
+        "label": "Task Details",
+        "placeholder": "E.g., Restock ultrasound gel in Room 3...",
+        "cancel": "Cancel",
+        "submit": "Drop Task",
+        "submitting": "Dropping...",
+        "toasts": {
+            "required": "Task content is required",
+            "authError": "Not authenticated",
+            "success": "Task dropped for assistants!",
+            "error": "Failed to create task"
         }
     }
 }

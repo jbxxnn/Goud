@@ -100,6 +100,7 @@ interface UpcomingAppointmentsResponse {
 
 import { useQuery } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
+import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog';
 
 const STATUS_COLORS: Record<BookingStatus, string> = {
   confirmed: '#3B82F6',
@@ -301,6 +302,7 @@ export default function DashboardClient() {
     return user?.email || 'Unknown';
   };
 
+
   const formatTime = (timeString: string) => {
     const date = new Date(timeString);
     return format(date, 'HH:mm');
@@ -316,6 +318,10 @@ export default function DashboardClient() {
 
   return (
     <PageContainer className="space-y-6 p-6 bg-card">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <CreateTaskDialog />
+      </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2.1fr)_minmax(0,0.9fr)]">
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

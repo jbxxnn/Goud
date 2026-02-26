@@ -24,6 +24,7 @@
         }
     },
     "AdminDashboard": {
+        "title": "Beheerders Dashboard",
         "metrics": {
             "revenue": {
                 "label": "Totale omzet",
@@ -1374,7 +1375,10 @@
             "for": "Voor",
             "noDate": "Geen datum",
             "editComment": "Bewerk opmerking",
-            "markComplete": "Markeer als voltooid"
+            "markComplete": "Markeer als voltooid",
+            "general": "Algemeen",
+            "droppedOn": "Geplaatst op {date}",
+            "droppedBy": "door {name}"
         },
         "appointments": {
             "empty": "Geen no-show afspraken gevonden.",
@@ -1382,6 +1386,7 @@
         },
         "dialog": {
             "title": "Opmerking bewerken",
+            "generalTitle": "Algemene Taak",
             "description": "Voeg een opmerking toe of werk deze bij.",
             "label": "Opmerking",
             "placeholder": "Voeg een opmerking toe...",
@@ -1490,6 +1495,25 @@
             "notesUpdateError": "Notities bijwerken mislukt",
             "staffNotesUpdateSuccess": "Personeelsnotities succesvol bijgewerkt",
             "staffNotesUpdateError": "Personeelsnotities bijwerken mislukt"
+        }
+    },
+    "StaffDashboard": {
+        "title": "Medewerker Dashboard"
+    },
+    "CreateTaskDialog": {
+        "trigger": "Taak plaatsen",
+        "title": "Taak plaatsen voor assistenten",
+        "description": "Voer een taak in die assistenten moeten afhandelen. Deze verschijnt op hun dashboard.",
+        "label": "Taakgegevens",
+        "placeholder": "Bijv., Vul echogel bij in Kamer 3...",
+        "cancel": "Annuleren",
+        "submit": "Plaatsen",
+        "submitting": "Bezig met plaatsen...",
+        "toasts": {
+            "required": "Taakbeschrijving is verplicht",
+            "authError": "Niet ingelogd",
+            "success": "Taak geplaatst voor assistenten!",
+            "error": "Niet gelukt om taak te maken"
         }
     }
 }
