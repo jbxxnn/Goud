@@ -70,7 +70,7 @@ export default function BookingsClient({
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('calendar');
-  const [calendarView, setCalendarView] = useState<TCalendarView>('month');
+  const [calendarView, setCalendarView] = useState<TCalendarView>('week');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [locationFilter, setLocationFilter] = useState<string>('all');
@@ -129,11 +129,42 @@ export default function BookingsClient({
   const total = bookingsData?.pagination?.total || 0;
   const statusCounts = bookingsData?.statusCounts || {};
   const loading = bookingsLoading;
+  
+  // Breaks Query (only for staff dashboard)
+  const { data: breaksData } = useQuery({
+    queryKey: ['staff-breaks', staffId],
+    enabled: !!staffId && viewMode === 'calendar',
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/staff-breaks?staffId=${staffId}`);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const breaks = breaksData || [];
 
   // Derive calendar events
   const calendarEvents = useMemo(() => {
-    return bookings.map(booking => bookingToCalendarEvent(booking));
-  }, [bookings]);
+    const bookingEvents = bookings.map(booking => bookingToCalendarEvent(booking));
+    
+    const breakEvents = (breaks || []).map((b: any) => ({
+      id: `break-${b.id}`,
+      startDate: b.start_time,
+      endDate: b.end_time,
+      title: b.name || 'Break',
+      color: 'gray' as const,
+      description: `${b.name || 'Break'}\nStaff: ${b.staff?.first_name} ${b.staff?.last_name}`,
+      user: {
+        id: b.staff?.id || 'unassigned',
+        name: b.staff ? `${b.staff.first_name} ${b.staff.last_name}` : 'Unassigned',
+        picturePath: null,
+      },
+      metadata: { isBreak: true }
+    })) as IEvent[];
+
+    return [...bookingEvents, ...breakEvents];
+  }, [bookings, breaks]);
 
 
   // Cancel booking

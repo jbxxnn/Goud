@@ -825,9 +825,17 @@ export class ShiftService {
     const sDate = instanceDate || shift.start_time.split('T')[0];
 
     // 2. Fetch explicit shift breaks (local overrides or custom breaks)
-    const idsToSearch = [shiftId];
-    if (isVirtualInstance) {
-      idsToSearch.push(actualShiftId);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const idsToSearch = [];
+    
+    if (uuidRegex.test(shiftId)) {
+      idsToSearch.push(shiftId);
+    }
+    
+    if (isVirtualInstance && uuidRegex.test(actualShiftId)) {
+      if (!idsToSearch.includes(actualShiftId)) {
+        idsToSearch.push(actualShiftId);
+      }
     }
 
     const { data: rawLocalBreaks, error: localBreaksError } = await supabase
