@@ -72,12 +72,12 @@ const formatDuration = (minutes: number, t: (key: string, values?: any) => strin
 };
 
 const getStatusBadge = (status: string, t: (key: string) => string) => {
-  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'noShow' | 'outline', label: string, className?: string }> = {
+  const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'noShow' | 'outline' | 'confirmed' | 'completed', label: string, className?: string }> = {
     pending: { variant: 'secondary', label: t('pending') },
-    confirmed: { variant: 'default', label: t('confirmed') },
+    confirmed: { variant: 'confirmed', label: t('confirmed') },
     cancelled: { variant: 'destructive', label: t('cancelled') },
-    ongoing: { variant: 'secondary', label: t('ongoing'), className: 'bg-accent text-accent-foreground hover:bg-accent/80' },
-    completed: { variant: 'default', label: t('completed'), className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
+    ongoing: { variant: 'secondary', label: t('ongoing') },
+    completed: { variant: 'completed', label: t('completed') },
     no_show: { variant: 'noShow', label: t('no_show') },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
@@ -413,6 +413,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                             <span className="font-medium">{formatEuroCents(addonsTotal)}</span>
                           </div>
                         )}
+                        
 
                         <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                           <span>{t('total')}</span>

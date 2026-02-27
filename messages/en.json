@@ -746,6 +746,7 @@
     },
     "Booking": {
         "flow": {
+            "errorTitle": "Error",
             "reset": "Reset",
             "resetTitle": "Start over?",
             "resetDescription": "Are you sure you want to start over? All entered data will be cleared.",
@@ -754,6 +755,7 @@
             "service": "Service",
             "location": "Location",
             "dateTime": "Date & Time",
+            "noServiceSelected": "No service selected",
             "others": "Others",
             "totalDue": "Total Due",
             "summary": "Summary",
@@ -860,6 +862,10 @@
                     "selectDateTime": "Select a date and time.",
                     "uploadUnavailable": "Uploading via this form is not yet available. Please contact us.",
                     "required": "This field is required."
+                },
+                "repeat": {
+                    "tokenUsed": "This follow-up appointment has already been scheduled or the link is no longer valid.",
+                    "invalidToken": "Invalid or expired follow-up appointment link."
                 }
             },
             "noOptions": "No options available.",

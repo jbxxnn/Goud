@@ -29,7 +29,8 @@ export function BookingFlow() {
         policyExtraPriceCents,
         addonExtraPriceCents,
         selectedAddOnItems,
-        handleStartOver
+        handleStartOver,
+        errorMsg
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -47,7 +48,28 @@ export function BookingFlow() {
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
                 <CardContent className="space-y-6 pt-12">
-                    <AnimatePresence mode="wait">
+                    {errorMsg && step === 1 && !loadingServices ? (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center text-center space-y-4 py-8"
+                        >
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2">
+                                <HugeiconsIcon icon={RotateLeft01Icon} className="w-8 h-8 text-red-600" />
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-900">{t('errorTitle')}</h2>
+                            <p className="text-gray-600 max-w-xs mx-auto leading-relaxed">
+                                {errorMsg}
+                            </p>
+                            <Button
+                                onClick={() => window.location.href = '/'}
+                                className="mt-4 rounded-full px-8 bg-primary hover:bg-primary/90 text-white"
+                            >
+                                {t('confirmReset')}
+                            </Button>
+                        </motion.div>
+                    ) : (
+                        <AnimatePresence mode="wait">
                         {step === 1 && (
                             <motion.div
                                 key="step-service"
@@ -93,6 +115,7 @@ export function BookingFlow() {
                             </motion.div>
                         )}
                     </AnimatePresence>
+                    )}
                 </CardContent>
             </Card>
 

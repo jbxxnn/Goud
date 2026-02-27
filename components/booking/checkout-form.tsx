@@ -137,19 +137,46 @@ export function CheckoutForm({
         }
     }, [contactDefaults, contactDefaultsVersion, getValues, reset]);
 
-    // Watch midwifeClientEmail for validation
+    // Watch fields for validation
     const midwifeClientEmailValue = watch('midwifeClientEmail');
+    const gravidaValue = watch('gravida');
+    const paraValue = watch('para');
+    const birthDateValue = watch('birthDate');
+    const dueDateValue = watch('dueDate');
+    const streetNameValue = watch('streetName');
+    const houseNumberValue = watch('houseNumber');
+    const postalCodeValue = watch('postalCode');
+    const cityValue = watch('city');
 
     // Notify parent of validation state changes
     useEffect(() => {
         if (onValidationChange) {
             let valid = isValid;
-            if (userRole === 'midwife' && isBookingForClient && !midwifeClientEmailValue) {
-                valid = false;
+            
+            // Additional manual checks for fields that might have complex conditional requirements
+            if (userRole === 'midwife') {
+                if (isBookingForClient && !midwifeClientEmailValue) valid = false;
+                if (!gravidaValue || gravidaValue.trim() === '') valid = false;
+                if (!paraValue || paraValue.trim() === '') valid = false;
             }
+
             onValidationChange(valid);
         }
-    }, [isValid, onValidationChange, isBookingForClient, midwifeClientEmailValue, userRole]);
+    }, [
+        isValid, 
+        onValidationChange, 
+        isBookingForClient, 
+        midwifeClientEmailValue, 
+        userRole, 
+        gravidaValue, 
+        paraValue,
+        birthDateValue,
+        dueDateValue,
+        streetNameValue,
+        houseNumberValue,
+        postalCodeValue,
+        cityValue
+    ]);
 
     // Debounce email check
     const emailDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -327,7 +354,7 @@ export function CheckoutForm({
                                 </div>
                             )}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('firstName')}</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('firstName')} *</label>
                                 <Input
                                     className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
                                     placeholder={t('firstNamePlaceholder')}
@@ -336,7 +363,7 @@ export function CheckoutForm({
                                 {errors.firstName && <div className="text-xs text-red-600 font-medium ml-1">{errors.firstName.message}</div>}
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('lastName')}</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('lastName')} *</label>
                                 <Input
                                     className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
                                     placeholder={t('lastNamePlaceholder')}
@@ -345,7 +372,7 @@ export function CheckoutForm({
                                 {errors.lastName && <div className="text-xs text-red-600 font-medium ml-1">{errors.lastName.message}</div>}
                             </div>
                             <div className="space-y-2 md:col-span-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('phone')}</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('phone')} *</label>
                                 <Input
                                     className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
                                     placeholder={t('phonePlaceholder')}
@@ -357,7 +384,7 @@ export function CheckoutForm({
                             {userRole === 'midwife' && (
                                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('gravida')}</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('gravida')} *</label>
                                         <Input
                                             className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
                                             placeholder={t('gravidaPlaceholder')}
@@ -366,7 +393,7 @@ export function CheckoutForm({
                                         {errors.gravida && <div className="text-xs text-red-600 font-medium ml-1">{errors.gravida.message}</div>}
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('para')}</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('para')} *</label>
                                         <Input
                                             className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
                                             placeholder={t('paraPlaceholder')}
@@ -380,22 +407,22 @@ export function CheckoutForm({
                             {/* Address fields */}
                             <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('street')}</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('street')} *</label>
                                     <Input placeholder={t('streetPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...streetNameField} />
                                     {errors.streetName && <div className="text-xs text-red-600 font-medium ml-1">{errors.streetName.message}</div>}
                                 </div>
                                 <div className="col-span-2 md:col-span-1 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('houseNumber')}</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('houseNumber')} *</label>
                                     <Input placeholder={t('houseNumberPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...houseNumberField} />
                                     {errors.houseNumber && <div className="text-xs text-red-600 font-medium ml-1">{errors.houseNumber.message}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('postalCode')}</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('postalCode')} *</label>
                                     <Input placeholder={t('postalCodePlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...postalCodeField} />
                                     {errors.postalCode && <div className="text-xs text-red-600 font-medium ml-1">{errors.postalCode.message}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('city')}</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('city')} *</label>
                                     <Input placeholder={t('cityPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...cityField} />
                                     {errors.city && <div className="text-xs text-red-600 font-medium ml-1">{errors.city.message}</div>}
                                 </div>
@@ -404,7 +431,7 @@ export function CheckoutForm({
                             {/* Dates */}
                             {serviceId !== '9f120662-a47a-45df-9870-167d6d2afafe' && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('dueDate')}</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('dueDate')} *</label>
                                 <Controller
                                     control={control}
                                     name="dueDate"
@@ -444,7 +471,7 @@ export function CheckoutForm({
                             </div>
                             )}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('birthDate')}</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('birthDate')} *</label>
                                 <Controller
                                     control={control}
                                     name="birthDate"
@@ -485,7 +512,7 @@ export function CheckoutForm({
                             </div>
 
                             <div className="md:col-span-2 space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('midwife')}</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('midwife')} *</label>
                                 <Select
                                     value={watch('midwifeId') || ''}
                                     onValueChange={(value) => setValue('midwifeId', value || '', { shouldValidate: true })}

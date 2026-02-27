@@ -71,16 +71,18 @@ type HeatmapCacheKeyParams = {
   start: string;
   end: string;
   staffId?: string | null;
+  isTwin?: boolean;
 };
 
 export function makeHeatmapCacheKey(params: HeatmapCacheKeyParams): string {
-  const { serviceId, locationId, start, end, staffId = null } = params;
+  const { serviceId, locationId, start, end, staffId = null, isTwin = false } = params;
   return JSON.stringify({
     serviceId,
     locationId,
     start,
     end,
     staffId,
+    isTwin,
   });
 }
 

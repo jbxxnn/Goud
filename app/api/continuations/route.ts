@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
                   client_id,
                   created_by,
                   location_id,
+                  midwife_id,
+                  other_midwife_name,
+                  due_date,
+                  birth_date,
+                  gravida,
+                  para,
                   service:services(id, name, description)
                 )
             `)
@@ -56,11 +62,12 @@ export async function GET(request: NextRequest) {
         const parentBooking = continuation.parent_booking as any;
         let userData = null;
         if (parentBooking) {
-            const userId = parentBooking.client_id || parentBooking.created_by;
+            // Per DATABASE_MAPPING_RULES.md: created_by is the patient, client_id is the fallback/midwife
+            const userId = parentBooking.created_by || parentBooking.client_id;
             if (userId) {
                 const { data: user } = await supabase
                     .from('users')
-                    .select('first_name, last_name, email, phone')
+                    .select('first_name, last_name, email, phone, house_number, postal_code, street_name, city, birth_date')
                     .eq('id', userId)
                     .single();
                 userData = user;
@@ -196,11 +203,38 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (fullBooking) {
-            const client = fullBooking.client;
-            const clientName = [client?.first_name, client?.last_name].filter(Boolean).join(' ') || 'Client';
-            const clientEmail = client?.email;
-            const createdByEmail = fullBooking.created_by_user?.email;
+            let clientEmail = fullBooking.client?.email;
+            let createdByEmail = fullBooking.created_by_user?.email;
+            let firstName = fullBooking.client?.first_name;
+            let lastName = fullBooking.client?.last_name;
 
+            // Manual fetch for users if join was incomplete or ambiguous
+            if (!clientEmail || !createdByEmail) {
+                const userIds = [fullBooking.client_id, fullBooking.created_by].filter(Boolean) as string[];
+                
+                if (userIds.length > 0) {
+                    const { data: users } = await supabase
+                        .from('users')
+                        .select('id, email, first_name, last_name')
+                        .in('id', userIds);
+                    
+                    if (users) {
+                        const clientUser = users.find(u => u.id === fullBooking.client_id);
+                        const creatorUser = users.find(u => u.id === fullBooking.created_by);
+                        
+                        if (clientUser) {
+                            clientEmail = clientUser.email;
+                            firstName = clientUser.first_name;
+                            lastName = clientUser.last_name;
+                        }
+                        if (creatorUser) {
+                            createdByEmail = creatorUser.email;
+                        }
+                    }
+                }
+            }
+
+            const clientName = [firstName, lastName].filter(Boolean).join(' ') || 'Client';
             const serviceName = fullBooking.services?.name || 'Service';
 
             let emailRecipients: string[] = [];

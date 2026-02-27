@@ -261,7 +261,7 @@ export async function GET(req: NextRequest) {
     // Process breaks: Project parent breaks onto the current day
     const shiftBreaksForDay: TimeInterval[] = [];
     const { toDate } = require('date-fns-tz');
-    const shiftDateStr = date; // This is the requested date YYYY-MM-DD
+    const shiftDateStr = dateStr; // Corrected: Use the string dateStr directly
     
     // First, add breaks already on the specific day (exceptions/overrides)
     const currentDayBreaks = (rawShiftBreaks ?? []).filter(b => {

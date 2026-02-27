@@ -306,13 +306,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         lastName: '',
         phone: '',
         address: undefined,
-        postalCode: undefined,
-        houseNumber: undefined,
-        streetName: undefined,
-        city: undefined,
-        birthDate: undefined,
+        postalCode: '',
+        houseNumber: '',
+        streetName: '',
+        city: '',
+        birthDate: '',
         midwifeId: "",
-        dueDate: undefined,
+        otherMidwifeName: "",
+        dueDate: '',
         notes: undefined,
     });
     const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
@@ -404,7 +405,10 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                     const res = await fetch(`/api/continuations?token=${continuationToken}`);
                     const json = await res.json();
                     if (!json.success) {
-                        setErrorMsg(json.error || 'Invalid token');
+                        const errorKey = json.error === 'Token already used'
+                            ? 'errors.repeat.tokenUsed'
+                            : 'errors.repeat.invalidToken';
+                        setErrorMsg(t(errorKey));
                         setLoadingServices(false);
                         return;
                     }
@@ -463,9 +467,19 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                             firstName: u.first_name || '',
                             lastName: u.last_name || '',
                             phone: u.phone || '',
+                            dueDate: '',
+                            birthDate: parentBooking.birth_date || u.birth_date || '',
+                            midwifeId: parentBooking.midwife_id || u.midwife_id || '',
+                            otherMidwifeName: parentBooking.other_midwife_name || '',
+                            houseNumber: u.house_number || '',
+                            postalCode: u.postal_code || '',
+                            streetName: u.street_name || '',
+                            city: u.city || '',
+                            gravida: parentBooking.gravida || undefined,
+                            para: parentBooking.para || undefined,
                             notes: undefined,
-                            midwifeId: "",
                         });
+                        setHasAutofilled(true);
 
                         if (parentBooking.is_twin) {
                             setIsTwin(true);
@@ -820,14 +834,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                                 lastName: user.last_name || '',
                                 phone: user.phone || '',
                                 address: user.address || undefined,
-                                postalCode: user.postal_code || undefined,
-                                houseNumber: user.house_number || undefined,
-                                streetName: user.street_name || undefined,
-                                city: user.city || undefined,
-                                birthDate: user.birth_date || undefined,
-                                midwifeId: user.midwife_id || "",
-                                dueDate: contactDefaults.dueDate,
-                                notes: contactDefaults.notes,
+                                postalCode: user.postal_code || '',
+                                houseNumber: user.house_number || '',
+                                streetName: user.street_name || '',
+                                city: user.city || '',
+                                birthDate: user.birth_date || '',
+                                midwifeId: user.midwife_id || '',
+                                otherMidwifeName: '',
+                                dueDate: '',
                             });
                             setContactDefaultsVersion(v => v + 1);
                             setHasAutofilled(true);
@@ -942,9 +956,10 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
         const clear = () => {
             setContactDefaults({
                 firstName: '', lastName: '', phone: '', address: undefined,
-                postalCode: undefined, houseNumber: undefined, streetName: undefined,
-                city: undefined, birthDate: undefined, midwifeId: "",
-                dueDate: undefined, notes: undefined
+                postalCode: '', houseNumber: '', streetName: '',
+                city: '', birthDate: '', midwifeId: "",
+                otherMidwifeName: "",
+                dueDate: '', notes: undefined
             });
             setContactDefaultsVersion(v => v + 1);
             setHasAutofilled(false);
@@ -986,12 +1001,14 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                             lastName: user.last_name || '',
                             phone: user.phone || '',
                             address: user.address || undefined,
-                            postalCode: user.postal_code || undefined,
-                            houseNumber: user.house_number || undefined,
-                            streetName: user.street_name || undefined,
-                            city: user.city || undefined,
-                            birthDate: user.birth_date || undefined,
-                            midwifeId: user.midwife_id || undefined,
+                            postalCode: user.postal_code || '',
+                            houseNumber: user.house_number || '',
+                            streetName: user.street_name || '',
+                            city: user.city || '',
+                            birthDate: user.birth_date || '',
+                            midwifeId: user.midwife_id || '',
+                            otherMidwifeName: '',
+                            dueDate: '',
                         });
                         setContactDefaultsVersion(v => v + 1);
                         setHasAutofilled(true);

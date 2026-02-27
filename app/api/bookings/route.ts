@@ -620,50 +620,52 @@ export async function GET(req: NextRequest) {
       description: string | null;
       quantity: number;
       price_eur_cents: number;
+      option_id?: string | null;
     }>> = {};
 
     if (bookingIds.length > 0) {
       const { data: addonsData } = await supabase
         .from('booking_addons')
-        .select(`
-          booking_id,
-          quantity,
-          price_eur_cents,
-          service_addons (
-            id,
-            name,
-            description,
-            price
-          ),
-          service_addon_options (
-            id,
-            name
-          )
-        `)
+        .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
         .in('booking_id', bookingIds);
 
-      // Group addons by booking_id
-      for (const addon of addonsData || []) {
-        if (!addon.booking_id) continue;
-        const serviceAddon = Array.isArray(addon.service_addons)
-          ? addon.service_addons[0]
-          : addon.service_addons;
+      if (addonsData && addonsData.length > 0) {
+        const addonIds = [...new Set(addonsData.map(a => a.addon_id).filter(Boolean))];
+        const optionIds = [...new Set(addonsData.map(a => a.option_id).filter(Boolean))];
 
-        const serviceAddonOption = Array.isArray(addon.service_addon_options)
-          ? addon.service_addon_options[0]
-          : addon.service_addon_options;
+        let serviceAddons: any[] = [];
+        let serviceOptions: any[] = [];
 
-        if (!addonsMap[addon.booking_id]) {
-          addonsMap[addon.booking_id] = [];
+        if (addonIds.length > 0) {
+          const { data: saData } = await supabase.from('service_addons').select('id, name, description, price').in('id', addonIds);
+          serviceAddons = saData || [];
         }
-        if (serviceAddon) {
-          addonsMap[addon.booking_id].push({
-            id: serviceAddon.id,
-            name: serviceAddonOption ? `${serviceAddon.name} - ${serviceAddonOption.name}` : (serviceAddon.name || ''),
-            description: serviceAddon.description || null,
-            quantity: addon.quantity || 1,
-            price_eur_cents: addon.price_eur_cents || 0,
-          });
+        
+        if (optionIds.length > 0) {
+          const { data: soData } = await supabase.from('service_addon_options').select('id, name').in('id', optionIds);
+          serviceOptions = soData || [];
+        }
+
+        // Group addons by booking_id
+        for (const addon of addonsData) {
+          if (!addon.booking_id) continue;
+          
+          const sa = serviceAddons.find(s => s.id === addon.addon_id);
+          const so = serviceOptions.find(o => o.id === addon.option_id);
+
+          if (!addonsMap[addon.booking_id]) {
+            addonsMap[addon.booking_id] = [];
+          }
+          if (sa) {
+            addonsMap[addon.booking_id].push({
+              id: sa.id,
+              name: so ? `${sa.name} - ${so.name}` : (sa.name || ''),
+              description: sa.description || null,
+              quantity: addon.quantity || 1,
+              price_eur_cents: addon.price_eur_cents || Math.round((sa.price || 0) * 100),
+              option_id: addon.option_id
+            });
+          }
         }
       }
     }

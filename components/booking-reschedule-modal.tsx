@@ -300,7 +300,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
               <div><span className="font-medium">Date:</span> {formatDate(booking.start_time)}</div>
               <div><span className="font-medium">Time:</span> {formatTime(booking.start_time)} - {formatTime(booking.end_time)}</div>
               <div><span className="font-medium">Location:</span> {booking.locations?.name || 'N/A'}</div>
-              <div><span className="font-medium">Staff:</span> {booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</div>
+              {/* <div><span className="font-medium">Staff:</span> {booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</div> */}
             </div>
           </div>
 
@@ -308,8 +308,8 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
             <h3 className="font-semibold">Select New Date & Time</h3>
             <p className="text-sm text-gray-600">
               Location: <span className="font-medium">{booking.locations?.name || 'N/A'}</span>
-              {' • '}
-              Staff: <span className="font-medium">{booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</span>
+              {/* {' • '} */}
+              {/* Staff: <span className="font-medium">{booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</span> */}
             </p>
 
             <div className="relative">

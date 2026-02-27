@@ -20,6 +20,13 @@ const optionalText = (label: string, max = 255) =>
     .or(z.literal(''))
     .transform((value) => (value === '' ? undefined : value));
 
+const requiredText = (label: string, max = 255) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is verplicht`)
+    .max(max, `${label} mag maximaal ${max} tekens bevatten`);
+
 const requiredPhone = z
   .string()
   .trim()
@@ -41,6 +48,19 @@ const optionalDate = z
     },
     { message: 'Ongeldige datum' }
   );
+
+const requiredDate = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is verplicht`)
+    .refine(
+      (value) => {
+        const date = new Date(value);
+        return !isNaN(date.getTime());
+      },
+      { message: 'Ongeldige datum' }
+    );
 
 const optionalUuid = z
   .string()
@@ -64,14 +84,14 @@ export const bookingContactSchema = z.object({
   phone: requiredPhone,
   address: optionalText('Adres').optional(),
   // New fields
-  dueDate: optionalDate,
-  birthDate: optionalDate,
+  dueDate: requiredDate('Uitgerekende datum'),
+  birthDate: requiredDate('Geboortedatum'),
   midwifeId: requiredMidwifeId,
   otherMidwifeName: optionalText('Naam verloskundige', 100).optional(),
-  houseNumber: optionalText('Huisnummer', 20).optional(),
-  postalCode: optionalText('Postcode', 20).optional(),
-  streetName: optionalText('Straatnaam', 255).optional(),
-  city: optionalText('Woonplaats', 100).optional(),
+  houseNumber: requiredText('Huisnummer', 20),
+  postalCode: requiredText('Postcode', 20),
+  streetName: requiredText('Straatnaam', 255),
+  city: requiredText('Woonplaats', 100),
   notes: optionalText('Notities', 500).optional(),
   gravida: optionalText('Gravida', 10).optional(),
   para: optionalText('Para', 10).optional(),
@@ -83,6 +103,24 @@ export const bookingContactSchema = z.object({
       message: 'Naam van de verloskundige is verplicht',
       path: ['otherMidwifeName'],
     });
+  }
+
+  // If a midwife is booking for a client, gravida and para are required
+  if (data.midwifeClientEmail && data.midwifeClientEmail.trim() !== '') {
+    if (!data.gravida || data.gravida.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Gravida is verplicht',
+        path: ['gravida'],
+      });
+    }
+    if (!data.para || data.para.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Para is verplicht',
+        path: ['para'],
+      });
+    }
   }
 });
 

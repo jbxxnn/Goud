@@ -746,6 +746,7 @@
     },
     "Booking": {
         "flow": {
+            "errorTitle": "Fout",
             "reset": "Reset",
             "resetTitle": "Opnieuw beginnen?",
             "resetDescription": "Weet u zeker dat u opnieuw wilt beginnen? Alle ingevulde gegevens worden gewist.",
@@ -754,6 +755,7 @@
             "service": "Dienst",
             "location": "Locatie",
             "dateTime": "Datum & Tijd",
+            "noServiceSelected": "Geen dienst geselecteerd",
             "others": "Overige",
             "totalDue": "Totaal te betalen",
             "summary": "Samenvatting",
@@ -860,6 +862,10 @@
                     "selectDateTime": "Selecteer een datum en tijd.",
                     "uploadUnavailable": "Uploaden via dit formulier is nog niet beschikbaar. Neem contact op.",
                     "required": "Dit veld is verplicht."
+                },
+                "repeat": {
+                    "tokenUsed": "Deze vervolgafspraak is al ingepland of de link is niet langer geldig.",
+                    "invalidToken": "Ongeldige of verlopen link voor vervolgafspraak."
                 }
             },
             "isTwinPregnancy": "Is dit een tweelingzwangerschap?",

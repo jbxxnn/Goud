@@ -681,7 +681,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           <Label className="text-xs font-semibold mb-2 block">End Time *</Label>
           <div className="flex gap-2">
             <Popover modal={true} open={endDateOpen} onOpenChange={setEndDateOpen}>
-              <PopoverTrigger asChild>
+              <PopoverTrigger asChild className='hidden'>
                 <Button
                   variant={"outline"}
                   className={cn(
@@ -1143,12 +1143,13 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           {/* Standard Delete Dialog for Non-Recurring or Single Shifts */}
           <DeleteConfirmationDialog
             isOpen={showDeleteDialog}
-            onClose={() => setShowDeleteDialog(false)}
+            onClose={() => !isDeleting && setShowDeleteDialog(false)}
             onConfirm={() => performDeleteAction('series')}
             title="Delete Shift"
             description="Are you sure you want to delete this shift? This action cannot be undone."
             itemName={`Shift on ${new Date(shift.start_time).toLocaleDateString()}`}
             confirmButtonText={isDeleting ? 'Deleting...' : 'Delete'}
+            isLoading={isDeleting}
           />
 
           {/* Delete Prompt for Recurring Shifts */}

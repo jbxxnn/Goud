@@ -33,11 +33,13 @@ export async function GET(req: NextRequest) {
     const endStr = searchParams.get('end');     // YYYY-MM-DD
     const staffId = searchParams.get('staffId'); // Optional - filter by staff
 
+    const isTwin = searchParams.get('isTwin') === 'true';
+
     if (!serviceId || !locationId || !startStr || !endStr) {
       return NextResponse.json({ error: 'Missing serviceId, locationId, start, or end' }, { status: 400 });
     }
 
-    console.log('[availability/heatmap] params', { serviceId, locationId, startStr, endStr });
+    console.log('[availability/heatmap] params', { serviceId, locationId, startStr, endStr, isTwin });
 
     const start = parseISODateOnly(startStr);
     const end = parseISODateOnly(endStr);
@@ -49,6 +51,7 @@ export async function GET(req: NextRequest) {
       start: startStr,
       end: endStr,
       staffId: staffId ?? null,
+      isTwin,
     });
     const cached = heatmapCache.get(cacheKey);
     if (cached) {
@@ -60,15 +63,27 @@ export async function GET(req: NextRequest) {
     // Fetch service rules once
     const { data: serviceData, error: serviceErr } = await supabase
       .from('services')
-      .select('id, duration, buffer_time, lead_time')
+      .select('id, duration, buffer_time, lead_time, allows_twins, twin_duration_minutes')
       .eq('id', serviceId)
       .maybeSingle();
     if (serviceErr || !serviceData) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
+    
     const serviceRules: ServiceRules = {
       durationMinutes: Number(serviceData.duration) || 0,
       bufferMinutes: Number(serviceData.buffer_time) || 0,
       leadTimeMinutes: Number(serviceData.lead_time) || 0,
     };
+
+    if (isTwin) {
+      if (serviceData.allows_twins) {
+        if (serviceData.twin_duration_minutes) {
+          serviceRules.durationMinutes = serviceData.twin_duration_minutes;
+        } else {
+          serviceRules.durationMinutes = serviceRules.durationMinutes * 2;
+        }
+      }
+    }
+
     if (!serviceRules.durationMinutes || serviceRules.durationMinutes <= 0) {
       console.log('[availability/heatmap] no duration for service → returning empty days');
       const payload = { days: [] as any[] };
@@ -90,19 +105,31 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(payload, { headers: availabilityCacheHeaders });
     }
 
+    // If Twin Request: Fetch qualified staff
+    let qualifiedStaffIds: string[] | null = null;
+    if (isTwin) {
+      const { data: qualifiedStaff, error: qsErr } = await supabase
+        .from('staff_services')
+        .select('staff_id')
+        .eq('service_id', serviceId)
+        .eq('is_twin_qualified', true);
+
+      if (qsErr) {
+        console.error('[availability/heatmap] qualified staff error', qsErr);
+        return NextResponse.json({ error: 'Failed to check staff qualifications' }, { status: 500 });
+      }
+      qualifiedStaffIds = (qualifiedStaff ?? []).map((s: any) => s.staff_id);
+
+      if (qualifiedStaffIds.length === 0) {
+        const payload = { days: [] as any[] };
+        heatmapCache.set(cacheKey, payload);
+        return NextResponse.json(payload, { headers: availabilityCacheHeaders });
+      }
+    }
+
     const startUTC = new Date(start);
     const endUTC = new Date(end);
     endUTC.setUTCHours(23, 59, 59, 999);
-
-    // Shifts in range
-    // Extra debug: also count all active shifts at this location in range (regardless of service)
-    const { count: allLocShiftCount } = await supabase
-      .from('shifts')
-      .select('id', { count: 'exact', head: true })
-      .eq('location_id', locationId)
-      .eq('is_active', true)
-      .lt('start_time', endUTC.toISOString())
-      .gt('end_time', startUTC.toISOString());
 
     let shiftsQuery = supabase
       .from('shifts')
@@ -116,6 +143,9 @@ export async function GET(req: NextRequest) {
     // Filter by staff if specified
     if (staffId) {
       shiftsQuery = shiftsQuery.eq('staff_id', staffId);
+    }
+    if (qualifiedStaffIds !== null) {
+      shiftsQuery = shiftsQuery.in('staff_id', qualifiedStaffIds);
     }
 
     const { data: shiftsData, error: shiftsErr } = await shiftsQuery;
@@ -141,7 +171,6 @@ export async function GET(req: NextRequest) {
     console.log('[availability/heatmap] counts', {
       allowedShiftIds: allowedShiftIds.length,
       shifts: shifts.length,
-      allLocationShiftsInRange: allLocShiftCount ?? 0,
     });
     if (shifts.length === 0) {
       // Fetch a few recent shifts for location to inspect times

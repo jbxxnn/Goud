@@ -75,6 +75,7 @@ export default function BookingsClient({
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [locations, setLocations] = useState<{ id: string, name: string }[]>([]);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -176,6 +177,7 @@ export default function BookingsClient({
 
   const confirmCancel = async () => {
     if (!bookingToCancel) return;
+    setIsActionLoading(true);
 
     try {
       const response = await fetch(`/api/bookings/${bookingToCancel.id}`, {
@@ -203,6 +205,8 @@ export default function BookingsClient({
       toast.error(t('toasts.cancelError'), {
         description: errorMessage,
       });
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -240,6 +244,7 @@ export default function BookingsClient({
 
   const confirmDelete = async () => {
     if (!bookingToCancel) return;
+    setIsActionLoading(true);
 
     try {
       const response = await fetch(`/api/bookings/${bookingToCancel.id}`, {
@@ -263,6 +268,8 @@ export default function BookingsClient({
       toast.error(t('toasts.deleteError'), {
         description: errorMessage,
       });
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -663,10 +670,11 @@ export default function BookingsClient({
       <DeleteConfirmationDialog
         isOpen={deleteDialogOpen}
         onClose={() => {
-          setDeleteDialogOpen(false);
-          setBookingToCancel(null);
-          setIsDeleteMode(false);
-          // Keep the booking modal open if they cancel the confirmation
+          if (!isActionLoading) {
+            setDeleteDialogOpen(false);
+            setBookingToCancel(null);
+            setIsDeleteMode(false);
+          }
         }}
         onConfirm={isDeleteMode ? confirmDelete : confirmCancel}
         title={isDeleteMode ? t('dialog.deleteTitle') : t('dialog.cancelTitle')}
@@ -676,6 +684,7 @@ export default function BookingsClient({
         itemName={bookingToCancel ? `Booking for ${bookingToCancel.users?.email || 'Unknown'}` : undefined}
         confirmButtonText={isDeleteMode ? t('dialog.deleteConfirm') : t('dialog.cancelConfirm')}
         confirmButtonVariant={isDeleteMode ? 'destructive' : 'default'}
+        isLoading={isActionLoading}
       />
     </PageContainer>
   );

@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Loader } from 'lucide-react';
 
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface DeleteConfirmationDialogProps {
   itemName?: string;
   confirmButtonText?: string;
   confirmButtonVariant?: 'default' | 'destructive';
+  isLoading?: boolean;
 }
 
 import { useTranslations } from 'next-intl';
@@ -33,6 +35,7 @@ export function DeleteConfirmationDialog({
   itemName,
   confirmButtonText,
   confirmButtonVariant = 'destructive',
+  isLoading = false,
 }: DeleteConfirmationDialogProps) {
   const t = useTranslations('Common');
   const buttonClassName = confirmButtonVariant === 'destructive'
@@ -52,12 +55,23 @@ export function DeleteConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose} style={{ borderRadius: '1rem' }}>{t('cancel')}</AlertDialogCancel>
+          <AlertDialogCancel 
+            onClick={onClose} 
+            disabled={isLoading}
+            style={{ borderRadius: '1rem' }}
+          >
+            {t('cancel')}
+          </AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.preventDefault();
+              onConfirm();
+            }}
+            disabled={isLoading}
             className={buttonClassName}
             style={{ borderRadius: '1rem' }}
           >
+            {isLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
             {confirmButtonText || t('delete')}
           </AlertDialogAction>
         </AlertDialogFooter>

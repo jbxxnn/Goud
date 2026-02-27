@@ -83,7 +83,10 @@ import {
       month: isSameMonth,
     };
   
-    return events.filter(event => compareFns[view](new Date(event.startDate), date)).length;
+    return events.filter(event => 
+      !event.metadata?.isBreak && 
+      compareFns[view](new Date(event.startDate), date)
+    ).length;
   }
   
   // ================ Week and day view helper functions ================ //
