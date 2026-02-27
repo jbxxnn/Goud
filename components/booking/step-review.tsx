@@ -65,15 +65,15 @@ export function StepReview() {
                         setContactDefaults({
                             firstName: user.first_name || '',
                             lastName: user.last_name || '',
-                            phone: user.phone || undefined,
+                            phone: user.phone || '',
                             address: user.address || undefined,
-                            postalCode: user.postal_code || undefined,
-                            houseNumber: user.house_number || undefined,
-                            streetName: user.street_name || undefined,
-                            city: user.city || undefined,
-                            birthDate: user.birth_date || undefined,
+                            postalCode: user.postal_code || '',
+                            houseNumber: user.house_number || '',
+                            streetName: user.street_name || '',
+                            city: user.city || '',
+                            birthDate: user.birth_date || '',
                             midwifeId: user.midwife_id || "",
-                            dueDate: undefined,
+                            dueDate: '',
                             notes: undefined,
                             gravida: undefined,
                             para: undefined,
@@ -108,9 +108,10 @@ export function StepReview() {
             setPassword('');
             setContactDefaults({
                 firstName: '', lastName: '', phone: '', address: undefined,
-                postalCode: undefined, houseNumber: undefined, streetName: undefined,
-                city: undefined, birthDate: undefined, midwifeId: "",
-                dueDate: undefined, notes: undefined
+                postalCode: '', houseNumber: '', streetName: '',
+                city: '', birthDate: '', midwifeId: "",
+                dueDate: '', notes: undefined,
+                otherMidwifeName: "",
             });
             setContactDefaultsVersion(v => v + 1);
         }
