@@ -29,6 +29,7 @@ export default function StaffDashboard({ staff }: StaffDashboardProps) {
                     totalPages: 1
                 }}
                 staffId={staff.id}
+                userRole="staff"
                 onBookingClick={(booking) => router.push(`/dashboard/appointments/${booking.id}`)}
             />
         </div>

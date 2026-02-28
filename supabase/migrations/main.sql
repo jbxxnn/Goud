@@ -1,6 +1,22 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.assistant_tasks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  content text NOT NULL,
+  is_completed boolean DEFAULT false,
+  created_by uuid,
+  assigned_to uuid,
+  due_date timestamp with time zone,
+  comment text,
+  created_at timestamp with time zone DEFAULT now(),
+  completed_at timestamp with time zone,
+  completed_by uuid,
+  CONSTRAINT assistant_tasks_pkey PRIMARY KEY (id),
+  CONSTRAINT assistant_tasks_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT assistant_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(id),
+  CONSTRAINT assistant_tasks_completed_by_fkey FOREIGN KEY (completed_by) REFERENCES public.users(id)
+);
 CREATE TABLE public.blackout_periods (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   location_id uuid,
@@ -23,8 +39,57 @@ CREATE TABLE public.booking_addons (
   quantity integer NOT NULL CHECK (quantity > 0),
   price_eur_cents integer NOT NULL CHECK (price_eur_cents >= 0),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  option_id uuid,
   CONSTRAINT booking_addons_pkey PRIMARY KEY (id),
-  CONSTRAINT booking_addons_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id)
+  CONSTRAINT booking_addons_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT booking_addons_option_id_fkey FOREIGN KEY (option_id) REFERENCES public.service_addon_options(id)
+);
+CREATE TABLE public.booking_checklist_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL,
+  content text NOT NULL,
+  is_completed boolean DEFAULT false,
+  completed_by uuid,
+  completed_at timestamp with time zone,
+  comment text,
+  created_at timestamp with time zone DEFAULT now(),
+  created_by uuid,
+  CONSTRAINT booking_checklist_items_pkey PRIMARY KEY (id),
+  CONSTRAINT booking_checklist_items_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT booking_checklist_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT booking_checklist_items_completed_by_fkey FOREIGN KEY (completed_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.booking_continuations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  parent_booking_id uuid NOT NULL,
+  repeat_type_id uuid NOT NULL,
+  token text NOT NULL UNIQUE,
+  expires_at timestamp with time zone NOT NULL,
+  claimed_booking_id uuid,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT booking_continuations_pkey PRIMARY KEY (id),
+  CONSTRAINT booking_continuations_parent_booking_id_fkey FOREIGN KEY (parent_booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT booking_continuations_repeat_type_id_fkey FOREIGN KEY (repeat_type_id) REFERENCES public.service_repeat_types(id),
+  CONSTRAINT booking_continuations_claimed_booking_id_fkey FOREIGN KEY (claimed_booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT booking_continuations_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
+);
+CREATE TABLE public.booking_locks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  service_id uuid NOT NULL,
+  location_id uuid NOT NULL,
+  staff_id uuid NOT NULL,
+  shift_id uuid NOT NULL,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  session_token text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT booking_locks_pkey PRIMARY KEY (id),
+  CONSTRAINT booking_locks_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
+  CONSTRAINT booking_locks_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.locations(id),
+  CONSTRAINT booking_locks_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id),
+  CONSTRAINT booking_locks_shift_id_fkey FOREIGN KEY (shift_id) REFERENCES public.shifts(id)
 );
 CREATE TABLE public.booking_notes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -61,6 +126,17 @@ CREATE TABLE public.bookings (
   city character varying,
   created_by uuid,
   internal_notes text,
+  reminder_sent boolean NOT NULL DEFAULT false,
+  mollie_payment_id text,
+  payment_link text,
+  is_twin boolean NOT NULL DEFAULT false,
+  parent_booking_id uuid,
+  continuation_id uuid,
+  gravida text,
+  para text,
+  other_midwife_name text,
+  no_show_resolved_at timestamp with time zone,
+  no_show_resolved_by uuid,
   CONSTRAINT bookings_pkey PRIMARY KEY (id),
   CONSTRAINT bookings_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.users(id),
   CONSTRAINT bookings_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id),
@@ -68,7 +144,10 @@ CREATE TABLE public.bookings (
   CONSTRAINT bookings_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id),
   CONSTRAINT bookings_shift_id_fkey FOREIGN KEY (shift_id) REFERENCES public.shifts(id),
   CONSTRAINT bookings_midwife_id_fkey FOREIGN KEY (midwife_id) REFERENCES public.midwives(id),
-  CONSTRAINT bookings_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+  CONSTRAINT bookings_parent_booking_id_fkey FOREIGN KEY (parent_booking_id) REFERENCES public.bookings(id),
+  CONSTRAINT bookings_continuation_id_fkey FOREIGN KEY (continuation_id) REFERENCES public.booking_continuations(id),
+  CONSTRAINT bookings_no_show_resolved_by_fkey FOREIGN KEY (no_show_resolved_by) REFERENCES public.users(id),
+  CONSTRAINT bookings_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id)
 );
 CREATE TABLE public.calendar_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -78,6 +157,16 @@ CREATE TABLE public.calendar_settings (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT calendar_settings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.email_templates (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  key character varying NOT NULL UNIQUE,
+  subject text NOT NULL,
+  body text NOT NULL,
+  description text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT email_templates_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.locations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -102,7 +191,20 @@ CREATE TABLE public.midwives (
   is_active boolean NOT NULL DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_recommended boolean NOT NULL DEFAULT false,
   CONSTRAINT midwives_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.service_addon_options (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  addon_id uuid NOT NULL,
+  name character varying NOT NULL,
+  price numeric DEFAULT 0.00,
+  option_order integer DEFAULT 0,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT service_addon_options_pkey PRIMARY KEY (id),
+  CONSTRAINT service_addon_options_addon_id_fkey FOREIGN KEY (addon_id) REFERENCES public.service_addons(id)
 );
 CREATE TABLE public.service_addons (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -150,6 +252,17 @@ CREATE TABLE public.service_policy_fields (
   CONSTRAINT service_policy_fields_pkey PRIMARY KEY (id),
   CONSTRAINT service_policy_fields_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
 );
+CREATE TABLE public.service_repeat_types (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  service_id uuid NOT NULL,
+  label text NOT NULL,
+  duration_minutes integer NOT NULL,
+  price_eur_cents integer NOT NULL DEFAULT 0,
+  active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT service_repeat_types_pkey PRIMARY KEY (id),
+  CONSTRAINT service_repeat_types_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
+);
 CREATE TABLE public.services (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name character varying NOT NULL,
@@ -168,8 +281,24 @@ CREATE TABLE public.services (
   scheduling_window integer DEFAULT 12,
   category_id uuid,
   service_code character CHECK (service_code IS NULL OR service_code ~ '^[A-Z0-9]{3}$'::text),
+  allows_twins boolean DEFAULT false,
+  twin_price numeric,
+  twin_duration_minutes integer,
   CONSTRAINT services_pkey PRIMARY KEY (id),
   CONSTRAINT services_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.service_categories(id)
+);
+CREATE TABLE public.shift_breaks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  shift_id uuid NOT NULL,
+  sitewide_break_id uuid,
+  name character varying NOT NULL,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT shift_breaks_pkey PRIMARY KEY (id),
+  CONSTRAINT shift_breaks_shift_id_fkey FOREIGN KEY (shift_id) REFERENCES public.shifts(id),
+  CONSTRAINT shift_breaks_sitewide_break_id_fkey FOREIGN KEY (sitewide_break_id) REFERENCES public.sitewide_breaks(id)
 );
 CREATE TABLE public.shift_services (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -201,6 +330,19 @@ CREATE TABLE public.shifts (
   CONSTRAINT shifts_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id),
   CONSTRAINT shifts_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.locations(id),
   CONSTRAINT shifts_parent_shift_id_fkey FOREIGN KEY (parent_shift_id) REFERENCES public.shifts(id)
+);
+CREATE TABLE public.sitewide_breaks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name character varying NOT NULL,
+  start_time time without time zone NOT NULL,
+  end_time time without time zone NOT NULL,
+  start_date date,
+  end_date date,
+  is_recurring boolean DEFAULT true,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT sitewide_breaks_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.staff (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -243,6 +385,7 @@ CREATE TABLE public.staff_services (
   qualification_date date,
   notes text,
   created_at timestamp with time zone DEFAULT now(),
+  is_twin_qualified boolean DEFAULT false,
   CONSTRAINT staff_services_pkey PRIMARY KEY (id),
   CONSTRAINT staff_services_staff_id_fkey FOREIGN KEY (staff_id) REFERENCES public.staff(id),
   CONSTRAINT staff_services_service_id_fkey FOREIGN KEY (service_id) REFERENCES public.services(id)
@@ -263,7 +406,7 @@ CREATE TABLE public.time_off_requests (
 CREATE TABLE public.users (
   id uuid NOT NULL,
   email character varying NOT NULL UNIQUE,
-  role character varying NOT NULL DEFAULT 'client'::character varying CHECK (role::text = ANY (ARRAY['admin'::character varying, 'staff'::character varying, 'midwife'::character varying, 'client'::character varying]::text[])),
+  role character varying NOT NULL DEFAULT 'client'::character varying CHECK (role::text = ANY (ARRAY['admin'::character varying, 'staff'::character varying, 'midwife'::character varying, 'client'::character varying, 'assistant'::character varying]::text[])),
   first_name character varying,
   last_name character varying,
   phone character varying,

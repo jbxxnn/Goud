@@ -5,12 +5,15 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '@hugeicons/core-free-icons';
+import { Staff } from '@/lib/types/staff';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { bookingToCalendarEvent } from '@/lib/utils/booking-mapper';
 import { CalendarProvider } from '@/calendar/contexts/calendar-context';
 import { BookingCalendarContainer } from '@/components/booking-calendar-container';
 import { CalendarSettings } from '@/components/calendar-settings';
 import { IEvent } from '@/calendar/interfaces';
+import { ShiftWithDetails, ShiftsWithDetailsResponse, shiftToCalendarEvent } from '@/lib/types/shift';
+import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
 import type { TCalendarView } from '@/calendar/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
@@ -74,13 +77,13 @@ export default function BookingsClient({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [locationFilter, setLocationFilter] = useState<string>('all');
-  const [locations, setLocations] = useState<{ id: string, name: string }[]>([]);
+  const [locations, setLocations] = useState<{ id: string, name: string, color?: string }[]>([]);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   useEffect(() => {
     const fetchLocations = async () => {
       const supabase = createClient();
-      const { data } = await supabase.from('locations').select('id, name').eq('is_active', true).order('name');
+      const { data } = await supabase.from('locations').select('id, name, color').eq('is_active', true).order('name');
       if (data) setLocations(data);
     };
     fetchLocations();
@@ -144,6 +147,50 @@ export default function BookingsClient({
   });
 
   const breaks = breaksData || [];
+  
+  // Shifts Query (to show active shifts in the background)
+  const { data: shiftsData } = useQuery<ShiftWithDetails[]>({
+    queryKey: ['shifts', 'all', staffId, locationFilter],
+    queryFn: async () => {
+      const dateToUse = new Date();
+      const startOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth() - 1, 1);
+      const endOfWindow = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 3, 0);
+
+      const params = new URLSearchParams({
+        with_details: 'true',
+        start_date: startOfMonth.toISOString(),
+        end_date: endOfWindow.toISOString(),
+        limit: '1000',
+      });
+
+      if (staffId) params.append('staff_id', staffId);
+      if (locationFilter && locationFilter !== 'all') params.append('location_id', locationFilter);
+
+      const response = await fetch(`/api/shifts?${params}`);
+      const data: ShiftsWithDetailsResponse = await response.json();
+      if (!data.success) return [];
+      
+      const rawShifts = data.data || [];
+      return expandRecurringShifts(rawShifts, startOfMonth, endOfWindow);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const shifts = shiftsData || [];
+  
+  // Staff Query (to get all active staff for the calendar)
+  const { data: allStaffData } = useQuery<Staff[]>({
+    queryKey: ['staff', 'active'],
+    queryFn: async () => {
+      const response = await fetch('/api/staff?active_only=true&limit=1000');
+      const data = await response.json();
+      if (!data.success) return [];
+      return data.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const allStaff = allStaffData || [];
 
   // Derive calendar events
   const calendarEvents = useMemo(() => {
@@ -164,8 +211,20 @@ export default function BookingsClient({
       metadata: { isBreak: true }
     })) as IEvent[];
 
-    return [...bookingEvents, ...breakEvents];
-  }, [bookings, breaks]);
+    const shiftBackgroundEvents = (shifts || []).map(shift => {
+      const event = shiftToCalendarEvent(shift);
+      const locationColor = locations.find(l => l.id === shift.location_id)?.color || '#94a3b8';
+      
+      return {
+        ...event,
+        title: `Shift: ${event.title}`,
+        color: locationColor as any, // Use location color for background shifts
+        metadata: { ...event.metadata, isShift: true }
+      };
+    }) as IEvent[];
+
+    return [...bookingEvents, ...breakEvents, ...shiftBackgroundEvents];
+  }, [bookings, breaks, shifts, locations]);
 
 
   // Cancel booking
@@ -332,33 +391,13 @@ export default function BookingsClient({
     }
   }, [viewMode]);
 
-  // Extract users for the calendar filter (staff)
-  const calendarUsers = bookings
-    .map(b => b.staff)
-    .filter((s): s is NonNullable<typeof s> => !!s)
-    .map(s => ({
-      id: s.first_name, // Using first name as ID temporarily because booking.staff object doesn't have ID, only names? Wait, booking.staff_id exists but the expanded object might not have it.
-      // Let's check booking type. Booking has staff_id. The expanded object `staff` has `first_name` and `last_name`.
-      // We need the ID for the user select to work with the event user ID.
-      // The event user ID is set to `booking.staff_id` in the mapper.
-      // So we need `booking.staff_id` here.
-      // But we are iterating over `bookings` and `b.staff` object doesn't have ID.
-      // We can use `b.staff_id` paired with `b.staff` details.
-    }))
-  // We need unique users.
-
-  const uniqueStaffMap = new Map();
-  bookings.forEach(b => {
-    if (b.staff_id && b.staff) {
-      uniqueStaffMap.set(b.staff_id, {
-        id: b.staff_id,
-        name: `${b.staff.first_name} ${b.staff.last_name}`,
-        picturePath: null
-      });
-    }
-  });
-
-  const calendarUsersList = Array.from(uniqueStaffMap.values());
+  const calendarUsersList = useMemo(() => {
+    return allStaff.map(s => ({
+      id: s.id,
+      name: `${s.first_name} ${s.last_name}`,
+      picturePath: null
+    }));
+  }, [allStaff]);
 
   return (
     <PageContainer className="space-y-6 p-6 bg-card">
@@ -530,12 +569,17 @@ export default function BookingsClient({
             >
               <BookingCalendarContainer
                 view={calendarView}
+                userRole={userRole}
                 onViewChange={setCalendarView}
                 onEventClick={(event) => {
                   const booking = bookings.find(b => b.id === event.id);
                   if (booking) {
                     handleView(booking);
                   }
+                }}
+                onShiftCreated={() => {
+                  queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                  queryClient.invalidateQueries({ queryKey: ['shifts'] });
                 }}
               />
               {!staffId && <CalendarSettings />}

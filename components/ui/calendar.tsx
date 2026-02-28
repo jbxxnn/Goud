@@ -54,12 +54,12 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "h-8 w-8 aria-disabled:opacity-50 p-0 select-none",
+          "h-8 w-8 aria-disabled:opacity-50 p-0 select-none hover:rounded-full",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "h-8 w-8 aria-disabled:opacity-50 p-0 select-none",
+          "h-8 w-8 aria-disabled:opacity-50 p-0 select-none hover:rounded-full",
           defaultClassNames.button_next
         ),
         month_caption: cn(

@@ -49,6 +49,7 @@ export type BookingConfirmationDetails = {
     googleMapsLink?: string;
     notes?: string | null;
     addons?: { name: string; price: string }[];
+    paymentLink?: string;
 };
 
 export async function sendBookingConfirmationEmail(
@@ -63,7 +64,7 @@ export async function sendBookingConfirmationEmail(
     const defaultSubject = `Afspraak voor ${details.serviceName} is bevestigd.`;
     const { subject, body } = await getTemplateContent('booking_confirmation', defaultSubject, details);
 
-    const emailHtml = await render(BookingConfirmationEmail({ ...details, customBody: body }));
+    const emailHtml = await render(BookingConfirmationEmail({ ...details, customBody: body, paymentLink: details.paymentLink }));
 
     try {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'bookings@goudecho.nl';

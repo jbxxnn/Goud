@@ -28,6 +28,7 @@ interface BookingConfirmationEmailProps {
     notes?: string | null;
     addons?: { name: string; price: string }[];
     customBody?: string;
+    paymentLink?: string;
 }
 
 export const BookingConfirmationEmail = ({
@@ -42,6 +43,7 @@ export const BookingConfirmationEmail = ({
     notes,
     addons = [],
     customBody,
+    paymentLink,
 }: BookingConfirmationEmailProps) => {
     const previewText = `Je afspraak is bevestigd. De details kunnen beneden bekeken worden.`;
 
@@ -122,6 +124,32 @@ export const BookingConfirmationEmail = ({
                         <Section style={section}>
                             <Heading as="h3" style={h3}>Uw notities</Heading>
                             <Text style={smallText}>{notes}</Text>
+                        </Section>
+                    )}
+
+                    {paymentLink && (
+                        <Section style={section}>
+                            <Heading as="h3" style={h3}>Betaling</Heading>
+                            <Text style={text}>Je kunt je afspraak alvast online betalen via de onderstaande knop:</Text>
+                            <Section style={{ textAlign: 'center', margin: '20px 0' }}>
+                                <Link
+                                    href={paymentLink}
+                                    style={{
+                                        backgroundColor: '#C27A3A',
+                                        borderRadius: '5px',
+                                        color: '#fff',
+                                        fontSize: '16px',
+                                        fontWeight: 'bold',
+                                        textDecoration: 'none',
+                                        textAlign: 'center' as const,
+                                        display: 'inline-block',
+                                        padding: '12px 24px',
+                                    }}
+                                >
+                                    Betaal nu
+                                </Link>
+                            </Section>
+                            <Hr style={hr} />
                         </Section>
                     )}
 

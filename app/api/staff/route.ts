@@ -129,9 +129,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const staffList = data || [];
+
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: staffList,
       pagination: {
         page,
         limit,

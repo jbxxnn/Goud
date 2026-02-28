@@ -18,10 +18,12 @@ interface IProps {
     view: TCalendarView;
     onViewChange: (view: TCalendarView) => void;
     onEventClick?: (event: IEvent) => void;
+    onShiftCreated?: () => void;
+    userRole?: string;
 }
 
-export function BookingCalendarContainer({ view, onViewChange, onEventClick }: IProps) {
-    const { selectedDate, selectedUserId, events } = useCalendar();
+export function BookingCalendarContainer({ view, onViewChange, onEventClick, onShiftCreated, userRole }: IProps) {
+    const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
     const filteredEvents = useMemo(() => {
         return events.filter(event => {
@@ -33,7 +35,8 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick }: I
                 const yearEnd = new Date(selectedDate.getFullYear(), 11, 31, 23, 59, 59, 999);
                 const isInSelectedYear = eventStartDate <= yearEnd && eventEndDate >= yearStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-                return isInSelectedYear && isUserMatch;
+                const isLocationMatch = selectedLocationId === "all" || event.location?.id === selectedLocationId;
+                return isInSelectedYear && isUserMatch && isLocationMatch;
             }
 
             if (view === "month" || view === "agenda") {
@@ -41,7 +44,8 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick }: I
                 const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59, 999);
                 const isInSelectedMonth = eventStartDate <= monthEnd && eventEndDate >= monthStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-                return isInSelectedMonth && isUserMatch;
+                const isLocationMatch = selectedLocationId === "all" || event.location?.id === selectedLocationId;
+                return isInSelectedMonth && isUserMatch && isLocationMatch;
             }
 
             if (view === "week") {
@@ -57,7 +61,8 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick }: I
 
                 const isInSelectedWeek = eventStartDate <= weekEnd && eventEndDate >= weekStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-                return isInSelectedWeek && isUserMatch;
+                const isLocationMatch = selectedLocationId === "all" || event.location?.id === selectedLocationId;
+                return isInSelectedWeek && isUserMatch && isLocationMatch;
             }
 
             if (view === "day") {
@@ -65,10 +70,11 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick }: I
                 const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
                 const isInSelectedDay = eventStartDate <= dayEnd && eventEndDate >= dayStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
-                return isInSelectedDay && isUserMatch;
+                const isLocationMatch = selectedLocationId === "all" || event.location?.id === selectedLocationId;
+                return isInSelectedDay && isUserMatch && isLocationMatch;
             }
         });
-    }, [selectedDate, selectedUserId, events, view]);
+    }, [selectedDate, selectedUserId, selectedLocationId, events, view]);
 
     const singleDayEvents = filteredEvents.filter(event => {
         const startDate = parseISO(event.startDate);
@@ -91,13 +97,24 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick }: I
 
     return (
         <div className="overflow-hidden rounded-xl border">
-            <BookingCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} />
+            <BookingCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} userRole={userRole} />
 
             <DndProviderWrapper>
-                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
-                {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
-                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
-                {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
+                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onShiftCreated} />}
+                {view === "month" && (
+                    <CalendarMonthView 
+                        singleDayEvents={singleDayEvents.filter(e => !e.metadata?.isShift)} 
+                        multiDayEvents={multiDayEvents.filter(e => !e.metadata?.isShift)} 
+                        onEventClick={onEventClick} 
+                    />
+                )}
+                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onShiftCreated} />}
+                {view === "year" && (
+                    <CalendarYearView 
+                        allEvents={eventStartDates.filter(e => !e.metadata?.isShift)} 
+                        onViewChange={onViewChange} 
+                    />
+                )}
                 {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
             </DndProviderWrapper>
         </div>

@@ -1,6 +1,7 @@
-
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { UserSelect } from "@/calendar/components/header/user-select";
+import { LocationSelect } from "@/calendar/components/header/location-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -10,25 +11,45 @@ import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
 import { useTranslations } from 'next-intl';
 
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useCalendar } from "@/calendar/contexts/calendar-context";
+
 interface IProps {
     view: TCalendarView;
     events: IEvent[];
     onViewChange: (view: TCalendarView) => void;
+    userRole?: string;
 }
 
-export function BookingCalendarHeader({ view, events, onViewChange }: IProps) {
+export function BookingCalendarHeader({ view, events, onViewChange, userRole }: IProps) {
+    const { showShiftGuidance, setShowShiftGuidance } = useCalendar();
     // reusing shifts header translations for common view names if possible, or fallback to generic
     const t = useTranslations('Shifts.header');
+
+    // Filter out shifts from the header count (we only want to count bookings here)
+    const bookingEvents = useMemo(() => events.filter(e => !e.metadata?.isShift), [events]);
 
     return (
         <div className="flex flex-col gap-4 border-b bg-border p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-3">
                 <TodayButton />
-                <DateNavigator view={view} events={events} />
+                <DateNavigator view={view} events={bookingEvents} />
             </div>
 
             <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
-                <div className="flex w-full items-center gap-1.5">
+                <div className="flex w-full items-center gap-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Switch 
+                            id="shift-guidance-toggle" 
+                            checked={showShiftGuidance} 
+                            onCheckedChange={setShowShiftGuidance} 
+                        />
+                        <Label htmlFor="shift-guidance-toggle" className="cursor-pointer text-sm font-medium whitespace-nowrap">
+                            {t('shiftVisualGuidance')}
+                        </Label>
+                    </div>
+
                     <div className="inline-flex first:rounded-r-none last:rounded-l-none [&:not(:first-child):not(:last-child)]:rounded-none">
                         <Button
                             aria-label={t('viewByDay')}
@@ -101,7 +122,8 @@ export function BookingCalendarHeader({ view, events, onViewChange }: IProps) {
                         </Button>
                     </div>
 
-                    <UserSelect />
+                    {userRole !== 'staff' && <UserSelect />}
+                    <LocationSelect />
                 </div>
             </div>
         </div>

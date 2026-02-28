@@ -64,9 +64,16 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     const isHexColor = event.color.startsWith('#');
     const color = (isHexColor ? 'gray' : (badgeVariant === "dot" ? `${event.color}-dot` : event.color)) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
 
-    const calendarWeekEventCardClasses = cn(calendarWeekEventCardVariants({ color, className }), durationInMinutes < 35 && "py-0 justify-center");
+    const isShift = event.metadata?.isShift;
+    
+    const calendarWeekEventCardClasses = cn(
+        calendarWeekEventCardVariants({ color, className }), 
+        durationInMinutes < 35 && "py-0 justify-center",
+        isShift && "!bg-transparent !border-none !shadow-none opacity-50 pointer-events-none" // Background shifts use more visible pattern
+    );
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (isShift) return;
         if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             if (e.currentTarget instanceof HTMLElement) e.currentTarget.click();
@@ -74,6 +81,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     };
 
     const handleClick = (e: React.MouseEvent) => {
+        if (isShift) return;
         if (onEventClick) {
             e.stopPropagation();
             onEventClick(event);
@@ -82,9 +90,17 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
 
     const customStyle: React.CSSProperties = {
         height: `${heightInPixels}px`,
+        zIndex: isShift ? 0 : 1, // Shifts behind bookings
     };
 
-    if (isHexColor) {
+    if (isShift) {
+        // Use a more pronounced diagonal pattern as requested
+        const stripeColor = isHexColor ? event.color : '#94a3b8'; // SLATE-400 for better visibility
+        customStyle.backgroundImage = `repeating-linear-gradient(-45deg, ${stripeColor}55 0 1.5px, transparent 1.5px 10px)`;
+        customStyle.backgroundColor = 'transparent';
+        customStyle.border = 'none';
+        customStyle.boxShadow = 'none';
+    } else if (isHexColor) {
         customStyle.backgroundColor = `${event.color}33`;
         customStyle.borderColor = event.color;
         customStyle.color = event.color;
@@ -95,31 +111,35 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
 
     const BlockContent = (
         <div
-            role="button"
-            tabIndex={0}
+            role={isShift ? "presentation" : "button"}
+            tabIndex={isShift ? -1 : 0}
             className={calendarWeekEventCardClasses}
             style={customStyle}
             onKeyDown={handleKeyDown}
             onClick={onEventClick ? handleClick : undefined}
-            title={`${startTime} - ${endTime}`}
+            title={isShift ? `Working Hours: ${startTime} - ${endTime}` : `${startTime} - ${endTime}`}
         >
-            <div className="flex items-center gap-1.5 truncate">
-                {["mixed", "dot"].includes(badgeVariant) && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
-                        <circle cx="4" cy="4" r="4" />
-                    </svg>
-                )}
+            {!isShift && (
+                <div className="flex items-center gap-1.5 truncate">
+                    {["mixed", "dot"].includes(badgeVariant) && (
+                        <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
+                            <circle cx="4" cy="4" r="4" />
+                        </svg>
+                    )}
 
-                <p className="truncate font-semibold">{event.title}</p>
-            </div>
+                    <p className="truncate font-semibold">{event.title}</p>
+                </div>
+            )}
 
-            {durationInMinutes > 25 && (
+            {!isShift && durationInMinutes > 25 && (
                 <p>
                     {startTime} - {endTime}
                 </p>
             )}
         </div>
     );
+
+    if (isShift) return BlockContent; // Return plain div for shifts, no dialogs
 
     return (
         <DraggableEvent event={event}>

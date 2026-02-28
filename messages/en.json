@@ -344,7 +344,8 @@
             "viewByMonth": "View by month",
             "viewByYear": "View by year",
             "viewByAgenda": "View by agenda",
-            "addShift": "Add Shift"
+            "addShift": "Add Shift",
+            "shiftVisualGuidance": "Shift Visual"
         },
         "settings": {
             "title": "Calendar Settings",
@@ -904,6 +905,125 @@
             "no": "No",
             "unknownField": "Unknown field",
             "na": "N/A"
+        }
+    },
+    "BookingDialog": {
+        "title": "Add New Booking",
+        "client": "Client",
+        "service": "Service",
+        "location": "Location",
+        "staff": "Staff",
+        "startDate": "Start Date",
+        "startTime": "Start Time",
+        "endDate": "End Date",
+        "endTime": "End Time",
+        "dueDate": "Due Date",
+        "isTwin": "Twin Booking",
+        "paymentMethod": "Payment Method",
+        "paymentOnline": "Online",
+        "paymentOnlineDesc": "You will be redirected to the Mollie payment page.",
+        "paymentLocation": "At Location",
+        "paymentLocationDesc": "Pay by card or cash at the location.",
+        "notes": "Notes",
+        "notesPlaceholder": "Details or questions? (Optional)",
+        "serviceOptions": "Service Options",
+        "policyQuestions": "Policy Questions",
+        "grandTotal": "Total",
+        "addons": "Add-ons",
+        "browse": "Browse",
+        "create": "Create Booking",
+        "creating": "Creating...",
+        "cancel": "Cancel",
+        "selectStaff": "Select staff",
+        "selectLocation": "Select a location",
+        "selectService": "Select service",
+        "selectTime": "Select time",
+        "selectDate": "Select date",
+        "noClient": "No client selected",
+        "validation": {
+            "clientRequired": "Selection of client is required",
+            "serviceRequired": "Service selection is required",
+            "locationRequired": "Location selection is required",
+            "staffRequired": "Staff selection is required",
+            "dueDateRequired": "Due date is required",
+            "fieldRequired": "{fieldName} is required"
+        },
+        "warnings": {
+            "title": "Availability Warning",
+            "description": "This booking overlaps with the following blocks or appointments. Are you sure you want to continue?",
+            "continue": "Continue Anyway",
+            "conflicts": {
+                "blackout": "Holiday / Blackout: {name}",
+                "break": "Break: {name}",
+                "booking": "Existing Booking: {details}"
+            }
+        },
+        "toasts": {
+            "success": "Booking created successfully",
+            "error": "Failed to create booking",
+            "fetchError": "Failed to load booking data"
+        },
+        "success": {
+            "title": "Booking created successfully",
+            "description": "The appointment has been created and the client has received a confirmation email.",
+            "paymentLink": "Payment Link",
+            "copyHint": "Copy this link to send directly to the client via WhatsApp or SMS.",
+            "done": "Done"
+        },
+        "policyFields": {
+            "numberPlaceholder": "Enter a number",
+            "textPlaceholder": "Enter text"
+        },
+        "clientModal": {
+            "title": "Select Client",
+            "createTitle": "Create New Client",
+            "searchPlaceholder": "Search by name or email...",
+            "findClient": "Find a Client",
+            "findClientDesc": "Start typing a name or email address above to view matching results.",
+            "newClient": "New Client",
+            "loading": "Loading clients...",
+            "noClients": "No clients found.",
+            "select": "Select",
+            "createAndSelect": "Create & Select",
+            "creating": "Creating...",
+            "table": {
+                "name": "Name",
+                "email": "Email",
+                "dob": "Date of Birth",
+                "action": "Action"
+            },
+            "form": {
+                "firstName": "First Name *",
+                "lastName": "Last Name *",
+                "email": "Email *",
+                "phone": "Phone",
+                "dob": "Birth Date",
+                "midwife": "Midwife",
+                "addressInfo": "Address Information",
+                "postalCode": "Postal Code",
+                "houseNumber": "House Number",
+                "city": "City",
+                "street": "Street Name",
+                "placeholders": {
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "john.doe@example.com",
+                    "phone": "06 12345678",
+                    "dob": "Select birth date",
+                    "midwife": "Select midwife",
+                    "postalCode": "1234 AB",
+                    "houseNumber": "12A",
+                    "city": "City",
+                    "street": "Street Name"
+                }
+            },
+            "cancel": "Cancel",
+            "toasts": {
+                "success": "Client created successfully",
+                "error": "Failed to create client",
+                "fetchClientsError": "Failed to load clients",
+                "fetchMidwivesError": "Failed to fetch midwives"
+            }
         }
     },
     "Bookings": {

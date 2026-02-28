@@ -24,7 +24,7 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDel
   const eventsByDay = useMemo(() => {
     const allDates = new Map<string, { date: Date; events: IEvent[]; multiDayEvents: IEvent[] }>();
 
-    singleDayEvents.forEach(event => {
+    singleDayEvents.filter(e => !e.metadata?.isShift).forEach(event => {
       const eventDate = parseISO(event.startDate);
       if (!isSameMonth(eventDate, selectedDate)) return;
 
@@ -37,7 +37,7 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDel
       allDates.get(dateKey)?.events.push(event);
     });
 
-    multiDayEvents.forEach(event => {
+    multiDayEvents.filter(e => !e.metadata?.isShift).forEach(event => {
       const eventStart = parseISO(event.startDate);
       const eventEnd = parseISO(event.endDate);
 
@@ -61,7 +61,10 @@ export function CalendarAgendaView({ singleDayEvents, multiDayEvents, onShiftDel
     return Array.from(allDates.values()).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [singleDayEvents, multiDayEvents, selectedDate]);
 
-  const hasAnyEvents = singleDayEvents.length > 0 || multiDayEvents.length > 0;
+  const hasAnyEvents = useMemo(() => 
+    singleDayEvents.some(e => !e.metadata?.isShift) || 
+    multiDayEvents.some(e => !e.metadata?.isShift)
+  , [singleDayEvents, multiDayEvents]);
 
   return (
     <div className="h-[800px]">

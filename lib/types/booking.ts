@@ -34,6 +34,7 @@ export type Service = {
     allowsTwins: boolean;
     twinPrice?: number | null;
     twinDurationMinutes?: number | null;
+    staff_ids?: string[];
 };
 
 export type Location = { id: string; name: string };

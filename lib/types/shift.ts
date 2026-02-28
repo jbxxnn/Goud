@@ -316,6 +316,7 @@ export interface CalendarEvent {
     location_id: string;
     location_name: string;
     services: string[]; // Service names
+    service_ids: string[]; // Service IDs
     is_recurring: boolean;
     recurrence_rule?: string | null;
     _instanceDate?: string;
@@ -389,6 +390,7 @@ export function shiftToCalendarEvent(
       location_id: shift.location_id,
       location_name: shift.location_name,
       services: shift.services.map(s => s.service_name),
+      service_ids: shift.services.map(s => s.service_id),
       is_recurring: shift.is_recurring,
       recurrence_rule: shift.recurrence_rule,
       _instanceDate: shift._instanceDate,

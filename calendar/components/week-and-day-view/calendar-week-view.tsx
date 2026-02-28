@@ -1,10 +1,12 @@
-import { startOfWeek, addDays, format, parseISO, isSameDay, areIntervalsOverlapping } from "date-fns";
+import { useMemo } from "react";
+import { startOfWeek, addDays, format, parseISO, isSameDay, areIntervalsOverlapping, addMinutes } from "date-fns";
 
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { AddShiftDialog } from "@/calendar/components/dialogs/add-shift-dialog";
+import { AddBookingDialog } from "@/calendar/components/dialogs/add-booking-dialog";
 import { EventBlock } from "@/calendar/components/week-and-day-view/event-block";
 import { DroppableTimeBlock } from "@/calendar/components/dnd/droppable-time-block";
 import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calendar-time-line";
@@ -26,12 +28,46 @@ interface IProps {
 }
 
 export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
-  const { selectedDate, workingHours, visibleHours } = useCalendar();
+  const { selectedDate, workingHours, visibleHours, entityType, showShiftGuidance } = useCalendar();
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
 
   const weekStart = startOfWeek(selectedDate);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekDays = useMemo(() => 
+    Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+  [weekStart]);
+
+  // Pre-calculate all overlapping shifts for the entire week to provide stable references
+  const allShiftsMap = useMemo(() => {
+    const map: Record<string, IEvent[]> = {};
+    weekDays.forEach((day, dayIndex) => {
+      const dayEvents = singleDayEvents.filter(event => 
+        isSameDay(parseISO(event.startDate), day) || 
+        isSameDay(parseISO(event.endDate), day)
+      );
+      const shifts = dayEvents.filter(e => e.metadata?.isShift);
+
+      hours.forEach(hour => {
+        [0, 15, 30, 45].forEach(minute => {
+          const slotStart = new Date(day);
+          slotStart.setHours(hour, minute, 0, 0);
+          const slotEnd = addMinutes(slotStart, 15);
+
+          const overlapping = shifts.filter(shift => {
+            const shiftStart = parseISO(shift.startDate);
+            const shiftEnd = parseISO(shift.endDate);
+            return areIntervalsOverlapping(
+              { start: slotStart, end: slotEnd },
+              { start: shiftStart, end: shiftEnd }
+            );
+          });
+          
+          map[`${dayIndex}-${hour}-${minute}`] = overlapping;
+        });
+      });
+    });
+    return map;
+  }, [weekDays, singleDayEvents, hours]);
 
   return (
     <>
@@ -43,7 +79,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
           <div className="relative z-20 flex border-b">
             <div className="w-18"></div>
             <div className="grid flex-1 grid-cols-7 divide-x border-l">
-              {weekDays.map((day, index) => {
+              {weekDays.map((day: Date, index: number) => {
                 const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
 
                 return (
@@ -82,7 +118,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
             {/* Week grid */}
             <div className="relative flex-1 border-l">
               <div className="grid grid-cols-7 divide-x">
-                {weekDays.map((day, dayIndex) => {
+                {weekDays.map((day: Date, dayIndex: number) => {
                   const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
 
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
@@ -117,74 +153,173 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                           >
                             {index !== 0 && <div className="pointer-events-none absolute inset-x-0 top-0 border-b border-[#E8E8E8]"></div>}
 
-                            {hideAddButton || isPastDate ? (
-                              <div className="absolute inset-x-0 top-0 h-[24px]" />
-                            ) : (
-                              <DroppableTimeBlock date={day} hour={hour} minute={0}>
-                                <AddShiftDialog startDate={day} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>
-                                  <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                </AddShiftDialog>
-                              </DroppableTimeBlock>
-                            )}
+                          {(() => {
+                            const shifts = allShiftsMap[`${dayIndex}-${hour}-0`] || [];
+                            const firstShift = shifts[0];
+                            return (
+                              hideAddButton || isPastDate ? (
+                                <div className="absolute inset-x-0 top-0 h-[24px]" />
+                              ) : (
+                                <DroppableTimeBlock date={day} hour={hour} minute={0}>
+                                  {entityType === 'booking' ? (
+                                    <AddBookingDialog 
+                                      startDate={day} 
+                                      startHour={hour} 
+                                      startMinute={0} 
+                                      initialShiftId={firstShift?.id?.toString()}
+                                      initialStaffId={firstShift?.user?.id}
+                                      initialLocationId={firstShift?.location?.id}
+                                      availableShifts={shifts}
+                                      onBookingCreated={onShiftCreated}
+                                    >
+                                      <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddBookingDialog>
+                                  ) : (
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>
+                                      <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddShiftDialog>
+                                  )}
+                                </DroppableTimeBlock>
+                              )
+                            );
+                          })()}
 
-                            {hideAddButton || isPastDate ? (
-                              <div className="absolute inset-x-0 top-[24px] h-[24px]" />
-                            ) : (
-                              <DroppableTimeBlock date={day} hour={hour} minute={15}>
-                                <AddShiftDialog startDate={day} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated}>
-                                  <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                </AddShiftDialog>
-                              </DroppableTimeBlock>
-                            )}
+                          {(() => {
+                            const shifts = allShiftsMap[`${dayIndex}-${hour}-15`] || [];
+                            const firstShift = shifts[0];
+                            return (
+                              hideAddButton || isPastDate ? (
+                                <div className="absolute inset-x-0 top-[24px] h-[24px]" />
+                              ) : (
+                                <DroppableTimeBlock date={day} hour={hour} minute={15}>
+                                  {entityType === 'booking' ? (
+                                    <AddBookingDialog 
+                                      startDate={day} 
+                                      startHour={hour} 
+                                      startMinute={15} 
+                                      initialShiftId={firstShift?.id?.toString()}
+                                      initialStaffId={firstShift?.user?.id}
+                                      initialLocationId={firstShift?.location?.id}
+                                      availableShifts={shifts}
+                                      onBookingCreated={onShiftCreated}
+                                    >
+                                      <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddBookingDialog>
+                                  ) : (
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated}>
+                                      <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddShiftDialog>
+                                  )}
+                                </DroppableTimeBlock>
+                              )
+                            );
+                          })()}
 
-                            <div className="pointer-events-none absolute inset-x-0 top-1/2 border-b border-dashed"></div>
+                          <div className="pointer-events-none absolute inset-x-0 top-1/2 border-b border-dashed"></div>
 
-                            {hideAddButton || isPastDate ? (
-                              <div className="absolute inset-x-0 top-[48px] h-[24px]" />
-                            ) : (
-                              <DroppableTimeBlock date={day} hour={hour} minute={30}>
-                                <AddShiftDialog startDate={day} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated}>
-                                  <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                </AddShiftDialog>
-                              </DroppableTimeBlock>
-                            )}
+                          {(() => {
+                            const shifts = allShiftsMap[`${dayIndex}-${hour}-30`] || [];
+                            const firstShift = shifts[0];
+                            return (
+                              hideAddButton || isPastDate ? (
+                                <div className="absolute inset-x-0 top-[48px] h-[24px]" />
+                              ) : (
+                                <DroppableTimeBlock date={day} hour={hour} minute={30}>
+                                  {entityType === 'booking' ? (
+                                    <AddBookingDialog 
+                                      startDate={day} 
+                                      startHour={hour} 
+                                      startMinute={30} 
+                                      initialShiftId={firstShift?.id?.toString()}
+                                      initialStaffId={firstShift?.user?.id}
+                                      initialLocationId={firstShift?.location?.id}
+                                      availableShifts={shifts}
+                                      onBookingCreated={onShiftCreated}
+                                    >
+                                      <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddBookingDialog>
+                                  ) : (
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated}>
+                                      <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddShiftDialog>
+                                  )}
+                                </DroppableTimeBlock>
+                              )
+                            );
+                          })()}
 
-                            {hideAddButton || isPastDate ? (
-                              <div className="absolute inset-x-0 top-[72px] h-[24px]" />
-                            ) : (
-                              <DroppableTimeBlock date={day} hour={hour} minute={45}>
-                                <AddShiftDialog startDate={day} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated}>
-                                  <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                </AddShiftDialog>
-                              </DroppableTimeBlock>
-                            )}
+                          {(() => {
+                            const shifts = allShiftsMap[`${dayIndex}-${hour}-45`] || [];
+                            const firstShift = shifts[0];
+                            return (
+                              hideAddButton || isPastDate ? (
+                                <div className="absolute inset-x-0 top-[72px] h-[24px]" />
+                              ) : (
+                                <DroppableTimeBlock date={day} hour={hour} minute={45}>
+                                  {entityType === 'booking' ? (
+                                    <AddBookingDialog 
+                                      startDate={day} 
+                                      startHour={hour} 
+                                      startMinute={45} 
+                                      initialShiftId={firstShift?.id?.toString()}
+                                      initialStaffId={firstShift?.user?.id}
+                                      initialLocationId={firstShift?.location?.id}
+                                      availableShifts={shifts}
+                                      onBookingCreated={onShiftCreated}
+                                    >
+                                      <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddBookingDialog>
+                                  ) : (
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated}>
+                                      <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                    </AddShiftDialog>
+                                  )}
+                                </DroppableTimeBlock>
+                              )
+                            );
+                          })()}
                           </div>
                         );
                       })}
 
-                      {groupedEvents.map((group, groupIndex) =>
-                        group.map(event => {
-                          let style = getEventBlockStyle(event, day, groupIndex, groupedEvents.length, { from: earliestEventHour, to: latestEventHour });
-                          const hasOverlap = groupedEvents.some(
-                            (otherGroup, otherIndex) =>
-                              otherIndex !== groupIndex &&
-                              otherGroup.some(otherEvent =>
-                                areIntervalsOverlapping(
-                                  { start: parseISO(event.startDate), end: parseISO(event.endDate) },
-                                  { start: parseISO(otherEvent.startDate), end: parseISO(otherEvent.endDate) }
+                      {/* Render background shifts first (Z-index handled by order) */}
+                      {showShiftGuidance && dayEvents.filter(e => e.metadata?.isShift).map(event => {
+                        const style = getEventBlockStyle(event, day, 0, 1, { from: earliestEventHour, to: latestEventHour });
+                        return (
+                          <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, width: "100%", left: "0%", zIndex: 0 }}>
+                            <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                          </div>
+                        );
+                      })}
+
+                      {/* Group and render interactive events (bookings, breaks) */}
+                      {(() => {
+                        const interactiveEvents = dayEvents.filter(e => !e.metadata?.isShift);
+                        const interactiveGrouped = groupEvents(interactiveEvents);
+                        return interactiveGrouped.map((group, groupIndex) =>
+                          group.map(event => {
+                            let style = getEventBlockStyle(event, day, groupIndex, interactiveGrouped.length, { from: earliestEventHour, to: latestEventHour });
+                            const hasOverlap = interactiveGrouped.some(
+                              (otherGroup, otherIndex) =>
+                                otherIndex !== groupIndex &&
+                                otherGroup.some(otherEvent =>
+                                  areIntervalsOverlapping(
+                                    { start: parseISO(event.startDate), end: parseISO(event.endDate) },
+                                    { start: parseISO(otherEvent.startDate), end: parseISO(otherEvent.endDate) }
+                                  )
                                 )
-                              )
-                          );
+                            );
 
-                          if (!hasOverlap) style = { ...style, width: "100%", left: "0%" };
+                            if (!hasOverlap) style = { ...style, width: "100%", left: "0%" };
 
-                          return (
-                            <div key={event.id} className="absolute p-1" style={style}>
-                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
-                            </div>
-                          );
-                        })
-                      )}
+                            return (
+                              <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
+                                <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                              </div>
+                            );
+                          })
+                        );
+                      })()}
                     </div>
                   );
                 })}

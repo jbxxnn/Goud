@@ -344,7 +344,8 @@
             "viewByMonth": "Maandweergave",
             "viewByYear": "Jaarweergave",
             "viewByAgenda": "Agendaweergave",
-            "addShift": "Dienst toevoegen"
+            "addShift": "Dienst toevoegen",
+            "shiftVisualGuidance": "Visueel wisselen"
         },
         "settings": {
             "title": "Kalenderinstellingen",
@@ -904,6 +905,125 @@
             "no": "Nee",
             "unknownField": "Onbekend veld",
             "na": "N/v.t."
+        }
+    },
+    "BookingDialog": {
+        "title": "Nieuwe Boeking toevoegen",
+        "client": "Klant",
+        "service": "Dienst",
+        "location": "Locatie",
+        "staff": "Medewerker",
+        "startDate": "Startdatum",
+        "startTime": "Starttijd",
+        "endDate": "Einddatum",
+        "endTime": "Eindtijd",
+        "dueDate": "Uitgerekende datum",
+        "isTwin": "Tweeling zwangerschap",
+        "paymentMethod": "Betalingsmethode",
+        "paymentOnline": "Online",
+        "paymentOnlineDesc": "Je wordt doorgestuurd naar de betaalpagina van Mollie.",
+        "paymentLocation": "Op locatie",
+        "paymentLocationDesc": "Betaal per pin of contant op de locatie.",
+        "notes": "Opmerkingen",
+        "notesPlaceholder": "Bijzonderheden of vragen? (Optioneel)",
+        "serviceOptions": "Dienst opties",
+        "policyQuestions": "Beleidsvragen",
+        "grandTotal": "Totaal",
+        "addons": "Extra's",
+        "browse": "Bladeren",
+        "create": "Boeking maken",
+        "creating": "Bezig...",
+        "cancel": "Annuleren",
+        "selectStaff": "Selecteer medewerker",
+        "selectLocation": "Selecteer locatie",
+        "selectService": "Selecteer dienst",
+        "selectTime": "Selecteer tijd",
+        "selectDate": "Selecteer datum",
+        "noClient": "Geen klant geselecteerd",
+        "validation": {
+            "clientRequired": "Klant selecteren is verplicht",
+            "serviceRequired": "Dienst selecteren is verplicht",
+            "locationRequired": "Locatie selecteren is verplicht",
+            "staffRequired": "Medewerker selecteren is verplicht",
+            "dueDateRequired": "Uitgerekende datum is verplicht",
+            "fieldRequired": "{fieldName} is verplicht"
+        },
+        "warnings": {
+            "title": "Beschikbaarheidswaarschuwing",
+            "description": "Deze boeking overlapt met de volgende blokkades of afspraken. Weet u zeker dat u wilt doorgaan?",
+            "continue": "Toch doorgaan",
+            "conflicts": {
+                "blackout": "Vakantie / Blackout: {name}",
+                "break": "Pauze: {name}",
+                "booking": "Bestaande boeking: {details}"
+            }
+        },
+        "toasts": {
+            "success": "Afspraak succesvol aangemaakt",
+            "error": "Aanmaken van boeking mislukt",
+            "fetchError": "Laden van boekingsgegevens mislukt"
+        },
+        "success": {
+            "title": "Afspraak succesvol aangemaakt",
+            "description": "De afspraak is aangemaakt en de client heeft een bevestigingsmail ontvangen.",
+            "paymentLink": "Betalingslink",
+            "copyHint": "Kopieer deze link om direct naar de client te sturen via WhatsApp of SMS.",
+            "done": "Klaar"
+        },
+        "policyFields": {
+            "numberPlaceholder": "Voer een getal in",
+            "textPlaceholder": "Voer tekst in"
+        },
+        "clientModal": {
+            "title": "Selecteer Klant",
+            "createTitle": "Nieuwe Klant aanmaken",
+            "searchPlaceholder": "Zoek op naam of email...",
+            "findClient": "Vind een Klant",
+            "findClientDesc": "Begin met het typen van een naam of e-mailadres hierboven om resultaten te zien.",
+            "newClient": "Nieuwe Klant",
+            "loading": "Klanten laden...",
+            "noClients": "Geen klanten gevonden.",
+            "select": "Kies",
+            "createAndSelect": "Maak aan & Selecteer",
+            "creating": "Bezig...",
+            "table": {
+                "name": "Naam",
+                "email": "Email",
+                "dob": "Geboortedatum",
+                "action": "Actie"
+            },
+            "form": {
+                "firstName": "Voornaam *",
+                "lastName": "Achternaam *",
+                "email": "E-mail *",
+                "phone": "Telefoon",
+                "dob": "Geboortedatum",
+                "midwife": "Verloskundige",
+                "addressInfo": "Adresgegevens",
+                "postalCode": "Postcode",
+                "houseNumber": "Huisnummer",
+                "city": "Stad",
+                "street": "Straatnaam",
+                "placeholders": {
+                    "firstName": "Jan",
+                    "lastName": "Janssen",
+                    "email": "jan.janssen@voorbeeld.nl",
+                    "phone": "06 12345678",
+                    "dob": "Kies geboortedatum",
+                    "midwife": "Kies verloskundige",
+                    "postalCode": "1234 AB",
+                    "houseNumber": "12A",
+                    "city": "Stad",
+                    "street": "Straatnaam"
+                }
+            },
+            "cancel": "Annuleren",
+            "toasts": {
+                "success": "Klant succesvol aangemaakt",
+                "error": "Klant aanmaken mislukt",
+                "fetchClientsError": "Laden van cliënten mislukt",
+                "fetchMidwivesError": "Verloskundigen laden mislukt"
+            }
         }
     },
     "Bookings": {

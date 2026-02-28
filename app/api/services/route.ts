@@ -122,17 +122,22 @@ export async function GET(request: NextRequest) {
     // Map the data to match the Service interface
     const mappedData = await Promise.all((data || []).map(async (service) => {
       // Fetch staff assignments for this service
-      const { data: staffAssignments } = await supabase
+      // Use service role to bypass RLS for configuration fetching
+      const serviceRoleSupabase = getServiceSupabase();
+      const { data: staffAssignments, error: staffError } = await serviceRoleSupabase
         .from('staff_services')
         .select('staff_id')
-        .eq('service_id', service.id);
+        .eq('service_id', service.id)
+        .eq('is_qualified', true);
+
+      if (staffError) {
+        console.error(`ERROR: Failed to fetch staff for service ${service.name}:`, staffError);
+      }
 
       const staff_ids = staffAssignments?.map(sa => sa.staff_id) || [];
 
       // Fetch addons for this service separately
-      // Use service role client to bypass RLS for public API endpoint
-      const serviceSupabase = getServiceSupabase();
-      const { data: addons, error: addonsError } = await serviceSupabase
+      const { data: addons, error: addonsError } = await serviceRoleSupabase
         .from('service_addons')
         .select('id, service_id, name, description, price, is_required, is_active')
         .eq('service_id', service.id)

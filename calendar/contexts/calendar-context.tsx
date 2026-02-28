@@ -26,6 +26,8 @@ interface ICalendarContext {
   setLocalEvents: Dispatch<SetStateAction<IEvent[]>>;
   isSaving: boolean;
   entityType: 'shift' | 'booking';
+  showShiftGuidance: boolean;
+  setShowShiftGuidance: (show: boolean) => void;
 }
 
 const CalendarContext = createContext({} as ICalendarContext);
@@ -95,6 +97,35 @@ export function CalendarProvider({ children, users, locations = [], events, init
   const [workingHours, setWorkingHours] = useState<TWorkingHours>(getInitialWorkingHours());
   const [isSaving, setIsSaving] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  const [showShiftGuidance, setShowShiftGuidanceState] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Fetch user ID for per-user settings persistence
+  useEffect(() => {
+    const getUserId = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const saved = localStorage.getItem(`calendar_show_shift_guidance_${user.id}`);
+        if (saved !== null) {
+          setShowShiftGuidanceState(saved === 'true');
+        }
+      }
+    };
+    getUserId();
+  }, []);
+
+  const setShowShiftGuidance = (show: boolean) => {
+    setShowShiftGuidanceState(show);
+    if (userId) {
+      localStorage.setItem(`calendar_show_shift_guidance_${userId}`, String(show));
+    } else {
+      localStorage.setItem('calendar_show_shift_guidance_guest', String(show));
+    }
+  };
 
   // Initialize selectedDate from URL or current date
   const [selectedDate, setSelectedDateState] = useState<Date>(getInitialDate());
@@ -309,6 +340,8 @@ export function CalendarProvider({ children, users, locations = [], events, init
         setLocalEvents,
         isSaving,
         entityType,
+        showShiftGuidance,
+        setShowShiftGuidance,
       }}
     >
       {children}
