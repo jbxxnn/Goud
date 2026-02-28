@@ -747,6 +747,14 @@
     },
     "Booking": {
         "flow": {
+            "validation": {
+                "required": "{label} is required",
+                "invalid": "Invalid {label}",
+                "maxLength": "{label} may contain a maximum of {max} characters",
+                "invalidEmail": "Please enter a valid email address",
+                "invalidPhone": "Phone number contains invalid characters",
+                "invalidId": "Invalid ID"
+            },
             "errorTitle": "Error",
             "reset": "Reset",
             "resetTitle": "Start over?",
@@ -798,8 +806,10 @@
                     "loginSessionFailed": "Login failed: no session created",
                     "incompleteSelection": "Select service, location and time first",
                     "loginRequired": "Log in to continue",
-                    "bookingFailed": "Booking failed"
-                }
+                    "bookingFailed": "Booking failed",
+                    "editSuggestion": "Please toggle 'Edit Details' below to complete your missing profile information."
+                },
+                "editDetails": "Edit Details"
             },
             "form": {
                 "processingDetails": "Processing your details...",

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { bookingContactSchema, BookingContactInput } from '@/lib/validation/booking';
+import { translateValidationError } from '@/lib/validation/translate-error';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
@@ -60,6 +61,7 @@ export function CheckoutForm({
     serviceId,
 }: CheckoutFormProps) {
     const t = useTranslations('Booking.flow.form');
+    const tv = useTranslations('Booking.flow');
     const [midwives, setMidwives] = useState<Array<{ id: string; first_name: string | null; last_name: string | null; practice_name: string | null }>>([]);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
     const [isBookingForClient, setIsBookingForClient] = useState(true);
@@ -255,7 +257,7 @@ export function CheckoutForm({
                                 </div>
                             )}
                         </div>
-                        {errors.clientEmail && <div className="text-xs text-red-600 font-medium ml-1">{errors.clientEmail.message}</div>}
+                            {errors.clientEmail && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.clientEmail.message, tv)}</div>}
 
                         {isLoggedIn && onLogout && (
                             <div className="flex justify-end -mt-1">
@@ -360,7 +362,7 @@ export function CheckoutForm({
                                     placeholder={t('firstNamePlaceholder')}
                                     {...firstNameField}
                                 />
-                                {errors.firstName && <div className="text-xs text-red-600 font-medium ml-1">{errors.firstName.message}</div>}
+                                {errors.firstName && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.firstName.message, tv)}</div>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('lastName')} *</label>
@@ -369,7 +371,7 @@ export function CheckoutForm({
                                     placeholder={t('lastNamePlaceholder')}
                                     {...lastNameField}
                                 />
-                                {errors.lastName && <div className="text-xs text-red-600 font-medium ml-1">{errors.lastName.message}</div>}
+                                {errors.lastName && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.lastName.message, tv)}</div>}
                             </div>
                             <div className="space-y-2 md:col-span-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('phone')} *</label>
@@ -378,7 +380,7 @@ export function CheckoutForm({
                                     placeholder={t('phonePlaceholder')}
                                     {...phoneField}
                                 />
-                                {errors.phone && <div className="text-xs text-red-600 font-medium ml-1">{errors.phone.message}</div>}
+                                {errors.phone && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.phone.message, tv)}</div>}
                             </div>
 
                             {userRole === 'midwife' && (
@@ -390,7 +392,7 @@ export function CheckoutForm({
                                             placeholder={t('gravidaPlaceholder')}
                                             {...gravidaField}
                                         />
-                                        {errors.gravida && <div className="text-xs text-red-600 font-medium ml-1">{errors.gravida.message}</div>}
+                                        {errors.gravida && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.gravida.message, tv)}</div>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('para')} *</label>
@@ -399,7 +401,7 @@ export function CheckoutForm({
                                             placeholder={t('paraPlaceholder')}
                                             {...paraField}
                                         />
-                                        {errors.para && <div className="text-xs text-red-600 font-medium ml-1">{errors.para.message}</div>}
+                                        {errors.para && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.para.message, tv)}</div>}
                                     </div>
                                 </div>
                             )}
@@ -409,22 +411,22 @@ export function CheckoutForm({
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('street')} *</label>
                                     <Input placeholder={t('streetPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...streetNameField} />
-                                    {errors.streetName && <div className="text-xs text-red-600 font-medium ml-1">{errors.streetName.message}</div>}
+                                    {errors.streetName && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.streetName.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('houseNumber')} *</label>
                                     <Input placeholder={t('houseNumberPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...houseNumberField} />
-                                    {errors.houseNumber && <div className="text-xs text-red-600 font-medium ml-1">{errors.houseNumber.message}</div>}
+                                    {errors.houseNumber && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.houseNumber.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('postalCode')} *</label>
                                     <Input placeholder={t('postalCodePlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...postalCodeField} />
-                                    {errors.postalCode && <div className="text-xs text-red-600 font-medium ml-1">{errors.postalCode.message}</div>}
+                                    {errors.postalCode && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.postalCode.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('city')} *</label>
                                     <Input placeholder={t('cityPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...cityField} />
-                                    {errors.city && <div className="text-xs text-red-600 font-medium ml-1">{errors.city.message}</div>}
+                                    {errors.city && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.city.message, tv)}</div>}
                                 </div>
                             </div>
 
@@ -467,7 +469,7 @@ export function CheckoutForm({
                                         </Popover>
                                     )}
                                 />
-                                {errors.dueDate && <div className="text-xs text-red-600 font-medium ml-1">{errors.dueDate.message}</div>}
+                                {errors.dueDate && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.dueDate.message, tv)}</div>}
                             </div>
                             )}
                             <div className="space-y-2">
@@ -508,7 +510,7 @@ export function CheckoutForm({
                                         </Popover>
                                     )}
                                 />
-                                {errors.birthDate && <div className="text-xs text-red-600 font-medium ml-1">{errors.birthDate.message}</div>}
+                                {errors.birthDate && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.birthDate.message, tv)}</div>}
                             </div>
 
                             <div className="md:col-span-2 space-y-2">
@@ -530,7 +532,7 @@ export function CheckoutForm({
                                         <SelectItem value="other">{t('otherMidwife')}</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{errors.midwifeId.message}</div>}
+                                {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{translateValidationError(errors.midwifeId.message, tv)}</div>}
                             </div>
                             
                             {watch('midwifeId') === 'other' && (
@@ -541,7 +543,7 @@ export function CheckoutForm({
                                         placeholder={t('otherMidwifeNamePlaceholder')}
                                         {...otherMidwifeNameField}
                                     />
-                                    {errors.otherMidwifeName && <div className="text-xs text-red-600 font-medium ml-1">{errors.otherMidwifeName.message}</div>}
+                                    {errors.otherMidwifeName && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.otherMidwifeName.message, tv)}</div>}
                                 </div>
                             )}
 
@@ -552,7 +554,7 @@ export function CheckoutForm({
                                     placeholder={t('notesPlaceholder')}
                                     {...notesField}
                                 />
-                                {errors.notes && <div className="text-xs text-red-600 font-medium ml-1">{errors.notes.message}</div>}
+                                {errors.notes && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.notes.message, tv)}</div>}
                             </div>
                         </>
                     )}

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
 import { CheckoutForm } from '@/components/booking/checkout-form';
 import { BookingContactInput } from '@/lib/validation/booking';
+import { translateValidationError } from '@/lib/validation/translate-error';
 import { buildAddonPayload, buildPolicyAnswerPayload } from '@/components/booking/booking-utils';
 
 export function ClientStepReview() {
@@ -163,7 +164,16 @@ export function ClientStepReview() {
             router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
 
         } catch (e: any) {
-            setErrorMsg(e?.message || t('review.errors.bookingFailed'));
+            let msg = translateValidationError(e?.message || t('review.errors.bookingFailed'), t);
+            // If it's a validation error and user is a client who hasn't opened the form, suggest editing.
+            if (userRole === 'client' && !showForm && (
+                msg.toLowerCase().includes('verplicht') || 
+                msg.toLowerCase().includes('required') ||
+                e?.message?.startsWith('v:')
+            )) {
+                msg += ` - ${t('review.errors.editSuggestion')}`;
+            }
+            setErrorMsg(msg);
         } finally {
             setFinalizing(false);
         }
@@ -180,7 +190,7 @@ export function ClientStepReview() {
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200">
                     <h3 className="font-bold text-gray-900">{t('summary')}</h3>
                     <div className="flex items-center space-x-2">
-                        <Label htmlFor="edit-details" className="text-xs text-gray-500 font-medium">Edit Details</Label>
+                        <Label htmlFor="edit-details" className="text-xs text-gray-500 font-medium">{t('review.editDetails')}</Label>
                         <Switch
                             id="edit-details"
                             checked={showForm}

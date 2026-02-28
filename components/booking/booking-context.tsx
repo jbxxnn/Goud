@@ -19,6 +19,7 @@ import {
     Addon
 } from '@/lib/types/booking';
 import { normalizeAddons, normalizePolicyFields, calculatePolicyExtraPriceCents, calculateAddonExtraPriceCents } from './booking-utils';
+import { toast } from 'sonner';
 
 interface BookingContextProps {
     // State
@@ -300,7 +301,13 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
     const [emailChecked, setEmailChecked] = useState<null | { exists: boolean }>(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [finalizing, setFinalizing] = useState(false);
-    const [errorMsg, setErrorMsg] = useState('');
+    const [_errorMsg, _setErrorMsg] = useState('');
+    const setErrorMsg = (msg: string) => {
+        _setErrorMsg(msg);
+        if (msg && msg.trim() !== '') {
+            toast.error(msg);
+        }
+    };
     const [contactDefaults, setContactDefaults] = useState<Omit<BookingContactInput, 'clientEmail'>>({
         firstName: '',
         lastName: '',
@@ -1132,7 +1139,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
                 isLoggedIn, setIsLoggedIn,
                 isTwin, setIsTwin,
                 finalizing, setFinalizing,
-                errorMsg, setErrorMsg,
+                errorMsg: _errorMsg, setErrorMsg,
                 policyExtraPriceCents, addonExtraPriceCents, grandTotalCents,
                 showDetailsForm, isFormValid, setIsFormValid,
                 handleStartOver, handleEmailChange,
@@ -1141,12 +1148,6 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
             }}
         >
             {children}
-            {errorMsg && (
-                <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50 animate-in fade-in slide-in-from-bottom-4">
-                    <p className="font-bold">Error</p>
-                    <p>{errorMsg}</p>
-                </div>
-            )}
         </BookingContext.Provider>
     );
 }

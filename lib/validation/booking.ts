@@ -3,36 +3,36 @@ import { z } from 'zod';
 const emailSchema = z
   .string()
   .trim()
-  .email('Voer een geldig e-mailadres in');
+  .email('v:invalidEmail');
 
 const requiredName = (label: string) =>
   z
-    .string()
+    .string({ message: `v:required:${label}` })
     .trim()
-    .min(1, `${label} is verplicht`)
-    .max(100, `${label} mag maximaal 100 tekens bevatten`);
+    .min(1, `v:required:${label}`)
+    .max(100, `v:maxLength:${label}:100`);
 
 const optionalText = (label: string, max = 255) =>
   z
     .string()
     .trim()
-    .max(max, `${label} mag maximaal ${max} tekens bevatten`)
+    .max(max, `v:maxLength:${label}:${max}`)
     .or(z.literal(''))
     .transform((value) => (value === '' ? undefined : value));
 
 const requiredText = (label: string, max = 255) =>
   z
-    .string()
+    .string({ message: `v:required:${label}` })
     .trim()
-    .min(1, `${label} is verplicht`)
-    .max(max, `${label} mag maximaal ${max} tekens bevatten`);
+    .min(1, `v:required:${label}`)
+    .max(max, `v:maxLength:${label}:${max}`);
 
 const requiredPhone = z
-  .string()
+  .string({ message: 'v:required:phone' })
   .trim()
-  .min(1, 'Telefoonnummer is verplicht')
-  .max(32, 'Telefoonnummer mag maximaal 32 tekens bevatten')
-  .regex(/^[\d\s+().-]*$/, 'Telefoonnummer bevat ongeldige tekens');
+  .min(1, 'v:required:phone')
+  .max(32, 'v:maxLength:phone:32')
+  .regex(/^[\d\s+().-]*$/, 'v:invalidPhone');
 
 const optionalDate = z
   .string()
@@ -46,61 +46,61 @@ const optionalDate = z
       const date = new Date(value);
       return !isNaN(date.getTime());
     },
-    { message: 'Ongeldige datum' }
+    { message: 'v:invalid:date' }
   );
 
 const requiredDate = (label: string) =>
   z
-    .string()
+    .string({ message: `v:required:${label}` })
     .trim()
-    .min(1, `${label} is verplicht`)
+    .min(1, `v:required:${label}`)
     .refine(
       (value) => {
         const date = new Date(value);
         return !isNaN(date.getTime());
       },
-      { message: 'Ongeldige datum' }
+      { message: `v:invalid:${label}` }
     );
 
 const optionalUuid = z
   .string()
-  .uuid('Ongeldig ID')
+  .uuid('v:invalidId')
   .or(z.literal(''))
   .transform((value) => (value === '' ? undefined : value))
   .optional();
 
 const requiredMidwifeId = z
-  .string()
+  .string({ message: 'v:required:midwife' })
   .trim()
-  .min(1, 'Selecteer een verloskundige')
+  .min(1, 'v:required:midwife')
   .refine((val) => val === 'other' || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val), {
-    message: 'Ongeldig ID',
+    message: 'v:invalidId',
   });
 
 export const bookingContactSchema = z.object({
   clientEmail: emailSchema,
-  firstName: requiredName('Voornaam'),
-  lastName: requiredName('Achternaam'),
+  firstName: requiredName('firstName'),
+  lastName: requiredName('lastName'),
   phone: requiredPhone,
-  address: optionalText('Adres').optional(),
+  address: optionalText('address').optional(),
   // New fields
-  dueDate: requiredDate('Uitgerekende datum'),
-  birthDate: requiredDate('Geboortedatum'),
+  dueDate: requiredDate('dueDate'),
+  birthDate: requiredDate('birthDate'),
   midwifeId: requiredMidwifeId,
-  otherMidwifeName: optionalText('Naam verloskundige', 100).optional(),
-  houseNumber: requiredText('Huisnummer', 20),
-  postalCode: requiredText('Postcode', 20),
-  streetName: requiredText('Straatnaam', 255),
-  city: requiredText('Woonplaats', 100),
-  notes: optionalText('Notities', 500).optional(),
-  gravida: optionalText('Gravida', 10).optional(),
-  para: optionalText('Para', 10).optional(),
+  otherMidwifeName: optionalText('otherMidwifeName', 100).optional(),
+  houseNumber: requiredText('houseNumber', 20),
+  postalCode: requiredText('postalCode', 20),
+  streetName: requiredText('streetName', 255),
+  city: requiredText('city', 100),
+  notes: optionalText('notes', 500).optional(),
+  gravida: optionalText('gravida', 10).optional(),
+  para: optionalText('para', 10).optional(),
   midwifeClientEmail: emailSchema.optional().or(z.literal('')),
 }).superRefine((data, ctx) => {
   if (data.midwifeId === 'other' && !data.otherMidwifeName) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Naam van de verloskundige is verplicht',
+      message: 'v:required:otherMidwifeName',
       path: ['otherMidwifeName'],
     });
   }
@@ -110,14 +110,14 @@ export const bookingContactSchema = z.object({
     if (!data.gravida || data.gravida.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Gravida is verplicht',
+        message: 'v:required:gravida',
         path: ['gravida'],
       });
     }
     if (!data.para || data.para.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Para is verplicht',
+        message: 'v:required:para',
         path: ['para'],
       });
     }
@@ -135,54 +135,54 @@ const policyAnswerValueSchema = z.union([
 ]);
 
 export const bookingPolicyAnswerSchema = z.object({
-  fieldId: z.string().uuid('Ongeldig veld-ID'),
+  fieldId: z.string().uuid('v:invalidId'),
   fieldTitle: z.string().optional(),
   fieldType: z.enum(['multi_choice', 'text_input', 'number_input', 'date_time', 'checkbox', 'file_upload']).optional(),
   value: policyAnswerValueSchema,
   valueTitle: z.string().optional(),
   priceEurCents: z
     .number()
-    .int('Prijs moet een geheel getal zijn')
-    .nonnegative('Prijs kan niet negatief zijn')
+    .int('v:invalid:price')
+    .nonnegative('v:invalid:price')
     .optional(),
 });
 
 export type BookingPolicyAnswer = z.infer<typeof bookingPolicyAnswerSchema>;
 
 export const bookingAddonSelectionSchema = z.object({
-  addonId: z.string().uuid('Ongeldig add-on ID'),
+  addonId: z.string().uuid('v:invalidId'),
   quantity: z
     .number()
-    .int('Aantal moet een geheel getal zijn')
-    .min(1, 'Aantal moet minimaal 1 zijn'),
+    .int('v:invalid:quantity')
+    .min(1, 'v:invalid:quantity'),
   priceEurCents: z
     .number()
-    .int('Prijs moet een geheel getal zijn')
-    .nonnegative('Prijs kan niet negatief zijn'),
-  optionId: z.string().uuid('Ongeldig optie-ID').optional(),
+    .int('v:invalid:price')
+    .nonnegative('v:invalid:price'),
+  optionId: z.string().uuid('v:invalidId').optional(),
 });
 
 export type BookingAddonSelection = z.infer<typeof bookingAddonSelectionSchema>;
 
 export const bookingSelectionSchema = z.object({
   clientId: z.string().trim().uuid().optional(),
-  serviceId: z.string().trim().min(1, 'Service is verplicht'),
-  locationId: z.string().trim().min(1, 'Locatie is verplicht'),
-  staffId: z.string().trim().min(1, 'Medewerker is verplicht'),
-  shiftId: z.string().trim().min(1, 'Dienst is verplicht'),
+  serviceId: z.string().trim().min(1, 'v:required:service'),
+  locationId: z.string().trim().min(1, 'v:required:location'),
+  staffId: z.string().trim().min(1, 'v:required:staff'),
+  shiftId: z.string().trim().min(1, 'v:required:shift'),
   startTime: z
     .string()
     .trim()
-    .datetime({ offset: true, message: 'Starttijd heeft ongeldig formaat' }),
+    .datetime({ offset: true, message: 'v:invalid:startTime' }),
   endTime: z
     .string()
     .trim()
-    .datetime({ offset: true, message: 'Eindtijd heeft ongeldig formaat' }),
+    .datetime({ offset: true, message: 'v:invalid:endTime' }),
   priceEurCents: z
     .number()
-    .int('Prijs moet een geheel getal in centen zijn')
-    .nonnegative('Prijs kan niet negatief zijn'),
-  notes: optionalText('Notities', 500).optional(),
+    .int('v:invalid:price')
+    .nonnegative('v:invalid:price'),
+  notes: optionalText('notes', 500).optional(),
   isTwin: z.boolean().optional(),
   continuationToken: z.string().optional(),
 });

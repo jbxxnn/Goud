@@ -747,6 +747,14 @@
     },
     "Booking": {
         "flow": {
+            "validation": {
+                "required": "{label} is verplicht",
+                "invalid": "Ongeldige {label}",
+                "maxLength": "{label} mag maximaal {max} tekens bevatten",
+                "invalidEmail": "Voer een geldig e-mailadres in",
+                "invalidPhone": "Telefoonnummer bevat ongeldige tekens",
+                "invalidId": "Ongeldig ID"
+            },
             "errorTitle": "Fout",
             "reset": "Reset",
             "resetTitle": "Opnieuw beginnen?",
@@ -798,8 +806,10 @@
                     "loginSessionFailed": "Inloggen mislukt: geen sessie aangemaakt",
                     "incompleteSelection": "Selecteer eerst service, locatie en tijd",
                     "loginRequired": "Log in om door te gaan",
-                    "bookingFailed": "Boeking is niet gelukt"
-                }
+                    "bookingFailed": "Boeking is niet gelukt",
+                    "editSuggestion": "Schakel 'Gegevens bewerken' hieronder in om uw ontbrekende profielinformatie aan te vullen."
+                },
+                "editDetails": "Gegevens bewerken"
             },
             "form": {
                 "processingDetails": "Bezig met verwerken van uw gegevens...",

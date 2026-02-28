@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getServiceSupabase } from '@/lib/db/server-supabase';
 import {
   Shift,
   ShiftWithDetails,
@@ -50,41 +51,100 @@ export class ShiftService {
    * instead of hard-deleted to prevent the recurring logic from recreating it.
    */
   static async deleteShift(id: string): Promise<boolean> {
-    const supabase = await createClient();
+    const supabase = getServiceSupabase();
+    console.log(`[ShiftService] Attempting to delete shift: ${id}`);
     
-    // First check if this shift is an exception to a recurring shift
-    const { data: shift } = await supabase
+    // 1. Fetch the shift to check if it's recurring or an exception
+    const { data: shift, error: fetchError } = await supabase
       .from('shifts')
-      .select('parent_shift_id, is_recurring')
+      .select('id, parent_shift_id, is_recurring')
       .eq('id', id)
       .single();
 
-    if (shift && shift.parent_shift_id && !shift.is_recurring) {
-      // It's an exception. Instead of deleting it (which would make the parent recurring
-      // logic generate that day again), we convert it to a "tombstone" exception by making it inactive.
+    if (fetchError) {
+      console.error(`[ShiftService] Error fetching shift ${id}:`, fetchError);
+      if (fetchError.code === 'PGRST116') return true; // Not found
+      throw new Error(`Failed to fetch shift: ${fetchError.message}`);
+    }
+
+    if (shift.parent_shift_id && !shift.is_recurring) {
+      console.log(`[ShiftService] Soft-deleting exception shift: ${id}`);
       const { error } = await supabase
         .from('shifts')
         .update({ is_active: false })
         .eq('id', id);
 
       if (error) {
-        console.error('Error soft-deleting exception shift:', error);
+        console.error('[ShiftService] Error soft-deleting exception shift:', error);
         throw new Error('Failed to delete exception shift');
       }
       return true;
     }
 
-    // Standard delete for normal shifts or parent recurring shifts
-    const { error } = await supabase
+    // 2. Identify all IDs to be cleaned up
+    let idsToDelete = [id];
+    let childIds: string[] = [];
+    if (shift.is_recurring) {
+      const { data: children, error: childrenError } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('parent_shift_id', id);
+      
+      if (childrenError) {
+        console.warn(`[ShiftService] Error fetching children for parent ${id}:`, childrenError);
+      } else if (children && children.length > 0) {
+        childIds = children.map(c => c.id);
+        idsToDelete = [...idsToDelete, ...childIds];
+        console.log(`[ShiftService] Found ${childIds.length} child shifts to also delete.`);
+      }
+    }
+
+    // 3. Clear all referencing tables (Using IDs to be explicit)
+    console.log(`[ShiftService] Clearing references for IDs:`, idsToDelete);
+
+    // booking_locks (CRITICAL)
+    const { error: lockErr } = await supabase.from('booking_locks').delete().in('shift_id', idsToDelete);
+    if (lockErr) console.error('[ShiftService] Error deleting booking_locks:', lockErr);
+
+    // shift_services
+    const { error: servErr } = await supabase.from('shift_services').delete().in('shift_id', idsToDelete);
+    if (servErr) console.error('[ShiftService] Error deleting shift_services:', servErr);
+
+    // shift_breaks (Some might have CASCADE but let's be safe)
+    const { error: breakErr } = await supabase.from('shift_breaks').delete().in('shift_id', idsToDelete);
+    if (breakErr) console.error('[ShiftService] Error deleting shift_breaks:', breakErr);
+
+    // bookings (Nullify shift_id)
+    const { error: bookErr } = await supabase.from('bookings').update({ shift_id: null }).in('shift_id', idsToDelete);
+    if (bookErr) console.error('[ShiftService] Error nullifying bookings:', bookErr);
+
+    // 4. Delete child shifts first
+    if (childIds.length > 0) {
+      console.log(`[ShiftService] Deleting ${childIds.length} child shifts...`);
+      const { error: childDeleteErr } = await supabase
+        .from('shifts')
+        .delete()
+        .in('id', childIds);
+      
+      if (childDeleteErr) {
+        console.error('[ShiftService] Error deleting child shifts:', childDeleteErr);
+        throw new Error(`Failed to delete child shifts: ${childDeleteErr.message}`);
+      }
+    }
+
+    // 5. Delete the parent/main shift
+    console.log(`[ShiftService] Deleting main shift: ${id}`);
+    const { error: finalError } = await supabase
       .from('shifts')
       .delete()
       .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting shift:', error);
-      throw new Error('Failed to delete shift');
+    if (finalError) {
+      console.error('[ShiftService] Final delete failed:', finalError);
+      throw new Error(`Failed to delete shift: ${finalError.message}`);
     }
 
+    console.log(`[ShiftService] Successfully deleted shift ${id} and all references.`);
     return true;
   }
 
@@ -331,7 +391,7 @@ export class ShiftService {
   static async updateShift(id: string, shiftData: UpdateShiftRequest): Promise<Shift> {
     const { service_ids, max_concurrent_bookings, ...shiftFields } = shiftData;
 
-    const supabase = await createClient();
+    const supabase = getServiceSupabase();
 
     // Update shift record
     const { data: shift, error: shiftError } = await supabase
@@ -349,14 +409,31 @@ export class ShiftService {
     }
 
     // If we are updating a recurring series, wipe out all its exceptions
-    // so the series returns to a uniform state with the new details.
+    // and their referencing data so the series returns to a uniform state.
     if (shift.is_recurring) {
-      await supabase.from('shifts').delete().eq('parent_shift_id', id);
+      // Find children to clear their references first
+      const { data: childrenToClear } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('parent_shift_id', id);
+      
+      if (childrenToClear && childrenToClear.length > 0) {
+        const childIds = childrenToClear.map(c => c.id);
+        
+        // Clear references
+        await supabase.from('booking_locks').delete().in('shift_id', childIds);
+        await supabase.from('shift_services').delete().in('shift_id', childIds);
+        await supabase.from('shift_breaks').delete().in('shift_id', childIds);
+        await supabase.from('bookings').update({ shift_id: null }).in('shift_id', childIds);
+
+        // Delete the children
+        await supabase.from('shifts').delete().in('id', childIds);
+      }
     }
 
     // Update service assignments if provided
     if (service_ids !== undefined) {
-      // Remove existing assignments
+      // Remove existing assignments (and any related locks just in case)
       await supabase.from('shift_services').delete().eq('shift_id', id);
 
       // Add new assignments
@@ -387,7 +464,7 @@ export class ShiftService {
    * Also wipes out any child exceptions from the original series that fall on or after the split date.
    */
   static async splitShift(id: string, exception_date: string, action: 'update' | 'delete', updateData?: CreateShiftRequest): Promise<Shift | null> {
-    const supabase = await createClient();
+    const supabase = getServiceSupabase();
 
     // 1. Fetch the original parent shift
     const originalShift = await this.getShiftById(id);
@@ -402,15 +479,32 @@ export class ShiftService {
     
     const dayBeforeStr = dayBeforeObj.toISOString().split('T')[0];
 
-    // 3. Delete any child exceptions on or after the exception_date
-    const { error: deleteExceptionsError } = await supabase
+    // 3. Find any child exceptions on or after the exception_date to clean up their references
+    const { data: childrenToClear } = await supabase
       .from('shifts')
-      .delete()
+      .select('id')
       .eq('parent_shift_id', id)
       .gte('exception_date', exception_date);
+    
+    if (childrenToClear && childrenToClear.length > 0) {
+      const childIdsToClear = childrenToClear.map(c => c.id);
+      
+      // Clear references for these children
+      await supabase.from('booking_locks').delete().in('shift_id', childIdsToClear);
+      await supabase.from('shift_services').delete().in('shift_id', childIdsToClear);
+      await supabase.from('shift_breaks').delete().in('shift_id', childIdsToClear);
+      await supabase.from('bookings').update({ shift_id: null }).in('shift_id', childIdsToClear);
 
-    if (deleteExceptionsError) {
-      console.error('Error wiping following exceptions:', deleteExceptionsError);
+      // Delete the child shifts themselves
+      const { error: deleteExceptionsError } = await supabase
+        .from('shifts')
+        .delete()
+        .in('id', childIdsToClear);
+
+      if (deleteExceptionsError) {
+        console.error('Error wiping following exceptions:', deleteExceptionsError);
+        throw new Error(`Failed to clear existing exceptions: ${deleteExceptionsError.message}`);
+      }
     }
 
     // 4. Update the original parent shift to terminate on the day before the split
