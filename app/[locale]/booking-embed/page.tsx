@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BookingProvider } from "@/components/booking/booking-context";
