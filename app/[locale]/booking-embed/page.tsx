@@ -9,7 +9,7 @@ export default function BookingEmbedPage() {
   const serviceId = searchParams.get('serviceId') || undefined;
 
   return (
-    <div className="min-h-[50vh] flex flex-col items-center p-5">
+    <div className="min-h-auto flex flex-col items-center p-5">
       <BookingProvider initialServiceId={serviceId} lockService={!!serviceId}>
         <BookingFlow />
       </BookingProvider>
