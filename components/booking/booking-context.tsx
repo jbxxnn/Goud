@@ -58,6 +58,7 @@ interface BookingContextProps {
     userRole: string | null;
     isTwin: boolean;
     continuationToken?: string;
+    lockService?: boolean;
 
 
     // Actions
@@ -258,7 +259,17 @@ function computeMissingRanges(existing: DateRange[], target: DateRange): DateRan
     return missing;
 }
 
-export function BookingProvider({ children, continuationToken }: { children: React.ReactNode; continuationToken?: string }) {
+export function BookingProvider({ 
+    children, 
+    continuationToken, 
+    initialServiceId, 
+    lockService 
+}: { 
+    children: React.ReactNode; 
+    continuationToken?: string; 
+    initialServiceId?: string;
+    lockService?: boolean;
+}) {
     const [isMounted, setIsMounted] = useState(false);
     const t = useTranslations('Booking.flow');
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -266,7 +277,7 @@ export function BookingProvider({ children, continuationToken }: { children: Rea
     // Step 1
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
-    const [serviceId, setServiceId] = useState<string>('');
+    const [serviceId, setServiceId] = useState<string>(initialServiceId || '');
     const [isTwin, setIsTwin] = useState<boolean>(false);
     const [repeatServiceLoaded, setRepeatServiceLoaded] = useState(false);
 

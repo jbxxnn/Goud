@@ -28,7 +28,8 @@ export function StepService() {
         setStep,
         grandTotalCents,
         isTwin,
-        setIsTwin
+        setIsTwin,
+        lockService,
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -246,10 +247,11 @@ export function StepService() {
             <div className="space-y-4">
                 <div className="space-y-2">
                     {/* <Label htmlFor="service-select" className="text-sm font-bold text-gray-700">Services</Label> */}
-                    <Select value={serviceId} onValueChange={changeService}>
+                    <Select value={serviceId} onValueChange={changeService} disabled={lockService && !!serviceId}>
                         <SelectTrigger
                             id="service-select"
-                            className={`w-full transition-all duration-300 ${!serviceId && !loadingServices ? "ring-2 ring-primary ring-offset-2 animate-ring-pulse" : ""}`}
+                            disabled={lockService && !!serviceId}
+                            className={`w-full transition-all duration-300 ${!serviceId && !loadingServices ? "ring-2 ring-primary ring-offset-2 animate-ring-pulse" : ""} ${lockService ? "opacity-75 cursor-not-allowed" : ""}`}
                         >
                             {loadingServices ? (
                                 <div>

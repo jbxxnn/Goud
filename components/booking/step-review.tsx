@@ -214,7 +214,14 @@ export function StepReview() {
             if (data.checkoutUrl) {
                 // Clear state before leaving
                 try { localStorage.removeItem('goudecho_booking_state'); } catch { }
-                window.location.href = data.checkoutUrl;
+                
+                // If in iframe, breakout for Mollie
+                const isIframe = window !== window.top;
+                if (isIframe) {
+                    window.top!.location.href = data.checkoutUrl;
+                } else {
+                    window.location.href = data.checkoutUrl;
+                }
                 return;
             }
 
