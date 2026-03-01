@@ -1155,7 +1155,8 @@ export function BookingProvider({
                 showDetailsForm, isFormValid, setIsFormValid,
                 handleStartOver, handleEmailChange,
                 getDisplayStepNumber, totalSteps, currentStepNumber,
-                continuationToken
+                continuationToken,
+                lockService
             }}
         >
             {children}
