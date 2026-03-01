@@ -1,6 +1,4 @@
-'use client';
-
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations, useFormatter } from 'next-intl';
 import { Booking } from '@/lib/types/booking';
@@ -56,7 +54,7 @@ function BookingConfirmationContent() {
 
   if (error || !booking) {
     return (
-      <div className="flex items-center justify-center p-8 text-center bg-white min-h-[400px]">
+      <div className="flex items-center justify-center p-8 text-center bg-white min-h-[300px]">
         <div>
           <h1 className="text-xl font-bold text-red-600 mb-2">{t('errorTitle')}</h1>
           <p className="text-gray-600">{error || t('errorLoad')}</p>
@@ -117,6 +115,22 @@ function BookingConfirmationContent() {
 }
 
 export default function BookingEmbedConfirmationPage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height;
+        window.parent.postMessage({ type: 'resize', height: height + 50 }, '*');
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Suspense
       fallback={
@@ -133,7 +147,7 @@ export default function BookingEmbedConfirmationPage() {
         </div>
       }
     >
-      <div className="bg-white min-h-screen">
+      <div ref={containerRef} className="bg-white min-h-auto">
         <BookingConfirmationContent />
       </div>
     </Suspense>

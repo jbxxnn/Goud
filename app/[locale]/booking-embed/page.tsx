@@ -1,5 +1,4 @@
-'use client';
-
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BookingProvider } from "@/components/booking/booking-context";
 import { BookingFlow } from "@/components/booking/booking-flow";
@@ -7,9 +6,24 @@ import { BookingFlow } from "@/components/booking/booking-flow";
 export default function BookingEmbedPage() {
   const searchParams = useSearchParams();
   const serviceId = searchParams.get('serviceId') || undefined;
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height;
+        window.parent.postMessage({ type: 'resize', height: height + 100 }, '*');
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-auto flex flex-col items-center p-5">
+    <div ref={containerRef} className="flex flex-col items-center">
       <BookingProvider initialServiceId={serviceId} lockService={!!serviceId}>
         <BookingFlow />
       </BookingProvider>

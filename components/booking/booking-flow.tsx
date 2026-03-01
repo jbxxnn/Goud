@@ -30,7 +30,8 @@ export function BookingFlow() {
         addonExtraPriceCents,
         selectedAddOnItems,
         handleStartOver,
-        errorMsg
+        errorMsg,
+        lockService,
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
@@ -42,7 +43,10 @@ export function BookingFlow() {
     ];
 
     return (
-        <div className="mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 mt-[2rem] pb-[2rem] items-start justify-center px-4" style={{ marginTop: "2rem", marginBottom: "2rem", paddingBottom: "2rem" }}>
+        <div 
+            className={`mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-start justify-center px-4 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`} 
+            style={lockService ? {} : { marginTop: "2rem", marginBottom: "2rem", paddingBottom: "2rem" }}
+        >
 
             {/* this is the right card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
