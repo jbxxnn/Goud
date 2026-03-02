@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import { CalendarEvent, ShiftWithDetails, ShiftsWithDetailsResponse, shiftToCalendarEvent } from '@/lib/types/shift';
@@ -52,18 +53,36 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     await queryClient.invalidateQueries({ queryKey: ['shifts'] });
   }, [queryClient]);
 
+  const searchParams = useSearchParams();
+
+  // Derive the active date from URL or default to today
+  const activeDate = useMemo(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const d = new Date(dateParam);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  }, [searchParams]);
+
+  // Calculate the fetching range
+  const { fetchStartDate, fetchEndDate } = useMemo(() => {
+    const start = startOfMonth(subMonths(activeDate, 1));
+    const end = endOfMonth(addMonths(activeDate, 1));
+    return {
+      fetchStartDate: start,
+      fetchEndDate: end
+    };
+  }, [activeDate]);
+
   // Fetch shifts query
   const { data: shifts = [], isLoading: shiftsLoading, error: shiftsError } = useQuery<ShiftWithDetails[]>({
-    queryKey: ['shifts', 'expanded', staffId], // Include staffId in key
+    queryKey: ['shifts', 'expanded', staffId, fetchStartDate.toISOString(), fetchEndDate.toISOString()], // Include range in key
     queryFn: async () => {
-      const dateToUse = new Date();
-      const startOfMonth = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), 1);
-      const expandedEndDate = new Date(dateToUse.getFullYear(), dateToUse.getMonth() + 6, 0);
-
       const params = new URLSearchParams({
         with_details: 'true',
-        start_date: startOfMonth.toISOString(),
-        end_date: expandedEndDate.toISOString(),
+        start_date: fetchStartDate.toISOString(),
+        end_date: fetchEndDate.toISOString(),
         limit: '2500',
       });
 
@@ -79,7 +98,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
       }
 
       const rawShifts = data.data || [];
-      return expandRecurringShifts(rawShifts, startOfMonth, expandedEndDate);
+      return expandRecurringShifts(rawShifts, fetchStartDate, fetchEndDate);
     },
     staleTime: 5 * 60 * 1000,
   });

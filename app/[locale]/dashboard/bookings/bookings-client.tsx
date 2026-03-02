@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { startOfMonth, endOfMonth, subMonths, addMonths, format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -64,6 +66,7 @@ export default function BookingsClient({
   userRole
 }: BookingsClientProps) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const t = useTranslations('Bookings');
   const tStatus = useTranslations('BookingStatus');
   // State for filters and view
@@ -99,9 +102,34 @@ export default function BookingsClient({
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [loadingBookingId, setLoadingBookingId] = useState<string | null>(null);
 
+  // Derive the active date from URL or default to today
+  const activeDate = useMemo(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const d = new Date(dateParam);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  }, [searchParams]);
+
+  // Calculate the fetching range
+  const { fetchDateFrom, fetchDateTo } = useMemo(() => {
+    if (viewMode === 'table') {
+      return { fetchDateFrom: dateFrom, fetchDateTo: dateTo };
+    }
+    // For calendar, fetch a broad window: previous month to next month
+    // This provides a buffer for navigation and ensures today's bookings are always included
+    const start = startOfMonth(subMonths(activeDate, 1));
+    const end = endOfMonth(addMonths(activeDate, 1));
+    return {
+      fetchDateFrom: start.toISOString(),
+      fetchDateTo: end.toISOString()
+    };
+  }, [viewMode, activeDate, dateFrom, dateTo]);
+
   // Bookings Query
   const { data: bookingsData, isLoading: bookingsLoading, isFetching: bookingsFetching } = useQuery<BookingsResponse>({
-    queryKey: ['bookings', page, limit, statusFilter, dateFrom, dateTo, debouncedSearchQuery, clientId, staffId, locationFilter],
+    queryKey: ['bookings', page, limit, statusFilter, fetchDateFrom, fetchDateTo, debouncedSearchQuery, clientId, staffId, locationFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -109,8 +137,8 @@ export default function BookingsClient({
       });
 
       if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (dateFrom) params.append('dateFrom', dateFrom);
-      if (dateTo) params.append('dateTo', dateTo);
+      if (fetchDateFrom) params.append('dateFrom', fetchDateFrom);
+      if (fetchDateTo) params.append('dateTo', fetchDateTo);
       if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
       if (clientId) params.append('clientId', clientId);
       if (staffId) params.append('staffId', staffId);
@@ -385,9 +413,9 @@ export default function BookingsClient({
 
   useEffect(() => {
     if (viewMode === 'calendar') {
-      setLimit(100);
+      setLimit(1000); // Fetch more for calendar mode to ensure full coverage of the window
     } else {
-      setLimit(10);
+      setLimit(100);
     }
   }, [viewMode]);
 
@@ -607,6 +635,7 @@ export default function BookingsClient({
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>
                   <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="200">200</SelectItem>
                 </SelectContent>
               </Select>
               <span className="text-sm text-muted-foreground whitespace-nowrap">
