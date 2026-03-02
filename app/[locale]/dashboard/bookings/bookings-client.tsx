@@ -413,9 +413,11 @@ export default function BookingsClient({
 
   useEffect(() => {
     if (viewMode === 'calendar') {
-      setLimit(1000); // Fetch more for calendar mode to ensure full coverage of the window
+      setLimit(1000); // Fetch more for calendar mode
     } else {
-      setLimit(100);
+      // Keep the current limit if it's already a table-friendly value (10, 25, 50, 100, 200)
+      // otherwise default to 100
+      setLimit(prev => (prev > 200 ? 100 : prev));
     }
   }, [viewMode]);
 
@@ -583,6 +585,9 @@ export default function BookingsClient({
                 data={bookings}
                 emptyMessage={t('table.emptyMessage')}
                 showColumnToggle={false}
+                showPagination={false}
+                pageSize={limit}
+                manualPagination={true}
               />
             )}
           </div>

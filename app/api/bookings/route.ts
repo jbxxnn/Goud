@@ -6,6 +6,14 @@ import { formatEuroCents } from '@/lib/currency/format';
 import { createUserAndProfile } from '@/lib/auth/account';
 import { bookingRequestSchema } from '@/lib/validation/booking';
 
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunked: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunked.push(array.slice(i, i + size));
+  }
+  return chunked;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -624,10 +632,15 @@ export async function GET(req: NextRequest) {
     }>> = {};
 
     if (bookingIds.length > 0) {
-      const { data: addonsData } = await supabase
-        .from('booking_addons')
-        .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
-        .in('booking_id', bookingIds);
+      // Chunk results to avoid URI length limits when requesting many IDs at once
+      const idChunks = chunkArray(bookingIds, 100);
+      const results = await Promise.all(idChunks.map(chunk => 
+        supabase
+          .from('booking_addons')
+          .select('booking_id, addon_id, quantity, price_eur_cents, option_id')
+          .in('booking_id', chunk)
+      ));
+      const addonsData = results.flatMap(r => r.data || []);
 
       if (addonsData && addonsData.length > 0) {
         const addonIds = [...new Set(addonsData.map(a => a.addon_id).filter(Boolean))];
@@ -686,10 +699,15 @@ export async function GET(req: NextRequest) {
     let usersMap: Record<string, any> = {};
 
     if (userIds.length > 0) {
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name, phone, address, house_number, street_name, postal_code, city, birth_date, midwife_id')
-        .in('id', userIds);
+      // Chunk results to avoid URI length limits when requesting many IDs at once
+      const idChunks = chunkArray(userIds, 100);
+      const results = await Promise.all(idChunks.map(chunk => 
+        supabase
+          .from('users')
+          .select('id, email, first_name, last_name, phone, address, house_number, street_name, postal_code, city, birth_date, midwife_id')
+          .in('id', chunk)
+      ));
+      const usersData = results.flatMap(r => r.data || []);
 
       if (usersData) {
         usersData.forEach(u => {
