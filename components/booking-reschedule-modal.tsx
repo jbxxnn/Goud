@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon } from '@hugeicons/core-free-icons';
+import { formatInTimeZone } from 'date-fns-tz';
 import { toast } from 'sonner';
 
 interface BookingRescheduleModalProps {
@@ -30,20 +31,11 @@ type Slot = {
 };
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('nl-NL', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'd MMM yyyy');
 };
 
 const formatTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('nl-NL', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'HH:mm');
 };
 
 const toISODate = (d: Date): string => {
@@ -145,7 +137,7 @@ function TimePicker({ slots, selected, onSelect, loading }: {
 }) {
   const groups: { morning: Slot[]; afternoon: Slot[]; evening: Slot[] } = { morning: [], afternoon: [], evening: [] };
   for (const s of slots) {
-    const h = new Date(s.startTime).getHours();
+    const h = parseInt(formatInTimeZone(new Date(s.startTime), 'Europe/Amsterdam', 'HH'));
     if (h < 12) groups.morning.push(s);
     else if (h < 17) groups.afternoon.push(s);
     else groups.evening.push(s);
@@ -225,8 +217,8 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
         const s: Slot[] = (d.slots ?? []).map((x: any) => ({
           shiftId: x.shiftId,
           staffId: x.staffId,
-          startTime: new Date(x.startTime).toISOString(),
-          endTime: new Date(x.endTime).toISOString(),
+          startTime: x.startTime,
+          endTime: x.endTime,
         }));
         setSlots(s);
       })

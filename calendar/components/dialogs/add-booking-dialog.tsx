@@ -31,7 +31,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { format, addMinutes } from "date-fns";
+import { addMinutes } from "date-fns";
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   UserGroupIcon, 
@@ -62,7 +64,7 @@ import {
   buildAddonPayload
 } from "@/components/booking/booking-utils";
 import { IEvent } from "@/calendar/interfaces";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 interface IProps {
   children: React.ReactNode;
@@ -92,6 +94,7 @@ interface BookingFormData {
 
 export const AddBookingDialog = memo(function AddBookingDialog({ children, startDate, startHour, startMinute, initialShiftId, initialStaffId, initialLocationId, availableShifts = [], onBookingCreated }: IProps) {
   const t = useTranslations("BookingDialog");
+  const locale = useLocale();
   const { isOpen, onClose, onToggle } = useDisclosure();
   const { selectedUserId, users: calendarUsers } = useCalendar();
   const selectedUser = calendarUsers.find(u => u.id === selectedUserId);
@@ -120,12 +123,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   const [copied, setCopied] = useState(false);
 
   const formatDateTimeLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return formatInTimeZone(date, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm");
   };
 
   const {
@@ -685,7 +683,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                             style={{ borderRadius: '0.5rem' }}
                           >
                             <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2 h-4 w-4" />
-                            {watch("due_date") ? format(new Date(watch("due_date")), "dd/MM/yyyy") : <span>{t("dueDate")}</span>}
+                            {watch("due_date") ? formatInTimeZone(new Date(watch("due_date")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("dueDate")}</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="end">
@@ -781,7 +779,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                           style={{ borderRadius: '0.5rem' }}
                         >
                           <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2" />
-                          {watch("start_time") ? format(new Date(watch("start_time")), "dd/MM/yyyy") : <span>{t("selectDate")}</span>}
+                          {watch("start_time") ? formatInTimeZone(new Date(watch("start_time")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("selectDate")}</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -836,7 +834,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                           style={{ borderRadius: '0.5rem' }}
                         >
                           <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2" />
-                          {watch("end_time") ? format(new Date(watch("end_time")), "dd/MM/yyyy") : <span>{t("selectDate")}</span>}
+                          {watch("end_time") ? formatInTimeZone(new Date(watch("end_time")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("selectDate")}</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">

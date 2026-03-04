@@ -22,7 +22,9 @@ import {
     InformationCircleIcon,
     Loading03Icon
 } from '@hugeicons/core-free-icons';
-import { format, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
+import { parseISO, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -149,11 +151,11 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                         <div className="text-muted-foreground flex items-center gap-4 mt-1 text-sm">
                             <span className="flex items-center gap-1">
                                 <HugeiconsIcon icon={Calendar02Icon} size={14} />
-                                {format(new Date(booking.start_time), 'PPP')}
+                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })}
                             </span>
                             <span className="flex items-center gap-1">
                                 <HugeiconsIcon icon={Clock01Icon} size={14} />
-                                {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
+                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm')}
                             </span>
                             <span className="flex items-center gap-1">
                                 <HugeiconsIcon icon={Location01Icon} size={14} />
@@ -259,7 +261,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                     <div>
                                         <div className="text-sm font-medium text-muted-foreground">{tModal('birthDate')}</div>
                                         <div className="text-sm">
-                                            {format(new Date(booking.users?.birth_date || booking.birth_date!), 'PPP', { locale: locale === 'nl' ? require('date-fns/locale/nl').nl : undefined })}
+                                            {formatInTimeZone(new Date(booking.users?.birth_date || booking.birth_date!), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })}
                                         </div>
                                     </div>
                                 )}
@@ -268,7 +270,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                 
                                 <div>
                                     <div className="text-sm font-medium text-muted-foreground">{t('dueDate')}</div>
-                                    <div className="font-semibold">{booking.due_date ? format(new Date(booking.due_date), 'PPP', { locale: locale === 'nl' ? require('date-fns/locale/nl').nl : undefined }) : t('notSet')}</div>
+                                    <div className="font-semibold">{booking.due_date ? formatInTimeZone(new Date(booking.due_date), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS }) : t('notSet')}</div>
                                 </div>
 
                                 {(booking.midwife_id || booking.other_midwife_name) && (
@@ -338,7 +340,7 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                                                         {isNavigating && <HugeiconsIcon icon={Loading03Icon} size={12} className="animate-spin text-muted-foreground" />}
                                                     </div>
                                                     <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                                        <span>{format(new Date(prev.start_time), 'PPP')}</span>
+                                                        <span>{formatInTimeZone(new Date(prev.start_time), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })}</span>
                                                         <span>•</span>
                                                         <span>{prev.locations?.name}</span>
                                                     </div>

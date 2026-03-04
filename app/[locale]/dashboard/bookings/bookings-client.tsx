@@ -10,6 +10,7 @@ import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '
 import { Staff } from '@/lib/types/staff';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { bookingToCalendarEvent } from '@/lib/utils/booking-mapper';
+import { formatInTimeZone } from 'date-fns-tz';
 import { CalendarProvider } from '@/calendar/contexts/calendar-context';
 import { BookingCalendarContainer } from '@/components/booking-calendar-container';
 import { CalendarSettings } from '@/components/calendar-settings';
@@ -224,20 +225,36 @@ export default function BookingsClient({
   const calendarEvents = useMemo(() => {
     const bookingEvents = bookings.map(booking => bookingToCalendarEvent(booking));
     
-    const breakEvents = (breaks || []).map((b: any) => ({
-      id: `break-${b.id}`,
-      startDate: b.start_time,
-      endDate: b.end_time,
-      title: b.name || 'Break',
-      color: 'gray' as const,
-      description: `${b.name || 'Break'}\nStaff: ${b.staff?.first_name} ${b.staff?.last_name}`,
-      user: {
-        id: b.staff?.id || 'unassigned',
-        name: b.staff ? `${b.staff.first_name} ${b.staff.last_name}` : 'Unassigned',
-        picturePath: null,
-      },
-      metadata: { isBreak: true }
-    })) as IEvent[];
+    const breakEvents = (breaks || []).map((b: any) => {
+      const startLocalHhMm = formatInTimeZone(new Date(b.start_time), 'Europe/Amsterdam', 'HH:mm');
+      const endLocalHhMm = formatInTimeZone(new Date(b.end_time), 'Europe/Amsterdam', 'HH:mm');
+      const startYyyyMmDd = b.start_time.substring(0, 10);
+      const endYyyyMmDd = b.end_time.substring(0, 10);
+
+      const visualStartString = `${startYyyyMmDd}T${startLocalHhMm}:00`;
+      const visualEndString = b.end_time > b.start_time && endYyyyMmDd !== startYyyyMmDd 
+        ? `${endYyyyMmDd}T${endLocalHhMm}:00`
+        : `${startYyyyMmDd}T${endLocalHhMm}:00`;
+
+      return {
+        id: `break-${b.id}`,
+        startDate: visualStartString,
+        endDate: visualEndString,
+        title: b.name || 'Break',
+        color: 'gray' as const,
+        description: `${b.name || 'Break'}\nStaff: ${b.staff?.first_name} ${b.staff?.last_name}`,
+        user: {
+          id: b.staff?.id || 'unassigned',
+          name: b.staff ? `${b.staff.first_name} ${b.staff.last_name}` : 'Unassigned',
+          picturePath: null,
+        },
+        metadata: { 
+          isBreak: true,
+          _originalStartTime: b.start_time,
+          _originalEndTime: b.end_time
+        }
+      };
+    }) as IEvent[];
 
     const shiftBackgroundEvents = (shifts || []).map(shift => {
       const event = shiftToCalendarEvent(shift);

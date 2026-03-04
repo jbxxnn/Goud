@@ -13,7 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { RepeatPrescriber } from './repeat-prescriber';
-import { differenceInMinutes } from 'date-fns';
+import { differenceInMinutes, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { MidwifeLabel } from './midwife-label';
@@ -39,20 +41,16 @@ interface BookingModalProps {
 }
 
 const formatDate = (dateString: string, locale: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString(locale === 'nl' ? 'nl-NL' : 'en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  return formatInTimeZone(
+    new Date(dateString),
+    'Europe/Amsterdam',
+    locale === 'nl' ? 'd MMMM yyyy' : 'MMMM d, yyyy',
+    { locale: locale === 'nl' ? nl : enUS }
+  );
 };
 
 const formatTime = (dateString: string, locale: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString(locale === 'nl' ? 'nl-NL' : 'en-US', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'HH:mm');
 };
 
 const formatDuration = (minutes: number, t: (key: string, values?: any) => string) => {

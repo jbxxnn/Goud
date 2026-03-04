@@ -13,6 +13,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Booking, BookingStatus } from '@/lib/types/booking';
 import { differenceInMinutes } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const getStatusBadge = (status: BookingStatus, t: any) => {
     const variants: Record<BookingStatus, { variant: 'confirmed' | 'pending' | 'destructive' | 'ongoing' | 'completed' | 'default' | 'noShow' | 'secondary' | 'outline', label: string }> = {
@@ -28,20 +29,11 @@ const getStatusBadge = (status: BookingStatus, t: any) => {
 };
 
 const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('nl-NL', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'd MMM yyyy');
 };
 
 const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('nl-NL', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'HH:mm');
 };
 
 const formatDuration = (minutes: number) => {

@@ -5,13 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CheckmarkCircle02Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { Loading03Icon } from '@hugeicons/core-free-icons';
+import { useLocale } from 'next-intl';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 
 interface LeaveRequestsClientProps {
     requests: any[];
@@ -20,6 +23,7 @@ interface LeaveRequestsClientProps {
 export function LeaveRequestsClient({ requests: initialRequests = [] }: LeaveRequestsClientProps) {
     const queryClient = useQueryClient();
     const router = useRouter();
+    const locale = useLocale();
 
     const { data: requests = [], isLoading } = useQuery({
         queryKey: ['leave-requests'],
@@ -102,7 +106,7 @@ export function LeaveRequestsClient({ requests: initialRequests = [] }: LeaveReq
                                         <div className="text-sm text-muted-foreground capitalize flex items-center gap-2">
                                             <Badge variant="outline">{req.type}</Badge>
                                             <span>•</span>
-                                            <span>{format(parseISO(req.start_date), 'PPP')} - {format(parseISO(req.end_date), 'PPP')}</span>
+                                            <span>{formatInTimeZone(new Date(req.start_date), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })} - {formatInTimeZone(new Date(req.end_date), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })}</span>
                                         </div>
                                         {req.reason && (
                                             <div className="text-sm mt-2 p-2 bg-muted/30 rounded border">

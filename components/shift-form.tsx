@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Trash2, Plus, Loader, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
+import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon } from '@hugeicons/core-free-icons';
@@ -314,15 +315,10 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const startEditingBreak = (b: any) => {
     setEditingBreakId(b.id);
     setEditBreakName(b.name);
-    // Extract HH:mm from ISO
-    const sDate = new Date(b.start_time);
-    const eDate = new Date(b.end_time);
-    const sHours = String(sDate.getHours()).padStart(2, '0');
-    const sMins = String(sDate.getMinutes()).padStart(2, '0');
-    setEditBreakStart(`${sHours}:${sMins}`);
-    const eHours = String(eDate.getHours()).padStart(2, '0');
-    const eMins = String(eDate.getMinutes()).padStart(2, '0');
-    setEditBreakEnd(`${eHours}:${eMins}`);
+    
+    // Use formatInTimeZone to stay consistent with Europe/Amsterdam
+    setEditBreakStart(formatInTimeZone(new Date(b.start_time), 'Europe/Amsterdam', 'HH:mm'));
+    setEditBreakEnd(formatInTimeZone(new Date(b.end_time), 'Europe/Amsterdam', 'HH:mm'));
   };
 
   const cancelEditingBreak = () => {
@@ -632,16 +628,20 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   selected={watch('start_time') ? new Date(watch('start_time')) : undefined}
                   onSelect={(date) => {
                     if (date) {
-                      const current = watch('start_time') ? new Date(watch('start_time')) : new Date();
-                      date.setHours(current.getHours(), current.getMinutes());
-                      setValue('start_time', formatDateTimeLocal(date.toISOString()));
+                      const currentStr = watch('start_time') || new Date().toISOString();
+                      const timePart = currentStr.includes('T') ? currentStr.split('T')[1].substring(0, 5) : "09:00";
+                      
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      
+                      setValue('start_time', `${year}-${month}-${day}T${timePart}`);
                       setStartDateOpen(false);
 
                       // Auto-populate End Date to match the new Start Date, preserving existing end time
-                      const currentEnd = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                      const newEndDate = new Date(date);
-                      newEndDate.setHours(currentEnd.getHours(), currentEnd.getMinutes());
-                      setValue('end_time', formatDateTimeLocal(newEndDate.toISOString()));
+                      const currentEndStr = watch('end_time') || currentStr;
+                      const endTimePart = currentEndStr.includes('T') ? currentEndStr.split('T')[1].substring(0, 5) : "10:00";
+                      setValue('end_time', `${year}-${month}-${day}T${endTimePart}`);
                     }
                   }}
                   initialFocus
@@ -660,12 +660,16 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
               className="flex-1"
               dateInputClassName="h-10"
               hourCycle={24}
-              value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
+              value={watch('start_time') && watch('start_time').includes('T') ? new Time(
+                parseInt(watch('start_time').split('T')[1].split(':')[0]),
+                parseInt(watch('start_time').split('T')[1].split(':')[1])
+              ) : null}
               onChange={(time) => {
                 if (time) {
-                  const date = watch('start_time') ? new Date(watch('start_time')) : new Date();
-                  date.setHours(time.hour, time.minute);
-                  setValue('start_time', formatDateTimeLocal(date.toISOString()));
+                  // Simply construct the Europe/Amsterdam date string exclusively using string manipulation to bypass external browser timezones
+                  const currentStr = watch('start_time') || new Date().toISOString();
+                  const ymd = currentStr.includes('T') ? currentStr.split('T')[0] : currentStr.substring(0, 10);
+                  setValue('start_time', `${ymd}T${String(time.hour).padStart(2,'0')}:${String(time.minute).padStart(2,'0')}`);
                 }
               }}
               disabled={isViewMode}
@@ -700,9 +704,14 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                   selected={watch('end_time') ? new Date(watch('end_time')) : undefined}
                   onSelect={(date) => {
                     if (date) {
-                      const current = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                      date.setHours(current.getHours(), current.getMinutes());
-                      setValue('end_time', formatDateTimeLocal(date.toISOString()));
+                      const currentStr = watch('end_time') || new Date().toISOString();
+                      const timePart = currentStr.includes('T') ? currentStr.split('T')[1].substring(0, 5) : "10:00";
+                      
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      
+                      setValue('end_time', `${year}-${month}-${day}T${timePart}`);
                       setEndDateOpen(false);
                     }
                   }}
@@ -728,12 +737,15 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
               className="flex-1"
               dateInputClassName="h-10"
               hourCycle={24}
-              value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
+              value={watch('end_time') && watch('end_time').includes('T') ? new Time(
+                parseInt(watch('end_time').split('T')[1].split(':')[0]),
+                parseInt(watch('end_time').split('T')[1].split(':')[1])
+              ) : null}
               onChange={(time) => {
                 if (time) {
-                  const date = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                  date.setHours(time.hour, time.minute);
-                  setValue('end_time', formatDateTimeLocal(date.toISOString()));
+                  const currentStr = watch('end_time') || new Date().toISOString();
+                  const ymd = currentStr.includes('T') ? currentStr.split('T')[0] : currentStr.substring(0, 10);
+                  setValue('end_time', `${ymd}T${String(time.hour).padStart(2,'0')}:${String(time.minute).padStart(2,'0')}`);
                 }
               }}
               disabled={isViewMode}
@@ -1058,7 +1070,9 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
                             <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Sitewide</span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{format(new Date(b.start_time), 'HH:mm')} - {format(new Date(b.end_time), 'HH:mm')}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatInTimeZone(new Date(b.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(b.end_time), 'Europe/Amsterdam', 'HH:mm')}
+                        </p>
                       </div>
                       {!isViewMode && (
                         <div className="flex items-center space-x-1">

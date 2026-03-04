@@ -1,6 +1,7 @@
 import { ShiftWithDetails } from '@/lib/types/shift';
 import { RRule } from 'rrule';
 import { addDays, addWeeks, addMonths, startOfDay, endOfDay } from 'date-fns';
+import { formatInTimeZone, toDate } from 'date-fns-tz';
 
 /**
  * Expands a recurring shift into multiple instances based on its recurrence rule
@@ -24,6 +25,11 @@ export function expandRecurringShift(
     // Get the original shift's start and end times
     const shiftStart = new Date(shift.start_time);
     const shiftEnd = new Date(shift.end_time);
+    
+    // Extract the strict local HH:mm string from the original shift Start and End
+    // This removes the dependency on the math below crossing a DST gap
+    const startHhMm = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'HH:mm');
+    const endHhMm = formatInTimeZone(shiftEnd, 'Europe/Amsterdam', 'HH:mm');
     
     // Calculate the duration in milliseconds
     const duration = shiftEnd.getTime() - shiftStart.getTime();
@@ -68,19 +74,23 @@ export function expandRecurringShift(
     const instances: ShiftWithDetails[] = [];
     
     occurrences.forEach((occurrence, index) => {
-      // Set the time of day to match the original shift
-      const instanceStart = new Date(occurrence);
-      instanceStart.setHours(shiftStart.getHours());
-      instanceStart.setMinutes(shiftStart.getMinutes());
-      instanceStart.setSeconds(shiftStart.getSeconds());
-      
       // Check if this specific date is an exception (compare YYYY-MM-DD string)
-      const dateString = `${instanceStart.getFullYear()}-${String(instanceStart.getMonth() + 1).padStart(2, '0')}-${String(instanceStart.getDate()).padStart(2, '0')}`;
+      const dateString = `${occurrence.getUTCFullYear()}-${String(occurrence.getUTCMonth() + 1).padStart(2, '0')}-${String(occurrence.getUTCDate()).padStart(2, '0')}`;
       if (exceptions.has(dateString)) {
         return; // Skip this occurrence, it has been overridden or deleted
       }
 
-      const instanceEnd = new Date(instanceStart.getTime() + duration);
+      // Reconstruct the precise Start and End Date objects in Europe/Amsterdam using the original HH:mm
+      const instanceStartStr = `${dateString}T${startHhMm}:00`;
+      const instanceEndStr = `${dateString}T${endHhMm}:00`;
+      
+      const instanceStart = toDate(instanceStartStr, { timeZone: 'Europe/Amsterdam' });
+      const instanceEnd = toDate(instanceEndStr, { timeZone: 'Europe/Amsterdam' });
+
+      // If the shift crosses midnight (end time < start time), add 1 day to the end time
+      if (instanceEnd < instanceStart) {
+        instanceEnd.setDate(instanceEnd.getDate() + 1);
+      }
 
       instances.push({
         ...shift,

@@ -321,6 +321,8 @@ export interface CalendarEvent {
     recurrence_rule?: string | null;
     _instanceDate?: string;
     _originalShiftId?: string;
+    _originalStartTime?: string;
+    _originalEndTime?: string;
   };
 }
 
@@ -370,12 +372,31 @@ export function shiftToCalendarEvent(
   const defaultColor: CalendarEvent['color'] = 'blue';
   const color = colorMap?.[shift.location_id] || defaultColor;
   
+  const { formatInTimeZone } = require('date-fns-tz');
+
+  // To draw this shift correctly on the calendar UI despite DST jumps,
+  // we extract the strict intended HH:mm in Europe/Amsterdam and lock it
+  // onto the date string that big-calendar reads.
+  const startLocalHhMm = formatInTimeZone(new Date(shift.start_time), 'Europe/Amsterdam', 'HH:mm');
+  const endLocalHhMm = formatInTimeZone(new Date(shift.end_time), 'Europe/Amsterdam', 'HH:mm');
+  
+  // Extract strictly the YYYY-MM-DD from the UTC string so it matches the day of the week accurately.
+  // We use exactly 10 characters from the UTC ISO string to prevent date-fns from shifting the day backwards.
+  const startYyyyMmDd = shift.start_time.substring(0, 10);
+  
+  // Create naive local date strings that the browser parses as local timeline.
+  // This guarantees the calendar component draws "09:00" exactly on the "09:00" row.
+  const visualStartString = `${startYyyyMmDd}T${startLocalHhMm}:00`;
+  const visualEndString = shift.end_time > shift.start_time && shift.end_time.substring(0, 10) !== startYyyyMmDd 
+    ? `${shift.end_time.substring(0, 10)}T${endLocalHhMm}:00`
+    : `${startYyyyMmDd}T${endLocalHhMm}:00`;
+
   return {
     id: shift.id,
     title: `${shift.staff_first_name} ${shift.staff_last_name} - ${shift.location_name}`,
-    description: `${format(parseISO(shift.start_time), 'HH:mm')} - ${format(parseISO(shift.end_time), 'HH:mm')} • ${shift.services.map(s => s.service_name).join(', ')}`,
-    startDate: shift.start_time,
-    endDate: shift.end_time,
+    description: `${startLocalHhMm} - ${endLocalHhMm} • ${shift.services.map((s: any) => s.service_name).join(', ')}`,
+    startDate: visualStartString,
+    endDate: visualEndString,
     color: color,
     user: {
       id: shift.staff_id,
@@ -395,6 +416,8 @@ export function shiftToCalendarEvent(
       recurrence_rule: shift.recurrence_rule,
       _instanceDate: shift._instanceDate,
       _originalShiftId: shift._originalShiftId,
+      _originalStartTime: shift.start_time,
+      _originalEndTime: shift.end_time,
     },
   };
 }

@@ -3,13 +3,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon, Location01Icon, UserIcon, ArrowRight01Icon } from '@hugeicons/core-free-icons';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 import { Loading03Icon } from '@hugeicons/core-free-icons';
+import { useLocale } from 'next-intl';
 
 
 
@@ -22,6 +25,7 @@ interface HistoryClientProps {
 
 export function HistoryClient({ appointments: initialAppointments }: HistoryClientProps) {
     const router = useRouter();
+    const locale = useLocale();
 
     const { data: appointments = [], isLoading } = useQuery({
         queryKey: ['history-appointments'],
@@ -79,7 +83,7 @@ export function HistoryClient({ appointments: initialAppointments }: HistoryClie
                                         <div className="text-sm text-muted-foreground flex items-center gap-4 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <HugeiconsIcon icon={Calendar02Icon} size={14} />
-                                                {format(parseISO(booking.start_time), 'PPP')}
+                                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'PPP', { locale: locale === 'nl' ? nl : enUS })}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <HugeiconsIcon icon={Location01Icon} size={14} />

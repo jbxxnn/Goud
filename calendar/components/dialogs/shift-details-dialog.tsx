@@ -33,6 +33,7 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
     setLoading(true);
     try {
       const baseId = String(event.id).split('-instance-')[0];
+
       const response = await fetch(`/api/shifts/${baseId}?with_details=true`);
       const data = await response.json();
 
@@ -42,16 +43,21 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
         const isModifiedOccurrence = !!shiftData.parent_shift_id;
         
         if (isInstance || isModifiedOccurrence) {
-          // Override the parent shift's dates with this specific instance's dates for the UI 
+          // Keep recurring instance metadata for the UI
           shiftData = {
             ...shiftData,
             _isRecurringInstance: true,
-            _instanceDate: event.startDate, // Keep track of the specific date we clicked
+            _instanceDate: event.startDate, // Keep track of the specific visually offset date we clicked for expansion math
             _originalShiftId: shiftData.parent_shift_id || baseId, // Pass the true parent for "Entire Series" edits
-            start_time: event.startDate,
-            end_time: event.endDate
           };
         }
+
+        // Always prioritize the true un-shifted UTC strings passed from the grid metadata, if available
+        shiftData = {
+          ...shiftData,
+          start_time: event.metadata?._originalStartTime || shiftData.start_time,
+          end_time: event.metadata?._originalEndTime || shiftData.end_time,
+        };
         
         setShift(shiftData);
         setIsEditOpen(true);

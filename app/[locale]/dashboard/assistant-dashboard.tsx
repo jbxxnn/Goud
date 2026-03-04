@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
-import { format } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import Link from 'next/link';
 import { InformationCircleIcon,
   Loading03Icon,
@@ -20,7 +22,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Pencil } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -138,6 +140,7 @@ interface DashboardBooking extends Booking {
 
 export default function AssistantDashboard() {
   const t = useTranslations('AssistantDashboard');
+  const locale = useLocale();
   const [upcomingBookings, setUpcomingBookings] = useState<DashboardBooking[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<ChecklistItem[]>([]);
   const [pastTasks, setPastTasks] = useState<ChecklistItem[]>([]);
@@ -517,12 +520,12 @@ export default function AssistantDashboard() {
                               </Link>
                               <span className="text-muted-foreground/50">•</span>
                               <span className="text-primary">
-                                {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                                {task.booking?.start_time ? formatInTimeZone(new Date(task.booking.start_time), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : t('tasks.noDate')}
                               </span>
                             </>
                           ) : (
                             <span className="text-primary italic">
-                              {task.created_at ? t('tasks.droppedOn', { date: format(new Date(task.created_at), 'MMM d, HH:mm') }) : ''}
+                              {task.created_at ? t('tasks.droppedOn', { date: formatInTimeZone(new Date(task.created_at), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) }) : ''}
                               {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
                             </span>
                           )}
@@ -596,12 +599,12 @@ export default function AssistantDashboard() {
                               </Link>
                               <span className="text-muted-foreground/50">•</span>
                               <span className="text-primary">
-                                {task.booking?.start_time ? format(new Date(task.booking.start_time), 'MMM d, HH:mm') : t('tasks.noDate')}
+                                {task.booking?.start_time ? formatInTimeZone(new Date(task.booking.start_time), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : t('tasks.noDate')}
                               </span>
                             </>
                           ) : (
                             <span className="text-primary italic">
-                              {task.created_at ? t('tasks.droppedOn', { date: format(new Date(task.created_at), 'MMM d, HH:mm') }) : ''}
+                              {task.created_at ? t('tasks.droppedOn', { date: formatInTimeZone(new Date(task.created_at), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) }) : ''}
                               {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
                             </span>
                           )}
@@ -668,10 +671,10 @@ export default function AssistantDashboard() {
                       </div>
                       <div className="text-right shrink-0 flex flex-col justify-center">
                         <p className="text-sm font-bold text-foreground">
-                          {format(new Date(booking.start_time), 'HH:mm')}
+                          {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')}
                         </p>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                          {format(new Date(booking.start_time), 'MMM d')}
+                          {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d', { locale: locale === 'nl' ? nl : enUS })}
                         </p>
                       </div>
                     </div>
@@ -739,7 +742,7 @@ export default function AssistantDashboard() {
                 <span className="font-medium">Date/Time:</span>
                 <span>
                   {editingTask.booking.start_time ? 
-                    format(new Date(editingTask.booking.start_time), 'PPP, HH:mm') : 
+                    formatInTimeZone(new Date(editingTask.booking.start_time), 'Europe/Amsterdam', 'PPP, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : 
                     'No date'}
                 </span>
               </div>
@@ -831,7 +834,7 @@ export default function AssistantDashboard() {
                 <div className="flex flex-col gap-0.5 mt-1">
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
-                    {format(new Date(resolvingBooking.start_time), 'PPP, HH:mm')}
+                    {formatInTimeZone(new Date(resolvingBooking.start_time), 'Europe/Amsterdam', 'PPP, HH:mm', { locale: locale === 'nl' ? nl : enUS })}
                   </p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <HugeiconsIcon icon={UserIcon} className="h-3 w-3" />

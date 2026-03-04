@@ -1,7 +1,7 @@
 
 import { Booking } from '@/lib/types/booking';
 import { IEvent } from '@/calendar/interfaces';
-import { differenceInDays, parseISO, format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export function bookingToCalendarEvent(booking: Booking): IEvent {
     // Determine color based on booking status
@@ -43,13 +43,13 @@ export function bookingToCalendarEvent(booking: Booking): IEvent {
     const serviceCode = booking.services?.service_code || serviceName;
     const title = `${serviceCode} - ${customerName}`;
 
-    // Format times for description
-    const startTime = format(parseISO(booking.start_time), 'HH:mm');
-    const endTime = format(parseISO(booking.end_time), 'HH:mm');
+    // Format times for description using Europe/Amsterdam
+    const startLocalHhMm = formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm');
+    const endLocalHhMm = formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm');
 
     // Create description
     const description = `
-    Time: ${startTime} - ${endTime}
+    Time: ${startLocalHhMm} - ${endLocalHhMm}
     Service: ${serviceName}
     Customer: ${customerName}
     Location: ${booking.locations?.name || 'Unknown Location'}
@@ -64,14 +64,20 @@ export function bookingToCalendarEvent(booking: Booking): IEvent {
         picturePath: null,
     };
 
-    // Ensure dates are ISO strings
-    // For single-day bookings that cross midnight or are technically short, 
-    // the calendar component expects them to be handled correctly.
+    // Extract strictly the YYYY-MM-DD from the UTC string
+    const startYyyyMmDd = booking.start_time.substring(0, 10);
+    const endYyyyMmDd = booking.end_time.substring(0, 10);
+
+    // Create naive local date strings that the browser parses as local timeline.
+    const visualStartString = `${startYyyyMmDd}T${startLocalHhMm}:00`;
+    const visualEndString = booking.end_time > booking.start_time && endYyyyMmDd !== startYyyyMmDd 
+      ? `${endYyyyMmDd}T${endLocalHhMm}:00`
+      : `${startYyyyMmDd}T${endLocalHhMm}:00`;
 
     return {
         id: booking.id,
-        startDate: booking.start_time,
-        endDate: booking.end_time,
+        startDate: visualStartString,
+        endDate: visualEndString,
         title,
         color,
         description,
@@ -80,5 +86,10 @@ export function bookingToCalendarEvent(booking: Booking): IEvent {
             id: booking.locations.id,
             name: booking.locations.name
         } : undefined,
+        metadata: {
+            _originalStartTime: booking.start_time,
+            _originalEndTime: booking.end_time,
+            booking_id: booking.id,
+        }
     } as IEvent;
 }

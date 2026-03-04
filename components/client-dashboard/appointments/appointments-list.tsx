@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { ActionButtons } from './action-buttons';
 import { ResultsModal } from './results-modal';
@@ -15,7 +15,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO, isPast, differenceInMinutes } from 'date-fns';
+import { parseISO, isPast, differenceInMinutes } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarAdd01Icon, Search01Icon } from '@hugeicons/core-free-icons';
@@ -31,6 +33,7 @@ interface AppointmentsListProps {
 
 export function AppointmentsList({ clientId, filterBy = 'created_by' }: AppointmentsListProps) {
     const t = useTranslations('Appointments');
+    const locale = useLocale();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isFetching, setIsFetching] = useState(false);
@@ -332,10 +335,10 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-medium">
-                                                {format(parseISO(booking.start_time), 'MMM d, yyyy')}
+                                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d, yyyy', { locale: locale === 'nl' ? nl : enUS })}
                                             </span>
                                             <span className="text-sm text-muted-foreground">
-                                                {format(parseISO(booking.start_time), 'HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
+                                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm')}
                                             </span>
                                         </div>
                                     </TableCell>

@@ -176,24 +176,22 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
 
   // Set initial date/time when dialog opens
   useEffect(() => {
-    if (isOpen && startDate && startTime) {
-      const start = new Date(startDate);
-      start.setHours(startTime.hour, startTime.minute, 0, 0);
-
-      const end = new Date(start);
-      end.setHours(start.getHours() + 1); // Default 1 hour duration
-
-      setValue('start_time', formatDateTimeLocal(start));
-      setValue('end_time', formatDateTimeLocal(end));
-    } else if (isOpen && startDate) {
-      const start = new Date(startDate);
-      start.setHours(9, 0, 0, 0); // Default 9 AM
-
-      const end = new Date(start);
-      end.setHours(17, 0, 0, 0); // Default 5 PM
-
-      setValue('start_time', formatDateTimeLocal(start));
-      setValue('end_time', formatDateTimeLocal(end));
+    if (isOpen && startDate) {
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(startDate.getDate()).padStart(2, '0');
+      
+      const startHh = startTime ? String(startTime.hour).padStart(2, '0') : '09';
+      const startMm = startTime ? String(startTime.minute).padStart(2, '0') : '00';
+      
+      let endHhNum = (startTime ? startTime.hour : 9) + 1; // Default 1 hour duration
+      if (endHhNum > 23) endHhNum = 23; // Simple cap for now
+      
+      const endHh = String(endHhNum).padStart(2, '0');
+      const endMm = startMm; // Keep identical minutes
+      
+      setValue('start_time', `${year}-${month}-${day}T${startHh}:${startMm}`);
+      setValue('end_time', `${year}-${month}-${day}T${endHh}:${endMm}`);
     }
   }, [isOpen, startDate, startTime, setValue]);
 
@@ -524,16 +522,20 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                         selected={watch('start_time') ? new Date(watch('start_time')) : undefined}
                         onSelect={(date) => {
                           if (date) {
-                            const current = watch('start_time') ? new Date(watch('start_time')) : new Date();
-                            date.setHours(current.getHours(), current.getMinutes());
-                            setValue('start_time', formatDateTimeLocal(date));
+                            const currentStr = watch('start_time') || new Date().toISOString();
+                            const timePart = currentStr.includes('T') ? currentStr.split('T')[1].substring(0, 5) : "09:00";
+                            
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            
+                            setValue('start_time', `${year}-${month}-${day}T${timePart}`);
                             setStartDateOpen(false);
 
                             // Auto-populate End Date to match the new Start Date, preserving existing end time
-                            const currentEnd = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                            const newEndDate = new Date(date);
-                            newEndDate.setHours(currentEnd.getHours(), currentEnd.getMinutes());
-                            setValue('end_time', formatDateTimeLocal(newEndDate));
+                            const currentEndStr = watch('end_time') || currentStr;
+                            const endTimePart = currentEndStr.includes('T') ? currentEndStr.split('T')[1].substring(0, 5) : "10:00";
+                            setValue('end_time', `${year}-${month}-${day}T${endTimePart}`);
                           }
                         }}
                         initialFocus
@@ -554,12 +556,15 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     dateInputClassName="h-10"
                     hourCycle={24}
                     disabled={isLoading}
-                    value={watch('start_time') ? new Time(new Date(watch('start_time')).getHours(), new Date(watch('start_time')).getMinutes()) : null}
+                    value={watch('start_time') && watch('start_time').includes('T') ? new Time(
+                      parseInt(watch('start_time').split('T')[1].split(':')[0]),
+                      parseInt(watch('start_time').split('T')[1].split(':')[1])
+                    ) : null}
                     onChange={(time) => {
                       if (time) {
-                        const date = watch('start_time') ? new Date(watch('start_time')) : new Date();
-                        date.setHours(time.hour, time.minute);
-                        setValue('start_time', formatDateTimeLocal(date));
+                        const currentStr = watch('start_time') || new Date().toISOString();
+                        const ymd = currentStr.includes('T') ? currentStr.split('T')[0] : currentStr.substring(0, 10);
+                        setValue('start_time', `${ymd}T${String(time.hour).padStart(2,'0')}:${String(time.minute).padStart(2,'0')}`);
                       }
                     }}
                   />
@@ -593,9 +598,14 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                         selected={watch('end_time') ? new Date(watch('end_time')) : undefined}
                         onSelect={(date) => {
                           if (date) {
-                            const current = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                            date.setHours(current.getHours(), current.getMinutes());
-                            setValue('end_time', formatDateTimeLocal(date));
+                            const currentStr = watch('end_time') || new Date().toISOString();
+                            const timePart = currentStr.includes('T') ? currentStr.split('T')[1].substring(0, 5) : "10:00";
+                            
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            
+                            setValue('end_time', `${year}-${month}-${day}T${timePart}`);
                             setEndDateOpen(false);
                           }
                         }}
@@ -623,12 +633,15 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     dateInputClassName="h-10"
                     hourCycle={24}
                     disabled={isLoading}
-                    value={watch('end_time') ? new Time(new Date(watch('end_time')).getHours(), new Date(watch('end_time')).getMinutes()) : null}
+                    value={watch('end_time') && watch('end_time').includes('T') ? new Time(
+                      parseInt(watch('end_time').split('T')[1].split(':')[0]),
+                      parseInt(watch('end_time').split('T')[1].split(':')[1])
+                    ) : null}
                     onChange={(time) => {
                       if (time) {
-                        const date = watch('end_time') ? new Date(watch('end_time')) : new Date();
-                        date.setHours(time.hour, time.minute);
-                        setValue('end_time', formatDateTimeLocal(date));
+                        const currentStr = watch('end_time') || new Date().toISOString();
+                        const ymd = currentStr.includes('T') ? currentStr.split('T')[0] : currentStr.substring(0, 10);
+                        setValue('end_time', `${ymd}T${String(time.hour).padStart(2,'0')}:${String(time.minute).padStart(2,'0')}`);
                       }
                     }}
                   />
