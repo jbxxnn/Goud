@@ -197,13 +197,17 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     }
   }, [isOpen, startDate, startTime, setValue]);
 
+  // Helper to construct local DateTime string preserving Amsterdam zone formatting
   const formatDateTimeLocal = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    const { formatInTimeZone } = require('date-fns-tz');
+    return formatInTimeZone(date, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm");
+  };
+
+  // Helper to create true ISO string from local YYYY-MM-DDTHH:mm keeping Europe/Amsterdam offset
+  const createLocalIsoString = (localDateTimeStr: string): string => {
+    const { formatInTimeZone, toDate } = require('date-fns-tz');
+    const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
+    return formatInTimeZone(amsterdamDate, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm:ssXXX");
   };
 
   const onSubmit = async (data: ShiftFormData) => {
@@ -223,8 +227,8 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       const requestBody = {
         staff_id: data.staff_id,
         location_id: data.location_id,
-        start_time: new Date(data.start_time).toISOString(),
-        end_time: new Date(data.end_time).toISOString(),
+        start_time: createLocalIsoString(data.start_time),
+        end_time: createLocalIsoString(data.end_time),
         is_recurring: data.is_recurring,
         recurrence_rule,
         priority: data.priority,
@@ -359,8 +363,8 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       const requestBody = {
         staff_id: data.staff_id,
         location_id: data.location_id,
-        start_time: new Date(data.start_time).toISOString(),
-        end_time: new Date(data.end_time).toISOString(),
+        start_time: createLocalIsoString(data.start_time),
+        end_time: createLocalIsoString(data.end_time),
         is_recurring: data.is_recurring,
         recurrence_rule,
         priority: data.priority,
