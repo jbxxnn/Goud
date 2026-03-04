@@ -209,11 +209,11 @@ export class ShiftService {
     }
 
     // Date range filtering
-    if (start_date) {
+    if (start_date && end_date) {
+      query = query.or(`is_recurring.eq.true,and(start_time.gte.${start_date},start_time.lte.${end_date})`);
+    } else if (start_date) {
       query = query.gte('start_time', start_date);
-    }
-
-    if (end_date) {
+    } else if (end_date) {
       query = query.lte('end_time', end_date);
     }
 
@@ -282,11 +282,11 @@ export class ShiftService {
     }
 
     // Date range filtering
-    if (start_date) {
+    if (start_date && end_date) {
+      query = query.or(`is_recurring.eq.true,and(start_time.gte.${start_date},start_time.lte.${end_date})`);
+    } else if (start_date) {
       query = query.gte('start_time', start_date);
-    }
-
-    if (end_date) {
+    } else if (end_date) {
       query = query.lte('end_time', end_date);
     }
 
