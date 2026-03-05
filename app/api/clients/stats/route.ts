@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 
 const parseDateParam = (value: string | null, fallback: Date): Date => {
   if (!value) return fallback;
@@ -9,7 +10,28 @@ const parseDateParam = (value: string | null, fallback: Date): Date => {
 
 export async function GET(req: NextRequest) {
   try {
+    // --- Authorization Check ---
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = userProfile?.role;
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // ---------------------------
+
     const { searchParams } = new URL(req.url);
 
     const defaultStart = new Date(new Date().getFullYear(), 0, 1);

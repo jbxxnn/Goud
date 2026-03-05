@@ -13,8 +13,56 @@ const lockSchema = z.object({
     sessionToken: z.string().min(1),
 });
 
+// --- Simple In-Memory Rate Limiter ---
+// Blocks IPs that attempt to rapidly lock up all calendar availability.
+// Max 10 locks per 15-minute rolling window per IP.
+const RATE_LIMIT = 10;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; 
+const ipLocks = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const record = ipLocks.get(ip);
+    
+    if (!record) {
+        ipLocks.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+        return true;
+    }
+
+    if (now > record.resetTime) {
+        // Window expired, reset counter
+        ipLocks.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+        return true;
+    }
+
+    record.count++;
+    
+    // Clean up map every ~100 requests to prevent memory leak
+    if (Math.random() < 0.01) {
+        for (const [key, val] of ipLocks.entries()) {
+            if (now > val.resetTime) ipLocks.delete(key);
+        }
+    }
+
+    return record.count <= RATE_LIMIT;
+}
+// -------------------------------------
+
 export async function POST(req: NextRequest) {
     try {
+        // 1. IP Rate Limiting Check
+        const forwardedFor = req.headers.get('x-forwarded-for');
+        const realIp = req.headers.get('x-real-ip');
+        const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || 'unknown';
+
+        if (!checkRateLimit(ip)) {
+            console.warn(`[booking-lock] Rate limit exceeded for IP: ${ip}`);
+            return NextResponse.json(
+                { error: 'TOO_MANY_REQUESTS', message: 'You have rapidly locked too many slots. Please wait 15 minutes.' },
+                { status: 429 }
+            );
+        }
+
         const body = await req.json();
         const result = lockSchema.safeParse(body);
 

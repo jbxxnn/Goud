@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 
 const repeatTypeUpdateSchema = z.object({
@@ -28,7 +29,28 @@ export async function PUT(
         }
 
         const updates = validation.data;
+
+        // --- Authorization Check ---
+        const authSupabase = await createClient();
+        const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = getServiceSupabase();
+
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const role = userProfile?.role;
+        if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        }
+        // ---------------------------
 
         const { data, error } = await supabase
             .from('service_repeat_types')
@@ -61,7 +83,28 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
+        
+        // --- Authorization Check ---
+        const authSupabase = await createClient();
+        const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
         const supabase = getServiceSupabase();
+
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const role = userProfile?.role;
+        if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+            return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+        }
+        // ---------------------------
 
         // Check if used in booking_continuations first?
         // FK constraint will prevent delete if used, which is good.

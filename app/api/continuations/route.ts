@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 
@@ -101,7 +102,25 @@ export async function POST(request: NextRequest) {
     try {
         const supabase = getServiceSupabase();
 
-        // Auth check should be here ideally.
+        // --- Authorization Check ---
+        const authSupabase = await createClient();
+        const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+        if (authError || !user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const role = userProfile?.role;
+        if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+            return NextResponse.json({ success: false, error: 'Forbidden: Only staff can generate continuations' }, { status: 403 });
+        }
+        // ---------------------------
 
         const body = await request.json();
         const validation = createContinuationSchema.safeParse(body);
@@ -242,10 +261,9 @@ export async function POST(request: NextRequest) {
             if (createdByEmail && createdByEmail !== clientEmail) emailRecipients.push(createdByEmail);
 
             if (emailRecipients.length > 0) {
-                // Determine base URL
-                const protocol = request.headers.get('x-forwarded-proto') || 'http';
-                const host = request.headers.get('host') || 'goudecho.nl';
-                const baseUrl = `${protocol}://${host}`;
+                // Determine base URL securely
+                const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL;
+                const baseUrl = envUrl ? `https://${envUrl.replace(/^https?:\/\//, '')}` : 'https://afspraak.goudecho.nl';
                 const fullLink = `${baseUrl}${link}`;
 
                 // We import dynamically or use the function we just added

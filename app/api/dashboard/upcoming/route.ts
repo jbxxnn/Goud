@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +13,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing date parameter' }, { status: 400 });
     }
 
+    // --- Authorization Check ---
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = userProfile?.role;
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // ---------------------------
 
     // Parse date and get start/end of day
     const selectedDate = new Date(`${dateStr}T00:00:00.000Z`);

@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     // 1. Verify Authentication (Optional but recommended for robust setups)
     // For Vercel Cron, you can check the authorization header if you set CRON_SECRET env var.
-    // const authHeader = req.headers.get('authorization');
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   return new Response('Unauthorized', { status: 401 });
-    // }
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new Response('Unauthorized', { status: 401 });
+    }
 
     // For now, running open for testing, but relying on the obscure URL or future env var.
 

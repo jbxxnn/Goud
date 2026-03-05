@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
@@ -51,7 +52,27 @@ export async function PUT(
     const body = await request.json();
     const { first_name, last_name, phone, email, practice_name, is_active, is_recommended } = body;
 
+    // --- Authorization Check ---
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = userProfile?.role;
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // ---------------------------
     
     const updates: Record<string, any> = {};
     if (first_name !== undefined) updates.first_name = first_name;
@@ -94,9 +115,30 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
+    try {
     const { id } = await params;
+    
+    // --- Authorization Check ---
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const role = userProfile?.role;
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // ---------------------------
     
     // Check if midwife is referenced in any bookings
     const { data: bookings, error: bookingsError } = await supabase
