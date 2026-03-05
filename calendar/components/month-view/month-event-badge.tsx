@@ -8,10 +8,10 @@ import { ShiftDetailsDialog } from "@/calendar/components/dialogs/shift-details-
 import { BookingDetailsDialog } from "@/calendar/components/dialogs/booking-details-dialog";
 
 import { cn } from "@/lib/utils";
-
-
 import type { IEvent } from "@/calendar/interfaces";
 import type { VariantProps } from "class-variance-authority";
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const eventBadgeVariants = cva(
     "mx-1 flex size-auto h-6.5 select-none items-center justify-between gap-1.5 truncate whitespace-nowrap rounded-md border px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -119,36 +119,45 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
     const endTime = format(new Date(event.endDate), "HH:mm");
 
     const BadgeContent = (
-        <div 
-            role="button" 
-            tabIndex={0} 
-            className={eventBadgeClasses} 
-            style={customStyle} 
-            onKeyDown={handleKeyDown} 
-            onClick={onEventClick ? handleClick : undefined}
-            title={`${startTime} - ${endTime}`}
-        >
-            <div className="flex items-center gap-1.5 truncate">
-                {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
-                        <circle cx="4" cy="4" r="4" />
-                    </svg>
-                )}
+        <TooltipProvider delayDuration={0}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div 
+                        role="button" 
+                        tabIndex={0} 
+                        className={eventBadgeClasses} 
+                        style={customStyle} 
+                        onKeyDown={handleKeyDown} 
+                        onClick={onEventClick ? handleClick : undefined}
+                        title=""
+                    >
+                        <div className="flex items-center gap-1.5 truncate">
+                            {!["middle", "last"].includes(position) && ["mixed", "dot"].includes(badgeVariant) && (
+                                <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
+                                    <circle cx="4" cy="4" r="4" />
+                                </svg>
+                            )}
 
-                {renderBadgeText && (
-                    <p className="flex-1 truncate font-semibold">
-                        {eventCurrentDay && (
-                            <span className="text-xs">
-                                Day {eventCurrentDay} of {eventTotalDays} •{" "}
-                            </span>
-                        )}
-                        {event.title}
-                    </p>
-                )}
-            </div>
+                            {renderBadgeText && (
+                                <p className="flex-1 truncate font-semibold" title="">
+                                    {eventCurrentDay && (
+                                        <span className="text-xs">
+                                            Day {eventCurrentDay} of {eventTotalDays} •{" "}
+                                        </span>
+                                    )}
+                                    {event.title}
+                                </p>
+                            )}
+                        </div>
 
-            {renderBadgeText && <span>{startTime}</span>}
-        </div>
+                        {renderBadgeText && <span>{startTime}</span>}
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{`${event.title} (${startTime} - ${endTime})`}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 
     return (

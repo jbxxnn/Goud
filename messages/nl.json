@@ -1502,8 +1502,7 @@
         "subtitle": "Overzicht van aankomende taken en afspraken.",
         "loading": "Dashboard laden...",
         "sections": {
-            "overdueTasks": "Te late taken",
-            "upcomingTasks": "Aankomende taken",
+            "tasks": "Taken",
             "noShowAppointments": "No-Show afspraken"
         },
         "tasks": {

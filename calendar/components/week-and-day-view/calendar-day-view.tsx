@@ -15,7 +15,7 @@ import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calend
 import { DayViewMultiDayEventsRow } from "@/calendar/components/week-and-day-view/day-view-multi-day-events-row";
 
 import { cn } from "@/lib/utils";
-import { groupEvents, getEventBlockStyle, isWorkingHour, getCurrentEvents, getVisibleHours, isDayClosed } from "@/calendar/helpers";
+import { calculateEventLayout, isWorkingHour, getCurrentEvents, getVisibleHours, isDayClosed } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
 
@@ -49,8 +49,6 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
 
   // If no events are happening right now, show all events for the selected day
   const displayEvents = currentEvents.length > 0 ? currentEvents : interactiveEvents;
-
-  const groupedEvents = groupEvents(dayEvents);
 
   // Pre-calculate all overlapping shifts for the day to provide stable references
   const allShiftsMap = useMemo(() => {
@@ -271,43 +269,34 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                   );
                 })}
 
-                {/* Render background shifts first (Z-index handled by order) */}
-                {showShiftGuidance && dayEvents.filter(e => e.metadata?.isShift).map(event => {
-                  const style = getEventBlockStyle(event, selectedDate, 0, 1, { from: earliestEventHour, to: latestEventHour });
+              {/* Render background shifts first (Z-index handled by order) */}
+              {showShiftGuidance && (() => {
+                const shiftEvents = singleDayEvents.filter(e => e.metadata?.isShift);
+                const layoutMap = calculateEventLayout(shiftEvents, { from: earliestEventHour, to: latestEventHour });
+                
+                return shiftEvents.map(event => {
+                  const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
                   return (
-                    <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, width: "100%", left: "0%", zIndex: 0 }}>
+                    <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, zIndex: 0 }}>
                       <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
                     </div>
                   );
-                })}
+                });
+              })()}
 
                 {/* Group and render interactive events (bookings, breaks) */}
                 {(() => {
                   const interactiveEvents = dayEvents.filter(e => !e.metadata?.isShift);
-                  const interactiveGrouped = groupEvents(interactiveEvents);
-                  return interactiveGrouped.map((group, groupIndex) =>
-                    group.map(event => {
-                      let style = getEventBlockStyle(event, selectedDate, groupIndex, interactiveGrouped.length, { from: earliestEventHour, to: latestEventHour });
-                      const hasOverlap = interactiveGrouped.some(
-                        (otherGroup, otherIndex) =>
-                          otherIndex !== groupIndex &&
-                          otherGroup.some(otherEvent =>
-                            areIntervalsOverlapping(
-                              { start: parseISO(event.startDate), end: parseISO(event.endDate) },
-                              { start: parseISO(otherEvent.startDate), end: parseISO(otherEvent.endDate) }
-                            )
-                          )
-                      );
-
-                      if (!hasOverlap) style = { ...style, width: "100%", left: "0%" };
-
-                      return (
-                        <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
-                          <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
-                        </div>
-                      );
-                    })
-                  );
+                  const layoutMap = calculateEventLayout(interactiveEvents, { from: earliestEventHour, to: latestEventHour });
+                  
+                  return interactiveEvents.map(event => {
+                    const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
+                    return (
+                      <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
+                        <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                      </div>
+                    );
+                  });
                 })()}
               </div>
 

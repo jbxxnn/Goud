@@ -69,7 +69,7 @@ export function CreateTaskDialog({ onTaskCreated, trigger }: CreateTaskDialogPro
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="outline" className="gap-2">
+          <Button variant="default" className="gap-2 bg-primary">
             <HugeiconsIcon icon={PlusSignIcon} className="h-4 w-4" />
             {t('trigger')}
           </Button>

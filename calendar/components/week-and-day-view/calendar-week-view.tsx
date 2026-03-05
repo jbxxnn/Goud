@@ -13,7 +13,7 @@ import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calend
 import { WeekViewMultiDayEventsRow } from "@/calendar/components/week-and-day-view/week-view-multi-day-events-row";
 
 import { cn } from "@/lib/utils";
-import { groupEvents, getEventBlockStyle, isWorkingHour, getVisibleHours, isDayClosed } from "@/calendar/helpers";
+import { calculateEventLayout, isWorkingHour, getVisibleHours, isDayClosed } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
 
@@ -122,7 +122,6 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                   const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
 
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
-                  const groupedEvents = groupEvents(dayEvents);
                   const isPastDate = day < new Date(new Date().setHours(0, 0, 0, 0));
 
                   return (
@@ -145,7 +144,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                             style={{
                               height: "96px",
                               ...(isDisabled ? {
-                                backgroundImage: 'repeating-linear-gradient(-60deg, #E8E8E8 0 0.5px, transparent 0.5px 8px)',
+                                backgroundImage: 'repeating-linear-gradient(-60deg, #aaaaaa 0 0.5px, transparent 0.5px 3px)',
                                 // backgroundColor: 'hsl(var(--muted) / 0.1)'
                                 backgroundColor: '#f3f4f6'
                               } : undefined)
@@ -283,42 +282,33 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                       })}
 
                       {/* Render background shifts first (Z-index handled by order) */}
-                      {showShiftGuidance && dayEvents.filter(e => e.metadata?.isShift).map(event => {
-                        const style = getEventBlockStyle(event, day, 0, 1, { from: earliestEventHour, to: latestEventHour });
-                        return (
-                          <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, width: "100%", left: "0%", zIndex: 0 }}>
-                            <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
-                          </div>
-                        );
-                      })}
+                      {showShiftGuidance && (() => {
+                        const shiftEvents = dayEvents.filter(e => e.metadata?.isShift);
+                        const layoutMap = calculateEventLayout(shiftEvents, { from: earliestEventHour, to: latestEventHour });
+                        
+                        return shiftEvents.map(event => {
+                          const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
+                          return (
+                            <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, zIndex: 0 }}>
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                            </div>
+                          );
+                        });
+                      })()}
 
                       {/* Group and render interactive events (bookings, breaks) */}
                       {(() => {
                         const interactiveEvents = dayEvents.filter(e => !e.metadata?.isShift);
-                        const interactiveGrouped = groupEvents(interactiveEvents);
-                        return interactiveGrouped.map((group, groupIndex) =>
-                          group.map(event => {
-                            let style = getEventBlockStyle(event, day, groupIndex, interactiveGrouped.length, { from: earliestEventHour, to: latestEventHour });
-                            const hasOverlap = interactiveGrouped.some(
-                              (otherGroup, otherIndex) =>
-                                otherIndex !== groupIndex &&
-                                otherGroup.some(otherEvent =>
-                                  areIntervalsOverlapping(
-                                    { start: parseISO(event.startDate), end: parseISO(event.endDate) },
-                                    { start: parseISO(otherEvent.startDate), end: parseISO(otherEvent.endDate) }
-                                  )
-                                )
-                            );
-
-                            if (!hasOverlap) style = { ...style, width: "100%", left: "0%" };
-
-                            return (
-                              <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
-                                <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
-                              </div>
-                            );
-                          })
-                        );
+                        const layoutMap = calculateEventLayout(interactiveEvents, { from: earliestEventHour, to: latestEventHour });
+                        
+                        return interactiveEvents.map(event => {
+                          const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
+                          return (
+                            <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                            </div>
+                          );
+                        });
                       })()}
                     </div>
                   );

@@ -46,34 +46,13 @@ function AssistantDashboardSkeleton() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-6 md:col-span-1">
-          {/* Overdue/Past Tasks Skeleton */}
-          <Card className="border-destructive/20 bg-destructive/5" style={{ borderRadius: "10px" }}>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg border border-destructive/10" style={{ borderRadius: "10px" }}>
-                  <Skeleton className="h-4 w-4 rounded-full shrink-0 mt-1" />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-4 w-3/4" />
-                      <Skeleton className="h-6 w-6 rounded-md" />
-                    </div>
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Tasks Skeleton */}
+          {/* Tasks Skeleton */}
           <Card style={{ borderRadius: "10px" }}>
             <CardHeader>
               <Skeleton className="h-6 w-48" />
             </CardHeader>
             <CardContent className="space-y-4">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{ borderRadius: "10px" }}>
                   <Skeleton className="h-4 w-4 rounded-full shrink-0 mt-1" />
                   <div className="flex-1 space-y-2">
@@ -143,8 +122,7 @@ export default function AssistantDashboard() {
   const t = useTranslations('AssistantDashboard');
   const locale = useLocale();
   const [upcomingBookings, setUpcomingBookings] = useState<DashboardBooking[]>([]);
-  const [upcomingTasks, setUpcomingTasks] = useState<ChecklistItem[]>([]);
-  const [pastTasks, setPastTasks] = useState<ChecklistItem[]>([]);
+  const [tasks, setTasks] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Comment editing state
@@ -292,21 +270,13 @@ export default function AssistantDashboard() {
         throw generalTasksError;
       }
 
-      // Combine and split into upcoming and past tasks
-      const upcoming: ChecklistItem[] = [];
-      const past: ChecklistItem[] = [];
-      const nowTs = new Date().getTime();
+      // Combine all tasks
+      const allTasks: ChecklistItem[] = [];
 
       // Process booking tasks
       (bookingTasks as any)?.forEach((task: any) => {
         if (task.booking?.status === 'cancelled') return;
-        const bookingTime = new Date(task.booking?.start_time || '').getTime();
-        
-        if (bookingTime >= nowTs) {
-          upcoming.push(task);
-        } else {
-          past.push(task);
-        }
+        allTasks.push(task);
       });
 
       // Process general tasks
@@ -315,18 +285,19 @@ export default function AssistantDashboard() {
           ...task,
           isGeneral: true
         };
-
-        // If it has a due date in the future, it's upcoming
-        // Otherwise (past due date or no due date), it's "overdue/past" (meaning it needs attention now)
-        if (task.due_date && new Date(task.due_date).getTime() > nowTs) {
-          upcoming.push(item);
-        } else {
-          past.push(item);
-        }
+        allTasks.push(item);
       });
 
-      setUpcomingTasks(upcoming);
-      setPastTasks(past);      
+      // Sort tasks by date (booking start time, or task due date/created_at)
+      allTasks.sort((a, b) => {
+        const dateA = a.isGeneral ? (a.due_date || a.created_at) : a.booking?.start_time;
+        const dateB = b.isGeneral ? (b.due_date || b.created_at) : b.booking?.start_time;
+        const timeA = new Date(dateA || 0).getTime();
+        const timeB = new Date(dateB || 0).getTime();
+        return timeA - timeB; // Ascending order
+      });
+
+      setTasks(allTasks);
 
     } catch (error) {
       console.error('Error fetching assistant dashboard data:', error);
@@ -357,8 +328,7 @@ export default function AssistantDashboard() {
         toast.success(t('toasts.completeSuccess'));
       }
       // Remove from local state
-      setUpcomingTasks(prev => prev.filter(t => t.id !== task.id));
-      setPastTasks(prev => prev.filter(t => t.id !== task.id));
+      setTasks(prev => prev.filter(t => t.id !== task.id));
     } catch (error) {
       console.error('Error completing task:', error);
       toast.error(t('toasts.completeError'));
@@ -398,8 +368,7 @@ export default function AssistantDashboard() {
       
       // Update local state (if not removed by completion)
       if (!isTaskCompleted) {
-        setUpcomingTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
-        setPastTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
+        setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
       }
       
       setEditingTask(null);
@@ -464,98 +433,20 @@ export default function AssistantDashboard() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* LEFT COLUMN: PENDING TASKS */}
         <div className="space-y-6 md:col-span-1">
-          
-          {/* PAST PENDING TASKS SECTION */}
-          {(pastTasks.length > 0) && (
-            <Card className="border-destructive/50 bg-destructive/5" style={{borderRadius: "10px"}}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-destructive">
-                  <HugeiconsIcon icon={CheckListIcon} className="h-5 w-5" />
-                  {t('sections.overdueTasks')} ({pastTasks.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {pastTasks.map(task => (
-                    <div key={task.id} className="flex items-start space-x-3 p-3 bg-white/50 rounded-lg border border-destructive/20" style={{borderRadius: "10px"}}>
-                      <div className="space-y-1 w-full">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {task.isGeneral ? (
-                              <HugeiconsIcon icon={Task01Icon} className="h-4 w-4 text-primary shrink-0" />
-                            ) : null}
-                            <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
-                              {task.content}
-                            </p>
-                            {task.isGeneral && (
-                              <Badge variant="outline" className="text-[10px] h-4 px-1.5 uppercase font-bold tracking-wider bg-primary/10 text-primary border-primary/20 shrink-0">
-                                {t('tasks.general', { fallback: 'General' })}
-                              </Badge>
-                            )}
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 text-muted-foreground hover:text-primary shrink-0"
-                            onClick={() => openCommentDialog(task)}
-                          >
-                            <HugeiconsIcon icon={Edit02Icon} className="h-4 w-4" />
-                            <span className="sr-only">{t('tasks.editComment')}</span>
-                          </Button>
-                        </div>
-                        {task.comment && (
-                          <div className="bg-destructive/10 text-destructive text-xs p-2 rounded-md italic">
-                             &quot;{task.comment}&quot;
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
-                          {!task.isGeneral ? (
-                            <>
-                              {task.booking?.staff && (
-                                <>
-                                  <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
-                                  <span className="text-muted-foreground/50">•</span>
-                                </>
-                              )}
-                              <span>{task.booking?.services?.name}</span>
-                              <span className="text-muted-foreground/50">•</span>
-                              <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
-                                {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                              </Link>
-                              <span className="text-muted-foreground/50">•</span>
-                              <span className="text-primary">
-                                {task.booking?.start_time ? formatInTimeZone(new Date(task.booking.start_time), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : t('tasks.noDate')}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-primary italic">
-                              {task.created_at ? t('tasks.droppedOn', { date: formatInTimeZone(new Date(task.created_at), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) }) : ''}
-                              {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* UPCOMING TASKS SECTION */}
+          {/* TASKS SECTION */}
           <Card style={{borderRadius: "10px"}}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <HugeiconsIcon icon={CheckListIcon} className="h-5 w-5" />
-                {t('sections.upcomingTasks')} ({upcomingTasks.length})
+                {t('sections.tasks', { fallback: 'Tasks' })} ({tasks.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {upcomingTasks.length === 0 ? (
+              {tasks.length === 0 ? (
                 <p className="text-muted-foreground text-sm">{t('tasks.empty')}</p>
               ) : (
                 <div className="space-y-4">
-                  {upcomingTasks.map(task => (
+                  {tasks.map(task => (
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{borderRadius: "10px"}}>
                       <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">

@@ -1502,8 +1502,7 @@
         "subtitle": "Overview of upcoming tasks and appointments.",
         "loading": "Loading dashboard...",
         "sections": {
-            "overdueTasks": "Overdue Tasks",
-            "upcomingTasks": "Upcoming Tasks",
+            "tasks": "Tasks",
             "noShowAppointments": "No Show Appointments"
         },
         "tasks": {

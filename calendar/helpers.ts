@@ -121,27 +121,91 @@ import {
     return groups;
   }
   
-  export function getEventBlockStyle(event: IEvent, day: Date, groupIndex: number, groupSize: number, visibleHoursRange?: { from: number; to: number }) {
-    const startDate = parseISO(event.startDate);
-    const dayStart = new Date(day.setHours(0, 0, 0, 0));
-    const eventStart = startDate < dayStart ? dayStart : startDate;
-    const startMinutes = differenceInMinutes(eventStart, dayStart);
-  
-    let top;
-  
-    if (visibleHoursRange) {
-      const visibleStartMinutes = visibleHoursRange.from * 60;
-      const visibleEndMinutes = visibleHoursRange.to * 60;
-      const visibleRangeMinutes = visibleEndMinutes - visibleStartMinutes;
-      top = ((startMinutes - visibleStartMinutes) / visibleRangeMinutes) * 100;
-    } else {
-      top = (startMinutes / 1440) * 100;
+  export function calculateEventLayout(events: IEvent[], visibleHoursRange?: { from: number; to: number }) {
+    const layoutMap = new Map<string, { top: string; height?: string; width: string; left: string }>();
+    if (!events.length) return layoutMap;
+
+    // Phase 1: Sort by start time, and then by duration (longest first)
+    const sortedEvents = [...events].sort((a, b) => {
+        const aStart = parseISO(a.startDate).getTime();
+        const bStart = parseISO(b.startDate).getTime();
+        if (aStart !== bStart) return aStart - bStart;
+
+        const aDuration = parseISO(a.endDate).getTime() - aStart;
+        const bDuration = parseISO(b.endDate).getTime() - bStart;
+        return bDuration - aDuration;
+    });
+
+    // Phase 2: Divide events into isolated, independent clusters of overlapping time
+    const clusters: IEvent[][] = [];
+    let currentCluster: IEvent[] = [];
+    let currentClusterEnd = 0;
+
+    for (const event of sortedEvents) {
+        const start = parseISO(event.startDate).getTime();
+        const end = parseISO(event.endDate).getTime();
+
+        if (currentCluster.length === 0) {
+            currentCluster.push(event);
+            currentClusterEnd = end;
+        } else if (start < currentClusterEnd) {
+            currentCluster.push(event);
+            if (end > currentClusterEnd) currentClusterEnd = end;
+        } else {
+            clusters.push(currentCluster);
+            currentCluster = [event];
+            currentClusterEnd = end;
+        }
     }
-  
-    const width = 100 / groupSize;
-    const left = groupIndex * width;
-  
-    return { top: `${top}%`, width: `${width}%`, left: `${left}%` };
+    if (currentCluster.length > 0) clusters.push(currentCluster);
+
+    // Phase 3: Calculate layout columns dynamically within each isolated cluster
+    for (const cluster of clusters) {
+        // Place each event into columns. Overlapping events must go to different columns.
+        const columns: IEvent[][] = [];
+        for (const event of cluster) {
+            let placed = false;
+            const start = parseISO(event.startDate).getTime();
+
+            for (const column of columns) {
+                const lastEvent = column[column.length - 1];
+                const lastEnd = parseISO(lastEvent.endDate).getTime();
+                if (start >= lastEnd) {
+                    column.push(event);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) columns.push([event]);
+        }
+
+        // Each column in this isolated cluster takes an equal fraction of the 100% width
+        const count = columns.length;
+        const width = 100 / count;
+
+        columns.forEach((colEvents, colIndex) => {
+            colEvents.forEach(event => {
+                const startMinutes = differenceInMinutes(parseISO(event.startDate), new Date(new Date(event.startDate).setHours(0, 0, 0, 0)));
+                
+                let top = 0;
+                if (visibleHoursRange) {
+                    const visibleStartMinutes = visibleHoursRange.from * 60;
+                    const visibleRangeMinutes = (visibleHoursRange.to - visibleHoursRange.from) * 60;
+                    top = ((startMinutes - visibleStartMinutes) / visibleRangeMinutes) * 100;
+                } else {
+                    top = (startMinutes / 1440) * 100;
+                }
+
+                layoutMap.set(event.id.toString(), {
+                    top: `${top}%`,
+                    width: `${width}%`,
+                    left: `${colIndex * width}%`
+                });
+            });
+        });
+    }
+
+    return layoutMap;
   }
   
   export function isWorkingHour(day: Date, hour: number, workingHours: TWorkingHours) {

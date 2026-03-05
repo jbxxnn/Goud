@@ -13,6 +13,8 @@ import type { HTMLAttributes } from "react";
 import type { IEvent } from "@/calendar/interfaces";
 import type { VariantProps } from "class-variance-authority";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 const calendarWeekEventCardVariants = cva(
     "flex select-none flex-col gap-0.5 truncate whitespace-nowrap rounded-md border px-2 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
     {
@@ -96,7 +98,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     if (isShift) {
         // Use a more pronounced diagonal pattern as requested
         const stripeColor = isHexColor ? event.color : '#94a3b8'; // SLATE-400 for better visibility
-        customStyle.backgroundImage = `repeating-linear-gradient(-45deg, ${stripeColor}55 0 1.5px, transparent 1.5px 10px)`;
+        customStyle.backgroundImage = `repeating-linear-gradient(-45deg, ${stripeColor}88 0 1.5px, transparent 1.5px 5px)`;
         customStyle.backgroundColor = 'transparent';
         customStyle.border = 'none';
         customStyle.boxShadow = 'none';
@@ -110,33 +112,42 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     const endTime = format(end, "HH:mm");
 
     const BlockContent = (
-        <div
-            role={isShift ? "presentation" : "button"}
-            tabIndex={isShift ? -1 : 0}
-            className={calendarWeekEventCardClasses}
-            style={customStyle}
-            onKeyDown={handleKeyDown}
-            onClick={onEventClick ? handleClick : undefined}
-            title={isShift ? `Working Hours: ${startTime} - ${endTime}` : `${startTime} - ${endTime}`}
-        >
-            {!isShift && (
-                <div className="flex items-center gap-1.5 truncate">
-                    {["mixed", "dot"].includes(badgeVariant) && (
-                        <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
-                            <circle cx="4" cy="4" r="4" />
-                        </svg>
-                    )}
+        <TooltipProvider delayDuration={0}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div
+                        role={isShift ? "presentation" : "button"}
+                        tabIndex={isShift ? -1 : 0}
+                        className={calendarWeekEventCardClasses}
+                        style={customStyle}
+                        onKeyDown={handleKeyDown}
+                        onClick={onEventClick ? handleClick : undefined}
+                        title=""
+                    >
+                        {!isShift && (
+                            <div className="flex items-center gap-1.5 truncate">
+                                {["mixed", "dot"].includes(badgeVariant) && (
+                                    <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
+                                        <circle cx="4" cy="4" r="4" />
+                                    </svg>
+                                )}
 
-                    <p className="truncate font-semibold">{event.title}</p>
-                </div>
-            )}
+                                <p className="truncate font-semibold" title="">{event.title}</p>
+                            </div>
+                        )}
 
-            {!isShift && durationInMinutes > 25 && (
-                <p>
-                    {startTime} - {endTime}
-                </p>
-            )}
-        </div>
+                        {!isShift && durationInMinutes > 25 && (
+                            <p>
+                                {startTime} - {endTime}
+                            </p>
+                        )}
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{isShift ? `Working Hours: ${startTime} - ${endTime}` : `${event.title} (${startTime} - ${endTime})`}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 
     if (isShift) return BlockContent; // Return plain div for shifts, no dialogs
