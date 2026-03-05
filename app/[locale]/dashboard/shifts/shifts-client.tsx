@@ -14,7 +14,7 @@ import { Location } from '@/lib/types/location_simple';
 import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
 import { mapLocationColorToCalendarColor } from '@/lib/utils/location-color-mapper';
 import type { TCalendarView } from '@/calendar/types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
 
 interface IUser {
@@ -101,9 +101,10 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
       return expandRecurringShifts(rawShifts, fetchStartDate, fetchEndDate);
     },
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
-  const loading = shiftsLoading;
+  const loading = shiftsLoading && shifts.length === 0;
   const error = shiftsError instanceof Error ? shiftsError.message : null;
 
   // Fetch staff query
@@ -199,7 +200,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     });
   }, [shifts, locationColors, locationsLoading]);
 
-  if (loading || locationsLoading) {
+  if (loading || (locationsLoading && locations.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex items-center gap-3">
