@@ -98,6 +98,19 @@ export async function POST(req: NextRequest) {
         error: "Authentication required. You must be logged in as staff to create admin bookings." 
       }, { status: 401 });
     }
+
+    // Role Verification: Ensure caller is explicitly staff/admin/assistant
+    const { data: userData, error: userError } = await authSupabase
+        .from('users')
+        .select('role')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (userError || !userData || !['admin', 'staff', 'assistant'].includes(userData.role)) {
+        return NextResponse.json({ 
+          error: "Forbidden. You do not have permission to create admin-level bookings." 
+        }, { status: 403 });
+    }
     
     const booking = await createBooking({
       ...parsed.data,

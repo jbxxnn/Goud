@@ -1,6 +1,7 @@
 // Individual Shift API routes - GET, PUT, DELETE
 import { NextRequest, NextResponse } from 'next/server';
 import { ShiftService } from '@/lib/database/shifts';
+import { createClient } from '@/lib/supabase/server';
 import { UpdateShiftRequest } from '@/lib/types/shift';
 
 interface RouteParams {
@@ -57,6 +58,23 @@ export async function PUT(
   context: RouteParams
 ) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (userError || !userData || !['admin', 'staff', 'assistant'].includes(userData.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id: rawId } = await context.params;
     const id = String(rawId).split('-instance-')[0];
     const body: any = await request.json();
@@ -141,6 +159,23 @@ export async function DELETE(
   context: RouteParams
 ) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (userError || !userData || !['admin', 'staff', 'assistant'].includes(userData.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id: rawId } = await context.params;
     const id = String(rawId).split('-instance-')[0];
 

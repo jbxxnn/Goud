@@ -62,7 +62,28 @@ export async function GET(req: NextRequest) {
 
     if (!staffId) return NextResponse.json({ error: 'Staff ID required' }, { status: 400 });
 
+    // --- Authorization Check ---
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    const { data: userProfile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    const role = userProfile?.role;
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    // ---------------------------
+
     const { data, error } = await supabase
         .from('time_off_requests')
         .select('*')

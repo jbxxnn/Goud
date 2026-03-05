@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
         id,
         first_name,
         last_name,
-        email,
         is_active,
         staff_locations!inner(location_id),
         staff_services!inner(service_id, is_qualified)
@@ -45,7 +44,6 @@ export async function GET(req: NextRequest) {
           id: s.id,
           first_name: s.first_name,
           last_name: s.last_name,
-          email: s.email,
         });
       }
     }

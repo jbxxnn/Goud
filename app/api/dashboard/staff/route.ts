@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: userData, error: userError } = await authSupabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (userError || !userData || !['admin', 'staff', 'assistant'].includes(userData.role)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '5');
     
