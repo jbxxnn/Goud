@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/table';
 import { BlackoutPeriod, SitewideBreak } from '@/lib/types/shift';
 import { format, parseISO } from 'date-fns';
+import { formatInTimeZone, toDate } from 'date-fns-tz';
+import { nl, enUS } from 'date-fns/locale';
 import { Loader, Trash2, Plus, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,11 +25,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { TimeInput } from '@/components/ui/time-input';
 import { Time } from '@internationalized/date';
 import { cn } from '@/lib/utils';
+import { useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon } from '@hugeicons/core-free-icons';
 
 export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | 'breaks' }) {
+  const locale = useLocale();
   const [holidays, setHolidays] = useState<BlackoutPeriod[]>([]);
   const [sitewideBreaks, setSitewideBreaks] = useState<SitewideBreak[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,14 +53,38 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
   const [editBreakEndDateOpen, setEditBreakEndDateOpen] = useState(false);
 
   const formatDateTimeLocal = (isoString: string): string => {
-    const { formatInTimeZone } = require('date-fns-tz');
     return formatInTimeZone(new Date(isoString), 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm");
   };
 
   const createLocalIsoString = (localDateTimeStr: string): string => {
-    const { formatInTimeZone, toDate } = require('date-fns-tz');
     const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
     return formatInTimeZone(amsterdamDate, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  };
+
+  const convertToUTC = (localDateTimeStr: string): string => {
+    if (!localDateTimeStr) return '';
+    // Expected format: yyyy-MM-ddTHH:mm
+    const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
+    return amsterdamDate.toISOString();
+  };
+
+  const formatInAmsterdam = (dateValue: string | Date | null | undefined, formatStr: string): string => {
+    if (!dateValue) return '';
+    
+    let dateObj: Date;
+    if (typeof dateValue === 'string') {
+      if (dateValue.includes('T') && !dateValue.endsWith('Z') && !dateValue.includes('+')) {
+        // Naive local string (from state): yyyy-MM-ddTHH:mm
+        dateObj = toDate(`${dateValue}:00`, { timeZone: 'Europe/Amsterdam' });
+      } else {
+        // ISO string or UTC string (from DB)
+        dateObj = new Date(dateValue);
+      }
+    } else {
+      dateObj = dateValue;
+    }
+
+    return formatInTimeZone(dateObj, 'Europe/Amsterdam', formatStr, { locale: locale === 'nl' ? nl : enUS });
   };
 
   const [newHoliday, setNewHoliday] = useState({
@@ -119,6 +147,8 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newHoliday,
+          start_date: convertToUTC(newHoliday.start_date),
+          end_date: convertToUTC(newHoliday.end_date),
           location_id: null,
           staff_id: null,
           is_active: true,
@@ -188,8 +218,8 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          start_date: editingHoliday.start_date,
-          end_date: editingHoliday.end_date,
+          start_date: convertToUTC(editingHoliday.start_date),
+          end_date: convertToUTC(editingHoliday.end_date),
           reason: editingHoliday.reason,
           location_id: null,
           staff_id: null,
@@ -305,7 +335,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {newHoliday.start_date ? format(new Date(newHoliday.start_date), "P") : "Pick date"}
+                            {newHoliday.start_date ? formatInAmsterdam(newHoliday.start_date, "P") : "Pick date"}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -315,17 +345,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={newHoliday.start_date ? new Date(newHoliday.start_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const hasStart = !!newHoliday.start_date;
-                              const currentStart = hasStart ? new Date(newHoliday.start_date) : null;
-                              date.setHours(currentStart ? currentStart.getHours() : 0, currentStart ? currentStart.getMinutes() : 0);
-                              const newStartDateStr = formatDateTimeLocal(date.toISOString());
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const currentTime = newHoliday.start_date ? newHoliday.start_date.split('T')[1] : '00:00';
+                              const newStartDateStr = `${dateStr}T${currentTime}`;
                               
-                              // Auto-populate end date with same date
-                              const hasEnd = !!newHoliday.end_date;
-                              const currentEnd = hasEnd ? new Date(newHoliday.end_date) : null;
-                              const newEndDate = new Date(date);
-                              newEndDate.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
-                              const newEndDateStr = formatDateTimeLocal(newEndDate.toISOString());
+                              const endTime = newHoliday.end_date ? newHoliday.end_date.split('T')[1] : '23:59';
+                              const newEndDateStr = `${dateStr}T${endTime}`;
                               
                               setNewHoliday({ 
                                 ...newHoliday, 
@@ -347,12 +372,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       style={{borderRadius: "10px"}}
                       dateInputClassName="h-10"
                       hourCycle={24}
-                      value={newHoliday.start_date && !isNaN(new Date(newHoliday.start_date).getTime()) ? new Time(new Date(newHoliday.start_date).getHours(), new Date(newHoliday.start_date).getMinutes()) : null}
+                      value={newHoliday.start_date ? new Time(parseInt(newHoliday.start_date.split('T')[1].split(':')[0]), parseInt(newHoliday.start_date.split('T')[1].split(':')[1])) : null}
                       onChange={(time) => {
                         if (time) {
-                          const date = newHoliday.start_date ? new Date(newHoliday.start_date) : new Date();
-                          date.setHours(time.hour, time.minute);
-                          setNewHoliday({ ...newHoliday, start_date: formatDateTimeLocal(date.toISOString()) });
+                          const datePart = newHoliday.start_date ? newHoliday.start_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+                          setNewHoliday({ ...newHoliday, start_date: `${datePart}T${newTimeStr}` });
                         }
                       }}
                     />
@@ -372,7 +397,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                          <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {newHoliday.end_date ? format(new Date(newHoliday.end_date), "P") : "Pick date"}
+                            {newHoliday.end_date ? formatInAmsterdam(newHoliday.end_date, "P") : "Pick date"}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -382,10 +407,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={newHoliday.end_date ? new Date(newHoliday.end_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const hasEnd = !!newHoliday.end_date;
-                              const currentEnd = hasEnd ? new Date(newHoliday.end_date) : null;
-                              date.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
-                              setNewHoliday({ ...newHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const currentTime = newHoliday.end_date ? newHoliday.end_date.split('T')[1] : '23:59';
+                              setNewHoliday({ ...newHoliday, end_date: `${dateStr}T${currentTime}` });
                               setEndDateOpen(false);
                             }
                           }}
@@ -400,12 +424,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       className="flex-1 min-w-[100px]"
                       dateInputClassName="h-10"
                       hourCycle={24}
-                      value={newHoliday.end_date && !isNaN(new Date(newHoliday.end_date).getTime()) ? new Time(new Date(newHoliday.end_date).getHours(), new Date(newHoliday.end_date).getMinutes()) : null}
+                      value={newHoliday.end_date ? new Time(parseInt(newHoliday.end_date.split('T')[1].split(':')[0]), parseInt(newHoliday.end_date.split('T')[1].split(':')[1])) : null}
                       onChange={(time) => {
                         if (time) {
-                          const date = newHoliday.end_date ? new Date(newHoliday.end_date) : new Date();
-                          date.setHours(time.hour, time.minute);
-                          setNewHoliday({ ...newHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
+                          const datePart = newHoliday.end_date ? newHoliday.end_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+                          setNewHoliday({ ...newHoliday, end_date: `${datePart}T${newTimeStr}` });
                         }
                       }}
                     />
@@ -456,8 +480,8 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       holidays.map((b) => (
                         <TableRow key={b.id}>
                           <TableCell className="font-medium">{b.reason}</TableCell>
-                          <TableCell>{b.start_date ? format(new Date(b.start_date), 'PPp') : ''}</TableCell>
-                          <TableCell>{b.end_date ? format(new Date(b.end_date), 'PPp') : ''}</TableCell>
+                          <TableCell>{b.start_date ? formatInAmsterdam(b.start_date, 'PPp') : ''}</TableCell>
+                          <TableCell>{b.end_date ? formatInAmsterdam(b.end_date, 'PPp') : ''}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-1">
                               <Button
@@ -578,7 +602,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           >
                             <HugeiconsIcon icon={Calendar02Icon} />
                             <span className="truncate">
-                              {newBreak.start_date ? format(new Date(newBreak.start_date), "P") : "Pick date"}
+                              {newBreak.start_date ? formatInAmsterdam(`${newBreak.start_date}T12:00`, 'P') : "Pick date"}
                             </span>
                           </Button>
                         </PopoverTrigger>
@@ -619,7 +643,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           >
                             <HugeiconsIcon icon={Calendar02Icon} />
                             <span className="truncate">
-                              {newBreak.end_date ? format(new Date(newBreak.end_date), "P") : "Pick date"}
+                              {newBreak.end_date ? formatInAmsterdam(`${newBreak.end_date}T12:00`, 'P') : "Pick date"}
                             </span>
                           </Button>
                         </PopoverTrigger>
@@ -748,7 +772,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {editingHoliday.start_date ? format(new Date(editingHoliday.start_date), "P") : "Pick date"}
+                            {editingHoliday.start_date ? formatInAmsterdam(editingHoliday.start_date, "P") : "Pick date"}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -758,16 +782,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={editingHoliday.start_date ? new Date(editingHoliday.start_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const hasStart = !!editingHoliday.start_date;
-                              const currentStart = hasStart ? new Date(editingHoliday.start_date) : null;
-                              date.setHours(currentStart ? currentStart.getHours() : 0, currentStart ? currentStart.getMinutes() : 0);
-                              const newStartDateStr = formatDateTimeLocal(date.toISOString());
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const currentStartTime = editingHoliday.start_date ? editingHoliday.start_date.split('T')[1] : '00:00';
+                              const newStartDateStr = `${dateStr}T${currentStartTime}`;
                               
-                              const hasEnd = !!editingHoliday.end_date;
-                              const currentEnd = hasEnd ? new Date(editingHoliday.end_date) : null;
-                              const newEndDate = new Date(date);
-                              newEndDate.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
-                              const newEndDateStr = formatDateTimeLocal(newEndDate.toISOString());
+                              const currentEndTime = editingHoliday.end_date ? editingHoliday.end_date.split('T')[1] : '23:59';
+                              const newEndDateStr = `${dateStr}T${currentEndTime}`;
                               
                               setEditingHoliday({ 
                                 ...editingHoliday, 
@@ -789,12 +809,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       style={{borderRadius: "10px"}}
                       dateInputClassName="h-10"
                       hourCycle={24}
-                      value={editingHoliday.start_date && !isNaN(new Date(editingHoliday.start_date).getTime()) ? new Time(new Date(editingHoliday.start_date).getHours(), new Date(editingHoliday.start_date).getMinutes()) : null}
+                      value={editingHoliday.start_date ? new Time(parseInt(editingHoliday.start_date.split('T')[1].split(':')[0]), parseInt(editingHoliday.start_date.split('T')[1].split(':')[1])) : null}
                       onChange={(time) => {
                         if (time) {
-                          const date = editingHoliday.start_date ? new Date(editingHoliday.start_date) : new Date();
-                          date.setHours(time.hour, time.minute);
-                          setEditingHoliday({ ...editingHoliday, start_date: formatDateTimeLocal(date.toISOString()) });
+                          const datePart = editingHoliday.start_date ? editingHoliday.start_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+                          setEditingHoliday({ ...editingHoliday, start_date: `${datePart}T${newTimeStr}` });
                         }
                       }}
                     />
@@ -814,7 +834,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {editingHoliday.end_date ? format(new Date(editingHoliday.end_date), "P") : "Pick date"}
+                            {editingHoliday.end_date ? formatInAmsterdam(editingHoliday.end_date, "P") : "Pick date"}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -824,10 +844,9 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           selected={editingHoliday.end_date ? new Date(editingHoliday.end_date) : undefined}
                           onSelect={(date) => {
                             if (date) {
-                              const hasEnd = !!editingHoliday.end_date;
-                              const currentEnd = hasEnd ? new Date(editingHoliday.end_date) : null;
-                              date.setHours(currentEnd ? currentEnd.getHours() : 23, currentEnd ? currentEnd.getMinutes() : 59);
-                              setEditingHoliday({ ...editingHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
+                              const dateStr = format(date, 'yyyy-MM-dd');
+                              const currentTime = editingHoliday.end_date ? editingHoliday.end_date.split('T')[1] : '23:59';
+                              setEditingHoliday({ ...editingHoliday, end_date: `${dateStr}T${currentTime}` });
                               setEditHolidayEndDateOpen(false);
                             }
                           }}
@@ -842,12 +861,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       className="flex-1 min-w-[100px]"
                       dateInputClassName="h-10"
                       hourCycle={24}
-                      value={editingHoliday.end_date && !isNaN(new Date(editingHoliday.end_date).getTime()) ? new Time(new Date(editingHoliday.end_date).getHours(), new Date(editingHoliday.end_date).getMinutes()) : null}
+                      value={editingHoliday.end_date ? new Time(parseInt(editingHoliday.end_date.split('T')[1].split(':')[0]), parseInt(editingHoliday.end_date.split('T')[1].split(':')[1])) : null}
                       onChange={(time) => {
                         if (time) {
-                          const date = editingHoliday.end_date ? new Date(editingHoliday.end_date) : new Date();
-                          date.setHours(time.hour, time.minute);
-                          setEditingHoliday({ ...editingHoliday, end_date: formatDateTimeLocal(date.toISOString()) });
+                          const datePart = editingHoliday.end_date ? editingHoliday.end_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+                          setEditingHoliday({ ...editingHoliday, end_date: `${datePart}T${newTimeStr}` });
                         }
                       }}
                     />
@@ -960,7 +979,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                             >
                               <HugeiconsIcon icon={Calendar02Icon} />
                               <span className="truncate">
-                                {editingBreak.start_date ? format(new Date(editingBreak.start_date), "P") : "Pick date"}
+                                {editingBreak.start_date ? formatInAmsterdam(`${editingBreak.start_date}T12:00`, 'P') : "Pick date"}
                               </span>
                             </Button>
                           </PopoverTrigger>
@@ -999,7 +1018,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                             >
                               <HugeiconsIcon icon={Calendar02Icon} />
                               <span className="truncate">
-                                {editingBreak.end_date ? format(new Date(editingBreak.end_date), "P") : "Pick date"}
+                                {editingBreak.end_date ? formatInAmsterdam(`${editingBreak.end_date}T12:00`, 'P') : "Pick date"}
                               </span>
                             </Button>
                           </PopoverTrigger>
