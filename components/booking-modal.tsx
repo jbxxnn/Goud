@@ -573,7 +573,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">{t('notes')}</h3>
-                  {!isEditingNotes && ['confirmed', 'ongoing'].includes(booking.status) && (
+                  {/* {!isEditingNotes && ['confirmed', 'ongoing'].includes(booking.status) && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -583,7 +583,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       <Pencil className="w-4 h-4 mr-2" />
                       {booking.notes ? t('edit') : t('addNotes')}
                     </Button>
-                  )}
+                  )} */}
                 </div>
 
                 {isEditingNotes ? (

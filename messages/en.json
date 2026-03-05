@@ -934,7 +934,7 @@
         "paymentOnlineDesc": "You will be redirected to the Mollie payment page.",
         "paymentLocation": "At Location",
         "paymentLocationDesc": "Pay by card or cash at the location.",
-        "notes": "Notes",
+        "notes": "Client notes",
         "notesPlaceholder": "Details or questions? (Optional)",
         "serviceOptions": "Service Options",
         "policyQuestions": "Policy Questions",

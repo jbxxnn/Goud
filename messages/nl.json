@@ -1583,7 +1583,7 @@
         "quantity": "Aantal: {quantity}",
         "policyResponses": "Beleidsantwoorden",
         "additionalCost": "Extra kosten: {price}",
-        "notes": "Notities",
+        "notes": "Clientnotities",
         "addNotes": "Notities toevoegen",
         "edit": "Bewerken",
         "notesPlaceholder": "Voeg interne notities toe over deze boeking...",
