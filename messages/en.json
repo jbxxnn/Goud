@@ -965,7 +965,8 @@
             "conflicts": {
                 "blackout": "Holiday / Blackout: {name}",
                 "break": "Break: {name}",
-                "booking": "Existing Booking: {details}"
+                "booking": "Existing Booking: {details}",
+                "noShift": "No Shift: No active shift found for this slot"
             }
         },
         "toasts": {

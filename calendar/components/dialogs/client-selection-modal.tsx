@@ -306,7 +306,7 @@ export function ClientSelectionModal({ isOpen, onClose, onSelect }: ClientSelect
               </form>
             ) : !searchTerm.trim() ? (
               <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-muted/5 border-2 border-dashed rounded-lg" style={{ borderRadius: '0.5rem' }}>
-                <div className="space-y-1">
+                <div className="space-y-1 flex flex-col items-center">
                   <div className="flex items-center gap-2">
                     <HugeiconsIcon icon={Search01Icon} size={15} className="text-muted-foreground" />
                     <h3 className="font-semibold text-base">{t("findClient")}</h3>

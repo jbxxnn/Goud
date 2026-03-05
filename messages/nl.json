@@ -965,7 +965,8 @@
             "conflicts": {
                 "blackout": "Vakantie / Blackout: {name}",
                 "break": "Pauze: {name}",
-                "booking": "Bestaande boeking: {details}"
+                "booking": "Bestaande boeking: {details}",
+                "noShift": "Geen shift: Geen actieve shift gevonden voor dit tijdslot"
             }
         },
         "toasts": {

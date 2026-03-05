@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const dateStr = formatInTimeZone(start, "Europe/Amsterdam", "yyyy-MM-dd");
     const supabase = getServiceSupabase();
 
-    const conflicts: { type: "blackout" | "break" | "booking"; name?: string; details?: string }[] = [];
+    const conflicts: { type: "blackout" | "break" | "booking" | "no_shift"; name?: string; details?: string }[] = [];
 
     // 1. Check Blackout Periods
     const { data: blackoutData } = await supabase
@@ -93,6 +93,17 @@ export async function POST(req: NextRequest) {
       const parentIds = expanded.map(s => s.parent_shift_id).filter(Boolean);
       const searchShiftIds = Array.from(new Set([...activeShiftIds, ...parentIds]));
 
+      if (activeShiftIds.length === 0) {
+        conflicts.push({
+          type: "break", // Reusing 'break' type for UI consistency or adding 'no_shift' ?
+          // User asked for prompt: "telling them there is no shift for the selected slot"
+          // Let's use a specific 'no_shift' type.
+          // @ts-ignore
+          type: "no_shift",
+          details: "No active shift found for this slot"
+        });
+      }
+
       if (searchShiftIds.length > 0) {
         const { data: shiftBreaks } = await supabase
           .from("shift_breaks")
@@ -122,6 +133,13 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    } else {
+      // No shift data at all for this staff/location
+      conflicts.push({
+        // @ts-ignore
+        type: "no_shift",
+        details: "No active shift found for this slot"
+      });
     }
 
     // 4. Check Existing Bookings

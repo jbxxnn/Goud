@@ -28,6 +28,7 @@ export type CreateBookingInput = {
   gravida?: string;
   para?: string;
   otherMidwifeName?: string;
+  bypassShiftValidation?: boolean;
 };
 
 export async function createBooking(input: CreateBookingInput) {
@@ -48,48 +49,57 @@ export async function createBooking(input: CreateBookingInput) {
       .maybeSingle(),
   ]);
 
-  if (shiftErr || !shift) throw new Error('Shift not found');
-  if (!shift.is_active) throw new Error('Shift inactive');
-  if (shift.location_id !== input.locationId) throw new Error('Shift location mismatch');
-  if (shift.staff_id !== input.staffId) throw new Error('Shift staff mismatch');
+  const isBypassing = input.bypassShiftValidation === true;
+
+  if (!isBypassing) {
+    if (shiftErr || !shift) throw new Error('Shift not found');
+    if (!shift.is_active) throw new Error('Shift inactive');
+    if (shift.location_id !== input.locationId) throw new Error('Shift location mismatch');
+    if (shift.staff_id !== input.staffId) throw new Error('Shift staff mismatch');
+  }
+
   if (svcErr || !service) throw new Error('Service not found');
 
   // Qualification check: shift must allow the service
-  const { data: ss, error: ssErr } = await supabase
-    .from('shift_services')
-    .select('id')
-    .eq('shift_id', baseShiftId)
-    .eq('service_id', input.serviceId)
-    .maybeSingle();
-  if (ssErr || !ss) throw new Error('Service not available for this shift');
+  if (!isBypassing && shift) {
+    const { data: ss, error: ssErr } = await supabase
+      .from('shift_services')
+      .select('id')
+      .eq('shift_id', baseShiftId)
+      .eq('service_id', input.serviceId)
+      .maybeSingle();
+    if (ssErr || !ss) throw new Error('Service not available for this shift');
+  }
 
   // Time window checks
   const start = new Date(input.startTime);
   const end = new Date(input.endTime);
   if (!(start < end)) throw new Error('Invalid time range');
 
-  let validStart = new Date(shift.start_time);
-  let validEnd = new Date(shift.end_time);
+  if (!isBypassing && shift) {
+    let validStart = new Date(shift.start_time);
+    let validEnd = new Date(shift.end_time);
 
-  if (input.shiftId.includes('-instance-') || shift.is_recurring) {
-    const windowStart = new Date(start.getTime() - 24 * 60 * 60 * 1000);
-    const windowEnd = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-    const instances = expandRecurringShift(shift as any, windowStart, windowEnd);
+    if (input.shiftId.includes('-instance-') || shift.is_recurring) {
+      const windowStart = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      const instances = expandRecurringShift(shift as any, windowStart, windowEnd);
 
-    const instance = instances.find(inst => {
-      const s = new Date(inst.start_time);
-      const e = new Date(inst.end_time);
-      return start >= s && end <= e;
-    });
+      const instance = instances.find(inst => {
+        const s = new Date(inst.start_time);
+        const e = new Date(inst.end_time);
+        return start >= s && end <= e;
+      });
 
-    if (!instance) {
-      throw new Error('Outside shift hours');
+      if (!instance) {
+        throw new Error('Outside shift hours');
+      }
+      validStart = new Date(instance.start_time);
+      validEnd = new Date(instance.end_time);
     }
-    validStart = new Date(instance.start_time);
-    validEnd = new Date(instance.end_time);
-  }
 
-  if (start < validStart || end > validEnd) throw new Error('Outside shift hours');
+    if (start < validStart || end > validEnd) throw new Error('Outside shift hours');
+  }
 
   const now = new Date();
   const leadMinutes = Number(service.lead_time) || 0;
@@ -105,7 +115,7 @@ export async function createBooking(input: CreateBookingInput) {
       service_id: input.serviceId,
       location_id: input.locationId,
       staff_id: input.staffId,
-      shift_id: baseShiftId,
+      shift_id: isBypassing ? null : baseShiftId,
       start_time: input.startTime,
       end_time: input.endTime,
       price_eur_cents: input.priceEurCents,

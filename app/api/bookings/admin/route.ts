@@ -18,6 +18,7 @@ const adminBookingSchema = bookingRequestSchema.extend({
   postalCode: z.string().optional(),
   streetName: z.string().optional(),
   city: z.string().optional(),
+  force: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,55 +40,48 @@ export async function POST(req: NextRequest) {
       payment_method,
       clientEmail,
       firstName,
-      lastName
+      lastName,
+      force
     } = parsed.data;
 
-    // 1. Ensure a shift exists for this booking
-    // Fetch potential shifts for this staff/location that could cover the target date
+    // 1. Ensure a shift exists for this booking (unless forced)
     const start = new Date(startTime);
     const end = new Date(endTime);
-    const dateStr = startTime.split('T')[0];
-
-    // Fetch all active shifts for this staff at this location
-    // We fetch any shift starting before or on the target date.
-    // getShifts doesn't support a simple "covers date" query for recurring shifts, 
-    // so we get potential candidates and expand them.
-    const { data: potentialShifts } = await ShiftService.getShifts({
-      staff_id: staffId,
-      location_id: locationId,
-      active_only: true,
-      limit: 100, // Reasonable limit
-    });
 
     let shiftId = "";
-    
-    // We need to expand any recurring shifts to see if they have an instance on this day
-    const { expandRecurringShift } = await import('@/lib/utils/expand-recurring-shifts');
-    
-    const overlappingShift = potentialShifts.find(s => {
-      // For each shift, expand it for the target day
-      const instances = expandRecurringShift(s as any, start, end);
-      return instances.some(inst => {
-        const iStart = new Date(inst.start_time);
-        const iEnd = new Date(inst.end_time);
-        return start >= iStart && end <= iEnd;
-      });
-    });
+    const isForced = force === true;
 
-    if (overlappingShift) {
-      shiftId = overlappingShift.id;
-    } else {
-      return NextResponse.json({ 
-        error: "No active shift found for this time and staff member. Bookings can only be made during active shifts." 
-      }, { status: 400 });
+    if (!isForced) {
+      // Fetch potential shifts for this staff/location that could cover the target date
+      const { data: potentialShifts } = await ShiftService.getShifts({
+        staff_id: staffId,
+        location_id: locationId,
+        active_only: true,
+        limit: 100,
+      });
+
+      // We need to expand any recurring shifts to see if they have an instance on this day
+      const { expandRecurringShift } = await import('@/lib/utils/expand-recurring-shifts');
+      
+      const overlappingShift = (potentialShifts || []).find(s => {
+        const instances = expandRecurringShift(s as any, start, end);
+        return instances.some(inst => {
+          const iStart = new Date(inst.start_time);
+          const iEnd = new Date(inst.end_time);
+          return start >= iStart && end <= iEnd;
+        });
+      });
+
+      if (overlappingShift) {
+        shiftId = overlappingShift.id;
+      } else {
+        return NextResponse.json({ 
+          error: "No active shift found for this time and staff member. Bookings can only be made during active shifts." 
+        }, { status: 400 });
+      }
     }
 
     // 2. Create the booking
-    // LEGACY CONVENTION: 
-    // If admin is booking for client: 
-    // DB client_id = Admin/Staff ID
-    // DB created_by = Target Client ID
-    
     // Use createClient to get the current authenticated session
     const { createClient } = await import('@/lib/supabase/server');
     const authSupabase = await createClient();
@@ -107,16 +101,17 @@ export async function POST(req: NextRequest) {
         .single();
 
     if (userError || !userData || !['admin', 'staff', 'assistant'].includes(userData.role)) {
-        return NextResponse.json({ 
-          error: "Forbidden. You do not have permission to create admin-level bookings." 
-        }, { status: 403 });
+      return NextResponse.json({ 
+        error: "Forbidden. You do not have permission to create admin-level bookings." 
+      }, { status: 403 });
     }
     
     const booking = await createBooking({
       ...parsed.data,
       clientId: currentUser.id, // The performer
       createdBy: parsed.data.clientId, // The target client (passed as clientId from UI)
-      shiftId,
+      shiftId: isForced ? "" : shiftId,
+      bypassShiftValidation: isForced,
       // Admin bookings are confirmed by default
     });
 

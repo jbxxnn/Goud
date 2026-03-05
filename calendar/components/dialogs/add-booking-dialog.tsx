@@ -510,7 +510,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
     }
   };
 
-  const executeBooking = async (data: BookingFormData) => {
+  const executeBooking = async (data: BookingFormData, isForce?: boolean) => {
     setIsSubmitting(true);
     try {
       const addons = buildAddonPayload(selectedService?.addons || [], selectedAddons);
@@ -553,6 +553,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
           policyAnswers: policyAnswersPayload,
           
           dueDate: data.due_date,
+          force: isForce,
         }),
       });
 
@@ -1006,6 +1007,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                     {c.type === 'blackout' && t("warnings.conflicts.blackout", { name: c.name })}
                     {c.type === 'break' && t("warnings.conflicts.break", { name: c.name })}
                     {c.type === 'booking' && t("warnings.conflicts.booking", { details: c.details })}
+                    {c.type === 'no_shift' && t("warnings.conflicts.noShift")}
                   </span>
                 </div>
               ))}
@@ -1027,7 +1029,12 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
             <Button 
               type="button"
               className="bg-secondary hover:bg-accent text-foreground"
-              onClick={() => pendingData && executeBooking(pendingData)}
+              onClick={() => {
+                if (pendingData) {
+                  const hasNoShift = conflicts.some(c => c.type === 'no_shift');
+                  executeBooking(pendingData, hasNoShift);
+                }
+              }}
               disabled={isSubmitting}
               style={{borderRadius: "0.5rem"}}
             >
