@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
 import { createBooking } from '@/lib/bookings/createBooking';
 import { sendBookingConfirmationEmail } from '@/lib/email';
 import { formatEuroCents } from '@/lib/currency/format';
@@ -404,7 +405,23 @@ export async function GET(req: NextRequest) {
     const staffId = searchParams.get('staffId');
     const locationId = searchParams.get('locationId');
 
+    const authSupabase = await createClient();
+    const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = getServiceSupabase();
+
+    // Fetch user profile to get their role
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = userProfile?.role || 'client';
 
     // If search query provided, first find matching user IDs
     let matchingUserIds: string[] | null = null;
@@ -546,6 +563,14 @@ export async function GET(req: NextRequest) {
         if (locationId && locationId !== 'all') filtered = filtered.eq('location_id', locationId);
         if (dateFrom) filtered = filtered.gte('start_time', dateFrom);
         if (dateTo) filtered = filtered.lte('start_time', dateTo);
+        
+        // --- Security Boundary ---
+        if (userRole === 'client') {
+            filtered = filtered.or(`created_by.eq.${user.id},client_id.eq.${user.id}`);
+        } else if (userRole === 'midwife') {
+            filtered = filtered.eq('client_id', user.id);
+        }
+        // staff, admin, and assistant can view all (filters applied above suffice)
         
         return filtered;
     };

@@ -1,10 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { createClient } from '@/lib/supabase/server';
+
+// Helper function to verify user authentication and authorization for a specific booking
+async function authorizeBookingAccess(bookingId: string, action: 'read' | 'update' | 'delete') {
+  const authSupabase = await createClient();
+  const { data: { user }, error: authError } = await authSupabase.auth.getUser();
+
+  if (authError || !user) {
+    return { authorized: false, error: 'Unauthorized', status: 401 };
+  }
+
+  const supabase = getServiceSupabase();
+
+  // Fetch the booking owner info
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('client_id, created_by')
+    .eq('id', bookingId)
+    .single();
+
+  if (!booking) {
+    return { authorized: false, error: 'Booking not found', status: 404 };
+  }
+
+  // Fetch user role
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const role = userProfile?.role || 'client';
+
+  // Role-based access control
+  if (role === 'admin' || role === 'staff' || role === 'assistant') {
+    return { authorized: true, supabase };
+  }
+
+  // Client and Midwife limits - cannot delete
+  if (action === 'delete') {
+    return { authorized: false, error: 'Forbidden: Only staff can delete bookings', status: 403 };
+  }
+
+  // Client rules: must be owner
+  if (role === 'client') {
+    if (booking.client_id !== user.id && booking.created_by !== user.id) {
+      return { authorized: false, error: 'Forbidden: You do not own this booking', status: 403 };
+    }
+  }
+
+  // Midwife rules: must have booked it
+  if (role === 'midwife') {
+    if (booking.client_id !== user.id) {
+      return { authorized: false, error: 'Forbidden: You did not create this booking', status: 403 };
+    }
+  }
+
+  return { authorized: true, supabase };
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const supabase = getServiceSupabase();
+    
+    // Check authorization
+    const authResult = await authorizeBookingAccess(id, 'read');
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const supabase = authResult.supabase!;
+
     const { data, error } = await supabase
       .from('bookings')
       .select(`
@@ -105,12 +171,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+
+    // Check authorization
+    const authResult = await authorizeBookingAccess(id, 'update');
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const supabase = authResult.supabase!;
+
     const body = await req.json();
     const { start_time, end_time, location_id, staff_id, shift_id } = body || {};
     if (!start_time || !end_time) return NextResponse.json({ error: 'start_time and end_time required' }, { status: 400 });
     if (!location_id || !staff_id || !shift_id) return NextResponse.json({ error: 'location_id, staff_id, and shift_id required' }, { status: 400 });
 
-    const supabase = getServiceSupabase();
     // Fetch existing booking with details for email
     const { data: existing, error: getErr } = await supabase
       .from('bookings')
@@ -243,6 +316,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+
+    // Check authorization
+    const authResult = await authorizeBookingAccess(id, 'update');
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const supabase = authResult.supabase!;
+
     const body = await req.json();
     const { status, notes } = body || {};
 
@@ -257,8 +338,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
-
-    const supabase = getServiceSupabase();
 
     // Fetch existing booking to include related data
     const { data: existing } = await supabase
@@ -444,7 +523,13 @@ async function triggerRefund(booking: any) {
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const supabase = getServiceSupabase();
+
+    // Check authorization (only staff/admin/assistant allowed)
+    const authResult = await authorizeBookingAccess(id, 'delete');
+    if (!authResult.authorized) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const supabase = authResult.supabase!;
 
     // Check if booking exists and is cancelled
     const { data: existing, error: checkErr } = await supabase
