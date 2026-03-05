@@ -34,6 +34,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog';
 
 function AssistantDashboardSkeleton() {
   return (
@@ -452,9 +453,12 @@ export default function AssistantDashboard() {
 
   return (
     <div className="container py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('subtitle')}</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
+        </div>
+        <CreateTaskDialog onTaskCreated={fetchData} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

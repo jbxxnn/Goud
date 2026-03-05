@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { startOfMonth, endOfMonth, subMonths, addMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, addMonths, startOfYear, endOfYear } from 'date-fns';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import { CalendarEvent, ShiftWithDetails, ShiftsWithDetailsResponse, shiftToCalendarEvent } from '@/lib/types/shift';
@@ -67,13 +67,19 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
 
   // Calculate the fetching range
   const { fetchStartDate, fetchEndDate } = useMemo(() => {
+    if (calendarView === 'year') {
+      return {
+        fetchStartDate: startOfYear(activeDate),
+        fetchEndDate: endOfYear(activeDate)
+      };
+    }
     const start = startOfMonth(subMonths(activeDate, 1));
     const end = endOfMonth(addMonths(activeDate, 1));
     return {
       fetchStartDate: start,
       fetchEndDate: end
     };
-  }, [activeDate]);
+  }, [activeDate, calendarView]);
 
   // Fetch shifts query
   const { data: shifts = [], isLoading: shiftsLoading, error: shiftsError } = useQuery<ShiftWithDetails[]>({
