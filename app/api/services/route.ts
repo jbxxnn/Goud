@@ -58,6 +58,7 @@ const mapServiceRecord = (
     allows_twins: rest.allows_twins,
     twin_price: rest.twin_price,
     twin_duration_minutes: rest.twin_duration_minutes,
+    hidden_checkout_fields: (rest as any).hidden_checkout_fields || [],
     ...extras,
   };
 };
@@ -227,6 +228,7 @@ export async function POST(request: NextRequest) {
         allows_twins: body.allows_twins !== undefined ? body.allows_twins : false,
         twin_price: body.twin_price || null,
         twin_duration_minutes: body.twin_duration_minutes || null,
+        hidden_checkout_fields: body.hidden_checkout_fields || [],
       })
       .select()
       .single();

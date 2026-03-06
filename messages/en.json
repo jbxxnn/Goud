@@ -529,7 +529,8 @@
                 "policy": "Policy",
                 "staff": "Staff",
                 "addons": "Add-ons",
-                "repeats": "Repeats"
+                "repeats": "Repeats",
+                "checkout": "Checkout Form"
             },
             "placeholders": {
                 "name": "e.g. 2D Echo Basic",
@@ -541,6 +542,14 @@
                 "selectStaff": "Select staff members...",
                 "searchStaff": "Search staff...",
                 "fieldType": "Select field type to add"
+            },
+            "checkout": {
+                "title": "Checkout Form Settings",
+                "subtitle": "Select which fields should be visible on the checkout page for this service.",
+                "fieldsLabel": "Visible Fields",
+                "dueDate": "Due Date",
+                "midwife": "Midwife Dropdown",
+                "hint": "Uncheck a field to hide it from the checkout form for this service."
             },
             "repeats": {
                 "title": "Repeat Types",

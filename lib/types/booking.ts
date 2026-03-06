@@ -35,6 +35,7 @@ export type Service = {
     twinPrice?: number | null;
     twinDurationMinutes?: number | null;
     staff_ids?: string[];
+    hiddenCheckoutFields?: string[];
 };
 
 export type Location = { id: string; name: string };
@@ -58,6 +59,7 @@ export type ServiceApiResponse = {
     allows_twins?: boolean | null;
     twin_price?: number | null;
     twin_duration_minutes?: number | null;
+    hidden_checkout_fields?: string[] | null;
 };
 
 export type DateRange = { start: string; end: string };

@@ -62,6 +62,7 @@ const mapServiceRecord = (
     allows_twins: rest.allows_twins,
     twin_price: rest.twin_price,
     twin_duration_minutes: rest.twin_duration_minutes,
+    hidden_checkout_fields: (rest as any).hidden_checkout_fields || [],
     ...extras,
   };
 };

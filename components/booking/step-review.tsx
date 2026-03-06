@@ -256,6 +256,7 @@ export function StepReview() {
                 finalizing={finalizing}
                 onValidationChange={setIsFormValid}
                 serviceId={serviceId}
+                hiddenFields={selectedService?.hiddenCheckoutFields}
             />
             {errorMsg && (
                 <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-100">

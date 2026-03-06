@@ -41,6 +41,7 @@ interface CheckoutFormProps {
     finalizing: boolean;
     onValidationChange?: (isValid: boolean) => void;
     serviceId?: string;
+    hiddenFields?: string[];
 }
 
 export function CheckoutForm({
@@ -59,6 +60,7 @@ export function CheckoutForm({
     finalizing,
     onValidationChange,
     serviceId,
+    hiddenFields = [],
 }: CheckoutFormProps) {
     const t = useTranslations('Booking.flow.form');
     const tv = useTranslations('Booking.flow');
@@ -431,7 +433,7 @@ export function CheckoutForm({
                             </div>
 
                             {/* Dates */}
-                            {serviceId !== '9f120662-a47a-45df-9870-167d6d2afafe' && (
+                            {!hiddenFields.includes('due_date') && (
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('dueDate')} *</label>
                                 <Controller
@@ -513,29 +515,31 @@ export function CheckoutForm({
                                 {errors.birthDate && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.birthDate.message, tv)}</div>}
                             </div>
 
-                            <div className="md:col-span-2 space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('midwife')} *</label>
-                                <Select
-                                    value={watch('midwifeId') || ''}
-                                    onValueChange={(value) => setValue('midwifeId', value || '', { shouldValidate: true })}
-                                >
-                                    <SelectTrigger className="w-full h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200">
-                                        <SelectValue placeholder={t('midwifePlaceholder')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {midwives.map((m) => {
-                                            const label = m.practice_name
-                                                ? `${m.practice_name} (${[m.first_name, m.last_name].filter(Boolean).join(' ')})`
-                                                : [m.first_name, m.last_name].filter(Boolean).join(' ');
-                                            return <SelectItem key={m.id} value={m.id}>{label || t('unknownMidwife')}</SelectItem>;
-                                        })}
-                                        <SelectItem value="other">{t('otherMidwife')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{translateValidationError(errors.midwifeId.message, tv)}</div>}
-                            </div>
+                            {!hiddenFields.includes('midwife') && (
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('midwife')} *</label>
+                                    <Select
+                                        value={watch('midwifeId') || ''}
+                                        onValueChange={(value) => setValue('midwifeId', value || '', { shouldValidate: true })}
+                                    >
+                                        <SelectTrigger className="w-full h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200">
+                                            <SelectValue placeholder={t('midwifePlaceholder')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {midwives.map((m) => {
+                                                const label = m.practice_name
+                                                    ? `${m.practice_name} (${[m.first_name, m.last_name].filter(Boolean).join(' ')})`
+                                                    : [m.first_name, m.last_name].filter(Boolean).join(' ');
+                                                return <SelectItem key={m.id} value={m.id}>{label || t('unknownMidwife')}</SelectItem>;
+                                            })}
+                                            <SelectItem value="other">{t('otherMidwife')}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{translateValidationError(errors.midwifeId.message, tv)}</div>}
+                                </div>
+                            )}
                             
-                            {watch('midwifeId') === 'other' && (
+                            {(!hiddenFields.includes('midwife') && watch('midwifeId') === 'other') && (
                                 <div className="md:col-span-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('otherMidwifeName')}</label>
                                     <Input

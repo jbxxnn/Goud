@@ -240,6 +240,7 @@ export function ClientStepReview() {
                                 onSubmit={handleBookingSubmit}
                                 finalizing={finalizing}
                                 serviceId={serviceId}
+                                hiddenFields={selectedService?.hiddenCheckoutFields}
                             />
                         </div>
                     </div>

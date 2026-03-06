@@ -87,6 +87,7 @@ interface BookingFormData {
   start_time: string;
   end_time: string;
   due_date: string;
+  midwife_id: string;
   is_twin: boolean;
   payment_method: 'online' | 'at_location';
   notes: string;
@@ -144,6 +145,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
       start_time: "",
       end_time: "",
       due_date: "",
+      midwife_id: "",
       is_twin: false,
       payment_method: 'online',
       notes: "",
@@ -295,6 +297,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
       setSelectedAddons({});
       setPolicyAnswers({});
       setValue("due_date", "");
+      setValue("midwife_id", "");
     }
   }, [isOpen, reset, setValue]);
 
@@ -316,7 +319,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
           const [svcData, locData, staffData] = await Promise.all([
             svcRes.json(), 
             locRes.json(),
-            staffRes.json()
+            staffRes.json(),
           ]);
           
           if (svcData.success) {
@@ -333,6 +336,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
               twinPrice: s.twin_price,
               twinDurationMinutes: s.twin_duration_minutes,
               staff_ids: s.staff_ids,
+              hiddenCheckoutFields: s.hidden_checkout_fields,
             }));
             setServices(normalized);
           }
@@ -399,6 +403,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   const handleClientSelect = (client: User) => {
     setSelectedClient(client);
     setValue("client_id", client.id);
+    setValue("midwife_id", client.midwife_id || "");
     setIsClientModalOpen(false);
   };
 
@@ -545,7 +550,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
           houseNumber: selectedClient!.house_number || "",
           streetName: selectedClient!.street_name || "",
           city: selectedClient!.city || "",
-          midwifeId: selectedClient!.midwife_id || "",
+          midwifeId: data.midwife_id || "",
           
           // Technical fields
           priceEurCents: grandTotalCents,
@@ -606,7 +611,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
       }
     }
 
-    if (!data.due_date) {
+    if (!selectedService?.hiddenCheckoutFields?.includes('due_date') && !data.due_date) {
       toast.error(t("validation.dueDateRequired"));
       setDueDateOpen(true);
       return;
@@ -671,43 +676,47 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                       )}
                     </div>
 
-                    <div className="flex-[2]">
-                      <Popover modal={true} open={dueDateOpen} onOpenChange={setDueDateOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none",
-                              !watch("due_date") && "text-muted-foreground",
-                              errors.due_date && "border-red-500"
-                            )}
-                            style={{ borderRadius: '0.5rem' }}
-                          >
-                            <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2 h-4 w-4" />
-                            {watch("due_date") ? formatInTimeZone(new Date(watch("due_date")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("dueDate")}</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                          <Calendar
-                            mode="single"
-                            captionLayout="dropdown"
-                            fromYear={new Date().getFullYear()}
-                            toYear={new Date().getFullYear() + 2}
-                            selected={watch("due_date") ? new Date(watch("due_date")) : undefined}
-                            onSelect={(date) => {
-                              if (date) {
-                                setValue("due_date", date.toISOString(), { shouldValidate: true });
-                                setDueDateOpen(false);
-                              }
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                    {!selectedService?.hiddenCheckoutFields?.includes('due_date') && (
+                      <div className="flex-[2]">
+                        <Popover modal={true} open={dueDateOpen} onOpenChange={setDueDateOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none",
+                                !watch("due_date") && "text-muted-foreground",
+                                errors.due_date && "border-red-500"
+                              )}
+                              style={{ borderRadius: '0.5rem' }}
+                            >
+                              <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2 h-4 w-4" />
+                              {watch("due_date") ? formatInTimeZone(new Date(watch("due_date")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("dueDate")}</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                              mode="single"
+                              captionLayout="dropdown"
+                              fromYear={new Date().getFullYear()}
+                              toYear={new Date().getFullYear() + 2}
+                              selected={watch("due_date") ? new Date(watch("due_date")) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setValue("due_date", date.toISOString(), { shouldValidate: true });
+                                  setDueDateOpen(false);
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
                   </div>
                   {errors.client_id && <p className="text-xs text-red-500 font-medium">{t("validation.clientRequired")}</p>}
-                  {errors.due_date && <p className="text-xs text-red-500 font-medium">{t("validation.dueDateRequired")}</p>}
+                  {!selectedService?.hiddenCheckoutFields?.includes('due_date') && errors.due_date && (
+                    <p className="text-xs text-red-500 font-medium">{t("validation.dueDateRequired")}</p>
+                  )}
                 </div>
 
                 

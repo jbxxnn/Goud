@@ -447,6 +447,7 @@ export function BookingProvider({
                         policyFields: normalizePolicyFields(fullService.policy_fields),
                         addons: normalizeAddons(fullService.addons),
                         allowsTwins: false,
+                        hiddenCheckoutFields: fullService.hidden_checkout_fields || [],
                     };
 
                     setServices([repeatService]);
@@ -530,6 +531,7 @@ export function BookingProvider({
                 allowsTwins: Boolean(service.allows_twins),
                 twinPrice: typeof service.twin_price === 'number' ? Math.round(service.twin_price * 100) : null,
                 twinDurationMinutes: typeof service.twin_duration_minutes === 'number' ? service.twin_duration_minutes : null,
+                hiddenCheckoutFields: service.hidden_checkout_fields || [],
             }));
             setServices(normalizedServices);
             setLoadingServices(false);

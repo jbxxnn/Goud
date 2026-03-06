@@ -529,7 +529,8 @@
                 "policy": "Beleid",
                 "staff": "Personeel",
                 "addons": "Extra's",
-                "repeats": "Herhalingen"
+                "repeats": "Herhalingen",
+                "checkout": "Afrekenformulier"
             },
             "placeholders": {
                 "name": "bijv. 2D Echo Basis",
@@ -541,6 +542,14 @@
                 "selectStaff": "Selecteer personeelsleden...",
                 "searchStaff": "Zoek personeel...",
                 "fieldType": "Selecteer veldtype om toe te voegen"
+            },
+            "checkout": {
+                "title": "Instellingen Afrekenformulier",
+                "subtitle": "Selecteer welke velden zichtbaar moeten zijn op de afrekenpagina voor deze dienst.",
+                "fieldsLabel": "Zichtbare Velden",
+                "dueDate": "Vermoedelijke Bevallingsdatum",
+                "midwife": "Verloskundigen Dropdown",
+                "hint": "Vink een veld uit om het te verbergen op het afrekenformulier voor deze dienst."
             },
             "repeats": {
                 "title": "Herhaalopties",

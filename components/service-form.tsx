@@ -67,6 +67,7 @@ interface ServiceFormData {
   twin_price?: number | null;
   twin_duration_minutes?: number | null;
   is_active: boolean;
+  hidden_checkout_fields?: string[];
 }
 
 const generateServiceCode = (name: string): string => {
@@ -807,7 +808,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
 
   // Wizard State
   const [activeTab, setActiveTab] = useState('details');
-  const tabs = ['details', 'pricing', 'advanced', 'policy', 'staff', 'repeats', 'addons'];
+  const tabs = ['details', 'pricing', 'advanced', 'policy', 'staff', 'repeats', 'addons', 'checkout'];
   const isFirstStep = activeTab === tabs[0];
   const isLastStep = activeTab === tabs[tabs.length - 1];
 
@@ -847,6 +848,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       twin_price: null,
       twin_duration_minutes: null,
       is_active: true,
+      hidden_checkout_fields: [],
     },
   });
 
@@ -883,6 +885,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         twin_price: service.twin_price || null,
         twin_duration_minutes: service.twin_duration_minutes || null,
         is_active: service.is_active,
+        hidden_checkout_fields: service.hidden_checkout_fields || [],
       });
       setHasCustomServiceCode(Boolean(service.serviceCode || (service as any).service_code));
     } else {
@@ -906,6 +909,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         twin_price: null,
         twin_duration_minutes: null,
         is_active: true,
+        hidden_checkout_fields: [],
       });
       setHasCustomServiceCode(false);
     }
@@ -1103,7 +1107,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7" style={{ borderRadius: '0.5rem' }}>
+            <TabsList className="grid w-full grid-cols-4 bg-transparent" style={{ borderRadius: '0.5rem' }}>
               <TabsTrigger value="details" style={{ borderRadius: '0.5rem' }} className="relative">
                 {t('tabs.details')}
                 {watch('name') && watch('duration') && (
@@ -1139,6 +1143,9 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
               </TabsTrigger>
               <TabsTrigger value="addons" style={{ borderRadius: '0.5rem' }} className="relative">
                 {t('tabs.addons')}
+              </TabsTrigger>
+              <TabsTrigger value="checkout" style={{ borderRadius: '0.5rem' }} className="relative">
+                {t('tabs.checkout')}
               </TabsTrigger>
             </TabsList>
 
@@ -1778,6 +1785,80 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
             {/* Add-ons Tab */}
             <TabsContent value="addons" className="space-y-4 min-h-0 mt-12">
               <AddonsManager serviceId={service?.id} />
+            </TabsContent>
+
+            {/* Checkout Form Tab */}
+            <TabsContent value="checkout" className="space-y-4 min-h-0 mt-12">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium">{t('checkout.title')}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t('checkout.subtitle')}
+                  </p>
+                </div>
+
+                <div className="border rounded-lg p-6 bg-muted/30 space-y-6">
+                  <div className="space-y-4">
+                    <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t('checkout.fieldsLabel')}
+                    </Label>
+                    
+                    <div className="grid gap-4">
+                      {/* Due Date Toggle */}
+                      <div className="flex items-center justify-between p-4 bg-background border rounded-lg hover:border-primary/50 transition-colors">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="checkout-due-date" className="text-base cursor-pointer">
+                            {t('checkout.dueDate')}
+                          </Label>
+                        </div>
+                        <Switch
+                          id="checkout-due-date"
+                          checked={!watch('hidden_checkout_fields')?.includes('due_date')}
+                          onCheckedChange={(checked) => {
+                            const current = watch('hidden_checkout_fields') || [];
+                            if (checked) {
+                              setValue('hidden_checkout_fields', current.filter(f => f !== 'due_date'));
+                            } else {
+                              if (!current.includes('due_date')) {
+                                setValue('hidden_checkout_fields', [...current, 'due_date']);
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+
+                      {/* Midwife Toggle */}
+                      <div className="flex items-center justify-between p-4 bg-background border rounded-lg hover:border-primary/50 transition-colors">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="checkout-midwife" className="text-base cursor-pointer">
+                            {t('checkout.midwife')}
+                          </Label>
+                        </div>
+                        <Switch
+                          id="checkout-midwife"
+                          checked={!watch('hidden_checkout_fields')?.includes('midwife')}
+                          onCheckedChange={(checked) => {
+                            const current = watch('hidden_checkout_fields') || [];
+                            if (checked) {
+                              setValue('hidden_checkout_fields', current.filter(f => f !== 'midwife'));
+                            } else {
+                              if (!current.includes('midwife')) {
+                                setValue('hidden_checkout_fields', [...current, 'midwife']);
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground italic">
+                      {t('checkout.hint')}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

@@ -18,7 +18,7 @@ const optionalText = (label: string, max = 255) =>
     .trim()
     .max(max, `v:maxLength:${label}:${max}`)
     .or(z.literal(''))
-    .transform((value) => (value === '' ? undefined : value));
+    .optional();
 
 const requiredText = (label: string, max = 255) =>
   z
@@ -38,7 +38,6 @@ const optionalDate = z
   .string()
   .trim()
   .or(z.literal(''))
-  .transform((value) => (value === '' ? undefined : value))
   .optional()
   .refine(
     (value) => {
@@ -77,6 +76,15 @@ const requiredMidwifeId = z
     message: 'v:invalidId',
   });
 
+const optionalMidwifeId = z
+  .string()
+  .trim()
+  .or(z.literal(''))
+  .optional()
+  .refine((val) => !val || val === 'other' || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val), {
+    message: 'v:invalidId',
+  });
+
 export const bookingContactSchema = z.object({
   clientEmail: emailSchema,
   firstName: requiredName('firstName'),
@@ -84,9 +92,9 @@ export const bookingContactSchema = z.object({
   phone: requiredPhone,
   address: optionalText('address').optional(),
   // New fields
-  dueDate: requiredDate('dueDate'),
+  dueDate: optionalDate,
   birthDate: requiredDate('birthDate'),
-  midwifeId: requiredMidwifeId,
+  midwifeId: optionalMidwifeId,
   otherMidwifeName: optionalText('otherMidwifeName', 100).optional(),
   houseNumber: requiredText('houseNumber', 20),
   postalCode: requiredText('postalCode', 20),
