@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
-import { Service, ServicePolicyField, ServiceCategory, ServiceAddon, ServiceAddonOption } from '@/lib/types/service';
+import { Service, ServicePolicyField, ServiceCategory, ServiceAddon, ServiceAddonOption, ServiceFormData } from '@/lib/types/service';
 import { Staff } from '@/lib/types/staff';
 import {
   DndContext,
@@ -47,29 +47,6 @@ interface ServiceFormProps {
   isViewMode?: boolean;
 }
 
-interface ServiceFormData {
-  name: string;
-  serviceCode: string;
-  description: string;
-  duration: number;
-  buffer_time: number;
-  lead_time: number;
-  reschedule_cutoff: number;
-  instructions: string;
-  price: number;
-  sale_price: number | null;
-  cancel_cutoff: number | null;
-  scheduling_window: number;
-  category_id: string | null;
-  policy_fields: ServicePolicyField[];
-  staff_ids: string[];
-  allows_twins: boolean;
-  twin_price?: number | null;
-  twin_duration_minutes?: number | null;
-  is_active: boolean;
-  hidden_checkout_fields?: string[];
-  custom_price_label?: string | null;
-}
 
 const generateServiceCode = (name: string): string => {
   const alphanumeric = name.replace(/[^A-Za-z0-9]/g, '').toUpperCase();

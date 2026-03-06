@@ -627,7 +627,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    query = query.order('start_time', { ascending: false });
+    query = query.order('created_at', { ascending: false });
 
     // Pagination
     const from = (page - 1) * limit;
