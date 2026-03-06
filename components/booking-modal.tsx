@@ -25,6 +25,7 @@ interface PolicyField {
   title: string;
   field_type: string;
   choices?: Array<{ id: string; title: string; price?: number }>;
+  custom_price_label?: string | null;
 }
 
 interface BookingModalProps {
@@ -137,6 +138,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     title: field.title,
                     field_type: field.field_type,
                     choices: choices,
+                    custom_price_label: service.custom_price_label,
                   };
                 }
               });
@@ -393,9 +395,12 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       <>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{t('baseService')}</span>
-                          <span className="font-medium">{formatEuroCents(basePrice)}</span>
+                          <span className="font-medium">
+                            {basePrice > 0 
+                              ? formatEuroCents(basePrice) 
+                              : (booking.services?.custom_price_label || formatEuroCents(0))}
+                          </span>
                         </div>
-
                         {/* Policy Extras */}
                         {policyTotal > 0 && (
                           <div className="flex justify-between">
@@ -415,7 +420,11 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
                         <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                           <span>{t('total')}</span>
-                          <span>{formatEuroCents(booking.price_eur_cents)}</span>
+                          <span>
+                            {booking.price_eur_cents > 0 
+                              ? formatEuroCents(booking.price_eur_cents) 
+                              : (booking.services?.custom_price_label || formatEuroCents(0))}
+                          </span>
                         </div>
                       </>
                     );

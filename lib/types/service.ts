@@ -23,6 +23,7 @@ export interface Service {
   twin_duration_minutes?: number | null;
   is_active: boolean;
   hidden_checkout_fields?: string[];
+  custom_price_label?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +107,7 @@ export interface CreateServiceRequest {
   twin_duration_minutes?: number | null;
   is_active?: boolean;
   hidden_checkout_fields?: string[];
+  custom_price_label?: string;
 }
 
 export interface UpdateServiceRequest {
@@ -129,6 +131,7 @@ export interface UpdateServiceRequest {
   twin_duration_minutes?: number | null;
   is_active?: boolean;
   hidden_checkout_fields?: string[];
+  custom_price_label?: string;
 }
 
 export interface CreateServiceAddonRequest {
@@ -216,6 +219,7 @@ export interface ServiceFormData {
   twin_duration_minutes?: number | null;
   is_active: boolean;
   hidden_checkout_fields?: string[];
+  custom_price_label?: string;
 }
 
 export interface ServiceAddonFormData {

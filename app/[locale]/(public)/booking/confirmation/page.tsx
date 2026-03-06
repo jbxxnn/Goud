@@ -311,7 +311,11 @@ function BookingConfirmationContent() {
             <div className="space-y-2.5">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">{t('baseService')}</span>
-                <span className="font-semibold text-gray-900">{formatEuroCents(basePrice)}</span>
+                <span className="font-semibold text-gray-900">
+                  {basePrice > 0 
+                    ? formatEuroCents(basePrice) 
+                    : (booking.services?.custom_price_label || formatEuroCents(0))}
+                </span>
               </div>
 
               {policyTotal > 0 && (
@@ -330,7 +334,11 @@ function BookingConfirmationContent() {
 
               <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
                 <span className="text-base font-semibold text-gray-900">{t('total')}</span>
-                <span className="text-xl font-bold text-primary">{formatEuroCents(booking.price_eur_cents)}</span>
+                <span className="text-xl font-bold text-primary">
+                  {booking.price_eur_cents > 0 
+                    ? formatEuroCents(booking.price_eur_cents) 
+                    : (booking.services?.custom_price_label || formatEuroCents(0))}
+                </span>
               </div>
             </div>
           </div>

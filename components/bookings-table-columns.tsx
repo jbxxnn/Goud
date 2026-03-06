@@ -120,6 +120,14 @@ export const createBookingColumns = (
                     <div>
                         <div className="font-medium flex items-center gap-2">
                             {service.name}
+                            {service.custom_price_label && booking.price_eur_cents === 0 && (
+                                <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 h-5 border-primary/20 text-primary"
+                                >
+                                    {service.custom_price_label}
+                                </Badge>
+                            )}
                              {booking.is_twin && (
                                                 <Badge
                                                     variant="secondary"

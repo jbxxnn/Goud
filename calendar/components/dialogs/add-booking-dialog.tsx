@@ -973,7 +973,11 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
         <DialogFooter className="p-6 py-4 border-t bg-card items-center justify-between flex-row gap-4">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{t("grandTotal")}</span>
-            <span className="text-xl font-black text-primary leading-tight">{formatEuroCents(grandTotalCents)}</span>
+            <span className="text-xl font-black text-primary leading-tight">
+              {grandTotalCents > 0 
+                ? formatEuroCents(grandTotalCents) 
+                : (selectedService?.customPriceLabel || formatEuroCents(0))}
+            </span>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" type="button" onClick={() => onToggle()} style={{borderRadius: "0.5rem"}}>{t("cancel")}</Button>

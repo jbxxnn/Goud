@@ -36,6 +36,7 @@ export type Service = {
     twinDurationMinutes?: number | null;
     staff_ids?: string[];
     hiddenCheckoutFields?: string[];
+    customPriceLabel?: string | null;
 };
 
 export type Location = { id: string; name: string };
@@ -60,6 +61,7 @@ export type ServiceApiResponse = {
     twin_price?: number | null;
     twin_duration_minutes?: number | null;
     hidden_checkout_fields?: string[] | null;
+    custom_price_label?: string | null;
 };
 
 export type DateRange = { start: string; end: string };
@@ -113,6 +115,7 @@ export interface Booking {
         name: string;
         service_code?: string | null;
         duration?: number;
+        custom_price_label?: string | null;
     } | null;
     locations: {
         id: string;

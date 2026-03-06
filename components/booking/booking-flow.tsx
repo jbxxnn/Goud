@@ -188,9 +188,13 @@ export function BookingFlow() {
                                         <p className="text-lg font-bold text-gray-900 leading-tight">
                                             {selectedService?.name || t('noServiceSelected')}
                                         </p>
-                                        <p className="text-sm font-bold text-primary mt-1">
-                                            {formatEuroCents((selectedService?.price ?? 0))}
-                                        </p>
+                                        {((selectedService?.price ?? 0) > 0 || (selectedService?.customPriceLabel && selectedService?.customPriceLabel.trim() !== '')) && (
+                                            <p className="text-sm font-bold text-primary mt-1">
+                                                {(selectedService?.price ?? 0) > 0 
+                                                    ? formatEuroCents((selectedService?.price ?? 0)) 
+                                                    : selectedService?.customPriceLabel}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -309,7 +313,9 @@ export function BookingFlow() {
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
                             <span className="text-2xl font-bold text-primary tracking-tight">
-                                {formatEuroCents(grandTotalCents || 0)}
+                                {grandTotalCents > 0 
+                                    ? formatEuroCents(grandTotalCents) 
+                                    : (selectedService?.customPriceLabel || formatEuroCents(0))}
                             </span>
                         </div>
                     </div>

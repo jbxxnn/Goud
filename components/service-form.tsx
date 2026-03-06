@@ -68,6 +68,7 @@ interface ServiceFormData {
   twin_duration_minutes?: number | null;
   is_active: boolean;
   hidden_checkout_fields?: string[];
+  custom_price_label?: string | null;
 }
 
 const generateServiceCode = (name: string): string => {
@@ -1437,6 +1438,22 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                     {t('hints.salePriceHelp')}
                   </p>
                 </div>
+
+                {/* Custom Price Label */}
+                {Number(watch('price')) === 0 && (
+                  <div className="md:col-span-2 mb-4 animate-in fade-in slide-in-from-top-2">
+                    <Label htmlFor="custom_price_label" className="text-sm font-medium mb-2">{t('customPriceLabel')}</Label>
+                    <Input
+                      id="custom_price_label"
+                      disabled={getDisabledState()}
+                      {...register('custom_price_label')}
+                      placeholder="e.g. Donation"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('hints.customPriceLabelHelp')}
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
 

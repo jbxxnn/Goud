@@ -448,6 +448,7 @@ export function BookingProvider({
                         addons: normalizeAddons(fullService.addons),
                         allowsTwins: false,
                         hiddenCheckoutFields: fullService.hidden_checkout_fields || [],
+                        customPriceLabel: fullService.custom_price_label || null,
                     };
 
                     setServices([repeatService]);
@@ -532,6 +533,7 @@ export function BookingProvider({
                 twinPrice: typeof service.twin_price === 'number' ? Math.round(service.twin_price * 100) : null,
                 twinDurationMinutes: typeof service.twin_duration_minutes === 'number' ? service.twin_duration_minutes : null,
                 hiddenCheckoutFields: service.hidden_checkout_fields || [],
+                customPriceLabel: service.custom_price_label || null,
             }));
             setServices(normalizedServices);
             setLoadingServices(false);

@@ -271,8 +271,10 @@ export function StepService() {
                                 <SelectItem key={s.id} value={s.id}>
                                     <div className="flex items-center justify-between py-2">
                                         <span className='text-primary'>{s.name}</span>
-                                        {(s.price ?? 0) > 0 && (
-                                            <span className="ml-4 text-xs font-bold text-gray-700">{formatEuroCents(s.price ?? 0)}</span>
+                                        {((s.price ?? 0) > 0 || (s.customPriceLabel && s.customPriceLabel.trim() !== '')) && (
+                                            <span className="ml-4 text-xs font-bold text-gray-700">
+                                                {/* {(s.price ?? 0) > 0 ? formatEuroCents(s.price ?? 0) : s.customPriceLabel} */}
+                                            </span>
                                         )}
                                     </div>
                                 </SelectItem>
@@ -312,7 +314,11 @@ export function StepService() {
             {selectedService && (
                 <div className="flex items-center justify-between px-4 py-3 bg-white animate-in fade-in slide-in-from-top-4 duration-500 ease-in-out" style={{ borderRadius: '0.2rem' }}>
                     <span className="text-sm font-bold text-gray-700">{t('currentTotal')}</span>
-                    <span className="text-sm font-bold text-gray-900">{formatEuroCents(grandTotalCents)}</span>
+                    <span className="text-sm font-bold text-gray-900">
+                        {grandTotalCents > 0 
+                            ? formatEuroCents(grandTotalCents) 
+                            : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                    </span>
                 </div>
             )}
             <div className="flex justify-end ">
