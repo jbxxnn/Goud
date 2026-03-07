@@ -389,7 +389,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (updates.status === 'cancelled') {
       // Run in background (fire and forget) to not block response
       triggerCancellationEmail(existing).catch(err => console.error('Background email error:', err));
-      triggerRefund(existing).catch(err => console.error('Background refund error:', err));
+      
+      // Only trigger refund if the booking wasn't already completed or a no-show
+      const skipRefundStatuses = ['completed', 'no_show'];
+      if (!skipRefundStatuses.includes(existing.status)) {
+        triggerRefund(existing).catch(err => console.error('Background refund error:', err));
+      } else {
+        console.log(`[PATCH] Skipping refund for booking ${id} because previous status was ${existing.status}`);
+      }
     }
 
     // Fetch add-ons if they exist
