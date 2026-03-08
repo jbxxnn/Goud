@@ -402,6 +402,8 @@
                 "frequency": "Frequency *",
                 "daily": "Daily",
                 "weekly": "Weekly",
+                "every2Weeks": "Every 2 weeks",
+                "every3Weeks": "Every 3 weeks",
                 "monthly": "Monthly",
                 "daysOfWeek": "Days of Week",
                 "repeatUntil": "Repeat Until",

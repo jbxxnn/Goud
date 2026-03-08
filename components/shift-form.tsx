@@ -35,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslations } from 'next-intl';
 
 interface ShiftFormProps {
   shift?: ShiftWithDetails;
@@ -51,6 +52,7 @@ interface ShiftFormData {
   end_time: string;
   is_recurring: boolean;
   recurrence_frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  recurrence_interval?: number;
   recurrence_days?: string[];
   recurrence_until?: string;
   priority: number;
@@ -60,6 +62,7 @@ interface ShiftFormData {
 }
 
 export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMode = false }: ShiftFormProps) {
+  const t = useTranslations('Shifts.dialog.add');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -110,6 +113,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       start_time: '',
       end_time: '',
       is_recurring: false,
+      recurrence_interval: 1,
       priority: 1,
       notes: '',
       service_ids: [],
@@ -190,6 +194,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         end_time: formatDateTimeLocal(shift.end_time), // Convert UTC to local time
         is_recurring: shift.is_recurring,
         recurrence_frequency: recurrence?.frequency,
+        recurrence_interval: recurrence?.interval || 1,
         recurrence_days: recurrence?.daysOfWeek,
         recurrence_until: recurrence?.until,
         priority: shift.priority,
@@ -400,6 +405,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
       if (data.is_recurring && data.recurrence_frequency && actionType !== 'single') {
         const recurrenceOptions: RecurrenceOptions = {
           frequency: data.recurrence_frequency,
+          interval: data.recurrence_interval,
           daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
           until: data.recurrence_until,
         };
@@ -774,19 +780,25 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
           <div className="space-y-4 pl-6 border-l-2 border-muted">
             <div className="flex flex-col sm:flex-row gap-4 items-start">
               <div className="flex-1 w-full">
-                <Label htmlFor="recurrence_frequency" className="text-xs font-semibold mb-2">Frequency *</Label>
+                <Label htmlFor="recurrence_combined" className="text-xs font-semibold mb-2">Recurrence *</Label>
                 <Select
-                  value={watch('recurrence_frequency')}
-                  onValueChange={(value) => setValue('recurrence_frequency', value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY')}
+                  value={`${watch('recurrence_frequency')}_${watch('recurrence_interval') || 1}`}
+                  onValueChange={(value) => {
+                    const [freq, interval] = value.split('_');
+                    setValue('recurrence_frequency', freq as any);
+                    setValue('recurrence_interval', parseInt(interval));
+                  }}
                   disabled={isViewMode || !!shift?._isRecurringInstance}
                 >
                   <SelectTrigger className="w-full h-10" style={{borderRadius: "1rem"}}>
-                    <SelectValue placeholder="Select frequency" />
+                    <SelectValue placeholder="Select recurrence" />
                   </SelectTrigger>
                   <SelectContent className="w-full">
-                    <SelectItem value="DAILY">Daily</SelectItem>
-                    <SelectItem value="WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="MONTHLY">Monthly</SelectItem>
+                    <SelectItem value="DAILY_1">{t('daily')}</SelectItem>
+                    <SelectItem value="WEEKLY_1">{t('weekly')}</SelectItem>
+                    <SelectItem value="WEEKLY_2">{t('every2Weeks')}</SelectItem>
+                    <SelectItem value="WEEKLY_3">{t('every3Weeks')}</SelectItem>
+                    <SelectItem value="MONTHLY_1">{t('monthly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

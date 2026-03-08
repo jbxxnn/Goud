@@ -402,6 +402,8 @@
                 "frequency": "Frequentie *",
                 "daily": "Dagelijks",
                 "weekly": "Wekelijks",
+                "every2Weeks": "Elke 2 weken",
+                "every3Weeks": "Elke 3 weken",
                 "monthly": "Maandelijks",
                 "daysOfWeek": "Dagen van de week",
                 "repeatUntil": "Herhalen tot",

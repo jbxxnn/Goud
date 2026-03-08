@@ -55,6 +55,7 @@ interface ShiftFormData {
   end_time: string;
   is_recurring: boolean;
   recurrence_frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  recurrence_interval?: number;
   recurrence_days?: string[];
   recurrence_until?: string;
   priority: number;
@@ -101,6 +102,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       start_time: '',
       end_time: '',
       is_recurring: false,
+      recurrence_interval: 1,
       priority: 1,
       notes: '',
       service_ids: [],
@@ -216,6 +218,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       if (data.is_recurring && data.recurrence_frequency) {
         const recurrenceOptions: RecurrenceOptions = {
           frequency: data.recurrence_frequency,
+          interval: data.recurrence_interval,
           daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
           until: data.recurrence_until,
         };
@@ -352,6 +355,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
       if (data.is_recurring && data.recurrence_frequency) {
         const recurrenceOptions: RecurrenceOptions = {
           frequency: data.recurrence_frequency,
+          interval: data.recurrence_interval,
           daysOfWeek: data.recurrence_days as RecurrenceOptions['daysOfWeek'],
           until: data.recurrence_until,
         };
@@ -665,29 +669,100 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
               </div>
 
               {watch('is_recurring') && (
-                <div className="border-l-2 border-muted grid grid-cols-2 gap-2">
-                  <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="recurrence_frequency">{t('frequency')}</Label>
-                    <Select
-                      value={watch('recurrence_frequency')}
-                      onValueChange={(value) => setValue('recurrence_frequency', value as any)}
-                    >
-                      <SelectTrigger className="bg-card h-10" style={{borderRadius: "1rem"}}>
-                        <SelectValue placeholder={t('frequency')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DAILY">{t('daily')}</SelectItem>
-                        <SelectItem value="WEEKLY">{t('weekly')}</SelectItem>
-                        <SelectItem value="MONTHLY">{t('monthly')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="border-l-2 border-muted pl-6 space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4 items-start">
+                    <div className="flex-1 w-full">
+                      <Label htmlFor="recurrence_combined" className="text-xs font-semibold mb-2">Recurrence *</Label>
+                      <Select
+                        value={`${watch('recurrence_frequency')}_${watch('recurrence_interval') || 1}`}
+                        onValueChange={(value) => {
+                          if (value === 'DAILY_1') {
+                            setValue('recurrence_frequency', 'DAILY');
+                            setValue('recurrence_interval', 1);
+                          } else if (value === 'WEEKLY_1') {
+                            setValue('recurrence_frequency', 'WEEKLY');
+                            setValue('recurrence_interval', 1);
+                          } else if (value === 'WEEKLY_2') {
+                            setValue('recurrence_frequency', 'WEEKLY');
+                            setValue('recurrence_interval', 2);
+                          } else if (value === 'WEEKLY_3') {
+                            setValue('recurrence_frequency', 'WEEKLY');
+                            setValue('recurrence_interval', 3);
+                          } else if (value === 'MONTHLY_1') {
+                            setValue('recurrence_frequency', 'MONTHLY');
+                            setValue('recurrence_interval', 1);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-card h-10" style={{borderRadius: "1rem"}}>
+                          <SelectValue placeholder="Select recurrence" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DAILY_1">{t('daily')}</SelectItem>
+                          <SelectItem value="WEEKLY_1">{t('weekly')}</SelectItem>
+                          <SelectItem value="WEEKLY_2">{t('every2Weeks')}</SelectItem>
+                          <SelectItem value="WEEKLY_3">{t('every3Weeks')}</SelectItem>
+                          <SelectItem value="MONTHLY_1">{t('monthly')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex-1 w-full">
+                      <Label htmlFor="recurrence_until" className="text-xs font-semibold mb-2 block">Repeat Until (Optional)</Label>
+                      <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card",
+                              !watch('recurrence_until') && "text-muted-foreground"
+                            )}
+                            style={{ borderRadius: '1rem' }}
+                          >
+                            <HugeiconsIcon icon={Calendar01Icon} />
+                            {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "dd/MM/yyyy") : <span>Pick date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const safeDate = new Date(date);
+                                safeDate.setHours(12);
+                                setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
+                                setRecurrenceUntilOpen(false);
+                              } else {
+                                setValue('recurrence_until', undefined);
+                                setRecurrenceUntilOpen(false);
+                              }
+                            }}
+                            initialFocus
+                            captionLayout="dropdown"
+                            fromYear={new Date().getFullYear() - 1}
+                            toYear={new Date().getFullYear() + 10}
+                            disabled={(date) => {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              
+                              if (watch('start_time')) {
+                                  const startDate = new Date(watch('start_time'));
+                                  startDate.setHours(0,0,0,0);
+                                  return date.getTime() < Math.max(today.getTime(), startDate.getTime());
+                              }
+                              return date < today;
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
 
                   {watch('recurrence_frequency') === 'WEEKLY' && (
-                    <div>
-                      <Label>{t('daysOfWeek')}</Label>
-                      <div className="grid grid-cols-4 gap-2 mt-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold">{t('daysOfWeek')}</Label>
+                      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                         {weekDays.map((day) => (
                           <div key={day.value} className="flex items-center space-x-2">
                             <Checkbox
@@ -712,62 +787,6 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                       </div>
                     </div>
                   )}
-                  </div>
-
-                  <div className="space-y-2 flex-1 w-full">
-                    <Label htmlFor="recurrence_until">{t('repeatUntil')}</Label>
-                    <Popover modal={true} open={recurrenceUntilOpen} onOpenChange={setRecurrenceUntilOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card",
-                            !watch('recurrence_until') && "text-muted-foreground"
-                          )}
-                          style={{ borderRadius: '1rem' }}
-                        >
-                          <HugeiconsIcon icon={Calendar01Icon} />
-                          {watch('recurrence_until') ? format(new Date(watch('recurrence_until')!), "dd/MM/yyyy") : <span>Pick date</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={watch('recurrence_until') ? new Date(watch('recurrence_until')!) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const safeDate = new Date(date);
-                              safeDate.setHours(12);
-                              setValue('recurrence_until', safeDate.toISOString().split('T')[0]);
-                              setRecurrenceUntilOpen(false);
-                            } else {
-                              setValue('recurrence_until', undefined);
-                              setRecurrenceUntilOpen(false);
-                            }
-                          }}
-                          initialFocus
-                          captionLayout="dropdown"
-                          fromYear={new Date().getFullYear() - 1}
-                          toYear={new Date().getFullYear() + 10}
-                          disabled={(date) => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            
-                            // Recurrence until date should be after the start date
-                            if (watch('start_time')) {
-                                const startDate = new Date(watch('start_time'));
-                                startDate.setHours(0,0,0,0);
-                                return date.getTime() < Math.max(today.getTime(), startDate.getTime());
-                            }
-                            return date < today;
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t('repeatIndefinitely')}
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
