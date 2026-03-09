@@ -145,6 +145,16 @@ export default function BookingsClient({
       if (staffId) params.append('staffId', staffId);
       if (locationFilter && locationFilter !== 'all') params.append('locationId', locationFilter);
 
+      // Sorting: Use start_time for calendar to ensure bookings in the window are shown first
+      if (viewMode === 'calendar') {
+        params.append('sortBy', 'start_time');
+        params.append('sortOrder', 'asc');
+      } else {
+        // Table mode defaults to created_at desc
+        params.append('sortBy', 'created_at');
+        params.append('sortOrder', 'desc');
+      }
+
       const response = await fetch(`/api/bookings?${params}`);
       const data: BookingsResponse = await response.json();
 

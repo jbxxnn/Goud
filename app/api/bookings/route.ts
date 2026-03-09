@@ -404,6 +404,8 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search');
     const staffId = searchParams.get('staffId');
     const locationId = searchParams.get('locationId');
+    const sortBy = searchParams.get('sortBy') || 'created_at';
+    const sortOrder = searchParams.get('order') || searchParams.get('sortOrder') || 'desc';
 
     const authSupabase = await createClient();
     const { data: { user }, error: authError } = await authSupabase.auth.getUser();
@@ -627,7 +629,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    query = query.order('created_at', { ascending: false });
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Pagination
     const from = (page - 1) * limit;
