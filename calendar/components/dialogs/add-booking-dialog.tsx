@@ -664,7 +664,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                 <div className="space-y-2">
                   <Label>{t("client")}</Label>
                   <div className="flex gap-2">
-                    <Button type="button" className="bg-secondary text-foreground hover:text-white px-4 ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none" style={{ borderRadius: '0.5rem' }} onClick={() => setIsClientModalOpen(true)}>
+                    <Button type="button" className="w-[120px] shrink-0 bg-secondary text-foreground hover:text-white px-4 ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none" style={{ borderRadius: '0.5rem' }} onClick={() => setIsClientModalOpen(true)}>
                       {t("browse")}
                     </Button>
                     <div className="flex-1 border h-10 rounded-md bg-card px-3 py-2 flex items-center gap-2" style={{borderRadius: "0.5rem"}}>
@@ -677,20 +677,22 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                     </div>
 
                     {!selectedService?.hiddenCheckoutFields?.includes('due_date') && (
-                      <div className="flex-[2]">
+                      <div className="w-[140px] shrink-0">
                         <Popover modal={true} open={dueDateOpen} onOpenChange={setDueDateOpen}>
                           <PopoverTrigger asChild>
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none",
+                                "w-full justify-start text-left font-normal h-10 px-3 border-input bg-card ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none truncate",
                                 !watch("due_date") && "text-muted-foreground",
                                 errors.due_date && "border-red-500"
                               )}
                               style={{ borderRadius: '0.5rem' }}
                             >
-                              <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2 h-4 w-4" />
-                              {watch("due_date") ? formatInTimeZone(new Date(watch("due_date")), 'Europe/Amsterdam', "dd/MM/yyyy") : <span>{t("dueDate")}</span>}
+                              <HugeiconsIcon icon={Calendar01Icon} size={18} className="mr-2 h-4 w-4 shrink-0" />
+                              <span className="truncate">
+                                {watch("due_date") ? formatInTimeZone(new Date(watch("due_date")), 'Europe/Amsterdam', "dd/MM/yyyy") : t("dueDate")}
+                              </span>
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="end">
