@@ -1664,5 +1664,14 @@
             "success": "Task dropped for assistants!",
             "error": "Failed to create task"
         }
+    },
+    "UpdatePassword": {
+        "title": "Reset Your Password",
+        "description": "Please enter your new password below.",
+        "password": "New password",
+        "passwordPlaceholder": "New password",
+        "save": "Save new password",
+        "saving": "Saving...",
+        "error": "An error occurred"
     }
 }

@@ -568,12 +568,20 @@ export default function BookingsClient({
               </div>
             )}
             <div className="flex items-center gap-2">
-              <AddBookingDialog onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '1rem' }}>
-                  <HugeiconsIcon icon={PlusSignIcon} size={18} />
-                  {t('addBooking', { fallback: 'Add Booking' })}
-                </Button>
-              </AddBookingDialog>
+              <CalendarProvider
+                users={calendarUsersList}
+                locations={locations}
+                events={calendarEvents}
+                entityType="booking"
+                initialSettings={{}}
+              >
+                <AddBookingDialog onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '10rem' }}>
+                    <HugeiconsIcon icon={PlusSignIcon} size={18} />
+                    {/* {t('addBooking', { fallback: 'Add Booking' })} */}
+                  </Button>
+                </AddBookingDialog>
+              </CalendarProvider>
             </div>
           </>
         )}
