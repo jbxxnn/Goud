@@ -5,8 +5,9 @@ import { LocationSelect } from "@/calendar/components/header/location-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIcon, Calendar03Icon } from "@hugeicons/core-free-icons";
+import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIcon, Calendar03Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
+import { AddBookingDialog } from "@/calendar/components/dialogs/add-booking-dialog";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
 import { useTranslations } from 'next-intl';
@@ -19,11 +20,12 @@ interface IProps {
     view: TCalendarView;
     events: IEvent[];
     onViewChange: (view: TCalendarView) => void;
+    onBookingCreated?: () => void;
     userRole?: string;
 }
 
-export function BookingCalendarHeader({ view, events, onViewChange, userRole }: IProps) {
-    const { showShiftGuidance, setShowShiftGuidance } = useCalendar();
+export function BookingCalendarHeader({ view, events, onViewChange, onBookingCreated, userRole }: IProps) {
+    const { showShiftGuidance, setShowShiftGuidance, selectedDate } = useCalendar();
     // reusing shifts header translations for common view names if possible, or fallback to generic
     const t = useTranslations('Shifts.header');
 
@@ -124,6 +126,19 @@ export function BookingCalendarHeader({ view, events, onViewChange, userRole }: 
 
                     {userRole !== 'staff' && <UserSelect />}
                     <LocationSelect />
+
+                    <AddBookingDialog 
+                      startDate={selectedDate} 
+                      onBookingCreated={onBookingCreated}
+                    >
+                        <Button 
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4"
+                            style={{ borderRadius: '10rem' }}
+                        >
+                            <HugeiconsIcon icon={PlusSignIcon} size={18} />
+                            {/* {t('addBooking', { fallback: 'Add Booking' })} */}
+                        </Button>
+                    </AddBookingDialog>
                 </div>
             </div>
         </div>

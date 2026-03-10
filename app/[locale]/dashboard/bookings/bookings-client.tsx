@@ -6,7 +6,8 @@ import { startOfMonth, endOfMonth, subMonths, addMonths, format } from 'date-fns
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon } from '@hugeicons/core-free-icons';
+import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
+import { AddBookingDialog } from '@/calendar/components/dialogs/add-booking-dialog';
 import { Staff } from '@/lib/types/staff';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { bookingToCalendarEvent } from '@/lib/utils/booking-mapper';
@@ -566,6 +567,14 @@ export default function BookingsClient({
                 </div>
               </div>
             )}
+            <div className="flex items-center gap-2">
+              <AddBookingDialog onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}>
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '1rem' }}>
+                  <HugeiconsIcon icon={PlusSignIcon} size={18} />
+                  {t('addBooking', { fallback: 'Add Booking' })}
+                </Button>
+              </AddBookingDialog>
+            </div>
           </>
         )}
       </div>
@@ -637,7 +646,7 @@ export default function BookingsClient({
                     handleView(booking);
                   }
                 }}
-                onShiftCreated={() => {
+                onBookingCreated={() => {
                   queryClient.invalidateQueries({ queryKey: ['bookings'] });
                   queryClient.invalidateQueries({ queryKey: ['shifts'] });
                 }}

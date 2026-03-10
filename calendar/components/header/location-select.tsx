@@ -10,7 +10,7 @@ export function LocationSelect() {
 
   return (
     <Select value={selectedLocationId} onValueChange={(val) => setSelectedLocationId(val as string | "all")}>
-      <SelectTrigger className="flex-1 md:w-48 h-10" style={{ borderRadius: '1rem' }}>
+      <SelectTrigger className="flex-2 md:w-24 h-10" style={{ borderRadius: '1rem' }}>
         <div className="flex items-center gap-2 truncate">
           <HugeiconsIcon icon={Location03Icon} size={18} className="text-muted-foreground shrink-0" />
           <SelectValue />

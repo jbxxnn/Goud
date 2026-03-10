@@ -9,7 +9,7 @@ export function UserSelect() {
 
   return (
     <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-      <SelectTrigger className="flex-1 md:w-48 h-10" style={{borderRadius: '1rem'}}>
+      <SelectTrigger className="flex-1 md:w-24 h-10" style={{borderRadius: '1rem'}}>
         <SelectValue />
       </SelectTrigger>
 

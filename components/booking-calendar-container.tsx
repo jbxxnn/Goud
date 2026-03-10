@@ -18,11 +18,11 @@ interface IProps {
     view: TCalendarView;
     onViewChange: (view: TCalendarView) => void;
     onEventClick?: (event: IEvent) => void;
-    onShiftCreated?: () => void;
+    onBookingCreated?: () => void;
     userRole?: string;
 }
 
-export function BookingCalendarContainer({ view, onViewChange, onEventClick, onShiftCreated, userRole }: IProps) {
+export function BookingCalendarContainer({ view, onViewChange, onEventClick, onBookingCreated, userRole }: IProps) {
     const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
     const filteredEvents = useMemo(() => {
@@ -97,10 +97,16 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onS
 
     return (
         <div className="overflow-hidden rounded-xl border">
-            <BookingCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} userRole={userRole} />
+            <BookingCalendarHeader 
+              view={view} 
+              events={filteredEvents} 
+              onViewChange={onViewChange} 
+              onBookingCreated={onBookingCreated}
+              userRole={userRole} 
+            />
 
             <DndProviderWrapper>
-                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onShiftCreated} />}
+                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} />}
                 {view === "month" && (
                     <CalendarMonthView 
                         singleDayEvents={singleDayEvents.filter(e => !e.metadata?.isShift)} 
@@ -108,7 +114,7 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onS
                         onEventClick={onEventClick} 
                     />
                 )}
-                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onShiftCreated} />}
+                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} />}
                 {view === "year" && (
                     <CalendarYearView 
                         allEvents={eventStartDates.filter(e => !e.metadata?.isShift)} 
