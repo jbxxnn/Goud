@@ -48,22 +48,42 @@ export default async function ServicesPage() {
       service_categories (
         id,
         name
+      ),
+      service_policy_fields (
+        id,
+        field_type,
+        title,
+        description,
+        is_required,
+        field_order,
+        service_policy_field_choices (
+          id,
+          title,
+          price,
+          choice_order
+        )
       )
     `)
     .order('name')
     .range(0, limit - 1);
 
-  // Note: We are not fetching staff_ids or addons server-side to keep it simple, 
+  // Note: We are not fetching addons server-side to keep it simple, 
   // they will be fetched on the client by React Query if needed, 
   // but for the table display name and categories are enough.
-  // Actually, let's just pass empty array for now and let the client fetch, 
-  // or fetch them properly. For now, let's just make sure pagination numbers are correct.
+  // Actually, we SHOULD fetch policy_fields as they are needed for the edit modal.
 
   // Map raw database records to the Service interface
   const mappedServices = (servicesData || []).map(service => ({
     ...service,
     serviceCode: (service as any).service_code || null,
-    policy_fields: [],
+    policy_fields: ((service as any).service_policy_fields || []).map((field: any) => ({
+      ...field,
+      order: field.field_order ?? 0,
+      choices: (field.service_policy_field_choices || []).map((choice: any) => ({
+        ...choice,
+        order: choice.choice_order ?? 0
+      }))
+    })),
     addons: []
   }));
 

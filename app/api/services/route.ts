@@ -4,9 +4,16 @@ import { createClient } from '@/lib/supabase/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { CreateServiceRequest, ServicePolicyField, ServicePolicyFieldChoice, ServiceAddon } from '@/lib/types/service';
 
-type RawPolicyField = ServicePolicyField & {
-  choices?: ServicePolicyFieldChoice[];
-  service_policy_field_choices?: ServicePolicyFieldChoice[];
+type RawPolicyField = Omit<ServicePolicyField, 'order'> & {
+  field_order?: number;
+  order?: number;
+  choices?: RawPolicyFieldChoice[];
+  service_policy_field_choices?: RawPolicyFieldChoice[];
+};
+
+type RawPolicyFieldChoice = Omit<ServicePolicyFieldChoice, 'order'> & {
+  choice_order?: number;
+  order?: number;
 };
 
 type RawServiceAddon = ServiceAddon & {
@@ -42,7 +49,11 @@ const mapServiceRecord = (
   const { service_code, service_policy_fields, service_addons, ...rest } = service;
   const policyFields = (service_policy_fields ?? []).map((field) => ({
     ...field,
-    choices: field.service_policy_field_choices ?? field.choices ?? [],
+    order: field.field_order ?? field.order ?? 0,
+    choices: (field.service_policy_field_choices ?? field.choices ?? []).map((choice) => ({
+      ...choice,
+      order: choice.choice_order ?? choice.order ?? 0,
+    })),
   }));
   // Use addons from extras if provided, otherwise fall back to service_addons from the record
   const rawAddons = (extras.addons as RawServiceAddon[]) ?? service_addons ?? [];
