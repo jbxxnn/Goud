@@ -638,18 +638,7 @@ export default function BookingsClient({
                 </div>
               </div>
             )}
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="h-10 text-muted-foreground hover:text-foreground px-3"
-                style={{ borderRadius: '1rem' }}
-              >
-                <HugeiconsIcon icon={RotateLeft01Icon} className="mr-2 h-4 w-4" />
-                {t('filters.reset')}
-              </Button>
-            )}
+            
             <div className="flex items-center gap-2">
               <CalendarProvider
                 users={calendarUsersList}
@@ -666,6 +655,18 @@ export default function BookingsClient({
                 </AddBookingDialog>
               </CalendarProvider>
             </div>
+            {hasActiveFilters && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-primary-foreground hover:text-primary-foreground"
+                style={{ borderRadius: '10rem' }}
+              >
+                <HugeiconsIcon icon={RotateLeft01Icon} className="mr-2 h-4 w-4" />
+                {t('filters.reset')}
+              </Button>
+            )}
           </>
         )}
       </div>
