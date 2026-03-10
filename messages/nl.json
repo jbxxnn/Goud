@@ -1664,5 +1664,14 @@
             "success": "Taak geplaatst voor assistenten!",
             "error": "Niet gelukt om taak te maken"
         }
+    },
+    "UpdatePassword": {
+        "title": "Wachtwoord herstellen",
+        "description": "Voer hieronder je nieuwe wachtwoord in.",
+        "password": "Nieuw wachtwoord",
+        "passwordPlaceholder": "Nieuw wachtwoord",
+        "save": "Nieuw wachtwoord opslaan",
+        "saving": "Opslaan...",
+        "error": "Er is een fout opgetreden"
     }
 }
