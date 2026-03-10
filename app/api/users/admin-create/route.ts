@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
       .eq("id", currentUser.id)
       .single();
 
-    if (!profile || !["admin", "staff", "midwife"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden: Only admins or staff can create users" }, { status: 403 });
+    if (!profile || !["admin", "staff", "midwife", "assistant"].includes(profile.role)) {
+      return NextResponse.json({ error: "Forbidden: Only admins, staff, midwives, or assistants can create users" }, { status: 403 });
     }
 
     const { 

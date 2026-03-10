@@ -133,6 +133,16 @@ export const getUserPermissions = (role: UserRole): UserPermissions => {
         canViewReports: false,
         canViewAuditLogs: false,
       };
+    case 'assistant':
+      return {
+        canManageUsers: false,
+        canManageServices: false,
+        canManageLocations: false,
+        canManageStaff: false,
+        canManageBookings: true,
+        canViewReports: false,
+        canViewAuditLogs: false,
+      };
     case 'client':
       return {
         canManageUsers: false,
