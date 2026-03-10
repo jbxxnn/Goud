@@ -6,7 +6,7 @@ import { startOfMonth, endOfMonth, subMonths, addMonths, format, startOfWeek, en
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon, PlusSignIcon } from '@hugeicons/core-free-icons';
+import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon, PlusSignIcon, RotateLeft01Icon } from '@hugeicons/core-free-icons';
 import { AddBookingDialog } from '@/calendar/components/dialogs/add-booking-dialog';
 import { Staff } from '@/lib/types/staff';
 import { Booking, BookingsResponse } from '@/lib/types/booking';
@@ -30,6 +30,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Calendar03Icon } from '@hugeicons/core-free-icons';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -84,6 +88,8 @@ export default function BookingsClient({
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [locations, setLocations] = useState<{ id: string, name: string, color?: string }[]>([]);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [isDateFromOpen, setIsDateFromOpen] = useState(false);
+  const [isDateToOpen, setIsDateToOpen] = useState(false);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -98,6 +104,17 @@ export default function BookingsClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+
+  const hasActiveFilters = statusFilter !== 'all' || locationFilter !== 'all' || dateFrom !== '' || dateTo !== '' || searchQuery !== '';
+
+  const handleResetFilters = useCallback(() => {
+    setStatusFilter('all');
+    setLocationFilter('all');
+    setDateFrom('');
+    setDateTo('');
+    setSearchQuery('');
+    setPage(1);
+  }, []);
   const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null);
@@ -539,23 +556,67 @@ export default function BookingsClient({
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{t('filters.from')}:</label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-40 h-10"
-                style={{ borderRadius: '1rem' }}
-              />
+              <Popover open={isDateFromOpen} onOpenChange={setIsDateFromOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-40 h-10 rounded-xl justify-start text-left font-normal border-gray-200 bg-white hover:bg-white focus:bg-white transition-all duration-200 px-3 text-sm shadow-sm",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                    style={{ borderRadius: "1rem" }}
+                  >
+                    <HugeiconsIcon icon={Calendar03Icon} className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(new Date(dateFrom), "dd-MM-yyyy") : <span>{t('filters.selectDate', { fallback: 'Select Date' })}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border border-gray-100 bg-white overflow-hidden" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom ? new Date(dateFrom) : undefined}
+                    onSelect={(date) => {
+                      setDateFrom(date ? format(date, 'yyyy-MM-dd') : '');
+                      setIsDateFromOpen(false);
+                    }}
+                    captionLayout="dropdown"
+                    fromYear={2020}
+                    toYear={new Date().getFullYear() + 5}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">{t('filters.to')}:</label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-40 h-10"
-                style={{ borderRadius: '1rem' }}
-              />
+              <Popover open={isDateToOpen} onOpenChange={setIsDateToOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-40 h-10 rounded-xl justify-start text-left font-normal border-gray-200 bg-white hover:bg-white focus:bg-white transition-all duration-200 px-3 text-sm shadow-sm",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                    style={{ borderRadius: "1rem" }}
+                  >
+                    <HugeiconsIcon icon={Calendar03Icon} className="mr-2 h-4 w-4" />
+                    {dateTo ? format(new Date(dateTo), "dd-MM-yyyy") : <span>{t('filters.selectDate', { fallback: 'Select Date' })}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border border-gray-100 bg-white overflow-hidden" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo ? new Date(dateTo) : undefined}
+                    onSelect={(date) => {
+                      setDateTo(date ? format(date, 'yyyy-MM-dd') : '');
+                      setIsDateToOpen(false);
+                    }}
+                    captionLayout="dropdown"
+                    fromYear={2020}
+                    toYear={new Date().getFullYear() + 5}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             {!clientId && (
               <div className="flex items-center gap-2 flex-1 min-w-[200px]">
@@ -576,6 +637,18 @@ export default function BookingsClient({
                   )}
                 </div>
               </div>
+            )}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="h-10 text-muted-foreground hover:text-foreground px-3"
+                style={{ borderRadius: '1rem' }}
+              >
+                <HugeiconsIcon icon={RotateLeft01Icon} className="mr-2 h-4 w-4" />
+                {t('filters.reset')}
+              </Button>
             )}
             <div className="flex items-center gap-2">
               <CalendarProvider

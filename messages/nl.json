@@ -1068,7 +1068,9 @@
             "from": "Van",
             "to": "Tot",
             "search": "Zoeken",
-            "searchPlaceholder": "Klantnaam of e-mail..."
+            "searchPlaceholder": "Klantnaam of e-mail...",
+            "selectDate": "Selecteer datum",
+            "reset": "Filters wissen"
         },
         "table": {
             "emptyTitle": "Geen boekingen gevonden",

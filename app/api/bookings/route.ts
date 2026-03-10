@@ -458,7 +458,16 @@ export async function GET(req: NextRequest) {
           // We will fetch all booking IDs and their dates, and filter them in JS.
           const { data: partialBookings } = await supabase.from('bookings').select('id, birth_date').not('birth_date', 'is', null);
           if (partialBookings) {
-             const cleanSearch = searchTerm.replace(/[\s./]/g, '-');
+             let cleanSearch = searchTerm.replace(/[\s./]/g, '-');
+             
+             // Handle DD-MM (Dutch style) for 2-part numeric search like "11-04"
+             const shortParts = cleanSearch.split('-');
+             if (shortParts.length === 2 && shortParts[1].length <= 2 && shortParts[0].length <= 2) {
+                 const d = shortParts[0].padStart(2, '0');
+                 const m = shortParts[1].padStart(2, '0');
+                 cleanSearch = `-${m}-${d}`;
+             }
+
              const matchedIds = partialBookings
                  .filter(b => b.birth_date && b.birth_date.includes(cleanSearch))
                  .map(b => b.id);
