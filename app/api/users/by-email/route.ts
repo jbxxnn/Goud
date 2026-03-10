@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       .single();
 
     const role = userProfile?.role;
-    if (role !== 'admin' && role !== 'staff' && role !== 'assistant') {
+    if (role !== 'admin' && role !== 'staff' && role !== 'assistant' && user.email !== email) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     // ---------------------------

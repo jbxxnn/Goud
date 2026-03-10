@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { startOfMonth, endOfMonth, subMonths, addMonths, format } from 'date-fns';
+import { startOfMonth, endOfMonth, subMonths, addMonths, format, startOfWeek, endOfWeek, subDays, addDays } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -119,15 +119,25 @@ export default function BookingsClient({
     if (viewMode === 'table') {
       return { fetchDateFrom: dateFrom, fetchDateTo: dateTo };
     }
-    // For calendar, fetch a broad window: previous month to next month
-    // This provides a buffer for navigation and ensures today's bookings are always included
-    const start = startOfMonth(subMonths(activeDate, 1));
-    const end = endOfMonth(addMonths(activeDate, 1));
+    
+    // For calendar, we need to be careful with the 1000-item limit.
+    // Instead of a broad 3-month window, we narrow it based on the current view.
+    let start, end;
+    if (calendarView === 'week' || calendarView === 'day') {
+      // Current week +/- 1 week buffer
+      start = startOfWeek(subDays(activeDate, 7));
+      end = endOfWeek(addDays(activeDate, 7));
+    } else {
+      // Current month +/- 2 weeks buffer
+      start = startOfMonth(subDays(activeDate, 14));
+      end = endOfMonth(addDays(activeDate, 14));
+    }
+
     return {
       fetchDateFrom: start.toISOString(),
       fetchDateTo: end.toISOString()
     };
-  }, [viewMode, activeDate, dateFrom, dateTo]);
+  }, [viewMode, activeDate, dateFrom, dateTo, calendarView]);
 
   // Bookings Query
   const { data: bookingsData, isLoading: bookingsLoading, isFetching: bookingsFetching } = useQuery<BookingsResponse>({

@@ -546,9 +546,9 @@ export function BookingProvider({
                 setEmailChecked({ exists: true });
 
                 try {
-                    const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(userEmail)}`);
+                    const response = await fetch('/api/users/current');
                     const payload = await response.json();
-                    const user = payload?.user;
+                    const user = payload?.data;
                     if (user) {
                         setUserRole(user.role || null);
                         setContactDefaults((prev) => {
@@ -837,9 +837,9 @@ export function BookingProvider({
 
                 if (shouldAutofill && emailToUse) {
                     try {
-                        const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(emailToUse)}`);
+                        const response = await fetch('/api/users/current');
                         const payload = await response.json();
-                        const user = payload?.user;
+                        const user = payload?.data;
                         if (user) {
                             setUserRole(user.role || null);
                             if (user.role === 'midwife') {

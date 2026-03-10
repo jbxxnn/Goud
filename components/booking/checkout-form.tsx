@@ -451,7 +451,7 @@ export function CheckoutForm({
                                                     style={{ borderRadius: "0.5rem" }}
                                                 >
                                                     <HugeiconsIcon icon={Calendar03Icon} />
-                                                    {field.value ? format(new Date(field.value), "P") : <span>{t('selectDate')}</span>}
+                                                    {field.value ? format(new Date(field.value), "dd-MM-yyyy") : <span>{t('selectDate')}</span>}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border border-gray-100 bg-white overflow-hidden" align="start">
@@ -491,7 +491,7 @@ export function CheckoutForm({
                                                     style={{ borderRadius: "0.5rem" }}
                                                 >
                                                     <HugeiconsIcon icon={Calendar03Icon} />
-                                                    {field.value ? format(new Date(field.value), "P") : <span>{t('selectDate')}</span>}
+                                                    {field.value ? format(new Date(field.value), "dd-MM-yyyy") : <span>{t('selectDate')}</span>}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border border-gray-100 bg-white overflow-hidden" align="start">
