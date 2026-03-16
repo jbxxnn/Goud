@@ -21,6 +21,17 @@
         "menu": {
             "bookNewEcho": "Book New Echo",
             "bookNewEchoDescription": "Select a service and time for your next appointment."
+        },
+        "settings": {
+            "general": "General Settings",
+            "locations": "Locations & Services",
+            "billing": "Billing",
+            "notifications": "Notifications",
+            "holidays": "Holidays",
+            "breaks": "Sitewide Breaks",
+            "bookingTags": "Booking Tags",
+            "serviceChecklist": "Service Checklist",
+            "comingSoon": "General settings coming soon."
         }
     },
     "AdminDashboard": {
@@ -518,7 +529,8 @@
             "instructions": "Instructions",
             "price": "Price (€) *",
             "salePrice": "Sale Price (€)",
-            "customPriceLabel": "Custom Price Label",
+            "customPriceLabel": "Quick Title",
+            "customPriceDescription": "Price Description",
             "cancelCutoff": "Cancel Cutoff (hours)",
             "schedulingWindow": "Scheduling Window (weeks)",
             "category": "Category",
@@ -585,7 +597,7 @@
             },
             "addons": {
                 "title": "Service Add-ons",
-                "subtitle": "Manage optional add-ons that customers can select when booking this service",
+                "subtitle": "Manage optional add-ons that clients can select when booking this service",
                 "add": "Add Add-on",
                 "new": "New Add-on",
                 "edit": "Edit Add-on",
@@ -667,7 +679,8 @@
                 "activeHelp": "Only active services are available for booking",
                 "priceHelp": "Base price for this service",
                 "salePriceHelp": "Optional discounted price",
-                "customPriceLabelHelp": "Displayed instead of price when price is 0 (e.g., \"Donation\")",
+                "customPriceLabelHelp": "A short title shown when price is 0 (e.g., \"Free\", \"Donation\")",
+                "customPriceDescriptionHelp": "Additional details about the pricing (e.g., \"Paid at location\")",
                 "bufferTimeHelp": "Extra time between appointments",
                 "leadTimeHelp": "Minimum advance booking time",
                 "schedulingWindowHelp": "How many weeks in advance can be booked",
@@ -850,8 +863,8 @@
                 "para": "Para",
                 "paraPlaceholder": "e.g. 1",
                 "optional": "Optional",
-                "street": "Street name",
-                "streetPlaceholder": "Street",
+                "streetName": "Street name",
+                "streetNamePlaceholder": "Street",
                 "houseNumber": "House number",
                 "houseNumberPlaceholder": "Nr",
                 "postalCode": "Postal code",
@@ -1395,7 +1408,9 @@
             "readOnly": "These details are read-only.",
             "edd": "Estimated Due Date",
             "parity": "Parity",
-            "contact": "Please contact Goud Echo or your midwife to update these details."
+            "contact": "Please contact Goud Echo or your midwife to update these details.",
+            "protocolChecklist": "Protocol Checklist",
+            "staffChecklist": "Internal Staff Tasks"
         }
     },
     "ClientSidebar": {
@@ -1480,6 +1495,8 @@
         "notesPlaceholder": "Enter medical observations, measurements, or private notes here...",
         "notesVisibility": "These notes are only visible to staff.",
         "protocolChecklist": "Protocol Checklist",
+        "staffChecklist": "Internal Staff Tasks",
+        "completed": "Completed",
         "checklist": {
             "verifyIdentity": "Verify Patient Identity",
             "consentForm": "Consent Form Signed",
@@ -1511,7 +1528,8 @@
         "noItems": "No checklist items yet.",
         "completedBy": "Completed by",
         "commentPlaceholder": "Add a comment...",
-        "addComment": "Add comment"
+        "addComment": "Add comment",
+        "completed": "completed"
     },
     "AssistantDashboard": {
         "title": "Assistant Dashboard",
@@ -1646,7 +1664,9 @@
             "notesUpdateError": "Failed to update notes",
             "staffNotesUpdateSuccess": "Staff notes updated successfully",
             "staffNotesUpdateError": "Failed to update staff notes"
-        }
+        },
+        "detailsTab": "Details",
+        "checklistTab": "Checklist"
     },
     "StaffDashboard": {
         "title": "Staff Dashboard"
@@ -1675,5 +1695,92 @@
         "save": "Save new password",
         "saving": "Saving...",
         "error": "An error occurred"
+    },
+    "BookingTags": {
+        "title": "Booking Tags",
+        "description": "Create and manage tags to organize your bookings. Include a title, description, and color for each tag.",
+        "addTag": "Add Tag",
+        "editTag": "Edit Booking Tag",
+        "saveChanges": "Save Changes",
+        "cancel": "Cancel",
+        "form": {
+            "title": "Title",
+            "titlePlaceholder": "e.g. Important",
+            "description": "Description",
+            "descriptionPlaceholder": "Optional description",
+            "color": "Color"
+        },
+        "table": {
+            "preview": "Preview",
+            "title": "Title",
+            "description": "Description",
+            "actions": "Actions",
+            "empty": "No booking tags configured."
+        },
+        "toasts": {
+            "loadError": "Failed to load booking tags",
+            "createSuccess": "Booking tag created",
+            "createError": "Failed to create booking tag",
+            "updateSuccess": "Booking tag updated",
+            "updateError": "Failed to update booking tag",
+            "deleteConfirm": "Are you sure you want to delete this tag?",
+            "deleteSuccess": "Booking tag deleted",
+            "deleteError": "Failed to delete booking tag"
+        },
+        "selector": {
+            "tags": "Tags",
+            "addTag": "Add Tag",
+            "searchTags": "Search tags...",
+            "noTagsFound": "No tags found.",
+            "noTagsApplied": "No tags applied"
+        },
+        "detailsTab": "Details",
+        "checklistTab": "Checklist"
+    },
+    "ServiceChecklist": {
+        "title": "Service Checklists",
+        "description": "Manage checklists that apply to specific services.",
+        "newChecklist": "New Checklist",
+        "searchPlaceholder": "Search checklists...",
+        "createTitle": "Create New Checklist",
+        "createDescription": "Enter a title for your new master checklist.",
+        "titlePlaceholder": "Checklist Title (e.g., Pre-Scan Requirements)",
+        "cancel": "Cancel",
+        "create": "Create",
+        "noChecklistsFound": "No checklists found",
+        "noChecklistsDescription": "You haven't created any master checklists yet.",
+        "createFirst": "Create your first checklist",
+        "loading": "Loading checklist details...",
+        "itemsCount": "items",
+        "servicesCount": "services",
+        "editor": {
+            "title": "Edit Checklist",
+            "delete": "Delete Checklist",
+            "deleteConfirm": "Are you sure you want to delete this master checklist? This will NOT affect existing booking checklists.",
+            "generalDetails": "General Details",
+            "checklistTitle": "Title",
+            "checklistDescription": "Description",
+            "descriptionPlaceholder": "Optional description of when to use this checklist...",
+            "appliedServices": "Applied Services",
+            "appliedServicesDescription": "Select which services will automatically get this checklist.",
+            "selectServices": "Select Services...",
+            "noServiceFound": "No service found.",
+            "noServicesSelected": "No services selected.",
+            "checklistItems": "Checklist Items",
+            "itemsDescription": "Define the steps that staff should follow.",
+            "addItemPlaceholder": "Add a new item...",
+            "noItems": "No items added yet.",
+            "automationAlert": "These items will be cloned when a new booking is created for selected services."
+        },
+        "toasts": {
+            "createSuccess": "Checklist created successfully",
+            "createError": "Failed to create checklist",
+            "updateSuccess": "Checklist updated",
+            "updateError": "Failed to update checklist",
+            "itemAdded": "Item added",
+            "itemRemoved": "Item removed",
+            "servicesSynced": "Service mappings updated",
+            "deleteSuccess": "Checklist deleted"
+        }
     }
 }

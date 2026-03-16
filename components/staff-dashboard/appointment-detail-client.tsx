@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Booking } from '@/lib/types/booking';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,8 @@ import {
     ArrowLeft01Icon,
     Link01Icon,
     InformationCircleIcon,
-    Loading03Icon
+    Loading03Icon,
+    Task01Icon
 } from '@hugeicons/core-free-icons';
 import { parseISO, differenceInWeeks, differenceInDays, addDays, subDays, differenceInMinutes } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -34,8 +35,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { RepeatPrescriber } from '@/components/repeat-prescriber';
 import { useTranslations } from 'next-intl';
 import { ChecklistManager } from './checklist-manager';
+import { ProtocolChecklistManager } from './protocol-checklist-manager';
 import { MidwifeLabel } from '../midwife-label';
 import { useLocale } from 'next-intl';
+import { BookingTagSelector } from '../booking-tag-selector';
 
 interface AppointmentDetailClientProps {
     booking: any;
@@ -55,6 +58,32 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
     const [isCompleting, setIsCompleting] = useState(false);
     const [isNoShowing, setIsNoShowing] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
+    const [isSyncingChecklist, setIsSyncingChecklist] = useState(false);
+
+    // Sync checklist items from master
+    const syncChecklist = async () => {
+        try {
+            setIsSyncingChecklist(true);
+            await fetch(`/api/bookings/${booking.id}/checklist/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ serviceId: booking.service_id })
+            });
+            // Invalidate checklist query to show new items
+            queryClient.invalidateQueries({ queryKey: ['protocol-checklist', booking.id] });
+        } catch (error) {
+            console.error('Failed to sync checklist:', error);
+        } finally {
+            setIsSyncingChecklist(false);
+        }
+    };
+
+    useEffect(() => {
+        if (booking?.id && booking?.service_id) {
+            syncChecklist();
+        }
+    }, [booking?.id, booking?.service_id]);
+
     // Gestational Age Calculation
     const calculateGA = () => {
         if (!booking.due_date) return null;
@@ -126,12 +155,37 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                     <div>
                         <h1 className="text-2xl font-bold flex items-center gap-3">
                             {booking.users?.first_name} {booking.users?.last_name}
+                            {booking.booking_number && (
+                                <span className="text-sm font-medium">G-{booking.booking_number}</span>
+                            )}
                             <Badge variant={
                                 booking.status === 'confirmed' ? 'default' :
                                     booking.status === 'completed' ? 'default' : 'secondary'
                             }>
                                 {booking.status}
                             </Badge>
+                            {(currentUser?.role === 'admin' || currentUser?.role === 'assistant') && (
+                                <BookingTagSelector
+                                    bookingId={booking.id}
+                                    initialTags={booking.booking_tag_mappings?.map((m: any) => m.tag) || []}
+                                    onTagsChange={(newTags) => {
+                                        // Optimistically update the query cache to make it instant on the calendar if we go back
+                                        queryClient.setQueriesData<any>({ queryKey: ['bookings'] }, (old: any) => {
+                                            if (!old || !old.data) return old;
+                                            return {
+                                                ...old,
+                                                data: old.data.map((b: any) => b.id === booking.id ? { 
+                                                    ...b, 
+                                                    booking_tag_mappings: newTags.map(tag => ({ tag })) 
+                                                } : b)
+                                            };
+                                        });
+                                        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                                        // Refresh the page to update the server-side props (booking.booking_tag_mappings)
+                                        router.refresh();
+                                    }}
+                                />
+                            )}
                             {booking.parent_booking_id && (
                                 <Button
                                     variant="outline"
@@ -388,13 +442,52 @@ export function AppointmentDetailClient({ booking, currentUser, previousBookings
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Checklist Manager */}
-                            <div className="space-y-2">
+                            {/* Protocol Checklist (Service-Specific) */}
+                            {/* <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium flex items-center gap-2">
+                                        <HugeiconsIcon icon={Task01Icon} size={16} />
+                                        {t('protocolChecklist') || 'Protocol Checklist'}
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                            {(() => {
+                                                const items = queryClient.getQueryData<any[]>(['protocol-checklist', booking.id]) || [];
+                                                const completed = items.filter((i: any) => i.is_completed).length;
+                                                const total = items.length;
+                                                if (total === 0) return '';
+                                                return `${completed}/${total} ${t('completed') || 'Completed'}`;
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <ProtocolChecklistManager 
+                                    bookingId={booking.id} 
+                                    showAdd={false}
+                                    showDelete={false}
+                                />
+                            </div> */}
+
+                            <Separator />
+
+                            {/* Internal Staff Tasks */}
+                            <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium flex items-center gap-2">
                                         <HugeiconsIcon icon={File01Icon} size={16} />
-                                        {t('medicalNotesAndChecklist')}
+                                        {t('staffChecklist') || 'Internal Staff Tasks'}
                                     </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                            {(() => {
+                                                const items = queryClient.getQueryData<any[]>(['checklist', booking.id]) || [];
+                                                const completed = items.filter((i: any) => i.is_completed).length;
+                                                const total = items.length;
+                                                if (total === 0) return '';
+                                                return `${completed}/${total} ${t('completed') || 'Completed'}`;
+                                            })()}
+                                        </div>
+                                    </div>
                                 </div>
                                 <ChecklistManager bookingId={booking.id} />
                             </div>

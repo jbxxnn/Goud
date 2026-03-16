@@ -487,9 +487,13 @@ export default function AssistantDashboard() {
                                   <span className="text-muted-foreground/50">•</span>
                                 </>
                               )}
-                              <span>{task.booking?.services?.name}</span>
+                              <span>
+                                <Link href={`/dashboard/appointments/${task.booking_id}`} className="hover:underline">
+                                  {task.booking?.services?.name}
+                                </Link>
+                              </span>
                               <span className="text-muted-foreground/50">•</span>
-                              <Link href={`/dashboard/bookings?id=${task.booking_id}`} className="hover:underline">
+                              <Link href={`/dashboard/appointments/${task.booking_id}`} className="hover:underline">
                                 {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
                               </Link>
                               <span className="text-muted-foreground/50">•</span>
@@ -539,14 +543,20 @@ export default function AssistantDashboard() {
                           <HugeiconsIcon icon={UserIcon} className="h-4 w-4 text-primary" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm truncate">
-                            {Array.isArray(booking.users) ? booking.users[0]?.first_name : booking.users?.first_name} {Array.isArray(booking.users) ? booking.users[0]?.last_name : booking.users?.last_name}
-                            {booking.noShowCount && booking.noShowCount > 0 && (
-                              <span className="ml-1.5 text-destructive font-bold">
-                                ({booking.noShowCount})
-                              </span>
-                            )}
-                          </p>
+                            <p className="font-semibold text-sm truncate">
+                              <Link 
+                                href={`/dashboard/appointments/${booking.id}`} 
+                                className="hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {Array.isArray(booking.users) ? booking.users[0]?.first_name : booking.users?.first_name} {Array.isArray(booking.users) ? booking.users[0]?.last_name : booking.users?.last_name}
+                              </Link>
+                              {booking.noShowCount && booking.noShowCount > 0 && (
+                                <span className="ml-1.5 text-destructive font-bold">
+                                  ({booking.noShowCount})
+                                </span>
+                              )}
+                            </p>
                           <div className="text-xs text-muted-foreground flex flex-wrap gap-x-1 mt-0.5">
                             {booking.staff && (
                               <>
@@ -554,7 +564,13 @@ export default function AssistantDashboard() {
                                 <span className="text-muted-foreground/50">•</span>
                               </>
                             )}
-                            <span className="line-clamp-1">{booking.services?.name}</span>
+                            <Link 
+                              href={`/dashboard/appointments/${booking.id}`} 
+                              className="hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {booking.services?.name}
+                            </Link>
                             {booking.locations?.name && (
                               <>
                                 <span className="text-muted-foreground/50">•</span>

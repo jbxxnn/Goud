@@ -40,7 +40,7 @@ export function ChecklistManager({ bookingId }: ChecklistManagerProps) {
     const [commentText, setCommentText] = useState('');
 
     // Fetch Items
-    const { data: items = [], isLoading } = useQuery<ChecklistItem[]>({
+    const { data: items = [], isLoading, isFetching, isError } = useQuery<ChecklistItem[]>({
         queryKey: ['checklist', bookingId],
         queryFn: async () => {
             const res = await fetch(`/api/bookings/${bookingId}/checklist`);
@@ -48,6 +48,8 @@ export function ChecklistManager({ bookingId }: ChecklistManagerProps) {
             return res.json();
         }
     });
+
+    const isRefreshing = isFetching && items.length === 0;
 
     // Add Item Mutation
     const addItemMutation = useMutation({
@@ -137,6 +139,7 @@ export function ChecklistManager({ bookingId }: ChecklistManagerProps) {
                 <Input
                     placeholder={t('addItemPlaceholder')}
                     value={newItemContent}
+                    className='h-10'
                     onChange={(e) => setNewItemContent(e.target.value)}
                     disabled={addItemMutation.isPending}
                 />
@@ -147,9 +150,13 @@ export function ChecklistManager({ bookingId }: ChecklistManagerProps) {
 
             {/* Checklist Items */}
             <ScrollArea className="h-[300px] pr-4">
-                {isLoading ? (
+                {isLoading || isRefreshing ? (
                     <div className="flex justify-center p-4">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                ) : isError ? (
+                    <div className="text-center p-4 text-destructive text-sm font-medium">
+                        {t('errorFetching') || 'Error loading checklist'}
                     </div>
                 ) : items.length === 0 ? (
                     <div className="text-center p-4 text-muted-foreground text-sm">

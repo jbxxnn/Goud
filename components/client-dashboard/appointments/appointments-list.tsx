@@ -29,9 +29,10 @@ import { Separator } from '@/components/ui/separator';
 interface AppointmentsListProps {
     clientId: string;
     filterBy?: 'created_by' | 'client_id'; // Default: 'created_by'
+    showFilters?: boolean;
 }
 
-export function AppointmentsList({ clientId, filterBy = 'created_by' }: AppointmentsListProps) {
+export function AppointmentsList({ clientId, filterBy = 'created_by', showFilters = true }: AppointmentsListProps) {
     const t = useTranslations('Appointments');
     const locale = useLocale();
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -125,7 +126,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
         shiftId: string
     ) => {
         const response = await fetch(`/api/bookings/${bookingId}`, {
-            method: 'PATCH',
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -135,7 +136,6 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                 location_id: locationId,
                 staff_id: staffId,
                 shift_id: shiftId,
-                status: 'confirmed', // Assuming instant confirm for reschedule, or revert to 'pending' if approval needed
             }),
         });
 
@@ -236,76 +236,77 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
 
             <Separator />
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-4 rounded-lg border">
-                {filterBy === 'client_id' && (
-                    <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                        <div className="relative w-full">
-                            <HugeiconsIcon icon={Search01Icon} className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <input
-                                type="text"
-                                placeholder={t('searchPlaceholder')}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                                style={{ borderRadius: '1rem' }}
-                            />
+            {showFilters && (
+                <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-4 rounded-lg border">
+                    {filterBy === 'client_id' && (
+                        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                            <div className="relative w-full">
+                                <HugeiconsIcon icon={Search01Icon} className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <input
+                                    type="text"
+                                    placeholder={t('searchPlaceholder')}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                    style={{ borderRadius: '1rem' }}
+                                />
+                            </div>
                         </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            style={{ borderRadius: '1rem' }}
+                        >
+                            <option value="all">{t('filters.allStatuses')} ({statusCounts.all || 0})</option>
+                            <option value="pending">{t('filters.pending')} ({statusCounts.pending || 0})</option>
+                            <option value="confirmed">{t('filters.confirmed')} ({statusCounts.confirmed || 0})</option>
+                            <option value="cancelled">{t('filters.cancelled')} ({statusCounts.cancelled || 0})</option>
+                            <option value="completed">{t('filters.completed')} ({statusCounts.completed || 0})</option>
+                            <option value="no_show">{t('filters.no_show')} ({statusCounts.no_show || 0})</option>
+                        </select>
                     </div>
-                )}
 
-                <div className="flex items-center gap-2">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        style={{ borderRadius: '1rem' }}
-                    >
-                        <option value="all">{t('filters.allStatuses')} ({statusCounts.all || 0})</option>
-                        <option value="pending">{t('filters.pending')} ({statusCounts.pending || 0})</option>
-                        <option value="confirmed">{t('filters.confirmed')} ({statusCounts.confirmed || 0})</option>
-                        <option value="cancelled">{t('filters.cancelled')} ({statusCounts.cancelled || 0})</option>
-                        <option value="completed">{t('filters.completed')} ({statusCounts.completed || 0})</option>
-                        <option value="no_show">{t('filters.no_show')} ({statusCounts.no_show || 0})</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder={t('filters.from')}
+                            style={{ borderRadius: '1rem' }}
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder={t('filters.to')}
+                            style={{ borderRadius: '1rem' }}
+                        />
+                    </div>
+
+                    {(statusFilter !== 'all' || searchQuery || dateFrom || dateTo) && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                setStatusFilter('all');
+                                setSearchQuery('');
+                                setDateFrom('');
+                                setDateTo('');
+                            }}
+                            className="h-9 px-2 lg:px-3"
+                        >
+                            {t('filters.reset')}
+                        </Button>
+                    )}
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder={t('filters.from')}
-                        style={{ borderRadius: '1rem' }}
-                    />
-                    <span className="text-muted-foreground">-</span>
-                    <input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-card px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder={t('filters.to')}
-                        style={{ borderRadius: '1rem' }}
-                    />
-                </div>
-
-                {(statusFilter !== 'all' || searchQuery || dateFrom || dateTo) && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                            setStatusFilter('all');
-                            setSearchQuery('');
-                            setDateFrom('');
-                            setDateTo('');
-                        }}
-                        className="h-9 px-2 lg:px-3"
-                    >
-                        {t('filters.reset')}
-                    </Button>
-                )}
-            </div>
+            )}
 
             {sortedBookings.length === 0 ? (
                 <div className="text-center py-12 bg-muted/10 rounded-lg border border-dashed">
@@ -316,103 +317,164 @@ export function AppointmentsList({ clientId, filterBy = 'created_by' }: Appointm
                     </Button>
                 </div>
             ) : (
-                <div className={`border rounded-lg overflow-hidden transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`} style={{borderRadius: '10px'}}>
-                    <Table className='bg-white' style={{borderRadius: '10px'}}>
-                        <TableHeader style={{borderRadius: '10px'}}>
-                            <TableRow style={{borderRadius: '10px'}}>
-                                <TableHead>{t('table.dateTime')}</TableHead>
-                                {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
-                                <TableHead>{t('table.service')}</TableHead>
-                                {/* <TableHead>{t('table.staff')}</TableHead> */}
-                                <TableHead>{t('table.location')}</TableHead>
-                                <TableHead>{t('table.status')}</TableHead>
-                                <TableHead className="text-right">{t('table.actions')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sortedBookings.map((booking) => (
-                                <TableRow key={booking.id}>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">
-                                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d, yyyy', { locale: locale === 'nl' ? nl : enUS })}
-                                            </span>
-                                            <span className="text-sm text-muted-foreground">
-                                                {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm')}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    {filterBy === 'client_id' && (
+                <div className={`transition-opacity duration-200 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden bg-white" style={{ borderRadius: '10px' }}>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t('table.dateTime')}</TableHead>
+                                    {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
+                                    <TableHead>{t('table.service')}</TableHead>
+                                    <TableHead>{t('table.location')}</TableHead>
+                                    <TableHead>{t('table.status')}</TableHead>
+                                    <TableHead className="text-right">{t('table.actions')}</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedBookings.map((booking) => (
+                                    <TableRow key={booking.id}>
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="font-medium">
-                                                    {booking.users ?
-                                                        [booking.users.first_name, booking.users.last_name].filter(Boolean).join(' ') || t('table.unknown')
-                                                        : t('table.unknown')}
+                                                    {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d, yyyy', { locale: locale === 'nl' ? nl : enUS })}
                                                 </span>
-                                                {booking.users?.email && (
-                                                    <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-                                                        {booking.users.email}
+                                                <span className="text-sm text-muted-foreground">
+                                                    {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm')}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        {filterBy === 'client_id' && (
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">
+                                                        {booking.users ?
+                                                            [booking.users.first_name, booking.users.last_name].filter(Boolean).join(' ') || t('table.unknown')
+                                                            : t('table.unknown')}
                                                     </span>
+                                                    {booking.users?.email && (
+                                                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                                            {booking.users.email}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <span>{booking.services?.name || t('table.unknown')}</span>
+                                                {booking.services?.custom_price_label && booking.price_eur_cents === 0 && (
+                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-primary/20 text-primary">
+                                                        {booking.services.custom_price_label}
+                                                    </Badge>
+                                                )}
+                                                {booking.is_twin && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
+                                                    >
+                                                        Tweeling
+                                                    </Badge>
+                                                )}
+                                                {booking.isRepeat && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 text-[10px] tracking-wider"
+                                                    >
+                                                        {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
+                                                        <p>m</p>
+                                                    </Badge>
                                                 )}
                                             </div>
                                         </TableCell>
-                                    )}
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <span>{booking.services?.name || t('table.unknown')}</span>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span>{booking.locations?.name || t('table.location')}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="outline"
+                                                className={`capitalize ${getStatusColor(booking.status)}`}
+                                            >
+                                                {getStatusLabel(booking.status, booking.end_time)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <ActionButtons
+                                                booking={booking}
+                                                onReschedule={() => handleReschedule(booking)}
+                                                onCancel={handleCancel}
+                                                onViewResults={handleViewResults}
+                                                isPast={isPast(new Date(booking.end_time))}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                        {sortedBookings.map((booking) => (
+                            <div key={booking.id} className="bg-white border rounded-xl overflow-hidden shadow-sm flex flex-col p-4 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-gray-900">
+                                            {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'EEEE, d MMM yyyy', { locale: locale === 'nl' ? nl : enUS })}
+                                        </span>
+                                        <span className="text-sm font-semibold text-primary">
+                                            {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')} - {formatInTimeZone(new Date(booking.end_time), 'Europe/Amsterdam', 'HH:mm')}
+                                        </span>
+                                    </div>
+                                    <Badge
+                                        variant="outline"
+                                        className={`capitalize ${getStatusColor(booking.status)}`}
+                                    >
+                                        {getStatusLabel(booking.status, booking.end_time)}
+                                    </Badge>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-bold text-gray-800">{booking.services?.name || t('table.unknown')}</span>
+                                        <div className="flex gap-1">
                                             {booking.services?.custom_price_label && booking.price_eur_cents === 0 && (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-primary/20 text-primary">
+                                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/20 text-primary">
                                                     {booking.services.custom_price_label}
                                                 </Badge>
                                             )}
                                             {booking.is_twin && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="bg-purple-100 text-purple-700 hover:bg-purple-100/80 border-purple-200 text-[10px] px-1.5 py-0 h-5"
-                                                >
+                                                <Badge variant="secondary" className="bg-purple-100 text-purple-700 text-[9px] px-1.5 py-0 h-4">
                                                     Tweeling
                                                 </Badge>
                                             )}
-                                            {booking.isRepeat && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 text-[10px] tracking-wider"
-                                                >
-                                                    {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
-                                                    <p>m</p>
-                                                </Badge>
-                                            )}
                                         </div>
-                                    </TableCell>
-                                    {/* <TableCell>{booking.staff?.first_name || t('table.staff')}</TableCell> */}
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span>{booking.locations?.name || t('table.location')}</span>
-                                            {/* <span className="text-xs text-muted-foreground truncate max-w-[150px]">{booking.locations?.address}</span> */}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <span className="font-medium">{booking.locations?.name || t('table.location')}</span>
+                                    </div>
+                                    {filterBy === 'client_id' && booking.users && (
+                                        <div className="pt-1">
+                                            <p className="text-xs font-semibold">{[booking.users.first_name, booking.users.last_name].filter(Boolean).join(' ')}</p>
+                                            <p className="text-[10px] text-muted-foreground">{booking.users.email}</p>
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="outline"
-                                            className={`capitalize ${getStatusColor(booking.status)}`}
-                                        >
-                                            {getStatusLabel(booking.status, booking.end_time)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <ActionButtons
-                                            booking={booking}
-                                            onReschedule={() => handleReschedule(booking)}
-                                            onCancel={handleCancel}
-                                            onViewResults={handleViewResults}
-                                            isPast={isPast(new Date(booking.end_time))}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                    )}
+                                </div>
+                                <Separator />
+                                <div className="pt-1">
+                                    <ActionButtons
+                                        booking={booking}
+                                        onReschedule={() => handleReschedule(booking)}
+                                        onCancel={handleCancel}
+                                        onViewResults={handleViewResults}
+                                        isPast={isPast(new Date(booking.end_time))}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 

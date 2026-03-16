@@ -39,6 +39,7 @@ import { GripVertical, ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'l
 import { CreateServiceAddonOptionRequest, UpdateServiceAddonOptionRequest } from '@/lib/types/service';
 import { toast } from 'sonner';
 import { ServiceRepeatManager } from './service-repeat-manager';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 
 interface ServiceFormProps {
   service?: Service;
@@ -253,6 +254,7 @@ function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { a
   const [options, setOptions] = useState<ServiceAddonOption[]>(initialOptions);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [idToDelete, setIdToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     price: '0',
@@ -337,7 +339,6 @@ function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { a
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('deleteConfirm'))) return;
     try {
       const response = await fetch(`/api/services/addons/${addonId}/options/${id}`, {
         method: 'DELETE',
@@ -345,6 +346,7 @@ function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { a
       const data = await response.json();
       if (data.success) {
         toast.success(t('deleteSuccess'));
+        setIdToDelete(null);
         onUpdate();
       } else {
         toast.error(t('deleteError'), { description: data.error });
@@ -356,6 +358,13 @@ function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { a
 
   return (
     <div className="mt-6 border-t pt-6 space-y-4">
+      <DeleteConfirmationDialog
+        isOpen={!!idToDelete}
+        onClose={() => setIdToDelete(null)}
+        onConfirm={() => idToDelete && handleDelete(idToDelete)}
+        title={t('title')}
+        description={t('deleteConfirm')}
+      />
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('title')}</h4>
         {!isAdding && (
@@ -416,7 +425,7 @@ function AddonOptionsManager({ addonId, options: initialOptions, onUpdate }: { a
               <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(option)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
-              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(option.id)}>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIdToDelete(option.id)}>
                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             </div>
@@ -438,6 +447,7 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
   const [loading, setLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [idToDelete, setIdToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -573,10 +583,6 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t('deleteConfirm'))) {
-      return;
-    }
-
     try {
       const response = await fetch(`/api/services/addons/${id}`, {
         method: 'DELETE',
@@ -585,6 +591,7 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
       const data = await response.json();
       if (data.success) {
         toast.success(t('deleteSuccess'));
+        setIdToDelete(null);
         fetchAddons();
       } else {
         toast.error(t('deleteError'), {
@@ -608,6 +615,13 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
 
   return (
     <div className="space-y-6">
+      <DeleteConfirmationDialog
+        isOpen={!!idToDelete}
+        onClose={() => setIdToDelete(null)}
+        onConfirm={() => idToDelete && handleDelete(idToDelete)}
+        title={t('title')}
+        description={t('deleteConfirm')}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">{t('title')}</h3>
@@ -759,7 +773,7 @@ function AddonsManager({ serviceId }: { serviceId?: string }) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(addon.id)}
+                  onClick={() => setIdToDelete(addon.id)}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
@@ -1418,17 +1432,33 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
 
                 {/* Custom Price Label */}
                 {Number(watch('price')) === 0 && (
-                  <div className="md:col-span-2 mb-4 animate-in fade-in slide-in-from-top-2">
-                    <Label htmlFor="custom_price_label" className="text-sm font-medium mb-2">{t('customPriceLabel')}</Label>
-                    <Input
-                      id="custom_price_label"
-                      disabled={getDisabledState()}
-                      {...register('custom_price_label')}
-                      placeholder="e.g. Donation"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t('hints.customPriceLabelHelp')}
-                    </p>
+                  <div className="md:col-span-2 space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="mb-4">
+                      <Label htmlFor="custom_price_label" className="text-sm font-medium mb-2">{t('customPriceLabel')}</Label>
+                      <Input
+                        id="custom_price_label"
+                        disabled={getDisabledState()}
+                        {...register('custom_price_label')}
+                        placeholder="e.g. Donation"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.customPriceLabelHelp')}
+                      </p>
+                    </div>
+
+                    <div className="mb-4">
+                      <Label htmlFor="custom_price_description" className="text-sm font-medium mb-2">{t('customPriceDescription')}</Label>
+                      <Textarea
+                        id="custom_price_description"
+                        disabled={getDisabledState()}
+                        {...register('custom_price_description')}
+                        placeholder="e.g. Paid at location"
+                        rows={2}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('hints.customPriceDescriptionHelp')}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1693,7 +1723,7 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
                         <PopoverContent className="p-0 w-[var(--radix-popover-trigger-width)]" align="start">
                           <Command>
                             <CommandInput placeholder={t('placeholders.searchStaff')} />
-                            <CommandList>
+                            <CommandList onWheel={(e) => e.stopPropagation()}>
                               <CommandEmpty>{t('hints.noStaffFound')}</CommandEmpty>
                               <CommandGroup>
                                 {staff.map((staffMember) => (

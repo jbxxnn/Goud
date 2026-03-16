@@ -2,21 +2,25 @@
 
 import { useState } from 'react';
 import { SitewideBreaksManager } from '@/components/settings/sitewide-breaks-manager';
-import { Calendar, User, Clock, Building2, CreditCard, Bell } from 'lucide-react';
+import { BookingTagsManager } from '@/components/settings/booking-tags-manager';
+import { ServiceChecklistManager } from '@/components/settings/service-checklist-manager';
+import { Calendar, User, Clock, Building2, CreditCard, Bell, Tag, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 export function SettingsSidebar() {
-  const [activeTab, setActiveTab] = useState<'holidays' | 'breaks' | 'general'>('holidays');
+  const [activeTab, setActiveTab] = useState<'holidays' | 'breaks' | 'general' | 'bookingTags' | 'serviceChecklist'>('holidays');
   const t = useTranslations('Dashboard');
 
   const navItems = [
-    { id: 'general', label: 'General Settings', icon: User, disabled: true },
-    { id: 'locations', label: 'Locations & Services', icon: Building2, disabled: true },
-    { id: 'billing', label: 'Billing', icon: CreditCard, disabled: true },
-    { id: 'notifications', label: 'Notifications', icon: Bell, disabled: true },
-    { id: 'holidays', label: 'Holidays', icon: Calendar },
-    { id: 'breaks', label: 'Sitewide Breaks', icon: Clock },
+    { id: 'general', label: t('settings.general'), icon: User, disabled: true },
+    { id: 'locations', label: t('settings.locations'), icon: Building2, disabled: true },
+    { id: 'billing', label: t('settings.billing'), icon: CreditCard, disabled: true },
+    { id: 'notifications', label: t('settings.notifications'), icon: Bell, disabled: true },
+    { id: 'holidays', label: t('settings.holidays'), icon: Calendar },
+    { id: 'breaks', label: t('settings.breaks'), icon: Clock },
+    { id: 'bookingTags', label: t('settings.bookingTags'), icon: Tag },
+    { id: 'serviceChecklist', label: t('settings.serviceChecklist'), icon: ClipboardList },
   ];
 
   return (
@@ -52,9 +56,17 @@ export function SettingsSidebar() {
            <SitewideBreaksManager activeTab={activeTab === 'holidays' ? 'holidays' : 'breaks'} />
         )}
 
+        {activeTab === 'bookingTags' && (
+          <BookingTagsManager />
+        )}
+
+        {activeTab === 'serviceChecklist' && (
+          <ServiceChecklistManager />
+        )}
+
         {activeTab === 'general' && (
           <div className="p-8 border rounded-lg bg-card text-center text-muted-foreground">
-            General settings coming soon.
+            {t('settings.comingSoon')}
           </div>
         )}
       </main>

@@ -21,6 +21,17 @@
         "menu": {
             "bookNewEcho": "Nieuwe Echo Boeken",
             "bookNewEchoDescription": "Kies een dienst en tijd voor uw volgende afspraak."
+        },
+        "settings": {
+            "general": "Algemene Instellingen",
+            "locations": "Locaties & Services",
+            "billing": "Facturering",
+            "notifications": "Meldingen",
+            "holidays": "Vakantiedagen",
+            "breaks": "Pauzes",
+            "bookingTags": "Boeking Tags",
+            "serviceChecklist": "Service Checklijst",
+            "comingSoon": "Algemene instellingen komen binnenkort."
         }
     },
     "AdminDashboard": {
@@ -518,7 +529,8 @@
             "instructions": "Instructies",
             "price": "Prijs (€) *",
             "salePrice": "Actieprijs (€)",
-            "customPriceLabel": "Eigen Prijslabel",
+            "customPriceLabel": "Snel Titel",
+            "customPriceDescription": "Prijs Beschrijving",
             "cancelCutoff": "Annuleringstermijn (uren)",
             "schedulingWindow": "Planningsvenster (weken)",
             "category": "Categorie",
@@ -667,7 +679,8 @@
                 "activeHelp": "Alleen actieve diensten zijn beschikbaar voor boeking",
                 "priceHelp": "Basisprijs voor deze dienst",
                 "salePriceHelp": "Optionele actieprijs",
-                "customPriceLabelHelp": "Wordt getoond in plaats van prijs als prijs 0 is (bijv. \"Donatie\")",
+                "customPriceLabelHelp": "Een korte titel die wordt getoond als de prijs 0 is (bijv. \"Gratis\", \"Donatie\")",
+                "customPriceDescriptionHelp": "Extra details over de prijsstelling (bijv. \"Betaald op locatie\")",
                 "bufferTimeHelp": "Extra tijd tussen afspraken",
                 "leadTimeHelp": "Minimale tijd van tevoren boeken",
                 "schedulingWindowHelp": "Hoeveel weken van tevoren geboekt kan worden",
@@ -850,8 +863,8 @@
                 "para": "Para",
                 "paraPlaceholder": "bijv. 1",
                 "optional": "Optioneel",
-                "street": "Straatnaam",
-                "streetPlaceholder": "Straat",
+                "streetName": "Straatnaam",
+                "streetNamePlaceholder": "Straat",
                 "houseNumber": "Huisnummer",
                 "houseNumberPlaceholder": "Nr",
                 "postalCode": "Postcode",
@@ -1395,7 +1408,9 @@
             "readOnly": "Deze gegevens zijn alleen-lezen.",
             "edd": "Uitgerekende datum",
             "parity": "Pariteit",
-            "contact": "Neem contact op met Goud Echo of uw verloskundige om deze gegevens bij te werken."
+            "contact": "Neem contact op met Goud Echo of uw verloskundige om deze gegevens bij te werken.",
+            "protocolChecklist": "Protocol Checklijst",
+            "staffChecklist": "Interne Management Taken"
         }
     },
     "ClientSidebar": {
@@ -1481,6 +1496,8 @@
         "notesPlaceholder": "Voer hier medische observaties, metingen of privénotities in...",
         "notesVisibility": "Deze notities zijn alleen zichtbaar voor personeel.",
         "protocolChecklist": "Protocol controlelijst",
+        "staffChecklist": "Interne personeelstaken",
+        "completed": "Voltooid",
         "checklist": {
             "verifyIdentity": "Identiteit patiënt verifiëren",
             "consentForm": "Toestemmingsformulier ondertekend",
@@ -1511,7 +1528,8 @@
         "noItems": "Nog geen checklist items.",
         "completedBy": "Voltooid door",
         "commentPlaceholder": "Opmerking toevoegen...",
-        "addComment": "Opmerking toevoegen"
+        "addComment": "Opmerking toevoegen",
+        "completed": "voltooid"
     },
     "AssistantDashboard": {
         "title": "Assistent Dashboard",
@@ -1646,7 +1664,9 @@
             "notesUpdateError": "Notities bijwerken mislukt",
             "staffNotesUpdateSuccess": "Personeelsnotities succesvol bijgewerkt",
             "staffNotesUpdateError": "Personeelsnotities bijwerken mislukt"
-        }
+        },
+        "detailsTab": "Details",
+        "checklistTab": "Checklijst"
     },
     "StaffDashboard": {
         "title": "Medewerker Dashboard"
@@ -1675,5 +1695,92 @@
         "save": "Nieuw wachtwoord opslaan",
         "saving": "Opslaan...",
         "error": "Er is een fout opgetreden"
+    },
+    "BookingTags": {
+        "title": "Booking Tags",
+        "description": "Maak en beheer tags om je boekingen te organiseren. Voeg een titel, beschrijving en kleur toe voor elke tag.",
+        "addTag": "Tag toevoegen",
+        "editTag": "Booking Tag bewerken",
+        "saveChanges": "Wijzigingen opslaan",
+        "cancel": "Annuleren",
+        "form": {
+            "title": "Titel",
+            "titlePlaceholder": "bijv. Belangrijk",
+            "description": "Beschrijving",
+            "descriptionPlaceholder": "Optionele beschrijving",
+            "color": "Kleur"
+        },
+        "table": {
+            "preview": "Voorbeeld",
+            "title": "Titel",
+            "description": "Beschrijving",
+            "actions": "Acties",
+            "empty": "Geen booking tags geconfigureerd."
+        },
+        "toasts": {
+            "loadError": "Niet gelukt om booking tags te laden",
+            "createSuccess": "Booking tag aangemaakt",
+            "createError": "Niet gelukt om booking tag aan te maken",
+            "updateSuccess": "Booking tag bijgewerkt",
+            "updateError": "Niet gelukt om booking tag bij te werken",
+            "deleteConfirm": "Weet je zeker dat je deze tag wilt verwijderen?",
+            "deleteSuccess": "Booking tag verwijderd",
+            "deleteError": "Niet gelukt om booking tag te verwijderen"
+        },
+        "selector": {
+            "tags": "Tags",
+            "addTag": "Tag toevoegen",
+            "searchTags": "Zoek tags...",
+            "noTagsFound": "Geen tags gevonden.",
+            "noTagsApplied": "Geen tags toegepast"
+        },
+        "detailsTab": "Details",
+        "checklistTab": "Checklijst"
+    },
+    "ServiceChecklist": {
+        "title": "Service Checklijsten",
+        "description": "Beheer checklijsten die van toepassing zijn op specifieke services.",
+        "newChecklist": "Nieuwe Checklijst",
+        "searchPlaceholder": "Checklijsten zoeken...",
+        "createTitle": "Nieuwe Checklijst Aanmaken",
+        "createDescription": "Voer een titel in voor je nieuwe master checklijst.",
+        "titlePlaceholder": "Titel Checklijst (bijv. Pre-Scan Vereisten)",
+        "cancel": "Annuleren",
+        "create": "Aanmaken",
+        "noChecklistsFound": "Geen checklijsten gevonden",
+        "noChecklistsDescription": "Je hebt nog geen master checklijsten aangemaakt.",
+        "createFirst": "Maak je eerste checklijst aan",
+        "loading": "Checklijst details laden...",
+        "itemsCount": "items",
+        "servicesCount": "services",
+        "editor": {
+            "title": "Checklijst Bewerken",
+            "delete": "Checklijst Verwijderen",
+            "deleteConfirm": "Weet je zeker dat je deze master checklijst wilt verwijderen? Dit heeft GEEN invloed op bestaande boekingschecklijsten.",
+            "generalDetails": "Algemene Details",
+            "checklistTitle": "Titel",
+            "checklistDescription": "Beschrijving",
+            "descriptionPlaceholder": "Optionele beschrijving van wanneer deze checklijst te gebruiken...",
+            "appliedServices": "Toegepaste Services",
+            "appliedServicesDescription": "Selecteer welke services automatisch deze checklijst krijgen.",
+            "selectServices": "Services Selecteren...",
+            "noServiceFound": "Geen service gevonden.",
+            "noServicesSelected": "Geen services geselecteerd.",
+            "checklistItems": "Checklijst Items",
+            "itemsDescription": "Definieer de stappen die het personeel moet volgen.",
+            "addItemPlaceholder": "Nieuw item toevoegen...",
+            "noItems": "Nog geen items toegevoegd.",
+            "automationAlert": "Deze items worden gekloond wanneer een nieuwe boeking wordt aangemaakt voor geselecteerde services."
+        },
+        "toasts": {
+            "createSuccess": "Checklijst succesvol aangemaakt",
+            "createError": "Aanmaken checklijst mislukt",
+            "updateSuccess": "Checklijst bijgewerkt",
+            "updateError": "Bijwerken checklijst mislukt",
+            "itemAdded": "Item toegevoegd",
+            "itemRemoved": "Item verwijderd",
+            "servicesSynced": "Servicekoppelingen bijgewerkt",
+            "deleteSuccess": "Checklijst verwijderd"
+        }
     }
 }

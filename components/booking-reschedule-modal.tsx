@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Loading03Icon } from '@hugeicons/core-free-icons';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Location } from '@/lib/types/location_simple';
 import { formatInTimeZone } from 'date-fns-tz';
 import { toast } from 'sonner';
 
@@ -176,6 +176,8 @@ function TimePicker({ slots, selected, onSelect, loading }: {
 export default function BookingRescheduleModal({ isOpen, onClose, booking, onReschedule }: BookingRescheduleModalProps) {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+  const [locations, setLocations] = useState<Location[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingHeatmap, setLoadingHeatmap] = useState(false);
@@ -188,28 +190,43 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
   });
   const [rescheduling, setRescheduling] = useState(false);
 
+  // Fetch locations
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/locations/active')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          setLocations(res.data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch locations:', err));
+  }, [isOpen]);
+
   // Initialize when modal opens
   useEffect(() => {
     if (!isOpen || !booking) {
       setSelectedDate('');
       setSelectedSlot(null);
+      setSelectedLocationId('');
       setSlots([]);
       return;
     }
+    setSelectedLocationId(booking.location_id);
   }, [isOpen, booking]);
 
   useEffect(() => {
-    if (!booking || !selectedDate || !booking.staff_id) {
+    if (!booking || !selectedDate || !selectedLocationId) {
       setSlots([]);
       return;
     }
     setLoadingSlots(true);
     const params = new URLSearchParams({
       serviceId: booking.service_id,
-      locationId: booking.location_id,
+      locationId: selectedLocationId,
       date: selectedDate,
       excludeBookingId: booking.id, // Exclude current booking from availability check
-      staffId: booking.staff_id, // Filter by the same staff
+      // Removed staffId filter to allow rescheduling to any available staff at this location
     });
     fetch(`/api/availability?${params.toString()}`)
       .then(r => r.json())
@@ -224,10 +241,10 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
       })
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [booking, selectedDate]);
+  }, [booking, selectedDate, selectedLocationId]);
 
   useEffect(() => {
-    if (!booking || !booking.location_id || !booking.staff_id || !isOpen) return;
+    if (!booking || !selectedLocationId || !isOpen) return;
     setLoadingHeatmap(true);
     const start = new Date(monthCursor);
     const end = new Date(monthCursor);
@@ -235,8 +252,8 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
     end.setDate(0);
     const params = new URLSearchParams({
       serviceId: booking.service_id,
-      locationId: booking.location_id,
-      staffId: booking.staff_id, // Filter heatmap by the same staff
+      locationId: selectedLocationId,
+      // Removed staffId filter to allow rescheduling to any available staff at this location
       start: toISODate(start),
       end: toISODate(end),
     });
@@ -249,18 +266,18 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
       })
       .catch(() => setHeatmap({}))
       .finally(() => setLoadingHeatmap(false));
-  }, [booking, monthCursor, isOpen]);
+  }, [booking, monthCursor, isOpen, selectedLocationId]);
 
   const handleReschedule = async () => {
-    if (!booking || !selectedSlot || !booking.location_id || !booking.staff_id) return;
+    if (!booking || !selectedSlot || !selectedLocationId || rescheduling) return;
     setRescheduling(true);
     try {
       await onReschedule(
         booking.id,
         selectedSlot.startTime,
         selectedSlot.endTime,
-        booking.location_id, // Keep same location
-        booking.staff_id,    // Keep same staff
+        selectedLocationId,   // Use newly selected location
+        selectedSlot.staffId,  // Use staff from the selected slot
         selectedSlot.shiftId
       );
       toast.success('Booking rescheduled', {
@@ -297,12 +314,29 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold">Select New Date & Time</h3>
-            <p className="text-sm text-gray-600">
-              Location: <span className="font-medium">{booking.locations?.name || 'N/A'}</span>
-              {/* {' • '} */}
-              {/* Staff: <span className="font-medium">{booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</span> */}
-            </p>
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Select New Date & Time</h3>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Location</label>
+              <Select value={selectedLocationId} onValueChange={(val) => {
+                setSelectedLocationId(val);
+                setSelectedSlot(null);
+                setSelectedDate('');
+              }}>
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="relative">
               <Calendar
@@ -337,7 +371,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={handleReschedule}
-            disabled={!selectedSlot || !booking?.location_id || !booking?.staff_id || rescheduling}
+            disabled={!selectedSlot || !selectedLocationId || rescheduling}
           >
             {rescheduling ? 'Rescheduling...' : 'Reschedule'}
           </Button>

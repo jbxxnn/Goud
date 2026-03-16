@@ -120,7 +120,7 @@ export async function createBooking(input: CreateBookingInput) {
       end_time: input.endTime,
       price_eur_cents: input.priceEurCents,
       status: 'confirmed',
-      payment_status: 'unpaid',
+      payment_status: input.priceEurCents === 0 ? 'paid' : 'unpaid',
       notes: input.notes ?? null,
       due_date: input.dueDate || null,
       birth_date: input.birthDate || null,

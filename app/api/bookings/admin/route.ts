@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
     const parsed = adminBookingSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+      const firstError = parsed.error.issues[0];
+      return NextResponse.json({ error: firstError.message }, { status: 400 });
     }
 
     const { 
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Handle Payment / Mollie
     let checkoutUrl: string | undefined;
-    if (payment_method === 'online') {
+    if (payment_method === 'online' && (parsed.data.priceEurCents ?? 0) > 0) {
       try {
         const { default: mollieClient } = await import('@/lib/mollie/client');
         const priceEurCents = parsed.data.priceEurCents;

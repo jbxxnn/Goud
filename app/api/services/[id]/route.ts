@@ -75,6 +75,7 @@ const mapServiceRecord = (
     twin_duration_minutes: rest.twin_duration_minutes,
     hidden_checkout_fields: (rest as any).hidden_checkout_fields || [],
     custom_price_label: (rest as any).custom_price_label || null,
+    custom_price_description: (rest as any).custom_price_description || null,
     ...extras,
   };
 };

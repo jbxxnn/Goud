@@ -332,13 +332,20 @@ function BookingConfirmationContent() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
-                <span className="text-base font-semibold text-gray-900">{t('total')}</span>
-                <span className="text-xl font-bold text-primary">
-                  {booking.price_eur_cents > 0 
-                    ? formatEuroCents(booking.price_eur_cents) 
-                    : (booking.services?.custom_price_label || formatEuroCents(0))}
-                </span>
+              <div className="flex flex-col items-end pt-3 mt-3 border-t border-gray-200">
+                <div className="flex justify-between items-center w-full">
+                  <span className="text-base font-semibold text-gray-900">{t('total')}</span>
+                  <span className="text-xl font-bold text-primary">
+                    {booking.price_eur_cents > 0 
+                      ? formatEuroCents(booking.price_eur_cents) 
+                      : (service?.custom_price_label || formatEuroCents(0))}
+                  </span>
+                </div>
+                {booking.price_eur_cents === 0 && service?.custom_price_description && (
+                  <p className="text-sm text-gray-500 mt-1 max-w-xs text-right">
+                    {service.custom_price_description}
+                  </p>
+                )}
               </div>
             </div>
           </div>

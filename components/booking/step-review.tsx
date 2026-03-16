@@ -225,6 +225,9 @@ export function StepReview() {
                 return;
             }
 
+            // Clear state before redirecting to confirmation
+            try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+
             router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
         } catch (e: any) {
             setErrorMsg(e?.message || t('review.errors.bookingFailed'));

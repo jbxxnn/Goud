@@ -65,6 +65,7 @@ import {
 } from "@/components/booking/booking-utils";
 import { IEvent } from "@/calendar/interfaces";
 import { useTranslations, useLocale } from "next-intl";
+import { translateValidationError } from "@/lib/validation/translate-error";
 
 interface IProps {
   children: React.ReactNode;
@@ -95,6 +96,7 @@ interface BookingFormData {
 
 export const AddBookingDialog = memo(function AddBookingDialog({ children, startDate, startHour, startMinute, initialShiftId, initialStaffId, initialLocationId, availableShifts = [], onBookingCreated }: IProps) {
   const t = useTranslations("BookingDialog");
+  const tFlow = useTranslations("Booking.flow");
   const locale = useLocale();
   const { isOpen, onClose, onToggle } = useDisclosure();
   const { selectedUserId, users: calendarUsers } = useCalendar();
@@ -580,7 +582,8 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
       setPendingData(null);
       if (onBookingCreated) onBookingCreated();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("toasts.error"));
+      const msg = err instanceof Error ? err.message : t("toasts.error");
+      toast.error(translateValidationError(msg, tFlow));
     } finally {
       setIsSubmitting(false);
     }

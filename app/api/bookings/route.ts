@@ -343,46 +343,48 @@ export async function POST(req: NextRequest) {
     // -------------------------------
     let checkoutUrl: string | undefined;
 
-    try {
-      const { default: mollieClient } = await import('@/lib/mollie/client');
+    if (finalPrice > 0) {
+      try {
+        const { default: mollieClient } = await import('@/lib/mollie/client');
 
-      const payment = await mollieClient.payments.create({
-        amount: {
-          currency: 'EUR',
-          value: (priceEurCents / 100).toFixed(2),
-        },
-        description: `Order #${booking.id}`,
-        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?bookingId=${booking.id}`,
-        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mollie`,
-        metadata: {
-          booking_id: booking.id,
-        },
-      });
+        const payment = await mollieClient.payments.create({
+          amount: {
+            currency: 'EUR',
+            value: (finalPrice / 100).toFixed(2),
+          },
+          description: `Order #${booking.id}`,
+          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?bookingId=${booking.id}`,
+          webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mollie`,
+          metadata: {
+            booking_id: booking.id,
+          },
+        });
 
-      if (payment.id) {
-        const supabase = getServiceSupabase();
-        const { error: updateError, data: updatedBooking } = await supabase
-          .from('bookings')
-          .update({
-            mollie_payment_id: payment.id,
-            payment_link: payment._links.checkout?.href,
-            payment_status: 'unpaid'
-          })
-          .eq('id', booking.id)
-          .select();
+        if (payment.id) {
+          const supabase = getServiceSupabase();
+          const { error: updateError, data: updatedBooking } = await supabase
+            .from('bookings')
+            .update({
+              mollie_payment_id: payment.id,
+              payment_link: payment._links.checkout?.href,
+              payment_status: 'unpaid'
+            })
+            .eq('id', booking.id)
+            .select();
 
-        if (updateError) {
-          console.error('[Booking API] Failed to update booking with payment ID:', updateError);
-        } else {
-          console.log('[Booking API] Successfully updated booking payment ID. Rows affected:', updatedBooking?.length);
+          if (updateError) {
+            console.error('[Booking API] Failed to update booking with payment ID:', updateError);
+          } else {
+            console.log('[Booking API] Successfully updated booking payment ID. Rows affected:', updatedBooking?.length);
+          }
+
+          checkoutUrl = payment._links.checkout?.href;
         }
-
-        checkoutUrl = payment._links.checkout?.href;
+      } catch (paymentError) {
+        console.error('Failed to create Mollie payment:', paymentError);
+        // We do NOT fail the request if payment creation fails, but the user won't get a redirect.
+        // They will land on confirmation page with 'unpaid' status.
       }
-    } catch (paymentError) {
-      console.error('Failed to create Mollie payment:', paymentError);
-      // We do NOT fail the request if payment creation fails, but the user won't get a redirect.
-      // They will land on confirmation page with 'unpaid' status.
     }
 
     return NextResponse.json({ booking, checkoutUrl });
@@ -624,6 +626,9 @@ export async function GET(req: NextRequest) {
           id,
           first_name,
           last_name
+        ),
+        booking_tag_mappings (
+          tag:booking_tags (*)
         )
       `, { count: 'exact' });
 
@@ -752,10 +757,38 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Fetch Protocol Checklist Counts
+    const protocolCountsMap: Record<string, { total: number; completed: number }> = {};
+    if (bookingIds.length > 0) {
+      const idChunks = chunkArray(bookingIds, 100);
+      const results = await Promise.all(
+        idChunks.map((chunk) =>
+          supabase
+            .from('booking_protocol_checklist_items')
+            .select('booking_id, is_completed')
+            .in('booking_id', chunk)
+        )
+      );
+      const protocolItems = results.flatMap((r) => r.data || []);
+
+      protocolItems.forEach((item) => {
+        if (!item.booking_id) return;
+        if (!protocolCountsMap[item.booking_id]) {
+          protocolCountsMap[item.booking_id] = { total: 0, completed: 0 };
+        }
+        protocolCountsMap[item.booking_id].total++;
+        if (item.is_completed) {
+          protocolCountsMap[item.booking_id].completed++;
+        }
+      });
+    }
+
     const bookingsFinal = bookingsWithAddons.map(b => ({
       ...b,
       users: usersMap[b.created_by] || usersMap[b.client_id] || null,
-      isRepeat: !!b.parent_booking_id
+      isRepeat: !!b.parent_booking_id,
+      protocol_items_count: protocolCountsMap[b.id]?.total || 0,
+      protocol_completed_count: protocolCountsMap[b.id]?.completed || 0
     }));
 
     const totalPagesValue = finalCount ? Math.ceil(finalCount / limit) : 0;

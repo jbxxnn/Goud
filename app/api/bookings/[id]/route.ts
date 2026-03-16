@@ -85,7 +85,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         services:services!service_id (
           id,
           name,
-          duration
+          duration,
+          custom_price_label,
+          custom_price_description
         ),
         locations:locations!location_id (
           id,
@@ -95,6 +97,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
           id,
           first_name,
           last_name
+        ),
+        booking_tag_mappings (
+          tag:booking_tags (*)
         )
       `)
       .eq('id', id)
@@ -155,12 +160,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       createdByUser = user;
     }
 
+    // Fetch Protocol Checklist Counts
+    const { data: protocolItems } = await supabase
+      .from('booking_protocol_checklist_items')
+      .select('is_completed')
+      .eq('booking_id', id);
+    
+    const protocol_items_count = protocolItems?.length || 0;
+    const protocol_completed_count = protocolItems?.filter(i => i.is_completed).length || 0;
+
     return NextResponse.json({
       booking: {
         ...data,
         addons,
         created_by_user: createdByUser,
-        isRepeat: !!data.parent_booking_id
+        isRepeat: !!data.parent_booking_id,
+        protocol_items_count,
+        protocol_completed_count
       }
     });
   } catch (e: any) {
@@ -354,7 +370,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         services:services!service_id (
           id,
           name,
-          duration
+          duration,
+          custom_price_label,
+          custom_price_description
         ),
         locations:locations!location_id (
           id,
@@ -364,6 +382,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           id,
           first_name,
           last_name
+        ),
+        booking_tag_mappings (
+          tag:booking_tags (*)
         )
       `)
       .eq('id', id)

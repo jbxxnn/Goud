@@ -24,6 +24,7 @@ export interface Service {
   is_active: boolean;
   hidden_checkout_fields?: string[];
   custom_price_label?: string | null;
+  custom_price_description?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +109,7 @@ export interface CreateServiceRequest {
   is_active?: boolean;
   hidden_checkout_fields?: string[];
   custom_price_label?: string | null;
+  custom_price_description?: string | null;
 }
 
 export interface UpdateServiceRequest {
@@ -132,6 +134,7 @@ export interface UpdateServiceRequest {
   is_active?: boolean;
   hidden_checkout_fields?: string[];
   custom_price_label?: string | null;
+  custom_price_description?: string | null;
 }
 
 export interface CreateServiceAddonRequest {
@@ -220,6 +223,7 @@ export interface ServiceFormData {
   is_active: boolean;
   hidden_checkout_fields?: string[];
   custom_price_label?: string | null;
+  custom_price_description?: string | null;
 }
 
 export interface ServiceAddonFormData {

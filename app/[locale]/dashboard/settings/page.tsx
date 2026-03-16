@@ -17,7 +17,7 @@ export default async function SettingsPage() {
     .eq('id', user.id)
     .single();
 
-  if (userData?.role !== 'admin') {
+  if (userData?.role !== 'admin' && userData?.role !== 'assistant') {
     redirect('/dashboard');
   }
 

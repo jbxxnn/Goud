@@ -79,6 +79,18 @@ export const createBookingColumns = (
             enableHiding: false,
         },
         {
+            accessorKey: 'booking_number',
+            header: t('columns.ref', { fallback: 'Ref' }),
+            cell: ({ row }) => {
+                const booking = row.original;
+                return (
+                    <div className="font-mono font-medium text-xs bg-muted px-2 py-1 rounded inline-block">
+                        G-{booking.booking_number}
+                    </div>
+                );
+            },
+        },
+        {
             accessorKey: 'users',
             header: t('columns.client'),
             cell: ({ row }) => {

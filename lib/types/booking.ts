@@ -37,6 +37,7 @@ export type Service = {
     staff_ids?: string[];
     hiddenCheckoutFields?: string[];
     customPriceLabel?: string | null;
+    customPriceDescription?: string | null;
 };
 
 export type Location = { id: string; name: string };
@@ -62,6 +63,7 @@ export type ServiceApiResponse = {
     twin_duration_minutes?: number | null;
     hidden_checkout_fields?: string[] | null;
     custom_price_label?: string | null;
+    custom_price_description?: string | null;
 };
 
 export type DateRange = { start: string; end: string };
@@ -85,8 +87,11 @@ export type BookingState = {
 
 export type BookingStatus = 'confirmed' | 'pending' | 'cancelled' | 'ongoing' | 'completed' | 'no_show';
 
+import { BookingTag } from './booking-tag';
+
 export interface Booking {
     id: string;
+    booking_number: number;
     created_at: string;
     updated_at: string; // Added updated_at
     start_time: string;
@@ -116,6 +121,7 @@ export interface Booking {
         service_code?: string | null;
         duration?: number;
         custom_price_label?: string | null;
+        custom_price_description?: string | null;
     } | null;
     locations: {
         id: string;
@@ -146,6 +152,11 @@ export interface Booking {
         email: string;
         phone: string | null;
     } | null;
+    booking_tag_mappings?: Array<{
+        tag: BookingTag;
+    }>;
+    protocol_items_count?: number;
+    protocol_completed_count?: number;
 
     addons: Array<{
         id: string;

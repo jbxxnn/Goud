@@ -71,6 +71,7 @@ const mapServiceRecord = (
     twin_duration_minutes: rest.twin_duration_minutes,
     hidden_checkout_fields: (rest as any).hidden_checkout_fields || [],
     custom_price_label: (rest as any).custom_price_label || null,
+    custom_price_description: (rest as any).custom_price_description || null,
     ...extras,
   };
 };
@@ -242,6 +243,7 @@ export async function POST(request: NextRequest) {
         twin_duration_minutes: body.twin_duration_minutes || null,
         hidden_checkout_fields: body.hidden_checkout_fields || [],
         custom_price_label: body.custom_price_label || null,
+        custom_price_description: body.custom_price_description || null,
       })
       .select()
       .single();

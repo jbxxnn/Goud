@@ -290,7 +290,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                           const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
                           return (
                             <div key={event.id} className="pointer-events-none absolute p-0" style={{ ...style, zIndex: 0 }}>
-                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} containerWidth={style.width} />
                             </div>
                           );
                         });
@@ -305,7 +305,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                           const style = layoutMap.get(event.id.toString()) || { top: '0%', width: '100%', left: '0%' };
                           return (
                             <div key={event.id} className="absolute p-1" style={{ ...style, zIndex: 1 }}>
-                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} />
+                              <EventBlock event={event} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} isReadOnly={hideAddButton} containerWidth={style.width} />
                             </div>
                           );
                         });

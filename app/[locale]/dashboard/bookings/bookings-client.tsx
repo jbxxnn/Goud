@@ -851,6 +851,14 @@ export default function BookingsClient({
         } : undefined}
         onUpdate={(updatedBooking) => {
           setViewingBooking(updatedBooking);
+          // Optimistically update the query cache to make it instant on the calendar
+          queryClient.setQueriesData<BookingsResponse>({ queryKey: ['bookings'] }, (old) => {
+            if (!old || !old.data) return old;
+            return {
+              ...old,
+              data: old.data.map(b => b.id === updatedBooking.id ? updatedBooking : b)
+            };
+          });
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
         }}
         onReschedule={(booking) => {

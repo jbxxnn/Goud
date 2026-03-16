@@ -51,12 +51,23 @@ interface IProps extends HTMLAttributes<HTMLDivElement>, Omit<VariantProps<typeo
     onShiftUpdated?: () => void;
     onEventClick?: (event: IEvent) => void;
     isReadOnly?: boolean;
+    containerWidth?: string; // Optional: width from layout calculation (e.g. "50%")
 }
 
 
 
-export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly }: IProps) {
+export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, onEventClick, isReadOnly, containerWidth }: IProps) {
     const { badgeVariant, entityType } = useCalendar();
+
+    // Determine max dots based on width percentage
+    const maxDots = (() => {
+        if (!containerWidth) return 12;
+        const widthVal = parseFloat(containerWidth);
+        if (widthVal <= 25.1) return 2;
+        if (widthVal <= 33.4) return 3;
+        if (widthVal <= 50.1) return 5;
+        return 12;
+    })();
 
     const start = parseISO(event.startDate);
     const end = parseISO(event.endDate);
@@ -111,6 +122,12 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     const startTime = format(start, "HH:mm");
     const endTime = format(end, "HH:mm");
 
+    // Process dots with truncation
+    const combinedDots = [
+        ...(event.metadata?.hasNotes ? [{ id: 'notes', color: 'black', title: 'Notes' }] : []),
+        ...(event.metadata?.tags?.map((tag: any) => ({ id: tag.id, color: tag.color, title: tag.title })) || [])
+    ].slice(0, maxDots);
+
     const BlockContent = (
         <TooltipProvider delayDuration={0}>
             <Tooltip>
@@ -125,14 +142,46 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
                         title=""
                     >
                         {!isShift && (
-                            <div className="flex items-center gap-1.5 truncate">
+                            <div className="static">
+                                {combinedDots.length > 0 && (
+                                    <div className="absolute top-0 left-0.5 flex gap-0.5">
+                                        {combinedDots.map((dot) => (
+                                            <span 
+                                                key={dot.id}
+                                                className={cn(
+                                                    "h-2 w-2 rounded-full shadow-sm",
+                                                    dot.color === 'black' ? "bg-black" : ""
+                                                )}
+                                                style={dot.color !== 'black' ? { backgroundColor: dot.color } : {}}
+                                                title={dot.title}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                {event.metadata?.booking_id && !event.metadata?.allProtocolTasksCompleted && (
+                                    <span 
+                                        className="absolute top-0 right-1 h-2 w-2 inline-block" 
+                                        style={{ 
+                                            clipPath: 'polygon(0 0, 100% 0, 100% 100%)',
+                                            transform: 'rotate(-44.5deg)',
+                                            backgroundColor: 'red'
+                                        }} 
+                                    />
+                                )}
+                                
+                                <div className="flex items-center gap-1.5 truncate">
                                 {["mixed", "dot"].includes(badgeVariant) && (
                                     <svg width="8" height="8" viewBox="0 0 8 8" className="event-dot shrink-0" style={isHexColor ? { fill: event.color } : undefined}>
                                         <circle cx="4" cy="4" r="4" />
                                     </svg>
                                 )}
-
-                                <p className="truncate font-semibold" title="">{event.title}</p>
+                                
+                                <p className="truncate font-semibold" title="">
+                                    {/* {event.metadata?.booking_number && <span className="mr-1 text-[10px] opacity-70">G-{event.metadata.booking_number}</span>} */}
+                                    {event.title}
+                                </p>
+                            </div>
                             </div>
                         )}
 
@@ -144,7 +193,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
                     </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                    <p>{isShift ? `Working Hours: ${startTime} - ${endTime}` : `${event.title} (${startTime} - ${endTime})`}</p>
+                    <p>{isShift ? `Working Hours: ${startTime} - ${endTime}` : `${event.title} (${startTime} - ${endTime}) ${event.metadata?.booking_number ? `- G-${event.metadata.booking_number}` : ''}`}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

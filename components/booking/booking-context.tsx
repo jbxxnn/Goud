@@ -534,6 +534,7 @@ export function BookingProvider({
                 twinDurationMinutes: typeof service.twin_duration_minutes === 'number' ? service.twin_duration_minutes : null,
                 hiddenCheckoutFields: service.hidden_checkout_fields || [],
                 customPriceLabel: service.custom_price_label || null,
+                customPriceDescription: service.custom_price_description || null,
             }));
             setServices(normalizedServices);
             setLoadingServices(false);

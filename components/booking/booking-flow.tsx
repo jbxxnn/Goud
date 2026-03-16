@@ -312,11 +312,18 @@ export function BookingFlow() {
                     <div className="pt-4 mt-2 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
-                            <span className="text-2xl font-bold text-primary tracking-tight">
-                                {grandTotalCents > 0 
-                                    ? formatEuroCents(grandTotalCents) 
-                                    : (selectedService?.customPriceLabel || formatEuroCents(0))}
-                            </span>
+                            <div className="flex flex-col items-end">
+                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                    {grandTotalCents > 0 
+                                        ? formatEuroCents(grandTotalCents) 
+                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                                </span>
+                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
+                                    <span className="text-xs text-gray-500 mt-1 font-medium">
+                                        {selectedService.customPriceDescription}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </CardContent>

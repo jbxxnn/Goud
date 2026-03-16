@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 
 // Define the type here or import it if you move it to types
 export interface ServiceRepeatType {
@@ -32,6 +33,7 @@ export function ServiceRepeatManager({ serviceId }: ServiceRepeatManagerProps) {
     const [loading, setLoading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [idToDelete, setIdToDelete] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         label: '',
@@ -152,8 +154,6 @@ export function ServiceRepeatManager({ serviceId }: ServiceRepeatManagerProps) {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(t('deleteConfirm'))) return;
-
         try {
             const response = await fetch(`/api/services/repeat-types/${id}`, {
                 method: 'DELETE',
@@ -161,6 +161,7 @@ export function ServiceRepeatManager({ serviceId }: ServiceRepeatManagerProps) {
             const data = await response.json();
             if (data.success) {
                 toast.success(t('deleteSuccess'));
+                setIdToDelete(null);
                 fetchRepeatTypes();
             } else {
                 toast.error(t('deleteError'), { description: data.error });
@@ -180,6 +181,13 @@ export function ServiceRepeatManager({ serviceId }: ServiceRepeatManagerProps) {
 
     return (
         <div className="space-y-6">
+            <DeleteConfirmationDialog
+                isOpen={!!idToDelete}
+                onClose={() => setIdToDelete(null)}
+                onConfirm={() => idToDelete && handleDelete(idToDelete)}
+                title={t('edit')}
+                description={t('deleteConfirm')}
+            />
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-medium">{t('title')}</h3>
@@ -300,7 +308,7 @@ export function ServiceRepeatManager({ serviceId }: ServiceRepeatManagerProps) {
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDelete(item.id)}
+                                    onClick={() => setIdToDelete(item.id)}
                                 >
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>

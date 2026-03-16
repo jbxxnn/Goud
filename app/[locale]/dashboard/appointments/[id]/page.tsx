@@ -67,6 +67,15 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
 
     (booking as any).isRepeat = !!booking.parent_booking_id;
 
+    // Fetch Protocol Checklist Counts
+    const { data: protocolItems } = await adminDb
+        .from('booking_protocol_checklist_items')
+        .select('is_completed')
+        .eq('booking_id', booking.id);
+
+    (booking as any).protocol_items_count = protocolItems?.length || 0;
+    (booking as any).protocol_completed_count = protocolItems?.filter(i => i.is_completed).length || 0;
+
     // Fetch previous bookings for this client
     let previousBookings: any[] = [];
     const clientIdentifier = booking.created_by || booking.client_id;

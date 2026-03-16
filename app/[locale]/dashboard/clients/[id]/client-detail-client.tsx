@@ -28,6 +28,7 @@ import { Booking, BookingsResponse } from '@/lib/types/booking';
 import { Midwife } from '@/lib/types/midwife';
 import { formatEuroCents } from '@/lib/currency/format';
 import Image from 'next/image';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
@@ -509,18 +510,22 @@ export default function ClientDetailClient({
                       <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.upcoming')}</h4>
                       <div className="space-y-3">
                         {upcomingBookings.slice(0, 10).map((booking) => (
-                          <div key={booking.id} className="px-3 bg-muted/50 rounded-lg border-l-4 border-primary">
-                            <div className="flex items-start justify-between mb-2">
+                          <Link
+                            key={booking.id}
+                            href={`/dashboard/appointments/${booking.id}`}
+                            className="block px-3 bg-muted/50 rounded-lg border-l-4 border-primary hover:bg-muted/80 hover:shadow-sm transition-all cursor-pointer group"
+                          >
+                            <div className="flex items-start justify-between mb-2 pt-2">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{booking.services?.name || t('appointments.unknownService')}</p>
+                                <p className="font-semibold text-sm group-hover:text-primary transition-colors">{booking.services?.name || t('appointments.unknownService')}</p>
                               </div>
                               {getStatusBadge(booking.status)}
                             </div>
-                            <p className="text-xs text-primary flex items-center gap-1 mt-2">
+                            <p className="text-xs text-primary flex items-center gap-1 mt-2 pb-2">
                               <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
                               {formatDateTime(booking.start_time)}
                             </p>
-                          </div>
+                          </Link>
                         ))}
                       </div>
                     </div>
@@ -531,11 +536,15 @@ export default function ClientDetailClient({
                     <div>
                       <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.history')}</h4>
                       <div className="space-y-3">
-                        {pastBookings.slice(0, 1).map((booking) => (
-                          <div key={booking.id} className="p-3 bg-muted/30 rounded-lg border-l-4 border-muted">
+                        {pastBookings.slice(0, 5).map((booking) => (
+                          <Link
+                            key={booking.id}
+                            href={`/dashboard/appointments/${booking.id}`}
+                            className="block p-3 bg-muted/30 rounded-lg border-l-4 border-muted hover:bg-muted/50 transition-all cursor-pointer group"
+                          >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{booking.services?.name || t('appointments.unknownService')}</p>
+                                <p className="font-semibold text-sm group-hover:text-primary transition-colors">{booking.services?.name || t('appointments.unknownService')}</p>
                               </div>
                               {getStatusBadge(booking.status)}
                             </div>
@@ -543,7 +552,7 @@ export default function ClientDetailClient({
                               <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
                               {formatDateTime(booking.start_time)}
                             </p>
-                          </div>
+                          </Link>
                         ))}
                       </div>
                     </div>

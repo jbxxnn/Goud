@@ -9,6 +9,7 @@ import { Image01Icon, VideoReplayIcon, Delete01Icon } from '@hugeicons/core-free
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 
 interface MediaSectionProps {
     bookingId: string;
@@ -23,6 +24,7 @@ interface MediaFile {
 export function MediaSection({ bookingId }: MediaSectionProps) {
     const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
     const [loading, setLoading] = useState(false);
+    const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
     const fetchMedia = useCallback(async () => {
         setLoading(true);
@@ -70,8 +72,6 @@ export function MediaSection({ bookingId }: MediaSectionProps) {
     }, [fetchMedia]);
 
     const handleDelete = async (fileName: string) => {
-        if (!confirm('Are you sure you want to delete this file?')) return;
-
         const supabase = createClient();
         const { error } = await supabase.storage
             .from('booking-results')
@@ -81,11 +81,20 @@ export function MediaSection({ bookingId }: MediaSectionProps) {
             toast.error('Failed to delete file');
         } else {
             toast.success('File deleted');
+            setFileToDelete(null);
             fetchMedia();
         }
     };
 
     return (
+        <>
+        <DeleteConfirmationDialog
+            isOpen={!!fileToDelete}
+            onClose={() => setFileToDelete(null)}
+            onConfirm={() => fileToDelete && handleDelete(fileToDelete)}
+            title="Delete Media"
+            description="Are you sure you want to delete this file? This action cannot be undone."
+        />
         <Card style={{borderRadius: '10px'}}>
             <CardHeader>
                 <CardTitle className="text-base">Media & Results</CardTitle>
@@ -114,7 +123,7 @@ export function MediaSection({ bookingId }: MediaSectionProps) {
                                     <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-white hover:text-primary">
                                         View
                                     </a>
-                                    <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => handleDelete(file.name)}>
+                                    <Button size="icon" variant="destructive" className="h-6 w-6" onClick={() => setFileToDelete(file.name)}>
                                         <HugeiconsIcon icon={Delete01Icon} size={14} />
                                     </Button>
                                 </div>
@@ -124,5 +133,6 @@ export function MediaSection({ bookingId }: MediaSectionProps) {
                 )}
             </CardContent>
         </Card>
+        </>
     );
 }

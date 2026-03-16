@@ -7,9 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Save, X, Loader } from 'lucide-react';
+import { Pencil, Save, X, Loader, ClipboardList, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChecklistManager } from './staff-dashboard/checklist-manager';
+import { ProtocolChecklistManager } from './staff-dashboard/protocol-checklist-manager';
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { RepeatPrescriber } from './repeat-prescriber';
@@ -19,6 +22,7 @@ import { nl, enUS } from 'date-fns/locale';
 import { useTranslations, useLocale } from 'next-intl';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { MidwifeLabel } from './midwife-label';
+import { BookingTagSelector } from './booking-tag-selector';
 
 interface PolicyField {
   id: string;
@@ -101,6 +105,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
     console.log('BookingModal rendered with booking:', booking);
   }
   const t = useTranslations('BookingModal');
+  const tTags = useTranslations('BookingTags');
   const queryClient = useQueryClient();
   const tStatus = useTranslations('BookingStatus');
   const locale = useLocale();
@@ -113,6 +118,31 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const [isSavingInternalNotes, setIsSavingInternalNotes] = useState(false);
   const [isMarkingNoShow, setIsMarkingNoShow] = useState(false);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
+  const [isSyncingChecklist, setIsSyncingChecklist] = useState(false);
+
+  // Sync checklist items from master
+  const syncChecklist = async (bookingId: string, serviceId: string) => {
+    try {
+      setIsSyncingChecklist(true);
+      await fetch(`/api/bookings/${bookingId}/checklist/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceId })
+      });
+      // Invalidate checklist query to show new items
+      queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
+    } catch (error) {
+      console.error('Failed to sync checklist:', error);
+    } finally {
+      setIsSyncingChecklist(false);
+    }
+  };
+
+  useEffect(() => {
+    if (booking?.id && booking?.service_id && isOpen) {
+      syncChecklist(booking.id, booking.service_id);
+    }
+  }, [booking?.id, booking?.service_id, isOpen]);
 
   useEffect(() => {
     if (booking) {
@@ -166,7 +196,9 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b">
-          <SheetTitle>{t('title')}</SheetTitle>
+          <SheetTitle>
+            {t('title')} {booking?.booking_number && <span className="text-muted-foreground ml-2">G-{booking.booking_number}</span>}
+          </SheetTitle>
         </SheetHeader>
 
         {!booking ? (
@@ -250,17 +282,48 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-              {/* Status & Payment */}
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">{t('status')}</div>
-                  {getStatusBadge(booking.status, tStatus)}
+          <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col">
+            <Tabs defaultValue="details" className="flex-1 flex flex-col">
+              <TabsList className="mb-8 bg-transparent">
+                <TabsTrigger value="details" className="gap-2" style={{borderRadius: '1rem'}}>
+                  <Info className="h-4 w-4" />
+                  {t('detailsTab') || 'Details'}
+                </TabsTrigger>
+                <TabsTrigger value="checklist" className="gap-2" style={{borderRadius: '1rem'}}>
+                  <ClipboardList className="h-4 w-4" />
+                  {t('checklistTab') || 'Checklist'}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="flex-1 space-y-6 mt-0">
+                {/* Status & Payment */}
+              <div className="flex items-start gap-4 w-full">
+                <div className="flex items-center gap-4 flex-1">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">{t('status')}</div>
+                    {getStatusBadge(booking.status, tStatus)}
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">{t('payment')}</div>
+                    {getPaymentBadge(booking.payment_status, t)}
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">{t('payment')}</div>
-                  {getPaymentBadge(booking.payment_status, t)}
-                </div>
+                {(userRole === 'admin' || userRole === 'assistant') && (
+                  <div className="flex-1 w-full">
+                    <BookingTagSelector
+                      bookingId={booking.id}
+                      initialTags={booking.booking_tag_mappings?.map((m) => m.tag) || []}
+                      onTagsChange={(newTags) => {
+                        if (onUpdate) {
+                          onUpdate({
+                            ...booking,
+                            booking_tag_mappings: newTags.map((tag) => ({ tag })),
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Client Information */}
@@ -756,25 +819,35 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                 )}
               </div>
 
-              {/* Booking Metadata */}
-              <div className="space-y-2 pt-4 border-t">
-                <h3 className="font-semibold text-lg">{t('bookingInfo')}</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-muted-foreground">{t('bookingId')}</div>
-                    <div className="font-medium font-mono text-xs">{booking.id}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">{t('created')}</div>
-                    <div className="font-medium">{formatDate(booking.created_at, locale)}</div>
-                  </div>
-                  <div>
-                    <div className="text-muted-foreground">{t('lastUpdated')}</div>
-                    <div className="font-medium">{formatDate(booking.updated_at, locale)}</div>
+                {/* Booking Metadata */}
+                <div className="space-y-2 pt-4 border-t">
+                  <h3 className="font-semibold text-lg">{t('bookingInfo')}</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">{t('bookingId')}</div>
+                      {booking?.booking_number && <span className="font-medium">G-{booking.booking_number}</span>}
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{t('created')}</div>
+                      <div className="font-medium">{formatDate(booking.created_at, locale)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{t('lastUpdated')}</div>
+                      <div className="font-medium">{formatDate(booking.updated_at, locale)}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </TabsContent>
+
+              <TabsContent value="checklist" className="flex-1 mt-0">
+                <ProtocolChecklistManager 
+                  bookingId={booking.id} 
+                  showAdd={false}
+                  showDelete={false}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
 
             {/* Action Buttons at Bottom */}
             {((onReschedule && ['pending', 'confirmed'].includes(booking.status)) ||
