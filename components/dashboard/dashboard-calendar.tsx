@@ -31,11 +31,11 @@ interface DashboardCalendarProps {
   className?: string;
 }
 
-const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const buildMonthMatrix = (month: Date) => {
-  const start = startOfWeek(startOfMonth(month));
-  const end = endOfWeek(endOfMonth(month));
+  const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+  const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
   const weeks: Date[][] = [];
   let cursor = start;
   let currentWeek: Date[] = [];

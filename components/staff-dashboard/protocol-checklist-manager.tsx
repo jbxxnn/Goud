@@ -68,13 +68,41 @@ export function ProtocolChecklistManager({
             if (!res.ok) throw new Error('Failed to add item');
             return res.json();
         },
-        onSuccess: () => {
+        onMutate: async (content) => {
+            await queryClient.cancelQueries({ queryKey: ['protocol-checklist', bookingId] });
+            const previousItems = queryClient.getQueryData<ChecklistItem[]>(['protocol-checklist', bookingId]);
+            
+            if (previousItems) {
+                const tempId = Math.random().toString(36).substring(7);
+                queryClient.setQueryData<ChecklistItem[]>(['protocol-checklist', bookingId], [
+                    ...previousItems,
+                    {
+                        id: tempId,
+                        content,
+                        is_completed: false,
+                        completed_at: null,
+                        completed_by_user: null,
+                        comment: null,
+                        created_at: new Date().toISOString()
+                    }
+                ]);
+            }
+            return { previousItems };
+        },
+        onError: (err, content, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(['protocol-checklist', bookingId], context.previousItems);
+            }
+            toast.error(t('errorAdding'));
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
             queryClient.invalidateQueries({ queryKey: ['bookings'] });
             setNewItemContent('');
-            toast.success(t('itemAdded'));
         },
-        onError: () => toast.error(t('errorAdding'))
+        onSuccess: () => {
+            toast.success(t('itemAdded'));
+        }
     });
 
     // Toggle Complete Mutation
@@ -88,11 +116,30 @@ export function ProtocolChecklistManager({
             if (!res.ok) throw new Error('Failed to update item');
             return res.json();
         },
-        onSuccess: () => {
+        onMutate: async ({ id, is_completed }) => {
+            await queryClient.cancelQueries({ queryKey: ['protocol-checklist', bookingId] });
+            const previousItems = queryClient.getQueryData<ChecklistItem[]>(['protocol-checklist', bookingId]);
+            
+            if (previousItems) {
+                queryClient.setQueryData<ChecklistItem[]>(
+                    ['protocol-checklist', bookingId],
+                    previousItems.map(item => 
+                        item.id === id ? { ...item, is_completed } : item
+                    )
+                );
+            }
+            return { previousItems };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(['protocol-checklist', bookingId], context.previousItems);
+            }
+            toast.error(t('errorUpdating'));
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
             queryClient.invalidateQueries({ queryKey: ['bookings'] });
-        },
-        onError: () => toast.error(t('errorUpdating'))
+        }
     });
 
     // Delete Item Mutation
@@ -104,12 +151,31 @@ export function ProtocolChecklistManager({
             if (!res.ok) throw new Error('Failed to delete item');
             return res.json();
         },
-        onSuccess: () => {
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ['protocol-checklist', bookingId] });
+            const previousItems = queryClient.getQueryData<ChecklistItem[]>(['protocol-checklist', bookingId]);
+            
+            if (previousItems) {
+                queryClient.setQueryData<ChecklistItem[]>(
+                    ['protocol-checklist', bookingId],
+                    previousItems.filter(item => item.id !== id)
+                );
+            }
+            return { previousItems };
+        },
+        onError: (err, id, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(['protocol-checklist', bookingId], context.previousItems);
+            }
+            toast.error(t('errorDeleting'));
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
             queryClient.invalidateQueries({ queryKey: ['bookings'] });
-            toast.success(t('itemDeleted'));
         },
-        onError: () => toast.error(t('errorDeleting'))
+        onSuccess: () => {
+            toast.success(t('itemDeleted'));
+        }
     });
 
     // Update Comment Mutation
@@ -123,13 +189,34 @@ export function ProtocolChecklistManager({
             if (!res.ok) throw new Error('Failed to update comment');
             return res.json();
         },
-        onSuccess: () => {
+        onMutate: async ({ id, comment }) => {
+            await queryClient.cancelQueries({ queryKey: ['protocol-checklist', bookingId] });
+            const previousItems = queryClient.getQueryData<ChecklistItem[]>(['protocol-checklist', bookingId]);
+            
+            if (previousItems) {
+                queryClient.setQueryData<ChecklistItem[]>(
+                    ['protocol-checklist', bookingId],
+                    previousItems.map(item => 
+                        item.id === id ? { ...item, comment } : item
+                    )
+                );
+            }
+            return { previousItems };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(['protocol-checklist', bookingId], context.previousItems);
+            }
+            toast.error(t('errorCommenting'));
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
             queryClient.invalidateQueries({ queryKey: ['bookings'] });
             setEditingCommentId(null);
-            toast.success(t('commentSaved'));
         },
-        onError: () => toast.error(t('errorCommenting'))
+        onSuccess: () => {
+            toast.success(t('commentSaved'));
+        }
     });
 
     const handleAddItem = (e: React.FormEvent) => {
@@ -142,22 +229,74 @@ export function ProtocolChecklistManager({
         updateCommentMutation.mutate({ id, comment: commentText });
     };
 
+    // Toggle All Mutation
+    const toggleAllMutation = useMutation({
+        mutationFn: async (is_completed: boolean) => {
+            const res = await fetch(`/api/bookings/${bookingId}/protocol-checklist`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_completed })
+            });
+            if (!res.ok) throw new Error('Failed to update all items');
+            return res.json();
+        },
+        onMutate: async (is_completed) => {
+            await queryClient.cancelQueries({ queryKey: ['protocol-checklist', bookingId] });
+            const previousItems = queryClient.getQueryData<ChecklistItem[]>(['protocol-checklist', bookingId]);
+            
+            if (previousItems) {
+                queryClient.setQueryData<ChecklistItem[]>(
+                    ['protocol-checklist', bookingId],
+                    previousItems.map(item => ({ ...item, is_completed }))
+                );
+            }
+            return { previousItems };
+        },
+        onError: (err, variables, context) => {
+            if (context?.previousItems) {
+                queryClient.setQueryData(['protocol-checklist', bookingId], context.previousItems);
+            }
+            toast.error(t('errorUpdating'));
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['protocol-checklist', bookingId] });
+            queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        }
+    });
+
+    const allChecked = items.length > 0 && items.every(item => item.is_completed);
+
     return (
         <div className="space-y-4">
-            {/* Add Item Form */}
-            {showAdd && (
-                <form onSubmit={handleAddItem} className="flex gap-2 items-center">
-                    <Input
-                        placeholder={t('addItemPlaceholder')}
-                        value={newItemContent}
-                        onChange={(e) => setNewItemContent(e.target.value)}
-                        disabled={addItemMutation.isPending}
-                    />
-                    <Button type="submit" size="icon" disabled={addItemMutation.isPending || !newItemContent.trim()}>
-                        {addItemMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <HugeiconsIcon icon={PlusSignIcon} size={18} />}
+            <div className="flex items-center justify-between gap-4">
+                {/* Add Item Form */}
+                {showAdd && (
+                    <form onSubmit={handleAddItem} className="flex flex-1 gap-2 items-center">
+                        <Input
+                            placeholder={t('addItemPlaceholder')}
+                            value={newItemContent}
+                            onChange={(e) => setNewItemContent(e.target.value)}
+                            disabled={addItemMutation.isPending}
+                        />
+                        <Button type="submit" size="icon" disabled={addItemMutation.isPending || !newItemContent.trim()}>
+                            {addItemMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <HugeiconsIcon icon={PlusSignIcon} size={18} />}
+                        </Button>
+                    </form>
+                )}
+                
+                {items.length > 0 && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-8 px-2 gap-1.5"
+                        onClick={() => toggleAllMutation.mutate(!allChecked)}
+                        disabled={toggleAllMutation.isPending}
+                    >
+                        <Checkbox checked={allChecked} className="pointer-events-none h-3.5 w-3.5" />
+                        {allChecked ? t('uncheckAll') : t('checkAll')}
                     </Button>
-                </form>
-            )}
+                )}
+            </div>
 
             {/* Checklist Items */}
             <ScrollArea className="h-[300px] pr-4">

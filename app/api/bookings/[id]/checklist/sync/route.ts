@@ -60,8 +60,9 @@ export async function POST(
     }
 
     const existingContents = new Set(existingItems?.map(i => i.content));
+    const masterContents = new Set(allMasterItems.map((item: any) => item.content));
 
-    // 3. Filter items that don't exist yet
+    // 3. Identify items to ADD
     const itemsToAdd = allMasterItems
       .filter(item => !existingContents.has(item.content))
       .map(item => ({
@@ -70,23 +71,39 @@ export async function POST(
         created_by: user.id
       }));
 
-    if (itemsToAdd.length === 0) {
-      return NextResponse.json({ message: 'All items already exist', addedCount: 0 });
+    // 4. Identify items to DELETE (orphaned items)
+    const itemsToDelete = existingItems?.filter(item => !masterContents.has(item.content)) || [];
+
+    // 5. Perform deletions if any
+    if (itemsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('booking_protocol_checklist_items')
+        .delete()
+        .eq('booking_id', bookingId)
+        .in('content', itemsToDelete.map(i => i.content));
+
+      if (deleteError) {
+        console.error('Error deleting orphaned protocol items:', deleteError);
+        return NextResponse.json({ error: 'Failed to remove orphaned items' }, { status: 500 });
+      }
     }
 
-    // 4. Batch insert new items
-    const { error: insertError } = await supabase
-      .from('booking_protocol_checklist_items')
-      .insert(itemsToAdd);
+    // 6. Batch insert new items
+    if (itemsToAdd.length > 0) {
+      const { error: insertError } = await supabase
+        .from('booking_protocol_checklist_items')
+        .insert(itemsToAdd);
 
-    if (insertError) {
-      console.error('Error inserting protocol checklist items:', insertError);
-      return NextResponse.json({ error: 'Failed to sync protocol items' }, { status: 500 });
+      if (insertError) {
+        console.error('Error inserting protocol checklist items:', insertError);
+        return NextResponse.json({ error: 'Failed to sync protocol items' }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ 
       message: 'Checklist synced successfully', 
-      addedCount: itemsToAdd.length 
+      addedCount: itemsToAdd.length,
+      removedCount: itemsToDelete.length
     });
 
   } catch (error) {

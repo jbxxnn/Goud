@@ -1116,6 +1116,7 @@
             "cancelConfirm": "Cancel Appointment"
         },
         "columns": {
+            "ref": "Ref",
             "client": "Client",
             "dateTime": "Date & Time",
             "service": "Service",
@@ -1529,7 +1530,9 @@
         "completedBy": "Completed by",
         "commentPlaceholder": "Add a comment...",
         "addComment": "Add comment",
-        "completed": "completed"
+        "maxItems": "Maximum items reached",
+        "checkAll": "Check All",
+        "uncheckAll": "Uncheck All"
     },
     "AssistantDashboard": {
         "title": "Assistant Dashboard",

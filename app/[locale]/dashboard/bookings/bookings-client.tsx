@@ -142,8 +142,8 @@ export default function BookingsClient({
     let start, end;
     if (calendarView === 'week' || calendarView === 'day') {
       // Current week +/- 1 week buffer
-      start = startOfWeek(subDays(activeDate, 7));
-      end = endOfWeek(addDays(activeDate, 7));
+      start = startOfWeek(subDays(activeDate, 7), { weekStartsOn: 1 });
+      end = endOfWeek(addDays(activeDate, 7), { weekStartsOn: 1 });
     } else {
       // Current month +/- 2 weeks buffer
       start = startOfMonth(subDays(activeDate, 14));

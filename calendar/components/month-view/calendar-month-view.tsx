@@ -17,7 +17,7 @@ interface IProps {
   hideAddButton?: boolean;
 }
 
-const WEEK_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function CalendarMonthView({ singleDayEvents, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
   const { selectedDate } = useCalendar();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { createClient } from '@/lib/supabase/server';
+import { expandRecurringShift } from '@/lib/utils/expand-recurring-shifts';
 
 // Helper function to verify user authentication and authorization for a specific booking
 async function authorizeBookingAccess(bookingId: string, action: 'read' | 'update' | 'delete') {
@@ -200,6 +201,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!start_time || !end_time) return NextResponse.json({ error: 'start_time and end_time required' }, { status: 400 });
     if (!location_id || !staff_id || !shift_id) return NextResponse.json({ error: 'location_id, staff_id, and shift_id required' }, { status: 400 });
 
+    const baseShiftId = shift_id.split('-instance-')[0];
+
     // Fetch existing booking with details for email
     const { data: existing, error: getErr } = await supabase
       .from('bookings')
@@ -229,9 +232,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         staff_id,
         location_id,
         is_active,
+        is_recurring,
+        recurrence_rule,
+        start_time,
+        end_time,
         locations ( name, address )
       `)
-      .eq('id', shift_id)
+      .eq('id', baseShiftId)
       .maybeSingle();
 
     if (shiftErr || !shift) {
@@ -242,6 +249,35 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (shift.location_id !== location_id) return NextResponse.json({ error: 'Shift location mismatch' }, { status: 400 });
     if (shift.staff_id !== staff_id) return NextResponse.json({ error: 'Shift staff mismatch' }, { status: 400 });
 
+    // Time window checks for recurring shifts
+    const start = new Date(start_time);
+    const end = new Date(end_time);
+    
+    let validStart = new Date(shift.start_time);
+    let validEnd = new Date(shift.end_time);
+
+    if (shift_id.includes('-instance-') || shift.is_recurring) {
+      const windowStart = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      const instances = expandRecurringShift(shift as any, windowStart, windowEnd);
+
+      const instance = instances.find(inst => {
+        const s = new Date(inst.start_time);
+        const e = new Date(inst.end_time);
+        return start >= s && end <= e;
+      });
+
+      if (!instance) {
+        return NextResponse.json({ error: 'Selected time is outside shift hours' }, { status: 400 });
+      }
+      validStart = new Date(instance.start_time);
+      validEnd = new Date(instance.end_time);
+    }
+
+    if (start < validStart || end > validEnd) {
+      return NextResponse.json({ error: 'Selected time is outside shift hours' }, { status: 400 });
+    }
+
     // Update booking with new location, staff, shift, and times
     const { error: updErr, data } = await supabase
       .from('bookings')
@@ -250,7 +286,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         end_time: end_time,
         location_id: location_id,
         staff_id: staff_id,
-        shift_id: shift_id,
+        shift_id: baseShiftId,
         // Reset reminder_sent when rescheduling so they get a new reminder
         reminder_sent: false
       })

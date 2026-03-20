@@ -14,13 +14,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useTranslations } from 'next-intl';
 
 const DAYS_OF_WEEK = [
-  { index: 0, key: "sunday" },
   { index: 1, key: "monday" },
   { index: 2, key: "tuesday" },
   { index: 3, key: "wednesday" },
   { index: 4, key: "thursday" },
   { index: 5, key: "friday" },
   { index: 6, key: "saturday" },
+  { index: 0, key: "sunday" },
 ];
 
 interface ChangeWorkingHoursInputProps {

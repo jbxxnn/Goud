@@ -32,10 +32,18 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
 
-  const weekStart = startOfWeek(selectedDate);
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = useMemo(() => 
     Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
   [weekStart]);
+
+  const visibleDays = useMemo(() => 
+    weekDays.map((day, index) => ({ day, index })).filter(({ day }) => !isDayClosed(day, workingHours)),
+  [weekDays, workingHours]);
+
+  const gridStyle = {
+    gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))`
+  };
 
   // Pre-calculate all overlapping shifts for the entire week to provide stable references
   const allShiftsMap = useMemo(() => {
@@ -78,9 +86,9 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
           {/* Week header */}
           <div className="relative z-20 flex border-b">
             <div className="w-18"></div>
-            <div className="grid flex-1 grid-cols-7 divide-x border-l">
-              {weekDays.map((day: Date, index: number) => {
-                const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
+            <div className="grid flex-1 divide-x border-l" style={gridStyle}>
+              {visibleDays.map(({ day, index }) => {
+                const isClosed = isDayClosed(day, workingHours);
 
                 return (
                   <span
@@ -117,9 +125,9 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
 
             {/* Week grid */}
             <div className="relative flex-1 border-l">
-              <div className="grid grid-cols-7 divide-x">
-                {weekDays.map((day: Date, dayIndex: number) => {
-                  const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
+              <div className="grid divide-x" style={gridStyle}>
+                {visibleDays.map(({ day, index: dayIndex }) => {
+                  const isClosed = isDayClosed(day, workingHours);
 
                   const dayEvents = singleDayEvents.filter(event => isSameDay(parseISO(event.startDate), day) || isSameDay(parseISO(event.endDate), day));
                   const isPastDate = day < new Date(new Date().setHours(0, 0, 0, 0));

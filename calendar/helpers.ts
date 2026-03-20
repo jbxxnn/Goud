@@ -50,8 +50,8 @@ import {
         end = endOfMonth(date);
         break;
       case "week":
-        start = startOfWeek(date);
-        end = endOfWeek(date);
+        start = startOfWeek(date, { weekStartsOn: 1 });
+        end = endOfWeek(date, { weekStartsOn: 1 });
         break;
       case "day":
         return format(date, formatString);
@@ -247,7 +247,10 @@ import {
     const currentMonth = selectedDate.getMonth();
   
     const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
-    const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+    const getFirstDayOfMonth = (year: number, month: number) => {
+      const day = new Date(year, month, 1).getDay();
+      return (day + 6) % 7; // Adjust Sunday (0) to 6, Monday (1) to 0, etc.
+    };
   
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);

@@ -188,11 +188,9 @@ export function BookingFlow() {
                                         <p className="text-lg font-bold text-gray-900 leading-tight">
                                             {selectedService?.name || t('noServiceSelected')}
                                         </p>
-                                        {((selectedService?.price ?? 0) > 0 || (selectedService?.customPriceLabel && selectedService?.customPriceLabel.trim() !== '')) && (
+                                        {(selectedService?.price ?? 0) > 0 && (
                                             <p className="text-sm font-bold text-primary mt-1">
-                                                {(selectedService?.price ?? 0) > 0 
-                                                    ? formatEuroCents((selectedService?.price ?? 0)) 
-                                                    : selectedService?.customPriceLabel}
+                                                {formatEuroCents((selectedService?.price ?? 0))}
                                             </p>
                                         )}
                                     </div>
@@ -311,7 +309,9 @@ export function BookingFlow() {
                     {/* Total Cost Summary */}
                     <div className="pt-4 mt-2 border-t border-gray-100">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
+                            {!(grandTotalCents === 0 && selectedService?.customPriceLabel) && (
+                                <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
+                            )}
                             <div className="flex flex-col items-end">
                                 <span className="text-2xl font-bold text-primary tracking-tight">
                                     {grandTotalCents > 0 
@@ -319,7 +319,7 @@ export function BookingFlow() {
                                         : (selectedService?.customPriceLabel || formatEuroCents(0))}
                                 </span>
                                 {grandTotalCents === 0 && selectedService?.customPriceDescription && (
-                                    <span className="text-xs text-gray-500 mt-1 font-medium">
+                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
                                         {selectedService.customPriceDescription}
                                     </span>
                                 )}

@@ -1116,6 +1116,7 @@
             "cancelConfirm": "Afspraak annuleren"
         },
         "columns": {
+            "ref": "Ref",
             "client": "Klant",
             "dateTime": "Datum & Tijd",
             "service": "Dienst",
@@ -1529,7 +1530,9 @@
         "completedBy": "Voltooid door",
         "commentPlaceholder": "Opmerking toevoegen...",
         "addComment": "Opmerking toevoegen",
-        "completed": "voltooid"
+        "maxItems": "Maximaal aantal items bereikt",
+        "checkAll": "Alles aanvinken",
+        "uncheckAll": "Alles uitvinken"
     },
     "AssistantDashboard": {
         "title": "Assistent Dashboard",

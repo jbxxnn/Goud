@@ -18,9 +18,16 @@ interface IProps {
 
 export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShiftDeleted, onShiftUpdated, onEventClick }: IProps) {
   const { workingHours } = useCalendar();
-  const weekStart = startOfWeek(selectedDate);
-  const weekEnd = endOfWeek(selectedDate);
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const visibleDays = useMemo(() => 
+    weekDays.map((day, index) => ({ day, index })).filter(({ day }) => !isDayClosed(day, workingHours)),
+  [weekDays, workingHours]);
+
+  const gridStyle = {
+    gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))`
+  };
 
   const processedEvents = useMemo(() => {
     return multiDayEvents
@@ -87,9 +94,9 @@ export function WeekViewMultiDayEventsRow({ selectedDate, multiDayEvents, onShif
   return (
     <div className="overflow-hidden flex">
       <div className="w-18 border-b"></div>
-      <div className="grid flex-1 grid-cols-7 divide-x border-b border-l">
-        {weekDays.map((day, dayIndex) => {
-          const isClosed = isDayClosed(day, workingHours); // Check if day is closed based on working hours
+      <div className="grid flex-1 divide-x border-b border-l" style={gridStyle}>
+        {visibleDays.map(({ day, index: dayIndex }) => {
+          const isClosed = isDayClosed(day, workingHours);
 
           return (
             <div key={day.toISOString()} className={cn("flex h-full flex-col gap-1 py-1", isClosed && "bg-diagonal-stripe-light")}>
