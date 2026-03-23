@@ -125,6 +125,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     // Process dots with truncation
     const combinedDots = [
         ...(event.metadata?.hasNotes ? [{ id: 'notes', color: 'black', title: 'Notes' }] : []),
+        ...(event.metadata?.payment_status === 'unpaid' ? [{ id: 'unpaid', color: 'orange', title: 'Unpaid' }] : []),
         ...(event.metadata?.tags?.map((tag: any) => ({ id: tag.id, color: tag.color, title: tag.title })) || [])
     ].slice(0, maxDots);
 
@@ -159,7 +160,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
                                     </div>
                                 )}
                                 
-                                {event.metadata?.booking_id && !event.metadata?.allProtocolTasksCompleted && (
+                                {event.metadata?.booking_id && (event.metadata?.protocol_items_count > 0 || event.metadata?.has_master_checklist) && !event.metadata?.allProtocolTasksCompleted && (
                                     <span 
                                         className="absolute top-0 right-1 h-2 w-2 inline-block" 
                                         style={{ 

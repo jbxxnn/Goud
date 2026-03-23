@@ -122,6 +122,7 @@ export interface Booking {
         duration?: number;
         custom_price_label?: string | null;
         custom_price_description?: string | null;
+        master_checklist_services?: { checklist_id: string }[];
     } | null;
     locations: {
         id: string;

@@ -615,7 +615,8 @@ export async function GET(req: NextRequest) {
           id,
           name,
           service_code,
-          duration
+          duration,
+          master_checklist_services (checklist_id)
         ),
         locations (
           id,

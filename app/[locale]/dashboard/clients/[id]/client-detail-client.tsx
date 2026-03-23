@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -30,11 +30,15 @@ import { formatEuroCents } from '@/lib/currency/format';
 import Image from 'next/image';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import BookingModal from '@/components/booking-modal';
+import BookingRescheduleModal from '@/components/booking-reschedule-modal';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 
 interface ClientDetailClientProps {
   clientId: string;
   initialClient: User;
+  userRole?: string;
 }
 
 interface MidwifeResponse {
@@ -46,7 +50,8 @@ const ROLE_OPTIONS: UserRole[] = ['client', 'midwife', 'admin', 'assistant'];
 
 export default function ClientDetailClient({
   clientId,
-  initialClient
+  initialClient,
+  userRole
 }: ClientDetailClientProps) {
   const router = useRouter();
   const [client, setClient] = useState<User>(initialClient);
@@ -57,9 +62,20 @@ export default function ClientDetailClient({
   const [isSaving, setIsSaving] = useState(false);
   const [isBackLoading, setIsBackLoading] = useState(false);
   const [midwives, setMidwives] = useState<Midwife[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const locale = useLocale();
   const t = useTranslations('Clients.details');
+  const tBookings = useTranslations('Bookings');
   const tCommon = useTranslations('Common');
   const tBookingStatus = useTranslations('BookingStatus');
+
+  // Action states
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [bookingToAction, setBookingToAction] = useState<Booking | null>(null);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Form setup
   const {
@@ -196,6 +212,132 @@ export default function ClientDetailClient({
     }
   };
 
+  // Action Handlers
+  const handleCancel = useCallback(async (booking: Booking) => {
+    setBookingToAction(booking);
+    setIsDeleteMode(false);
+    setIsDeleteConfirmationOpen(true);
+  }, []);
+
+  const confirmCancel = async () => {
+    if (!bookingToAction) return;
+    setIsActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingToAction.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel booking');
+      }
+
+      // Update local state
+      setBookings(prev => prev.map(b => b.id === bookingToAction.id ? { ...b, status: 'cancelled' } : b));
+      setIsDeleteConfirmationOpen(false);
+      setBookingToAction(null);
+      toast.success(tBookings('toasts.cancelSuccess'));
+    } catch (err) {
+      toast.error(tBookings('toasts.cancelError'));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleNoShow = useCallback(async (booking: Booking) => {
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'no_show' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark as no show');
+      }
+
+      setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'no_show' } : b));
+      toast.success(tBookings('toasts.noShowSuccess'));
+    } catch (err) {
+      toast.error('Error marking as no show');
+      throw err;
+    }
+  }, [tBookings]);
+
+  const handleDelete = useCallback((booking: Booking) => {
+    setBookingToAction(booking);
+    setIsDeleteMode(true);
+    setIsDeleteConfirmationOpen(true);
+  }, []);
+
+  const confirmDelete = async () => {
+    if (!bookingToAction) return;
+    setIsActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingToAction.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete booking');
+      }
+
+      setBookings(prev => prev.filter(b => b.id !== bookingToAction.id));
+      setIsDeleteConfirmationOpen(false);
+      setBookingToAction(null);
+      toast.success(tBookings('toasts.deleteSuccess'));
+    } catch (err) {
+      toast.error(tBookings('toasts.deleteError'));
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleReschedule = useCallback(async (
+    bookingId: string,
+    newStartTime: string,
+    newEndTime: string,
+    locationId: string,
+    staffId: string,
+    shiftId: string
+  ) => {
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          start_time: newStartTime,
+          end_time: newEndTime,
+          location_id: locationId,
+          staff_id: staffId,
+          shift_id: shiftId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reschedule booking');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setBookings(prev => prev.map(b => b.id === bookingId ? result.data : b));
+        toast.success(tBookings('toasts.rescheduleSuccess'));
+      }
+    } catch (err) {
+      toast.error(tBookings('toasts.rescheduleError'));
+      throw err;
+    }
+  }, [tBookings]);
+
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('nl-NL', {
@@ -271,63 +413,65 @@ export default function ClientDetailClient({
       </div>
 
       {/* Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalBookings')}</p>
-                <p className="text-2xl font-bold">{totalBookings}</p>
+      {userRole === 'admin' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalBookings')}</p>
+                  <p className="text-2xl font-bold">{totalBookings}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <HugeiconsIcon icon={Calendar02Icon} className="h-5 w-5 text-primary" />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <HugeiconsIcon icon={Calendar02Icon} className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{t('metrics.upcoming')}</p>
-                <p className="text-2xl font-bold">{totalUpcoming}</p>
+          <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('metrics.upcoming')}</p>
+                  <p className="text-2xl font-bold">{totalUpcoming}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <HugeiconsIcon icon={CalendarCheckInIcon} className="h-5 w-5 text-green-600" />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={CalendarCheckInIcon} className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{t('metrics.confirmed')}</p>
-                <p className="text-2xl font-bold">{confirmedBookings.length}</p>
+          <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('metrics.confirmed')}</p>
+                  <p className="text-2xl font-bold">{confirmedBookings.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                  <HugeiconsIcon icon={CheckmarkCircle03Icon} className="h-5 w-5 text-blue-600" />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={CheckmarkCircle03Icon} className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalRevenue')}</p>
-                <p className="text-2xl font-bold">{formatEuroCents(totalRevenue)}</p>
+          <Card className="bg-card border-none shadow-none" style={{ borderRadius: '0.2rem' }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">{t('metrics.totalRevenue')}</p>
+                  <p className="text-2xl font-bold">{formatEuroCents(totalRevenue)}</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                  <HugeiconsIcon icon={CoinsEuroIcon} className="h-5 w-5 text-purple-600" />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-                <HugeiconsIcon icon={CoinsEuroIcon} className="h-5 w-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
@@ -510,9 +654,12 @@ export default function ClientDetailClient({
                       <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.upcoming')}</h4>
                       <div className="space-y-3">
                         {upcomingBookings.slice(0, 10).map((booking) => (
-                          <Link
+                          <div
                             key={booking.id}
-                            href={`/dashboard/appointments/${booking.id}`}
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setIsBookingModalOpen(true);
+                            }}
                             className="block px-3 bg-muted/50 rounded-lg border-l-4 border-primary hover:bg-muted/80 hover:shadow-sm transition-all cursor-pointer group"
                           >
                             <div className="flex items-start justify-between mb-2 pt-2">
@@ -525,7 +672,7 @@ export default function ClientDetailClient({
                               <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
                               {formatDateTime(booking.start_time)}
                             </p>
-                          </Link>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -537,9 +684,12 @@ export default function ClientDetailClient({
                       <h4 className="text-sm font-semibold text-muted-foreground mb-3">{t('appointments.history')}</h4>
                       <div className="space-y-3">
                         {pastBookings.slice(0, 5).map((booking) => (
-                          <Link
+                          <div
                             key={booking.id}
-                            href={`/dashboard/appointments/${booking.id}`}
+                            onClick={() => {
+                              setSelectedBooking(booking);
+                              setIsBookingModalOpen(true);
+                            }}
                             className="block p-3 bg-muted/30 rounded-lg border-l-4 border-muted hover:bg-muted/50 transition-all cursor-pointer group"
                           >
                             <div className="flex items-start justify-between mb-2">
@@ -552,7 +702,7 @@ export default function ClientDetailClient({
                               <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
                               {formatDateTime(booking.start_time)}
                             </p>
-                          </Link>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -762,6 +912,57 @@ export default function ClientDetailClient({
           </div>
         </SheetContent>
       </Sheet>
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        booking={selectedBooking}
+        userRole={userRole}
+        onUpdate={(updatedBooking) => {
+          setBookings(prev => prev.map(b => b.id === updatedBooking.id ? updatedBooking : b));
+          setSelectedBooking(updatedBooking);
+        }}
+        onCancel={handleCancel}
+        onNoShow={handleNoShow}
+        onDelete={handleDelete}
+        onReschedule={(booking) => {
+          setIsBookingModalOpen(false);
+          setBookingToAction(booking);
+          setIsRescheduleModalOpen(true);
+        }}
+      />
+
+      {/* Reschedule Modal */}
+      <BookingRescheduleModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => {
+          setIsRescheduleModalOpen(false);
+          setBookingToAction(null);
+        }}
+        booking={bookingToAction}
+        onReschedule={handleReschedule}
+      />
+
+      {/* Cancel/Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={isDeleteConfirmationOpen}
+        onClose={() => {
+          if (!isActionLoading) {
+            setIsDeleteConfirmationOpen(false);
+            setBookingToAction(null);
+            setIsDeleteMode(false);
+          }
+        }}
+        onConfirm={isDeleteMode ? confirmDelete : confirmCancel}
+        title={isDeleteMode ? tBookings('dialog.deleteTitle') : tBookings('dialog.cancelTitle')}
+        description={isDeleteMode
+          ? tBookings('dialog.deleteDescription')
+          : tBookings('dialog.cancelDescription')}
+        itemName={bookingToAction ? `Booking for ${bookingToAction.users?.email || 'Unknown'}` : undefined}
+        confirmButtonText={isDeleteMode ? tBookings('dialog.deleteConfirm') : tBookings('dialog.cancelConfirm')}
+        confirmButtonVariant={isDeleteMode ? 'destructive' : 'default'}
+        isLoading={isActionLoading}
+      />
     </div>
   );
 }

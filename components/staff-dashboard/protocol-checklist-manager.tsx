@@ -299,7 +299,7 @@ export function ProtocolChecklistManager({
             </div>
 
             {/* Checklist Items */}
-            <ScrollArea className="h-[300px] pr-4">
+            <ScrollArea className="h-auto pr-4">
                 {isLoading || isRefreshing ? (
                     <div className="flex justify-center p-4">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -327,11 +327,11 @@ export function ProtocolChecklistManager({
                                         <p className={`text-sm font-medium leading-none ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                                             {item.content}
                                         </p>
-                                        {item.is_completed && item.completed_by_user && (
+                                        {/* {item.is_completed && item.completed_by_user && (
                                             <p className="text-[10px] text-muted-foreground">
                                                 {t('completedBy')} {item.completed_by_user.first_name} • {format(new Date(item.completed_at!), 'PP p')}
                                             </p>
-                                        )}
+                                        )} */}
                                     </div>
                                     {showDelete && (
                                         <Button
@@ -346,7 +346,7 @@ export function ProtocolChecklistManager({
                                     </div>
                                 
                                 {/* Comment Section */}
-                                <div className="ml-7">
+                                <div className="ml-7 flex justify-between items-center">
                                     {editingCommentId === item.id ? (
                                         <div className="flex gap-2">
                                             <Input
@@ -376,6 +376,12 @@ export function ProtocolChecklistManager({
                                             )}
                                         </div>
                                     )}
+
+                                     {item.is_completed && item.completed_by_user && (
+                                            <p className="text-[10px] text-muted-foreground">
+                                                {t('completedBy')} {item.completed_by_user.first_name} • {format(new Date(item.completed_at!), 'PP p')}
+                                            </p>
+                                        )}
                                 </div>
                             </div>
                         ))}

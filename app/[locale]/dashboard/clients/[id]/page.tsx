@@ -46,6 +46,6 @@ export default async function ClientDetailPage({
     redirect('/dashboard/clients');
   }
 
-  return <ClientDetailClient clientId={id} initialClient={client} />;
+  return <ClientDetailClient clientId={id} initialClient={client} userRole={user.role} />;
 }
 
