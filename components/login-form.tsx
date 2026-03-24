@@ -40,6 +40,8 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
+      // Force a router refresh to flush the client-side router cache and pick up the new session cookies
+      router.refresh();
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/dashboard");
     } catch (error: unknown) {
