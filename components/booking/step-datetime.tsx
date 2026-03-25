@@ -55,7 +55,7 @@ export function StepDateTime() {
                 </Select>
             </div>
 
-            <div className="relative p-0 mx-9 shadow-lg" style={{ borderRadius: '0.3rem' }}>
+            <div className="relative p-0 mx-0 shadow-lg" style={{ borderRadius: '0.3rem' }}>
                 <Calendar
                     month={monthCursor}
                     onPrevMonth={setPrevMonth}

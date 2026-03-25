@@ -434,9 +434,15 @@ export async function GET(req: NextRequest) {
     let numbers: string[] = [];
     let searchTerm = '';
     let terms: string[] = [];
+    let searchBookingNumber: number | null = null;
 
     if (search && search.trim()) {
       searchTerm = search.trim();
+
+      if (/^(G-)?\d+$/i.test(searchTerm)) {
+        const numStr = searchTerm.replace(/^G-/i, '');
+        searchBookingNumber = parseInt(numStr, 10);
+      }
       
       const isDutchDate = /^\d{1,2}[\s\-./]\d{1,2}[\s\-./]\d{2,4}$/.test(searchTerm);
       const isIsoDate = /^\d{4}[\s\-./]\d{1,2}[\s\-./]\d{1,2}$/.test(searchTerm);
@@ -509,10 +515,10 @@ export async function GET(req: NextRequest) {
       }
 
       matchingUserIds = Array.from(matchingUserIdsSet);
-      if (matchingUserIds.length === 0 && !exactDateFilter) {
+      if (matchingUserIds.length === 0 && !exactDateFilter && searchBookingNumber === null) {
         // No matching users and no valid date filter constructed, return empty
         return NextResponse.json({
-          debug_info: { searchTerm, terms, exactDateFilter, partialDateUserIds, matchingUsers },
+          debug_info: { searchTerm, terms, exactDateFilter, partialDateUserIds, matchingUsers, searchBookingNumber },
           success: true,
           data: [],
           pagination: {
@@ -543,33 +549,32 @@ export async function GET(req: NextRequest) {
           filtered = filtered.eq('client_id', patientId);
         }
 
+        let mainOrParts: string[] = [];
+
         if (matchingUserIds !== null && matchingUserIds.length > 0) {
           const idList = `(${matchingUserIds.join(',')})`;
-          if (exactDateFilter) {
-              if (exactDateFilter.startsWith('partial_ids:')) {
-                 const val = exactDateFilter.split(':')[1];
-                 if (val !== 'none') {
-                    filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList},id.in.(${val})`);
-                 } else {
-                    filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList}`);
-                 }
-              } else {
-                 filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList},birth_date.eq.${exactDateFilter}`);
-              }
-          } else {
-              filtered = filtered.or(`client_id.in.${idList},created_by.in.${idList}`);
-          }
-        } else if (exactDateFilter) {
+          mainOrParts.push(`client_id.in.${idList}`, `created_by.in.${idList}`);
+        }
+        
+        if (exactDateFilter) {
             if (exactDateFilter.startsWith('partial_ids:')) {
                const val = exactDateFilter.split(':')[1];
                if (val !== 'none') {
-                   filtered = filtered.or(`id.in.(${val})`);
-               } else {
-                   filtered = filtered.eq('id', '00000000-0000-0000-0000-000000000000');
+                   mainOrParts.push(`id.in.(${val})`);
+               } else if (mainOrParts.length === 0 && searchBookingNumber === null) {
+                   mainOrParts.push(`id.eq.00000000-0000-0000-0000-000000000000`);
                }
             } else {
-               filtered = filtered.or(`birth_date.eq.${exactDateFilter}`);
+               mainOrParts.push(`birth_date.eq.${exactDateFilter}`);
             }
+        }
+
+        if (searchBookingNumber !== null) {
+            mainOrParts.push(`booking_number.eq.${searchBookingNumber}`);
+        }
+
+        if (mainOrParts.length > 0) {
+            filtered = filtered.or(mainOrParts.join(','));
         }
 
         if (staffId) filtered = filtered.eq('staff_id', staffId);

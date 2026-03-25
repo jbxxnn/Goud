@@ -957,7 +957,7 @@
         "isTwin": "Tweeling zwangerschap",
         "paymentMethod": "Betalingsmethode",
         "paymentOnline": "Online",
-        "paymentOnlineDesc": "Je wordt doorgestuurd naar de betaalpagina van Mollie.",
+        "paymentOnlineDesc": "De cliënt krijgt een email met een betaalknop om de betaling te voltooien. Daarnaast wordt er in de volgende stap een betaallink voor Whatsapp/sms alsook een QR code gegenereerd. Zodra er via een van deze opties betaald is vervallen de andere links en verandert de betaalstatus in “betaald”.",
         "paymentLocation": "Op locatie",
         "paymentLocationDesc": "Betaal per pin of contant op de locatie.",
         "notes": "Opmerkingen",
@@ -1590,6 +1590,12 @@
         }
     },
     "BookingModal": {
+        "paymentDialog": {
+            "title": "Betaling bevestigen",
+            "description": "Weet je zeker dat je deze boeking als betaald wilt markeren? Deze actie kan niet ongedaan worden gemaakt.",
+            "confirm": "Ja, markeer als betaald",
+            "paymentLink": "Betaallink"
+        },
         "title": "Boekingsdetails",
         "status": "Status",
         "payment": "Betaling",
@@ -1666,10 +1672,14 @@
             "notesUpdateSuccess": "Notities succesvol bijgewerkt",
             "notesUpdateError": "Notities bijwerken mislukt",
             "staffNotesUpdateSuccess": "Personeelsnotities succesvol bijgewerkt",
-            "staffNotesUpdateError": "Personeelsnotities bijwerken mislukt"
+            "staffNotesUpdateError": "Personeelsnotities bijwerken mislukt",
+            "paymentUpdateSuccess": "Betalingsstatus succesvol bijgewerkt",
+            "paymentUpdateError": "Betalingsstatus bijwerken mislukt"
         },
         "detailsTab": "Details",
-        "checklistTab": "Checklijst"
+        "checklistTab": "Checklijst",
+        "staffChecklist": "Interne personeelstaken",
+        "completed": "Voltooid"
     },
     "StaffDashboard": {
         "title": "Medewerker Dashboard"

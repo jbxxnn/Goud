@@ -958,7 +958,7 @@ export class ShiftService {
       const pEndLocal = formatInTimeZone(pEnd, 'Europe/Amsterdam', 'HH:mm:ss');
       const startIso = toDate(`${sDate}T${pStartLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
       const endIso = toDate(`${sDate}T${pEndLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
-      return { ...pb, start_time: startIso, end_time: endIso };
+      return { ...pb, id: `${pb.id}-${shiftId}`, start_time: startIso, end_time: endIso };
     });
 
     // Merge: Instance breaks take precedence
@@ -1001,7 +1001,7 @@ export class ShiftService {
             const isOverridden = localBreaks.some(lb => lb.sitewide_break_id === b.id);
             if (!isOverridden) {
               inheritedBreaks.push({
-                id: `inherited-${b.id}`,
+                id: `inherited-${b.id}-${shiftId}`,
                 shift_id: shiftId,
                 sitewide_break_id: b.id,
                 name: b.name,

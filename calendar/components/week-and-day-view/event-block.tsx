@@ -78,6 +78,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     const color = (isHexColor ? 'gray' : (badgeVariant === "dot" ? `${event.color}-dot` : event.color)) as VariantProps<typeof calendarWeekEventCardVariants>["color"];
 
     const isShift = event.metadata?.isShift;
+    const isBreak = event.metadata?.isBreak;
     
     const calendarWeekEventCardClasses = cn(
         calendarWeekEventCardVariants({ color, className }), 
@@ -113,6 +114,16 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
         customStyle.backgroundColor = 'transparent';
         customStyle.border = 'none';
         customStyle.boxShadow = 'none';
+    } else if (isBreak) {
+        if (isHexColor) {
+            customStyle.backgroundColor = event.color;
+            customStyle.borderColor = event.color;
+            customStyle.color = '#ffffff'; // Solid colors need contrasting text
+        } else {
+            customStyle.backgroundColor = '#64748b'; // Solid slate-500
+            customStyle.borderColor = '#475569';
+            customStyle.color = '#ffffff';
+        }
     } else if (isHexColor) {
         customStyle.backgroundColor = `${event.color}33`;
         customStyle.borderColor = event.color;
@@ -130,8 +141,8 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
     ].slice(0, maxDots);
 
     const BlockContent = (
-        <TooltipProvider delayDuration={0}>
-            <Tooltip>
+        <TooltipProvider delayDuration={0} disableHoverableContent>
+            <Tooltip delayDuration={0} disableHoverableContent>
                 <TooltipTrigger asChild>
                     <div
                         role={isShift ? "presentation" : "button"}
@@ -193,7 +204,7 @@ export function EventBlock({ event, className, onShiftDeleted, onShiftUpdated, o
                         )}
                     </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="pointer-events-none">
                     <p>{isShift ? `Working Hours: ${startTime} - ${endTime}` : `${event.title} (${startTime} - ${endTime}) ${event.metadata?.booking_number ? `- G-${event.metadata.booking_number}` : ''}`}</p>
                 </TooltipContent>
             </Tooltip>

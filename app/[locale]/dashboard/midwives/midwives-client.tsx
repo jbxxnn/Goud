@@ -63,7 +63,7 @@ export default function MidwivesClient({
 
       return data;
     },
-    initialData: initialMidwives.length > 0 ? {
+    initialData: page === initialPagination.page && initialMidwives.length > 0 ? {
       success: true,
       data: initialMidwives,
       pagination: {

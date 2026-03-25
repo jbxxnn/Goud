@@ -201,12 +201,18 @@ export default function BookingsClient({
   const statusCounts = bookingsData?.statusCounts || {};
   const loading = bookingsLoading;
   
-  // Breaks Query (only for staff dashboard)
+  // Breaks Query (for both staff dashboard and admin global calendar)
   const { data: breaksData } = useQuery({
-    queryKey: ['staff-breaks', staffId],
-    enabled: !!staffId && viewMode === 'calendar',
+    queryKey: ['staff-breaks', staffId || 'all', fetchDateFrom, fetchDateTo],
+    enabled: viewMode === 'calendar',
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/staff-breaks?staffId=${staffId}`);
+      const params = new URLSearchParams();
+      if (staffId) params.append('staffId', staffId);
+      if (fetchDateFrom) params.append('startDate', fetchDateFrom);
+      if (fetchDateTo) params.append('endDate', fetchDateTo);
+      
+      const url = `/api/dashboard/staff-breaks?${params.toString()}`;
+      const response = await fetch(url);
       const data = await response.json();
       return data.success ? data.data : [];
     },
@@ -259,9 +265,10 @@ export default function BookingsClient({
 
   const allStaff = allStaffData || [];
 
-  // Derive calendar events
   const calendarEvents = useMemo(() => {
-    const bookingEvents = bookings.map(booking => bookingToCalendarEvent(booking));
+    const bookingEvents = bookings
+      .filter(booking => booking.status !== 'cancelled')
+      .map(booking => bookingToCalendarEvent(booking));
     
     const breakEvents = (breaks || []).map((b: any) => {
       const startLocalHhMm = formatInTimeZone(new Date(b.start_time), 'Europe/Amsterdam', 'HH:mm');
@@ -274,12 +281,14 @@ export default function BookingsClient({
         ? `${endYyyyMmDd}T${endLocalHhMm}:00`
         : `${startYyyyMmDd}T${endLocalHhMm}:00`;
 
+      const locationColor = locations.find(l => l.id === b.location_id)?.color || 'gray';
+
       return {
         id: `break-${b.id}`,
         startDate: visualStartString,
         endDate: visualEndString,
         title: b.name || 'Break',
-        color: 'gray' as const,
+        color: locationColor as any,
         description: `${b.name || 'Break'}\nStaff: ${b.staff?.first_name} ${b.staff?.last_name}`,
         user: {
           id: b.staff?.id || 'unassigned',

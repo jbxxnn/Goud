@@ -5,8 +5,23 @@ import mollieClient from '@/lib/mollie/client';
 export async function POST(req: NextRequest) {
     try {
         // Mollie sends the payment ID as a form-encoded "id" field
-        const formData = await req.formData();
-        const id = formData.get('id') as string;
+        let id: string | null = null;
+        
+        try {
+            const formData = await req.formData();
+            id = formData.get('id') as string;
+        } catch (e) {
+            // Fallback for non-form-data requests
+            const { searchParams } = new URL(req.url);
+            id = searchParams.get('id');
+            
+            if (!id) {
+                try {
+                    const body = await req.json();
+                    id = body.id;
+                } catch (e2) {}
+            }
+        }
 
         if (!id) {
             return NextResponse.json({ error: 'Missing id' }, { status: 400 });
@@ -32,14 +47,19 @@ export async function POST(req: NextRequest) {
         else if (payment.status === 'open') dbStatus = 'unpaid';
         else if (payment.status === 'pending') dbStatus = 'unpaid';
 
-        const { error } = await supabase
+        const { error, data } = await supabase
             .from('bookings')
             .update({ payment_status: dbStatus })
-            .eq('id', bookingId);
+            .eq('id', bookingId)
+            .select();
 
         if (error) {
             console.error('[mollie-webhook] DB update failed:', error);
-            return NextResponse.json({ error: 'DB update failed' }, { status: 500 });
+            return NextResponse.json({ error: 'DB update failed', details: error.message }, { status: 500 });
+        }
+
+        if (!data || data.length === 0) {
+            return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
         }
 
         return NextResponse.json({ received: true });

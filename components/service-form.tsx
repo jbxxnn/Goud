@@ -841,6 +841,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
       twin_duration_minutes: null,
       is_active: true,
       hidden_checkout_fields: [],
+      custom_price_label: null,
+      custom_price_description: null,
     },
   });
 
@@ -878,6 +880,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         twin_duration_minutes: service.twin_duration_minutes || null,
         is_active: service.is_active,
         hidden_checkout_fields: service.hidden_checkout_fields || [],
+        custom_price_label: service.custom_price_label || null,
+        custom_price_description: service.custom_price_description || null,
       });
       setHasCustomServiceCode(Boolean(service.serviceCode || (service as any).service_code));
     } else {
@@ -902,6 +906,8 @@ export default function ServiceForm({ service, onSave, onCancel, isViewMode = fa
         twin_duration_minutes: null,
         is_active: true,
         hidden_checkout_fields: [],
+        custom_price_label: null,
+        custom_price_description: null,
       });
       setHasCustomServiceCode(false);
     }

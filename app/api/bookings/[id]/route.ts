@@ -377,7 +377,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const supabase = authResult.supabase!;
 
     const body = await req.json();
-    const { status, notes } = body || {};
+    const { status, notes, payment_status } = body || {};
 
     // Build update object with only provided fields
     const updates: Record<string, any> = {};
@@ -386,6 +386,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.internal_notes !== undefined) updates.internal_notes = body.internal_notes === null || body.internal_notes === '' ? null : body.internal_notes;
     if (body.no_show_resolved_at !== undefined) updates.no_show_resolved_at = body.no_show_resolved_at;
     if (body.no_show_resolved_by !== undefined) updates.no_show_resolved_by = body.no_show_resolved_by;
+    if (payment_status !== undefined) updates.payment_status = payment_status;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

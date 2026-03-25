@@ -957,7 +957,7 @@
         "isTwin": "Twin Booking",
         "paymentMethod": "Payment Method",
         "paymentOnline": "Online",
-        "paymentOnlineDesc": "You will be redirected to the Mollie payment page.",
+        "paymentOnlineDesc": "The client receives an email with a payment button to complete the payment. Additionally, in the next step, a payment link for WhatsApp/SMS as well as a QR code are generated. As soon as payment is made via one of these options, the other links expire and the payment status changes to “paid”.",
         "paymentLocation": "At Location",
         "paymentLocationDesc": "Pay by card or cash at the location.",
         "notes": "Client notes",
@@ -1590,6 +1590,12 @@
         }
     },
     "BookingModal": {
+        "paymentDialog": {
+            "title": "Confirm Payment",
+            "description": "Are you sure you want to mark this booking as paid? This action cannot be undone.",
+            "confirm": "Yes, mark as paid",
+            "paymentLink": "Payment Link"
+        },
         "title": "Booking Details",
         "status": "Status",
         "payment": "Payment",
@@ -1666,10 +1672,14 @@
             "notesUpdateSuccess": "Notes updated successfully",
             "notesUpdateError": "Failed to update notes",
             "staffNotesUpdateSuccess": "Staff notes updated successfully",
-            "staffNotesUpdateError": "Failed to update staff notes"
+            "staffNotesUpdateError": "Failed to update staff notes",
+            "paymentUpdateSuccess": "Payment status updated successfully",
+            "paymentUpdateError": "Failed to update payment status"
         },
         "detailsTab": "Details",
-        "checklistTab": "Checklist"
+        "checklistTab": "Checklist",
+        "staffChecklist": "Internal Staff Tasks",
+        "completed": "Completed"
     },
     "StaffDashboard": {
         "title": "Staff Dashboard"

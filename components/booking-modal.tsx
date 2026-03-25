@@ -7,12 +7,26 @@ import { Badge } from '@/components/ui/badge';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Pencil, Save, X, Loader, ClipboardList, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChecklistManager } from './staff-dashboard/checklist-manager';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { File01Icon, Tick01Icon, Copy01Icon } from '@hugeicons/core-free-icons';
+import { Separator } from '@/components/ui/separator';
 import { ProtocolChecklistManager } from './staff-dashboard/protocol-checklist-manager';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 // import { HugeiconsIcon } from '@hugeicons/react';
 // import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { RepeatPrescriber } from './repeat-prescriber';
@@ -87,14 +101,23 @@ const getStatusBadge = (status: string, t: (key: string) => string) => {
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 };
 
-const getPaymentBadge = (status: string, t: (key: string) => string) => {
+const getPaymentBadge = (status: string, t: (key: string) => string, onClick?: () => void, isUpdating?: boolean) => {
   const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, className?: string }> = {
-    unpaid: { variant: 'secondary', label: t('paymentStatus.unpaid') },
+    unpaid: { variant: 'default', label: t('paymentStatus.unpaid'), className: `bg-orange-500 hover:bg-orange-600 text-white border-orange-500 ${onClick ? 'cursor-pointer' : ''}` },
     paid: { variant: 'default', label: t('paymentStatus.paid'), className: 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' },
     refunded: { variant: 'secondary', label: t('paymentStatus.refunded'), className: 'bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90' },
   };
   const config = variants[status] || { variant: 'secondary' as const, label: status };
-  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+  return (
+    <Badge 
+      variant={config.variant} 
+      className={config.className}
+      onClick={status === 'unpaid' ? onClick : undefined}
+    >
+      {isUpdating && status === 'unpaid' && <Loader className="w-3 h-3 mr-1 animate-spin inline" />}
+      {config.label}
+    </Badge>
+  );
 };
 
 
@@ -117,8 +140,43 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const [internalNotesValue, setInternalNotesValue] = useState('');
   const [isSavingInternalNotes, setIsSavingInternalNotes] = useState(false);
   const [isMarkingNoShow, setIsMarkingNoShow] = useState(false);
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
   const [isSyncingChecklist, setIsSyncingChecklist] = useState(false);
+
+  const handleMarkAsPaidClick = () => {
+    setIsConfirmingPayment(true);
+  };
+
+  const executeMarkAsPaid = async () => {
+    setIsConfirmingPayment(false);
+    try {
+      setIsUpdatingPayment(true);
+      const response = await fetch(`/api/bookings/${booking?.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: 'paid' }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update payment status');
+      }
+
+      toast.success(t('toasts.paymentUpdateSuccess') || 'Payment status updated to paid');
+      if (onUpdate && data.booking) {
+        onUpdate(data.booking);
+      }
+    } catch (error) {
+      toast.error(t('toasts.paymentUpdateError') || 'Failed to update payment status', {
+        description: error instanceof Error ? error.message : t('placeholders.unknown'),
+      });
+    } finally {
+      setIsUpdatingPayment(false);
+    }
+  };
 
   // Sync checklist items from master
   const syncChecklist = async (bookingId: string, serviceId: string) => {
@@ -195,9 +253,9 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-[600px] sm:w-[700px] p-0 flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b">
-          <SheetTitle>
-            {t('title')} {booking?.booking_number && <span className="text-muted-foreground ml-2">G-{booking.booking_number}</span>}
+        <SheetHeader className={`px-6 py-4 border-b ${booking?.payment_status === 'unpaid' ? 'bg-orange-500 text-white' : ''}`}>
+          <SheetTitle className={booking?.payment_status === 'unpaid' ? 'text-white' : ''}>
+            {t('title')} {booking?.booking_number && <span className={booking?.payment_status === 'unpaid' ? 'text-orange-100 ml-2' : 'text-muted-foreground ml-2'}>G-{booking.booking_number}</span>}
           </SheetTitle>
         </SheetHeader>
 
@@ -305,7 +363,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground mb-1">{t('payment')}</div>
-                    {getPaymentBadge(booking.payment_status, t)}
+                    {getPaymentBadge(booking.payment_status, t, handleMarkAsPaidClick, isUpdatingPayment)}
                   </div>
                 </div>
                 {(userRole === 'admin' || userRole === 'assistant') && (
@@ -837,6 +895,31 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     </div>
                   </div>
                 </div>
+
+
+              <Separator />
+
+                {/* Internal Staff Tasks */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium flex items-center gap-2">
+                                        <HugeiconsIcon icon={File01Icon} size={16} />
+                                        {t('staffChecklist') || 'Internal Staff Tasks'}
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                            {(() => {
+                                                const items = queryClient.getQueryData<any[]>(['checklist', booking.id]) || [];
+                                                const completed = items.filter((i: any) => i.is_completed).length;
+                                                const total = items.length;
+                                                if (total === 0) return '';
+                                                return `${completed}/${total} ${t('completed') || 'Completed'}`;
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <ChecklistManager bookingId={booking.id} />
+                            </div>
               </TabsContent>
 
               <TabsContent value="checklist" className="flex-1 mt-0">
@@ -936,6 +1019,51 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
           </>
         )}
       </SheetContent>
+
+      <AlertDialog open={isConfirmingPayment} onOpenChange={setIsConfirmingPayment}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('paymentDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('paymentDialog.description')}</AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {booking?.payment_link && (
+            <div className="space-y-3 py-4 border-y my-2">
+              <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+                {t('paymentDialog.paymentLink')}
+              </Label>
+              <div className="flex gap-2 w-full">
+                <div className="flex-1 min-w-0 bg-muted/50 p-3 rounded-lg text-xs font-mono border border-input leading-none flex items-center">
+                  <span className="truncate w-full">{booking.payment_link}</span>
+                </div>
+                <Button 
+                  type="button" 
+                  size="icon" 
+                  variant="outline" 
+                  onClick={() => {
+                    if (booking?.payment_link) {
+                      navigator.clipboard.writeText(booking.payment_link);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }
+                  }}
+                  className={`h-10 w-10 shrink-0 ${copied ? "text-primary border-primary bg-primary/5" : "hover:border-primary hover:text-primary transition-colors"}`}
+                  style={{borderRadius: "0.75rem"}}
+                >
+                  <HugeiconsIcon icon={copied ? Tick01Icon : Copy01Icon} size={20} />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={executeMarkAsPaid} className="bg-orange-500 hover:bg-orange-600 text-white border-transparent">
+              {t('paymentDialog.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { isSameDay, parseISO } from "date-fns";
+import { isSameDay, parseISO, startOfWeek, endOfWeek } from "date-fns";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
 import { DndProviderWrapper } from "@/calendar/components/dnd/dnd-provider";
 import { BookingCalendarHeader } from "@/components/booking-calendar-header";
@@ -41,23 +41,20 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onB
 
             if (view === "month" || view === "agenda") {
                 const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+
                 const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0, 23, 59, 59, 999);
-                const isInSelectedMonth = eventStartDate <= monthEnd && eventEndDate >= monthStart;
+                const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+                const isInSelectedMonth = eventStartDate <= gridEnd && eventEndDate >= gridStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;
                 const isLocationMatch = selectedLocationId === "all" || event.location?.id === selectedLocationId;
                 return isInSelectedMonth && isUserMatch && isLocationMatch;
             }
 
             if (view === "week") {
-                const dayOfWeek = selectedDate.getDay();
-
-                const weekStart = new Date(selectedDate);
-                weekStart.setDate(selectedDate.getDate() - dayOfWeek);
-                weekStart.setHours(0, 0, 0, 0);
-
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
-                weekEnd.setHours(23, 59, 59, 999);
+                const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+                const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
                 const isInSelectedWeek = eventStartDate <= weekEnd && eventEndDate >= weekStart;
                 const isUserMatch = selectedUserId === "all" || event.user.id === selectedUserId;

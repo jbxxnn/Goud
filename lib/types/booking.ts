@@ -114,6 +114,8 @@ export interface Booking {
     gravida?: string | null;
     para?: string | null;
     other_midwife_name?: string | null;
+    mollie_payment_id?: string | null;
+    payment_link?: string | null;
 
     // Relations
     services: {

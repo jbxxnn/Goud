@@ -88,6 +88,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
     const renderBadgeText = ["first", "none"].includes(position);
 
+    const isBreak = event.metadata?.isBreak;
     const isHexColor = event.color.startsWith('#');
     const color = (isHexColor ? 'gray' : (badgeVariant === "dot" ? `${event.color}-dot` : event.color)) as VariantProps<typeof eventBadgeVariants>["color"];
 
@@ -109,7 +110,17 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
 
     const customStyle: React.CSSProperties = {};
 
-    if (isHexColor) {
+    if (isBreak) {
+        if (isHexColor) {
+            customStyle.backgroundColor = event.color;
+            customStyle.borderColor = event.color;
+            customStyle.color = '#ffffff';
+        } else {
+            customStyle.backgroundColor = '#64748b'; // Solid slate-500
+            customStyle.borderColor = '#475569';
+            customStyle.color = '#ffffff';
+        }
+    } else if (isHexColor) {
         customStyle.backgroundColor = `${event.color}33`;
         customStyle.borderColor = event.color;
         customStyle.color = event.color;
@@ -119,8 +130,8 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
     const endTime = format(new Date(event.endDate), "HH:mm");
 
     const BadgeContent = (
-        <TooltipProvider delayDuration={0}>
-            <Tooltip>
+        <TooltipProvider delayDuration={0} disableHoverableContent>
+            <Tooltip delayDuration={0} disableHoverableContent>
                 <TooltipTrigger asChild>
                     <div 
                         role="button" 
@@ -153,7 +164,7 @@ export function MonthEventBadge({ event, cellDate, eventCurrentDay, eventTotalDa
                         {renderBadgeText && <span>{startTime}</span>}
                     </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="pointer-events-none">
                     <p>{`${event.title} (${startTime} - ${endTime})`}</p>
                 </TooltipContent>
             </Tooltip>

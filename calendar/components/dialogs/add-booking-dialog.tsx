@@ -944,19 +944,19 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                     <div style={{borderRadius: '0.5rem'}} className={`flex-1 border rounded-lg p-2 cursor-pointer transition-colors ${watch("payment_method") === 'online' ? 'border-secondary bg-accent' : 'hover:bg-muted'}`}
                          onClick={() => setValue("payment_method", 'online')}>
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">{t("paymentOnline")} (Mollie)</span>
+                        {/* <span className="font-medium">{t("paymentOnline")}</span> */}
                         {watch("payment_method") === 'online' && <HugeiconsIcon icon={Tick01Icon} className="text-primary" size={18} />}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1 text-balance">{t("paymentOnlineDesc")}</p>
                     </div>
-                    <div style={{borderRadius: '0.5rem'}} className={`flex-1 border rounded-lg p-2 cursor-pointer transition-colors ${watch("payment_method") === 'at_location' ? 'border-secondary bg-accent' : 'hover:bg-muted'}`}
+                    {/* <div style={{borderRadius: '0.5rem'}} className={`flex-1 border rounded-lg p-2 cursor-pointer transition-colors ${watch("payment_method") === 'at_location' ? 'border-secondary bg-accent' : 'hover:bg-muted'}`}
                          onClick={() => setValue("payment_method", 'at_location')}>
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{t("paymentLocation")}</span>
                         {watch("payment_method") === 'at_location' && <HugeiconsIcon icon={Tick01Icon} className="text-primary" size={18} />}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1 text-balance">{t("paymentLocationDesc")}</p>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               )}
@@ -1062,7 +1062,12 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
         </DialogContent>
       </Dialog>
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
-        <DialogContent className="max-w-2xl sm:max-w-[440px] p-0 overflow-hidden" style={{borderRadius: "1rem"}}>
+         <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              
+            </DialogTitle>
+          </DialogHeader>
+        <DialogContent className="max-w-2xl sm:max-w-[44rem] p-0 overflow-hidden" style={{borderRadius: "1rem"}}>
           <div className="w-full p-8 text-center bg-primary/5 border-b space-y-4 pt-12 box-border">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
               <HugeiconsIcon icon={Tick01Icon} size={32} />
