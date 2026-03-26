@@ -124,17 +124,29 @@ export function BookingFlow() {
             </Card>
             {step === 4 && (
                 <Card className="w-full max-w-lg lg:hidden">
-                    <CardContent>
+                    <CardContent className="p-4 space-y-4">
                         <div className="animate-in fade-in zoom-in-95 duration-500">
-                            <p className="text-lg font-bold text-gray-900 leading-tight">
-                                {selectedService?.name || t('noServiceSelected')}
+                            <p className="text-sm font-bold text-gray-900 leading-tight">
+                                - {selectedService?.name || t('noServiceSelected')}
                             </p>
                             {(selectedService?.price ?? 0) > 0 && (
-                                <p className="text-sm font-bold text-primary mt-1">
+                                <p className="text-xs font-bold text-primary mt-1">
                                     {formatEuroCents((selectedService?.price ?? 0))}
                                 </p>
                             )}
                         </div>
+                         <div className="animate-in fade-in zoom-in-95 duration-500">
+                                        <p className="text-lg font-bold text-gray-900 capitalize">
+                                            {format.dateTime(new Date(date), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' })}
+                                        </p>
+                                        {selectedSlot && (
+                                            <p className="text-sm font-bold text-primary mt-0.5">
+                                                {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    
                     </CardContent>
                 </Card>
             )}
