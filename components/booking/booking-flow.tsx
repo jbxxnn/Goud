@@ -51,7 +51,9 @@ export function BookingFlow() {
 
             {step === 4 && (
                 <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
-                    <AlertDialog>
+                    
+                    <CardContent className="p-4 space-y-4">
+                        <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="default" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
                                     <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
@@ -73,7 +75,6 @@ export function BookingFlow() {
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                    <CardContent className="p-4 space-y-4">
                         <div className="animate-in fade-in zoom-in-95 duration-500">
                             <p className="text-lg font-bold text-gray-900 leading-tight">
                                 {selectedService?.name || t('noServiceSelected')}
@@ -125,7 +126,6 @@ export function BookingFlow() {
                     </CardContent>
                 </Card>
             )}
-            
             {/* this is the right card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
