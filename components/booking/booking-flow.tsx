@@ -124,7 +124,7 @@ export function BookingFlow() {
             </Card>
 
             {/* this is the left card */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
+            <Card className="w-full max-w-lg hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
                         {/* Header content if needed */}

@@ -51,6 +51,7 @@ const getDefaultRange = (): DateRange => {
 };
 
 interface ClientsClientProps {
+  userRole?: string;
   initialClients: User[];
   initialPagination: {
     page: number;
@@ -60,6 +61,7 @@ interface ClientsClientProps {
 }
 
 export default function ClientsClient({
+  userRole,
   initialClients,
   initialPagination
 }: ClientsClientProps) {
@@ -121,7 +123,7 @@ export default function ClientsClient({
         previous: previousData?.success && previousData?.data ? (previousData.data as ClientStats) : null
       };
     },
-    enabled: !!dateRange.from && !!dateRange.to,
+    enabled: !!dateRange.from && !!dateRange.to && userRole === 'admin',
   });
 
   const stats = statsData?.current || null;
@@ -375,44 +377,46 @@ export default function ClientsClient({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {analyticsCards.map((card) => (
-            <Card
-              key={card.label}
-              className={`border border-muted bg-white transition-opacity ${statsLoading ? 'opacity-60' : 'opacity-100'
-                }`}
-              style={{ borderRadius: '0.7rem' }}
-            >
-              <CardContent className="p-0">
-                <div className="flex items-start justify-between pt-4 px-4">
-                  <div>
-                    <p className="text-sm font-medium text-primary">{card.label}</p>
-                    <p className="text-[32px] font-semibold tracking-tight mt-2">
-                      {statsLoading ? (
-                        <span className="inline-flex h-8 w-20 animate-pulse rounded bg-[#f4ede4]" />
-                      ) : (
-                        card.value
-                      )}
-                    </p>
+        {userRole === 'admin' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {analyticsCards.map((card) => (
+              <Card
+                key={card.label}
+                className={`border border-muted bg-white transition-opacity ${statsLoading ? 'opacity-60' : 'opacity-100'
+                  }`}
+                style={{ borderRadius: '0.7rem' }}
+              >
+                <CardContent className="p-0">
+                  <div className="flex items-start justify-between pt-4 px-4">
+                    <div>
+                      <p className="text-sm font-medium text-primary">{card.label}</p>
+                      <p className="text-[32px] font-semibold tracking-tight mt-2">
+                        {statsLoading ? (
+                          <span className="inline-flex h-8 w-20 animate-pulse rounded bg-[#f4ede4]" />
+                        ) : (
+                          card.value
+                        )}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-2 py-1 rounded-full ${card.changeTone === 'positive'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : card.changeTone === 'negative'
+                          ? 'bg-rose-100 text-rose-600'
+                          : 'bg-zinc-100 text-zinc-600'
+                        }`}
+                    >
+                      {card.changeText}
+                    </span>
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${card.changeTone === 'positive'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : card.changeTone === 'negative'
-                        ? 'bg-rose-100 text-rose-600'
-                        : 'bg-zinc-100 text-zinc-600'
-                      }`}
-                  >
-                    {card.changeText}
-                  </span>
-                </div>
-                <div className="bg-muted text-xs text-muted-foreground border-t border-muted p-3" style={{ borderRadius: '0 0 0.7rem 0.7rem' }}>
-                  {t('analytics.from')} {formattedRange}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <div className="bg-muted text-xs text-muted-foreground border-t border-muted p-3" style={{ borderRadius: '0 0 0.7rem 0.7rem' }}>
+                    {t('analytics.from')} {formattedRange}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Clients Table */}

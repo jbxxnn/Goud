@@ -126,7 +126,7 @@ export const createServiceColumns = (
             <div className="font-medium">
               €{price.toFixed(2)}
             </div>
-            {salePrice && (
+            {!!salePrice && (
               <div className="text-sm text-green-600 font-medium">
                 {t('table.sale')}: €{salePrice.toFixed(2)}
               </div>

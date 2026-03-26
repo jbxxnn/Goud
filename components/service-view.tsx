@@ -134,7 +134,7 @@ export default function ServiceView({ service }: ServiceViewProps) {
               <span className="text-sm text-muted-foreground">{t('price')}:</span>
               <span className="font-bold text-xs">{formatPrice(service.price)}</span>
             </div>
-            {service.sale_price && (
+            {!!service.sale_price && (
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">{t('salePrice')}:</span>
                 <span className="font-bold text-xs text-green-600">{formatPrice(service.sale_price)}</span>

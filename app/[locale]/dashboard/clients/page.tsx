@@ -37,6 +37,7 @@ export default async function ClientsPage() {
 
   return (
     <ClientsClient
+      userRole={user.role}
       initialClients={initialData.success ? (initialData.data || []) : []}
       initialPagination={initialData.success && initialData.pagination ? {
         page: initialData.pagination.page,

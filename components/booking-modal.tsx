@@ -59,17 +59,23 @@ interface BookingModalProps {
   userRole?: string;
 }
 
-const formatDate = (dateString: string, locale: string) => {
+const formatDate = (dateString: string | null | undefined, locale: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
   return formatInTimeZone(
-    new Date(dateString),
+    date,
     'Europe/Amsterdam',
     locale === 'nl' ? 'd MMMM yyyy' : 'MMMM d, yyyy',
     { locale: locale === 'nl' ? nl : enUS }
   );
 };
 
-const formatTime = (dateString: string, locale: string) => {
-  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'HH:mm');
+const formatTime = (dateString: string | null | undefined, locale: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return formatInTimeZone(date, 'Europe/Amsterdam', 'HH:mm');
 };
 
 const formatDuration = (minutes: number, t: (key: string, values?: any) => string) => {
@@ -467,7 +473,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                   </div>
                   <div>
                     <div className="text-muted-foreground">{t('service')}</div>
-                    <div className="font-medium">{service?.name || t('placeholders.na')} {booking.parent_booking_id && (
+                    <div className="font-medium">{service?.name || t('placeholders.na')} {booking.parent_booking_id && booking.start_time && booking.end_time && (
                       <Badge variant="secondary" className="bg-primary text-primary-foreground border-primary hover:bg-primary/20 h-4 text-xs px-1 uppercase font-bold tracking-wider">
                         {differenceInMinutes(new Date(booking.end_time), new Date(booking.start_time))}
                       </Badge>

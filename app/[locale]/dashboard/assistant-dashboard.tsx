@@ -35,6 +35,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog';
+import BookingModal from '@/components/booking-modal';
+import BookingRescheduleModal from '@/components/booking-reschedule-modal';
 
 function AssistantDashboardSkeleton() {
   return (
@@ -139,8 +141,87 @@ export default function AssistantDashboard() {
   const [resolvingBooking, setResolvingBooking] = useState<DashboardBooking | null>(null);
   const [resolutionNote, setResolutionNote] = useState("");
   const [isResolving, setIsResolving] = useState(false);
+
+  // Booking details modal state
+  const [selectedBooking, setSelectedBooking] = useState<DashboardBooking | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   
   const supabase = createClient();
+
+  const handleOpenBookingModal = (booking: DashboardBooking) => {
+    setSelectedBooking(booking);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleCancelBooking = async (booking: DashboardBooking) => {
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+      if (!response.ok) throw new Error('Failed to cancel booking');
+      toast.success(t('toasts.cancelSuccess', { fallback: 'Booking cancelled successfully' }));
+      fetchData();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error(t('toasts.cancelError', { fallback: 'Failed to cancel booking' }));
+    }
+  };
+
+  const handleNoShowBooking = async (booking: DashboardBooking) => {
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'no_show' }),
+      });
+      if (!response.ok) throw new Error('Failed to mark as no-show');
+      toast.success(t('toasts.noShowSuccess', { fallback: 'Marked as no-show' }));
+      fetchData();
+    } catch (error) {
+      console.error('Error marking as no-show:', error);
+      toast.error(t('toasts.noShowError', { fallback: 'Failed to mark as no-show' }));
+    }
+  };
+
+  const handleDeleteBooking = async (booking: DashboardBooking) => {
+    if (!confirm(t('dialog.confirmDelete', { fallback: 'Are you sure you want to permanently delete this booking?' }))) return;
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete booking');
+      toast.success(t('toasts.deleteSuccess', { fallback: 'Booking deleted' }));
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      toast.error(t('toasts.deleteError', { fallback: 'Failed to delete booking' }));
+    }
+  };
+
+  const handleCompleteBooking = async (booking: DashboardBooking) => {
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' }),
+      });
+      if (!response.ok) throw new Error('Failed to complete booking');
+      toast.success(t('toasts.completeSuccess', { fallback: 'Booking completed' }));
+      fetchData();
+    } catch (error) {
+      console.error('Error completing booking:', error);
+      toast.error(t('toasts.completeError', { fallback: 'Failed to complete booking' }));
+    }
+  };
+
+  const handleRescheduleBooking = (booking: Booking) => {
+    setReschedulingBooking(booking);
+    setIsRescheduleModalOpen(true);
+  };
 
   const openInternalNoteDialog = (booking: DashboardBooking) => {
     setEditingInternalNote(booking);
@@ -185,10 +266,11 @@ export default function AssistantDashboard() {
         .select(`
           *,
           internal_notes,
-          users!created_by(first_name, last_name, email, phone),
-          services(name, duration),
-          locations(name),
-          staff(first_name, last_name)
+          users!created_by(id, first_name, last_name, email, phone, street_name, house_number, postal_code, city, birth_date, address),
+          services(id, name, duration, custom_price_label),
+          locations(id, name),
+          staff(id, first_name, last_name),
+          booking_tag_mappings(tag:booking_tags(*))
         `)
         .eq('status', 'no_show')
         .is('no_show_resolved_at', null)
@@ -241,12 +323,12 @@ export default function AssistantDashboard() {
         .select(`
           *,
           booking:bookings!inner (
-            id,
-            start_time,
-            status,
-            users!created_by (first_name, last_name, email, phone),
-            services (name, duration),
-            staff (first_name, last_name)
+            *,
+            users!created_by(id, first_name, last_name, email, phone, street_name, house_number, postal_code, city, birth_date, address),
+            services(id, name, duration, custom_price_label),
+            locations(id, name),
+            staff(id, first_name, last_name),
+            booking_tag_mappings(tag:booking_tags(*))
           )
         `)
         .eq('is_completed', false)
@@ -488,14 +570,20 @@ export default function AssistantDashboard() {
                                 </>
                               )}
                               <span>
-                                <Link href={`/dashboard/appointments/${task.booking_id}`} className="hover:underline">
+                                <button 
+                                  onClick={() => handleOpenBookingModal(task.booking!)}
+                                  className="hover:underline text-left"
+                                >
                                   {task.booking?.services?.name}
-                                </Link>
+                                </button>
                               </span>
                               <span className="text-muted-foreground/50">•</span>
-                              <Link href={`/dashboard/appointments/${task.booking_id}`} className="hover:underline">
+                              <button 
+                                onClick={() => handleOpenBookingModal(task.booking!)}
+                                className="hover:underline text-left"
+                              >
                                 {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
-                              </Link>
+                              </button>
                               <span className="text-muted-foreground/50">•</span>
                               <span className="text-primary">
                                 {task.booking?.start_time ? formatInTimeZone(new Date(task.booking.start_time), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : t('tasks.noDate')}
@@ -544,13 +632,15 @@ export default function AssistantDashboard() {
                         </div>
                         <div className="min-w-0">
                             <p className="font-semibold text-sm truncate">
-                              <Link 
-                                href={`/dashboard/appointments/${booking.id}`} 
-                                className="hover:underline"
-                                onClick={(e) => e.stopPropagation()}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenBookingModal(booking);
+                                }}
+                                className="hover:underline text-left"
                               >
                                 {Array.isArray(booking.users) ? booking.users[0]?.first_name : booking.users?.first_name} {Array.isArray(booking.users) ? booking.users[0]?.last_name : booking.users?.last_name}
-                              </Link>
+                              </button>
                               {booking.noShowCount && booking.noShowCount > 0 && (
                                 <span className="ml-1.5 text-destructive font-bold">
                                   ({booking.noShowCount})
@@ -564,13 +654,15 @@ export default function AssistantDashboard() {
                                 <span className="text-muted-foreground/50">•</span>
                               </>
                             )}
-                            <Link 
-                              href={`/dashboard/appointments/${booking.id}`} 
-                              className="hover:underline"
-                              onClick={(e) => e.stopPropagation()}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenBookingModal(booking);
+                              }}
+                              className="hover:underline text-left"
                             >
                               {booking.services?.name}
-                            </Link>
+                            </button>
                             {booking.locations?.name && (
                               <>
                                 <span className="text-muted-foreground/50">•</span>
@@ -582,10 +674,10 @@ export default function AssistantDashboard() {
                       </div>
                       <div className="text-right shrink-0 flex flex-col justify-center">
                         <p className="text-sm font-bold text-foreground">
-                          {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm')}
+                          {booking.start_time ? formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'HH:mm') : ''}
                         </p>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                          {formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d', { locale: locale === 'nl' ? nl : enUS })}
+                          {booking.start_time ? formatInTimeZone(new Date(booking.start_time), 'Europe/Amsterdam', 'MMM d', { locale: locale === 'nl' ? nl : enUS }) : ''}
                         </p>
                       </div>
                     </div>
@@ -745,7 +837,9 @@ export default function AssistantDashboard() {
                 <div className="flex flex-col gap-0.5 mt-1">
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <HugeiconsIcon icon={Calendar02Icon} className="h-3 w-3" />
-                    {formatInTimeZone(new Date(resolvingBooking.start_time), 'Europe/Amsterdam', 'PPP, HH:mm', { locale: locale === 'nl' ? nl : enUS })}
+                    {resolvingBooking.start_time ? 
+                      formatInTimeZone(new Date(resolvingBooking.start_time), 'Europe/Amsterdam', 'PPP, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : 
+                      'No date'}
                   </p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <HugeiconsIcon icon={UserIcon} className="h-3 w-3" />
@@ -784,6 +878,48 @@ export default function AssistantDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <BookingModal 
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        booking={selectedBooking}
+        userRole="assistant"
+        onUpdate={() => fetchData()}
+        onCancel={handleCancelBooking as any}
+        onNoShow={handleNoShowBooking as any}
+        onDelete={handleDeleteBooking as any}
+        onComplete={handleCompleteBooking as any}
+        onReschedule={handleRescheduleBooking}
+      />
+      
+      {reschedulingBooking && (
+        <BookingRescheduleModal
+          isOpen={isRescheduleModalOpen}
+          onClose={() => setIsRescheduleModalOpen(false)}
+          booking={reschedulingBooking}
+          onReschedule={async (bookingId, start, end, loc, staff, shift) => {
+            try {
+              const response = await fetch(`/api/bookings/${bookingId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  start_time: start,
+                  end_time: end,
+                  location_id: loc,
+                  staff_id: staff,
+                  shift_id: shift,
+                }),
+              });
+              if (!response.ok) throw new Error('Reschedule failed');
+              toast.success(t('toasts.rescheduleSuccess', { fallback: 'Booking rescheduled' }));
+              fetchData();
+              setIsRescheduleModalOpen(false);
+            } catch (err) {
+              console.error('Reschedule Error:', err);
+              toast.error(t('toasts.rescheduleError', { fallback: 'Failed to reschedule' }));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

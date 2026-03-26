@@ -1,7 +1,6 @@
 'use client';
 
 import BookingsClient from './bookings/bookings-client';
-import { useRouter } from 'next/navigation';
 import { CreateTaskDialog } from '@/components/dashboard/create-task-dialog';
 import { useTranslations } from 'next-intl';
 
@@ -13,7 +12,6 @@ interface StaffDashboardProps {
 }
 
 export default function StaffDashboard({ staff }: StaffDashboardProps) {
-    const router = useRouter();
     const t = useTranslations('StaffDashboard');
 
     return (
@@ -30,7 +28,6 @@ export default function StaffDashboard({ staff }: StaffDashboardProps) {
                 }}
                 staffId={staff.id}
                 userRole="staff"
-                onBookingClick={(booking) => router.push(`/dashboard/appointments/${booking.id}`)}
             />
         </div>
     );
