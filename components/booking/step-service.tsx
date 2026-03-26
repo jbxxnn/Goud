@@ -316,7 +316,7 @@ export function StepService() {
                     <span className="text-sm font-bold text-gray-700 w-full">
                         {grandTotalCents === 0 && selectedService?.customPriceLabel ? 'Kosten' : t('currentTotal')}
                     </span>
-                    <span className="text-sm font-bold text-gray-900 flex flex-col w-full">
+                    <span className="text-sm font-bold text-gray-900 flex text-right flex-col w-full">
                         {grandTotalCents > 0 
                             ? formatEuroCents(grandTotalCents) 
                             : (selectedService?.customPriceLabel || formatEuroCents(0))}

@@ -122,6 +122,20 @@ export function BookingFlow() {
                     )}
                 </CardContent>
             </Card>
+            <Card className="w-full max-w-lg lg:hidden">
+                <CardContent>
+                    <div className="animate-in fade-in zoom-in-95 duration-500">
+                                        <p className="text-lg font-bold text-gray-900 leading-tight">
+                                            {selectedService?.name || t('noServiceSelected')}
+                                        </p>
+                                        {(selectedService?.price ?? 0) > 0 && (
+                                            <p className="text-sm font-bold text-primary mt-1">
+                                                {formatEuroCents((selectedService?.price ?? 0))}
+                                            </p>
+                                        )}
+                                    </div>
+                </CardContent>
+            </Card>
 
             {/* this is the left card */}
             <Card className="w-full max-w-lg hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
