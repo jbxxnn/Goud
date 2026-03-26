@@ -123,11 +123,11 @@ export function BookingFlow() {
                 </CardContent>
             </Card>
             {step === 4 && (
-                <Card className="w-full max-w-lg lg:hidden">
+                <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
                     <CardContent className="p-4 space-y-4">
                         <div className="animate-in fade-in zoom-in-95 duration-500">
-                            <p className="text-sm font-bold text-gray-900 leading-tight">
-                                - {selectedService?.name || t('noServiceSelected')}
+                            <p className="text-lg font-bold text-gray-900 leading-tight">
+                                {selectedService?.name || t('noServiceSelected')}
                             </p>
                             {(selectedService?.price ?? 0) > 0 && (
                                 <p className="text-xs font-bold text-primary mt-1">
@@ -144,8 +144,34 @@ export function BookingFlow() {
                                                 {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
                                             </p>
                                         )}
-                                    </div>
+                        </div>
 
+                        <div className="animate-in fade-in zoom-in-95 duration-500">
+                                        <div className="flex flex-col gap-1">
+                                            {otherSelections.map((item, idx) => (
+                                                <p key={idx} className="text-sm font-bold text-gray-900 leading-tight">
+                                                    {item.label}
+                                                    {item.price > 0 && (
+                                                        <span className="text-primary ml-1">
+                                                            (+{formatEuroCents(item.price)})
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    </div>
+                        <div className="flex flex-col items-end">
+                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                    {grandTotalCents > 0 
+                                        ? formatEuroCents(grandTotalCents) 
+                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                                </span>
+                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
+                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
+                                        {selectedService.customPriceDescription}
+                                    </span>
+                                )}
+                            </div>
                                     
                     </CardContent>
                 </Card>
