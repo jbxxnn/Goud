@@ -305,7 +305,7 @@ export function StepService() {
             )}
             {selectedService?.policyFields.length ? (
                 <div className="space-y-4 p-4 bg-white animate-in fade-in slide-in-from-top-4 duration-500 ease-in-out" style={{ borderRadius: '0.2rem' }}>
-                    <h3 className="text-sm font-bold tracking-wide text-gray-600">{t('servicePolicy')}</h3>
+                    {/* <h3 className="text-sm font-bold tracking-wide text-gray-600">{t('servicePolicy')}</h3> */}
                     <div className="space-y-4">
                         {selectedService.policyFields.map((field) => renderPolicyField(field))}
                     </div>
