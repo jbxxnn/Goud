@@ -55,7 +55,7 @@ export function BookingFlow() {
                     <CardContent className="p-4 space-y-4">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="default" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
+                                <Button variant="default" size="sm" className="h-8 text-white hover:text-white rounded-full px-3 text-xs font-medium transition-colors">
                                     <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
                                     {t('reset')}
                                 </Button>
