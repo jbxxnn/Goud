@@ -48,6 +48,84 @@ export function BookingFlow() {
             style={lockService ? {} : { marginTop: "2rem", marginBottom: "2rem", paddingBottom: "2rem" }}
         >
 
+
+            {step === 4 && (
+                <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
+                    <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="default" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
+                                    <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
+                                    {t('reset')}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('resetTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {t('resetDescription')}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('back')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-full" style={{ borderRadius: '10rem' }}>
+                                        {t('confirmReset')}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    <CardContent className="p-4 space-y-4">
+                        <div className="animate-in fade-in zoom-in-95 duration-500">
+                            <p className="text-lg font-bold text-gray-900 leading-tight">
+                                {selectedService?.name || t('noServiceSelected')}
+                            </p>
+                            {(selectedService?.price ?? 0) > 0 && (
+                                <p className="text-xs font-bold text-primary mt-1">
+                                    {formatEuroCents((selectedService?.price ?? 0))}
+                                </p>
+                            )}
+                        </div>
+                         <div className="animate-in fade-in zoom-in-95 duration-500">
+                                        <p className="text-lg font-bold text-gray-900 capitalize">
+                                            {format.dateTime(new Date(date), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' })}
+                                        </p>
+                                        {selectedSlot && (
+                                            <p className="text-sm font-bold text-primary mt-0.5">
+                                                {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
+                                            </p>
+                                        )}
+                        </div>
+
+                        <div className="animate-in fade-in zoom-in-95 duration-500">
+                                        <div className="flex flex-col gap-1">
+                                            {otherSelections.map((item, idx) => (
+                                                <p key={idx} className="text-sm font-bold text-gray-900 leading-tight">
+                                                    {item.label}
+                                                    {item.price > 0 && (
+                                                        <span className="text-primary ml-1">
+                                                            (+{formatEuroCents(item.price)})
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    </div>
+                        <div className="flex flex-col items-end">
+                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                    {grandTotalCents > 0 
+                                        ? formatEuroCents(grandTotalCents) 
+                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                                </span>
+                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
+                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
+                                        {selectedService.customPriceDescription}
+                                    </span>
+                                )}
+                            </div>
+                                    
+                    </CardContent>
+                </Card>
+            )}
+            
             {/* this is the right card */}
             <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
@@ -122,82 +200,7 @@ export function BookingFlow() {
                     )}
                 </CardContent>
             </Card>
-            {step === 4 && (
-                <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
-                    <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
-                                    <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
-                                    {t('reset')}
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>{t('resetTitle')}</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        {t('resetDescription')}
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>{t('back')}</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-full" style={{ borderRadius: '10rem' }}>
-                                        {t('confirmReset')}
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    <CardContent className="p-4 space-y-4">
-                        <div className="animate-in fade-in zoom-in-95 duration-500">
-                            <p className="text-lg font-bold text-gray-900 leading-tight">
-                                {selectedService?.name || t('noServiceSelected')}
-                            </p>
-                            {(selectedService?.price ?? 0) > 0 && (
-                                <p className="text-xs font-bold text-primary mt-1">
-                                    {formatEuroCents((selectedService?.price ?? 0))}
-                                </p>
-                            )}
-                        </div>
-                         <div className="animate-in fade-in zoom-in-95 duration-500">
-                                        <p className="text-lg font-bold text-gray-900 capitalize">
-                                            {format.dateTime(new Date(date), { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Amsterdam' })}
-                                        </p>
-                                        {selectedSlot && (
-                                            <p className="text-sm font-bold text-primary mt-0.5">
-                                                {format.dateTime(new Date(selectedSlot.startTime), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}
-                                            </p>
-                                        )}
-                        </div>
-
-                        <div className="animate-in fade-in zoom-in-95 duration-500">
-                                        <div className="flex flex-col gap-1">
-                                            {otherSelections.map((item, idx) => (
-                                                <p key={idx} className="text-sm font-bold text-gray-900 leading-tight">
-                                                    {item.label}
-                                                    {item.price > 0 && (
-                                                        <span className="text-primary ml-1">
-                                                            (+{formatEuroCents(item.price)})
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            ))}
-                                        </div>
-                                    </div>
-                        <div className="flex flex-col items-end">
-                                <span className="text-2xl font-bold text-primary tracking-tight">
-                                    {grandTotalCents > 0 
-                                        ? formatEuroCents(grandTotalCents) 
-                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
-                                </span>
-                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
-                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
-                                        {selectedService.customPriceDescription}
-                                    </span>
-                                )}
-                            </div>
-                                    
-                    </CardContent>
-                </Card>
-            )}
+            
 
             {/* this is the left card */}
             <Card className="w-full max-w-lg hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
