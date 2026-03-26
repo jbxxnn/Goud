@@ -864,6 +864,7 @@
                 "paraPlaceholder": "e.g. 1",
                 "optional": "Optional",
                 "street": "Street",
+                "streetPlaceholder": "Street",
                 "streetName": "Street name",
                 "streetNamePlaceholder": "Street",
                 "houseNumber": "House number",

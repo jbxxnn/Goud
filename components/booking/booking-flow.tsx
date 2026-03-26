@@ -124,6 +124,28 @@ export function BookingFlow() {
             </Card>
             {step === 4 && (
                 <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
+                    <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full px-3 text-xs font-medium transition-colors">
+                                    <HugeiconsIcon icon={RotateLeft01Icon} className="mr-1.5 h-3.5 w-3.5" />
+                                    {t('reset')}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('resetTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {t('resetDescription')}
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('back')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleStartOver} className="bg-red-600 hover:bg-red-700 text-white border-0 rounded-full" style={{ borderRadius: '10rem' }}>
+                                        {t('confirmReset')}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     <CardContent className="p-4 space-y-4">
                         <div className="animate-in fade-in zoom-in-95 duration-500">
                             <p className="text-lg font-bold text-gray-900 leading-tight">
