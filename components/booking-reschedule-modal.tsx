@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Location } from '@/lib/types/location_simple';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { toast } from 'sonner';
 
 interface BookingRescheduleModalProps {
@@ -31,18 +31,15 @@ type Slot = {
 };
 
 const formatDate = (dateString: string) => {
-  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'd MMM yyyy');
+  return formatInTimeZone(toDate(dateString, { timeZone: 'Europe/Amsterdam' }), 'Europe/Amsterdam', 'd MMM yyyy');
 };
 
 const formatTime = (dateString: string) => {
-  return formatInTimeZone(new Date(dateString), 'Europe/Amsterdam', 'HH:mm');
+  return formatInTimeZone(toDate(dateString, { timeZone: 'Europe/Amsterdam' }), 'Europe/Amsterdam', 'HH:mm');
 };
 
 const toISODate = (d: Date): string => {
-  const y = d.getFullYear();
-  const m2 = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m2}-${dd}`;
+  return formatInTimeZone(d, 'Europe/Amsterdam', 'yyyy-MM-dd');
 };
 
 function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onNextMonth }: {
@@ -73,7 +70,7 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
   }
   while (cells.length % 7 !== 0) {
     const last = cells[cells.length - 1];
-    const nextDate = new Date(last.dateStr + 'T00:00:00');
+    const nextDate = toDate(last.dateStr + 'T00:00:00', { timeZone: 'Europe/Amsterdam' });
     nextDate.setDate(nextDate.getDate() + 1);
     cells.push({ dateStr: toISODate(nextDate), isOtherMonth: true });
   }
@@ -137,7 +134,7 @@ function TimePicker({ slots, selected, onSelect, loading }: {
 }) {
   const groups: { morning: Slot[]; afternoon: Slot[]; evening: Slot[] } = { morning: [], afternoon: [], evening: [] };
   for (const s of slots) {
-    const h = parseInt(formatInTimeZone(new Date(s.startTime), 'Europe/Amsterdam', 'HH'));
+    const h = parseInt(formatInTimeZone(toDate(s.startTime, { timeZone: 'Europe/Amsterdam' }), 'Europe/Amsterdam', 'H'));
     if (h < 12) groups.morning.push(s);
     else if (h < 17) groups.afternoon.push(s);
     else groups.evening.push(s);

@@ -1050,13 +1050,15 @@ export class ShiftService {
         if (parentShift) {
           // 3. Calculate timestamps for the exception date using parent's hours
           // We must update the date part to match exception_date while keeping time
-          const { toDate } = require('date-fns-tz');
+          const { formatInTimeZone, toDate } = require('date-fns-tz');
           const pStart = new Date(parentShift.start_time);
           const pEnd = new Date(parentShift.end_time);
           
           const sDate = data.exception_date;
-          const startIso = toDate(`${sDate}T${pStart.getUTCHours().toString().padStart(2,'0')}:${pStart.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' }).toISOString();
-          const endIso = toDate(`${sDate}T${pEnd.getUTCHours().toString().padStart(2,'0')}:${pEnd.getUTCMinutes().toString().padStart(2,'0')}:00`, { timeZone: 'UTC' }).toISOString();
+          const pStartLocal = formatInTimeZone(pStart, 'Europe/Amsterdam', 'HH:mm:ss');
+          const pEndLocal = formatInTimeZone(pEnd, 'Europe/Amsterdam', 'HH:mm:ss');
+          const startIso = toDate(`${sDate}T${pStartLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+          const endIso = toDate(`${sDate}T${pEndLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
 
           // 4. Create the realized shift (exception)
           const { data: newShift, error: shiftError } = await supabase

@@ -31,8 +31,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { addMinutes } from "date-fns";
-import { formatInTimeZone } from 'date-fns-tz';
+import { addMinutes, parse } from "date-fns";
+import { formatInTimeZone, toDate } from 'date-fns-tz';
 import { nl, enUS } from 'date-fns/locale';
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
@@ -355,13 +355,16 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
 
       // Set initial time ONLY if not already set
       if (startDate && startHour !== undefined && startMinute !== undefined && !getValues("start_time")) {
-        const start = new Date(startDate);
-        start.setHours(startHour, startMinute, 0, 0);
-        const formattedStart = formatDateTimeLocal(start);
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(startDate.getDate()).padStart(2, '0');
+        const formattedStart = `${year}-${month}-${day}T${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
         
         setValue("start_time", formattedStart);
         
         // Use a default duration of 60 if no service selected yet
+        // Parse the formattedStart as Amsterdam time to calculate the correct end time
+        const start = toDate(formattedStart, { timeZone: 'Europe/Amsterdam' });
         const end = addMinutes(start, 60);
         setValue("end_time", formatDateTimeLocal(end));
       }
@@ -371,7 +374,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   // Update end time when service or start time changes
   useEffect(() => {
     if (selectedService && watchStartTime) {
-      const start = new Date(watchStartTime);
+      const start = toDate(watchStartTime, { timeZone: 'Europe/Amsterdam' });
       let duration = selectedService.duration || 60;
       if (watchIsTwin && selectedService.allowsTwins) {
         // Fallback to double duration if twinDurationMinutes is null
@@ -516,6 +519,11 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
         );
     }
   };
+  // Helper to create true ISO string from local YYYY-MM-DDTHH:mm keeping Europe/Amsterdam offset
+  const createLocalIsoString = (localDateTimeStr: string): string => {
+    const amsterdamDate = toDate(`${localDateTimeStr}:00`, { timeZone: 'Europe/Amsterdam' });
+    return formatInTimeZone(amsterdamDate, 'Europe/Amsterdam', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  };
 
   const executeBooking = async (data: BookingFormData, isForce?: boolean) => {
     setIsSubmitting(true);
@@ -533,8 +541,8 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
           locationId: data.location_id,
           staffId: data.staff_id,
           shiftId: data.shift_id,
-          startTime: new Date(data.start_time).toISOString(),
-          endTime: new Date(data.end_time).toISOString(),
+          startTime: createLocalIsoString(data.start_time),
+          endTime: createLocalIsoString(data.end_time),
           isTwin: data.is_twin,
           notes: data.notes,
           payment_method: grandTotalCents > 0 ? data.payment_method : 'at_location',
@@ -627,8 +635,8 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          startTime: new Date(data.start_time).toISOString(),
-          endTime: new Date(data.end_time).toISOString(),
+          startTime: createLocalIsoString(data.start_time),
+          endTime: createLocalIsoString(data.end_time),
           staffId: data.staff_id,
           locationId: data.location_id,
           serviceId: data.service_id,

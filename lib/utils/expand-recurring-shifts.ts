@@ -38,12 +38,12 @@ export function expandRecurringShift(
     let rruleString = shift.recurrence_rule;
     if (!rruleString.startsWith('RRULE:') && !rruleString.startsWith('DTSTART:')) {
       // Add DTSTART and RRULE prefix - use local date/time without Z
-      const year = shiftStart.getFullYear();
-      const month = String(shiftStart.getMonth() + 1).padStart(2, '0');
-      const day = String(shiftStart.getDate()).padStart(2, '0');
-      const hours = String(shiftStart.getHours()).padStart(2, '0');
-      const minutes = String(shiftStart.getMinutes()).padStart(2, '0');
-      const seconds = String(shiftStart.getSeconds()).padStart(2, '0');
+      const year = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'yyyy');
+      const month = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'MM');
+      const day = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'dd');
+      const hours = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'HH');
+      const minutes = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'mm');
+      const seconds = formatInTimeZone(shiftStart, 'Europe/Amsterdam', 'ss');
       const dtstart = `${year}${month}${day}T${hours}${minutes}${seconds}`;
       rruleString = `DTSTART:${dtstart}\nRRULE:${rruleString}`;
     } else if (!rruleString.startsWith('RRULE:') && !rruleString.includes('RRULE:')) {

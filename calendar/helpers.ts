@@ -24,7 +24,9 @@ import {
     addYears,
     isSameYear,
     isWithinInterval,
+    parse,
   } from "date-fns";
+  import { formatInTimeZone, toDate } from "date-fns-tz";
   
   import type { ICalendarCell, IEvent } from "@/calendar/interfaces";
   import type { TCalendarView, TVisibleHours, TWorkingHours } from "@/calendar/types";
@@ -59,8 +61,8 @@ import {
         return "Error while formatting ";
     }
   
-    return `${format(start, formatString)} - ${format(end, formatString)}`;
-  }
+  return `${formatInTimeZone(start, 'Europe/Amsterdam', formatString)} - ${formatInTimeZone(end, 'Europe/Amsterdam', formatString)}`;
+}
   
   export function navigateDate(date: Date, view: TCalendarView, direction: "previous" | "next"): Date {
     const operations = {
@@ -85,9 +87,9 @@ import {
   
     return events.filter(event => 
       !event.metadata?.isBreak && 
-      compareFns[view](new Date(event.startDate), date)
+      compareFns[view](toDate(event.startDate, { timeZone: 'Europe/Amsterdam' }), date)
     ).length;
-  }
+}
   
   // ================ Week and day view helper functions ================ //
   
@@ -185,7 +187,10 @@ import {
 
         columns.forEach((colEvents, colIndex) => {
             colEvents.forEach(event => {
-                const startMinutes = differenceInMinutes(parseISO(event.startDate), new Date(new Date(event.startDate).setHours(0, 0, 0, 0)));
+                const eventStartDate = toDate(event.startDate, { timeZone: 'Europe/Amsterdam' });
+                const dayStart = toDate(formatInTimeZone(eventStartDate, 'Europe/Amsterdam', 'yyyy-MM-dd') + 'T00:00:00', { timeZone: 'Europe/Amsterdam' });
+                
+                const startMinutes = differenceInMinutes(eventStartDate, dayStart);
                 
                 let top = 0;
                 if (visibleHoursRange) {
@@ -226,9 +231,9 @@ import {
     let latestEventHour = visibleHours.to;
   
     singleDayEvents.forEach(event => {
-      const startHour = parseISO(event.startDate).getHours();
-      const endTime = parseISO(event.endDate);
-      const endHour = endTime.getHours() + (endTime.getMinutes() > 0 ? 1 : 0);
+      const startHour = parseInt(formatInTimeZone(toDate(event.startDate, { timeZone: 'Europe/Amsterdam' }), 'Europe/Amsterdam', 'H'));
+      const endDateTime = toDate(event.endDate, { timeZone: 'Europe/Amsterdam' });
+      const endHour = parseInt(formatInTimeZone(endDateTime, 'Europe/Amsterdam', 'H')) + (parseInt(formatInTimeZone(endDateTime, 'Europe/Amsterdam', 'm')) > 0 ? 1 : 0);
       if (startHour < earliestEventHour) earliestEventHour = startHour;
       if (endHour > latestEventHour) latestEventHour = endHour;
     });

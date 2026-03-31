@@ -179,6 +179,7 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
   // Set initial date/time when dialog opens
   useEffect(() => {
     if (isOpen && startDate) {
+      const { formatInTimeZone } = require('date-fns-tz');
       const year = startDate.getFullYear();
       const month = String(startDate.getMonth() + 1).padStart(2, '0');
       const day = String(startDate.getDate()).padStart(2, '0');
