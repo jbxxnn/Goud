@@ -1136,22 +1136,27 @@
             "delete": "Delete"
         },
         "repeat": {
-            "button": "Plan Herhaling",
-            "title": "Plan Herhaling",
+            "button": "Plan Follow-up",
+            "title": "Plan Follow-up",
             "description": "Generate a secure link for the client to book a follow-up appointment for this screening.",
-            "selectDuration": "Select Repeat Duration",
+            "selectDuration": "Select Follow-up Duration",
             "free": "Free",
             "generating": "Generating...",
             "generateButton": "Generate Booking Link",
+            "sendToClient": "Send Link to Client",
+            "bookForClient": "Book for Client",
+            "selectAction": "Choose an action",
             "linkReady": "Email Sent & Link Ready",
             "linkExpiry": "The client has been sent an email with the booking link. You can also share this link directly. It expires in 30 days.",
             "generateAnother": "Generate Another",
             "done": "Done",
             "toasts": {
-                "generated": "Herhaling link generated",
+                "generated": "Follow-up link generated",
                 "generateError": "Failed to generate link",
                 "unexpectedError": "Error generating link",
-                "copied": "Link copied to clipboard"
+                "copied": "Link copied to clipboard",
+                "popupBlocked": "Popup blocked",
+                "clickToOpen": "Please click the button to open the booking page."
             }
         }
     },

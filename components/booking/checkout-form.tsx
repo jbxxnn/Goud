@@ -66,7 +66,13 @@ export function CheckoutForm({
     const tv = useTranslations('Booking.flow');
     const [midwives, setMidwives] = useState<Array<{ id: string; first_name: string | null; last_name: string | null; practice_name: string | null }>>([]);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-    const [isBookingForClient, setIsBookingForClient] = useState(true);
+    const [isBookingForClient, setIsBookingForClient] = useState(() => {
+        // Auto-enable if pre-filled and user is internal
+        if (['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '')) {
+            return !!contactDefaults.midwifeClientEmail;
+        }
+        return true;
+    });
     const [isDueDateOpen, setIsDueDateOpen] = useState(false);
     const [isBirthDateOpen, setIsBirthDateOpen] = useState(false);
     const {
@@ -98,6 +104,7 @@ export function CheckoutForm({
             streetName: contactDefaults.streetName ?? '',
             city: contactDefaults.city ?? '',
             notes: contactDefaults.notes ?? '',
+            midwifeClientEmail: contactDefaults.midwifeClientEmail ?? '',
         },
     });
 
@@ -137,7 +144,13 @@ export function CheckoutForm({
                 streetName: contactDefaults.streetName ?? '',
                 city: contactDefaults.city ?? '',
                 notes: contactDefaults.notes ?? '',
+                midwifeClientEmail: contactDefaults.midwifeClientEmail ?? '',
             });
+            
+            // Also update the toggle if needed
+            if (contactDefaults.midwifeClientEmail && !isBookingForClient) {
+                setIsBookingForClient(true);
+            }
         }
     }, [contactDefaults, contactDefaultsVersion, getValues, reset]);
 
@@ -158,7 +171,7 @@ export function CheckoutForm({
             let valid = isValid;
             
             // Additional manual checks for fields that might have complex conditional requirements
-            if (userRole === 'midwife') {
+            if (['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '')) {
                 if (isBookingForClient && !midwifeClientEmailValue) valid = false;
                 if (!gravidaValue || gravidaValue.trim() === '') valid = false;
                 if (!paraValue || paraValue.trim() === '') valid = false;
@@ -332,31 +345,31 @@ export function CheckoutForm({
 
                     {showDetailsForm && (
                         <>
-                            {userRole === 'midwife' && (
-                                <div className="space-y-4 md:col-span-2 pt-2 pb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Switch
-                                            checked={isBookingForClient}
-                                            onCheckedChange={setIsBookingForClient}
-                                            id="booking-for-client-mode"
-                                        />
-                                        <Label htmlFor="booking-for-client-mode" className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-0">
-                                            {t('bookingForClient')}
-                                        </Label>
-                                    </div>
-                                    {isBookingForClient && (
-                                        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <Input
-                                                required
-                                                type="email"
-                                                className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
-                                                placeholder={t('clientEmailPlaceholder')}
-                                                {...register('midwifeClientEmail')}
-                                            />
-                                        </div>
-                                    )}
+                    {['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '') && (
+                        <div className="space-y-4 md:col-span-2 pt-2 pb-2">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    checked={isBookingForClient}
+                                    onCheckedChange={setIsBookingForClient}
+                                    id="booking-for-client-mode"
+                                />
+                                <Label htmlFor="booking-for-client-mode" className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-0">
+                                    {t('bookingForClient')}
+                                </Label>
+                            </div>
+                            {isBookingForClient && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <Input
+                                        required
+                                        type="email"
+                                        className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
+                                        placeholder={t('clientEmailPlaceholder')}
+                                        {...register('midwifeClientEmail')}
+                                    />
                                 </div>
                             )}
+                        </div>
+                    )}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('firstName')} *</label>
                                 <Input
@@ -385,7 +398,7 @@ export function CheckoutForm({
                                 {errors.phone && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.phone.message, tv)}</div>}
                             </div>
 
-                            {userRole === 'midwife' && (
+                            {['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '') && (
                                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('gravida')} *</label>

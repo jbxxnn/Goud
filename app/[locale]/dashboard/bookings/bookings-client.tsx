@@ -203,13 +203,14 @@ export default function BookingsClient({
   
   // Breaks Query (for both staff dashboard and admin global calendar)
   const { data: breaksData } = useQuery({
-    queryKey: ['staff-breaks', staffId || 'all', fetchDateFrom, fetchDateTo],
+    queryKey: ['staff-breaks', staffId || 'all', fetchDateFrom, fetchDateTo, locationFilter],
     enabled: viewMode === 'calendar',
     queryFn: async () => {
       const params = new URLSearchParams();
       if (staffId) params.append('staffId', staffId);
       if (fetchDateFrom) params.append('startDate', fetchDateFrom);
       if (fetchDateTo) params.append('endDate', fetchDateTo);
+      if (locationFilter && locationFilter !== 'all') params.append('locationId', locationFilter);
       
       const url = `/api/dashboard/staff-breaks?${params.toString()}`;
       const response = await fetch(url);
@@ -285,6 +286,7 @@ export default function BookingsClient({
 
       return {
         id: `break-${b.id}`,
+        location: { id: b.location_id },
         startDate: visualStartString,
         endDate: visualEndString,
         title: b.name || 'Break',

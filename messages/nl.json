@@ -42,7 +42,7 @@
                 "helper": "t.o.v. vorige periode"
             },
             "clients": {
-                "label": "Totaal klanten",
+                "label": "Totaal cliënten",
                 "helper": "t.o.v. vorige periode"
             },
             "appointmentsToday": {
@@ -597,7 +597,7 @@
             },
             "addons": {
                 "title": "Dienst extra's",
-                "subtitle": "Beheer optionele extra's die klanten kunnen selecteren bij het boeken",
+                "subtitle": "Beheer optionele extra's die cliënten kunnen selecteren bij het boeken",
                 "add": "Extra toevoegen",
                 "new": "Nieuwe extra",
                 "edit": "Extra bewerken",
@@ -850,8 +850,8 @@
                 "passwordPlaceholder": "Voer uw wachtwoord in",
                 "loggingIn": "Bezig met inloggen…",
                 "loginContinue": "Inloggen en doorgaan",
-                "bookingForClient": "Deze boeking is voor een klant",
-                "clientEmailPlaceholder": "E-mailadres van de klant",
+                "bookingForClient": "Deze boeking is voor een cliënt",
+                "clientEmailPlaceholder": "E-mailadres van de cliënt",
                 "firstName": "Voornaam",
                 "firstNamePlaceholder": "Uw voornaam",
                 "lastName": "Achternaam",
@@ -945,7 +945,7 @@
     },
     "BookingDialog": {
         "title": "Nieuwe Boeking toevoegen",
-        "client": "Klant",
+        "client": "Cliënt",
         "service": "Dienst",
         "location": "Locatie",
         "staff": "Medewerker",
@@ -975,9 +975,9 @@
         "selectService": "Selecteer dienst",
         "selectTime": "Selecteer tijd",
         "selectDate": "Selecteer datum",
-        "noClient": "Geen klant geselecteerd",
+        "noClient": "Geen cliënt geselecteerd",
         "validation": {
-            "clientRequired": "Klant selecteren is verplicht",
+            "clientRequired": "Cliënt selecteren is verplicht",
             "serviceRequired": "Dienst selecteren is verplicht",
             "locationRequired": "Locatie selecteren is verplicht",
             "staffRequired": "Medewerker selecteren is verplicht",
@@ -1012,14 +1012,14 @@
             "textPlaceholder": "Voer tekst in"
         },
         "clientModal": {
-            "title": "Selecteer Klant",
-            "createTitle": "Nieuwe Klant aanmaken",
+            "title": "Selecteer Cliënt",
+            "createTitle": "Nieuwe Cliënt aanmaken",
             "searchPlaceholder": "Zoek op naam of email...",
-            "findClient": "Vind een Klant",
+            "findClient": "Vind een Cliënt",
             "findClientDesc": "Begin met het typen van een naam of e-mailadres hierboven om resultaten te zien.",
-            "newClient": "Nieuwe Klant",
-            "loading": "Klanten laden...",
-            "noClients": "Geen klanten gevonden.",
+            "newClient": "Nieuwe Cliënt",
+            "loading": "Cliënten laden...",
+            "noClients": "Geen cliënten gevonden.",
             "select": "Kies",
             "createAndSelect": "Maak aan & Selecteer",
             "creating": "Bezig...",
@@ -1056,8 +1056,8 @@
             },
             "cancel": "Annuleren",
             "toasts": {
-                "success": "Klant succesvol aangemaakt",
-                "error": "Klant aanmaken mislukt",
+                "success": "Cliënt succesvol aangemaakt",
+                "error": "Cliënt aanmaken mislukt",
                 "fetchClientsError": "Laden van cliënten mislukt",
                 "fetchMidwivesError": "Verloskundigen laden mislukt"
             }
@@ -1081,7 +1081,7 @@
             "from": "Van",
             "to": "Tot",
             "search": "Zoeken",
-            "searchPlaceholder": "Klantnaam of e-mail...",
+            "searchPlaceholder": "Cliëntnaam of e-mail...",
             "selectDate": "Selecteer datum",
             "reset": "Filters wissen"
         },
@@ -1117,7 +1117,7 @@
         },
         "columns": {
             "ref": "Ref",
-            "client": "Klant",
+            "client": "Cliënt",
             "dateTime": "Datum & Tijd",
             "service": "Dienst",
             "location": "Locatie",
@@ -1141,6 +1141,9 @@
             "free": "Gratis",
             "generating": "Genereren...",
             "generateButton": "Boekingslink genereren",
+            "sendToClient": "Link naar cliënt verzenden",
+            "bookForClient": "Boeken voor cliënt",
+            "selectAction": "Kies een actie",
             "linkReady": "E-mail verzonden & Link gereed",
             "linkExpiry": "De cliënt heeft een e-mail ontvangen met de boekingslink. U kunt deze link ook direct delen. Deze verloopt na 30 dagen.",
             "generateAnother": "Nog een genereren",
@@ -1149,7 +1152,9 @@
                 "generated": "Herhaal-link gegenereerd",
                 "generateError": "Link genereren mislukt",
                 "unexpectedError": "Fout bij genereren link",
-                "copied": "Link gekopieerd naar klembord"
+                "copied": "Link gekopieerd naar klembord",
+                "popupBlocked": "Popup geblokkeerd",
+                "clickToOpen": "Klik op de knop om de boekingspagina te openen."
             }
         }
     },

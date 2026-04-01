@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const staffId = searchParams.get('staffId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const locationId = searchParams.get('locationId');
 
     // 1. Determine date range
     // Use the provided range or default to +/- 1 month if not provided
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
     
     if (staffId && staffId !== 'undefined' && staffId !== 'null') {
       shiftQueryParams.staff_id = staffId;
+    }
+
+    if (locationId && locationId !== 'all') {
+      shiftQueryParams.location_id = locationId;
     }
 
     const shiftsResponse = await ShiftService.getShiftsWithDetails(shiftQueryParams);

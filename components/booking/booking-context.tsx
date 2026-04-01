@@ -333,6 +333,7 @@ export function BookingProvider({
         otherMidwifeName: "",
         dueDate: '',
         notes: undefined,
+        midwifeClientEmail: '',
     });
     const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
     const [hasAutofilled, setHasAutofilled] = useState(false);
@@ -468,6 +469,16 @@ export function BookingProvider({
 
                         // We could fetch their latest details here if we wanted to be super safe
                         // But let's trust the session for auth state
+                        try {
+                            const response = await fetch('/api/users/current');
+                            const payload = await response.json();
+                            const user = payload?.data;
+                            if (user) {
+                                setUserRole(user.role || null);
+                            }
+                        } catch (e) {
+                            console.error('Error fetching user role in repeat flow:', e);
+                        }
                     } else if (parentBooking.users) {
                         // Fallback to parent booking email if not logged in
                         setClientEmail(parentBooking.users.email);
@@ -498,6 +509,7 @@ export function BookingProvider({
                             gravida: parentBooking.gravida || undefined,
                             para: parentBooking.para || undefined,
                             notes: undefined,
+                            midwifeClientEmail: (session?.user?.email?.toLowerCase() !== u.email?.toLowerCase()) ? u.email : '',
                         });
                         setHasAutofilled(true);
 
@@ -553,7 +565,7 @@ export function BookingProvider({
                     if (user) {
                         setUserRole(user.role || null);
                         setContactDefaults((prev) => {
-                            if (user.role === 'midwife') {
+                            if (['admin', 'staff', 'assistant', 'midwife'].includes(user.role)) {
                                 return {
                                     ...prev,
                                     midwifeId: user.midwife_id || undefined,

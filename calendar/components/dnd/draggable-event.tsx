@@ -35,7 +35,7 @@ export function DraggableEvent({ event, children }: DraggableEventProps) {
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
-  drag(ref);
+  // drag(ref); // Disabled for now as per user request
 
   return (
     <div ref={ref} className={cn(isDragging && "opacity-40")} title="">

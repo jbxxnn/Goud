@@ -55,7 +55,7 @@ export function StepReview() {
                 const user = payload?.user;
                 if (user) {
                     setUserRole(user.role || null);
-                    if (user.role === 'midwife') {
+                    if (['admin', 'staff', 'assistant', 'midwife'].includes(user.role)) {
                         setContactDefaults({
                             ...contactDefaults,
                             midwifeId: user.midwife_id || "",
