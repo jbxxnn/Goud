@@ -92,9 +92,9 @@ export const bookingContactSchema = z.object({
   phone: requiredPhone,
   address: optionalText('address').optional(),
   // New fields
-  dueDate: optionalDate,
+  dueDate: requiredDate('dueDate'),
   birthDate: requiredDate('birthDate'),
-  midwifeId: optionalMidwifeId,
+  midwifeId: requiredMidwifeId,
   otherMidwifeName: optionalText('otherMidwifeName', 100).optional(),
   houseNumber: requiredText('houseNumber', 20),
   postalCode: requiredText('postalCode', 20),

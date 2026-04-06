@@ -89,6 +89,7 @@ export function CheckoutForm({
         resolver: zodResolver(bookingContactSchema),
         mode: 'onChange',
         reValidateMode: 'onChange',
+        shouldUnregister: true,
         defaultValues: {
             clientEmail: currentEmail,
             firstName: contactDefaults.firstName ?? '',
@@ -171,11 +172,16 @@ export function CheckoutForm({
             let valid = isValid;
             
             // Additional manual checks for fields that might have complex conditional requirements
+            // or those marked as compulsory (*) in the UI
             if (['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '')) {
                 if (isBookingForClient && !midwifeClientEmailValue) valid = false;
                 if (!gravidaValue || gravidaValue.trim() === '') valid = false;
                 if (!paraValue || paraValue.trim() === '') valid = false;
             }
+
+            // Ensure midwife and dueDate are provided if not hidden
+            if (!hiddenFields.includes('midwife') && !watch('midwifeId')) valid = false;
+            if (!hiddenFields.includes('due_date') && !dueDateValue) valid = false;
 
             onValidationChange(valid);
         }
