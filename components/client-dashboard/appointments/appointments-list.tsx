@@ -405,7 +405,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                                 booking={booking}
                                                 onReschedule={() => handleReschedule(booking)}
                                                 onCancel={handleCancel}
-                                                onViewResults={handleViewResults}
+                                                // onViewResults={handleViewResults}
                                                 isPast={isPast(new Date(booking.end_time))}
                                             />
                                         </TableCell>
@@ -468,7 +468,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                         booking={booking}
                                         onReschedule={() => handleReschedule(booking)}
                                         onCancel={handleCancel}
-                                        onViewResults={handleViewResults}
+                                        // onViewResults={handleViewResults}
                                         isPast={isPast(new Date(booking.end_time))}
                                     />
                                 </div>
