@@ -28,3 +28,12 @@ export interface ICalendarCell {
   currentMonth: boolean;
   date: Date;
 }
+export interface IDayNote {
+  id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  content: string;
+  location_ids: string[];
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}

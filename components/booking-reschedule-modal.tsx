@@ -99,7 +99,7 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
           <div key={d} className="text-center text-gray-500">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {cells.map((cell, idx) => {
           const count = heatmap[cell.dateStr] ?? 0;
           const isSelected = selectedDate === cell.dateStr;
@@ -155,7 +155,7 @@ function TimePicker({ slots, selected, onSelect, loading }: {
                   <Button
                     key={`${s.shiftId}-${idx}`}
                     variant={selected === s ? 'default' : 'outline'}
-                    className={selected === s ? '' : 'bg-white'}
+                    className={`w-full ${selected === s ? '' : 'bg-white'}`}
                     onClick={() => onSelect(s)}
                   >
                     {formatTime(s.startTime)}
@@ -295,11 +295,11 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-[500px] sm:w-[400px] p-0 flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b">
+      <SheetContent className="w-full sm:max-w-[500px] p-0 flex flex-col">
+        <SheetHeader className="px-4 sm:px-6 py-4 border-b">
           <SheetTitle>Reschedule Booking</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
           <div className="space-y-2">
             <h3 className="font-semibold">Current Booking</h3>
             <div className="text-sm p-3 bg-muted rounded-md">
@@ -364,7 +364,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
             )}
           </div>
         </div>
-        <div className="px-6 py-4 border-t flex justify-end gap-3">
+        <div className="px-4 sm:px-6 py-4 border-t flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={handleReschedule}

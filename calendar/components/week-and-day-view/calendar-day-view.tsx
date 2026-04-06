@@ -13,11 +13,15 @@ import { EventBlock } from "@/calendar/components/week-and-day-view/event-block"
 import { DroppableTimeBlock } from "@/calendar/components/dnd/droppable-time-block";
 import { CalendarTimeline } from "@/calendar/components/week-and-day-view/calendar-time-line";
 import { DayViewMultiDayEventsRow } from "@/calendar/components/week-and-day-view/day-view-multi-day-events-row";
+import { DayNoteDialog } from "@/calendar/components/dialogs/day-note-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
 import { calculateEventLayout, isWorkingHour, getCurrentEvents, getVisibleHours, isDayClosed } from "@/calendar/helpers";
 
 import type { IEvent } from "@/calendar/interfaces";
+
+import { useTranslations } from "next-intl";
 
 interface IProps {
   singleDayEvents: IEvent[];
@@ -30,18 +34,79 @@ interface IProps {
 }
 
 export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
-  const { selectedDate, setSelectedDate, users, visibleHours, workingHours, entityType, showShiftGuidance } = useCalendar();
+  const t = useTranslations('Calendar.view');
+  const { 
+    selectedDate, 
+    setSelectedDate, 
+    users, 
+    visibleHours, 
+    workingHours, 
+    entityType, 
+    showShiftGuidance, 
+    dayNotes,
+    locations,
+    selectedLocationId
+  } = useCalendar();
+
+  const currentDayNote = useMemo(() => {
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    
+    if (selectedLocationId === 'all') {
+      // Find the note that applies to ALL locations
+      return dayNotes.find(n => 
+        n.date === dateStr && 
+        n.location_ids.length === (locations?.length || 0)
+      ) || null;
+    }
+
+    return dayNotes.find(n => n.date === dateStr) || null;
+  }, [dayNotes, selectedDate, selectedLocationId, locations?.length]);
 
   const { hours, earliestEventHour, latestEventHour } = getVisibleHours(visibleHours, singleDayEvents);
 
-  const dayEvents = singleDayEvents.filter(event => {
-    const eventDate = parseISO(event.startDate);
-    return (
-      eventDate.getDate() === selectedDate.getDate() &&
-      eventDate.getMonth() === selectedDate.getMonth() &&
-      eventDate.getFullYear() === selectedDate.getFullYear()
+  const dayEvents = useMemo(() => {
+    const allEvents = [...singleDayEvents, ...multiDayEvents];
+    return allEvents.filter(event => {
+      const start = parseISO(event.startDate);
+      const end = parseISO(event.endDate);
+      const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
+      const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
+      
+      return start <= dayEnd && end >= dayStart;
+    });
+  }, [singleDayEvents, multiDayEvents, selectedDate]);
+
+  const staffOnDuty = useMemo(() => {
+    // Collect shifts from both single and multi-day sources for the day overlap
+    const shifts = dayEvents.filter(e => e.metadata?.isShift);
+    
+    // Filter by location if not 'all'
+    const filteredShifts = selectedLocationId === 'all' 
+      ? shifts 
+      : shifts.filter(s => s.location?.id === selectedLocationId);
+
+    // Show every shift as a badge to accurately represent staff across all locations
+    // We deduplicate by user+location to avoid showing multiple badges for the same person at the same site
+    const entryMap = new Map<string, any>();
+    filteredShifts.forEach(s => {
+      if (!s.user) return;
+      
+      const key = `${s.user.id}-${s.location?.id || 'no-loc'}`;
+      if (!entryMap.has(key)) {
+        entryMap.set(key, {
+          id: `${s.id}-${key}`,
+          name: s.user.name,
+          color: s.color,
+          userId: s.user.id,
+          locationId: s.location?.id || 'no-loc'
+        });
+      }
+    });
+
+    return Array.from(entryMap.values()).sort((a, b) => 
+      a.locationId.localeCompare(b.locationId)
     );
-  });
+  }, [dayEvents, selectedLocationId]);
 
   // Get events that are currently happening right now
   const interactiveEvents = dayEvents.filter(e => !e.metadata?.isShift);
@@ -97,6 +162,60 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
             >
               {format(selectedDate, "EE")} <span className="font-semibold text-foreground">{format(selectedDate, "d")}</span>
             </span>
+          </div>
+
+          {/* Notes row */}
+          <div className="relative z-10 flex border-b bg-muted/5">
+            <div className="flex w-18 items-center justify-end pr-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 translate-y-[1px]">
+              {t('notes')}
+            </div>
+            <DayNoteDialog date={selectedDate}>
+              <div 
+                className="flex-1 border-l py-2 px-3 cursor-pointer hover:bg-accent/5 transition-colors group flex items-start justify-start min-h-[44px]"
+              >
+                <div className="flex flex-col gap-2 w-full">
+                  {(currentDayNote && staffOnDuty.length > 0) && (
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      {staffOnDuty.map(staff => (
+                        <div 
+                          key={staff.id} 
+                          className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-semibold truncate max-w-[120px]"
+                          style={{
+                            backgroundColor: staff.color ? `${staff.color}33` : '#f3f4f6',
+                            borderColor: staff.color || '#e5e7eb',
+                            color: staff.color || '#374151'
+                          }}
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
+                          {staff.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentDayNote ? (
+                    <TooltipProvider delayDuration={0} disableHoverableContent>
+                      <Tooltip delayDuration={0} disableHoverableContent>
+                        <TooltipTrigger asChild>
+                          <div className="bg-gray-200 text-black rounded-md px-3 py-2 shadow-sm border border-black w-full">
+                            <p className="text-[11px] font-bold leading-relaxed break-all line-clamp-2">
+                              {currentDayNote.content.length > 30 ? `${currentDayNote.content.slice(0, 30)}...` : currentDayNote.content}
+                            </p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="pointer-events-none" sideOffset={8}>
+                          <p className="max-w-[200px] break-all">{currentDayNote.content}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground/30 italic group-hover:text-muted-foreground/50 transition-all font-medium flex items-center justify-center w-full h-[32px]">
+                      {t('noNotes')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </DayNoteDialog>
           </div>
         </div>
 

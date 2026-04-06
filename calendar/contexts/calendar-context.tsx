@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import type { Dispatch, SetStateAction } from "react";
-import type { IEvent, IUser, ILocation } from "@/calendar/interfaces";
+import type { IEvent, IUser, ILocation, IDayNote } from "@/calendar/interfaces";
 import type { TBadgeVariant, TVisibleHours, TWorkingHours } from "@/calendar/types";
 
 interface ICalendarContext {
@@ -24,6 +24,10 @@ interface ICalendarContext {
   setVisibleHours: (hours: TVisibleHours) => Promise<void>;
   events: IEvent[];
   setLocalEvents: Dispatch<SetStateAction<IEvent[]>>;
+  dayNotes: IDayNote[];
+  setDayNotes: Dispatch<SetStateAction<IDayNote[]>>;
+  fetchDayNotes: (start: Date, end: Date) => Promise<void>;
+  userRole: string | null;
   isSaving: boolean;
   entityType: 'shift' | 'booking';
   showShiftGuidance: boolean;
@@ -173,6 +177,42 @@ export function CalendarProvider({ children, users, locations = [], events, init
   const [selectedUserId, setSelectedUserId] = useState<IUser["id"] | "all">("all");
   const [selectedLocationId, setSelectedLocationId] = useState<string | "all">("all");
 
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Fetch user role
+  useEffect(() => {
+    const getUserRole = async () => {
+      if (!userId) return;
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data } = await supabase.from('users').select('role').eq('id', userId).single();
+      if (data) {
+        setUserRole(data.role);
+      }
+    };
+    getUserRole();
+  }, [userId]);
+
+  const [dayNotes, setDayNotes] = useState<IDayNote[]>([]);
+
+  // Fetch day notes for a range
+  const fetchDayNotes = async (start: Date, end: Date) => {
+    try {
+      const params = new URLSearchParams({
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0],
+        locationId: selectedLocationId
+      });
+      const res = await fetch(`/api/calendar/day-notes?${params.toString()}`);
+      if (res.ok) {
+        const result = await res.json();
+        setDayNotes(result.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch day notes', err);
+    }
+  };
+
   // This localEvents doesn't need to exists in a real scenario.
   // It's used here just to simulate the update of the events.
   // In a real scenario, the events would be updated in the backend
@@ -318,6 +358,14 @@ export function CalendarProvider({ children, users, locations = [], events, init
     }
   };
 
+  useEffect(() => {
+    const { startOfWeek, endOfWeek, subDays, addDays } = require('date-fns');
+    // Fetch notes for the month around the selected date to have a buffer
+    const start = startOfWeek(subDays(selectedDate, 14), { weekStartsOn: 1 });
+    const end = endOfWeek(addDays(selectedDate, 14), { weekStartsOn: 1 });
+    fetchDayNotes(start, end);
+  }, [selectedDate, selectedLocationId]);
+
   return (
     <CalendarContext.Provider
       value={{
@@ -331,6 +379,10 @@ export function CalendarProvider({ children, users, locations = [], events, init
         setBadgeVariant: handleSetBadgeVariant,
         users,
         locations,
+        dayNotes,
+        setDayNotes,
+        fetchDayNotes,
+        userRole,
         visibleHours,
         setVisibleHours: handleSetVisibleHours,
         workingHours,

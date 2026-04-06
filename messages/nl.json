@@ -459,6 +459,10 @@
         }
     },
     "Calendar": {
+        "view": {
+            "notes": "Notities",
+            "noNotes": "Geen notities voor deze dag"
+        },
         "dialog": {
             "add": {
                 "title": "Nieuw evenement toevoegen",
