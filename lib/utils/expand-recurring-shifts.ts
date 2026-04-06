@@ -75,7 +75,8 @@ export function expandRecurringShift(
     
     occurrences.forEach((occurrence, index) => {
       // Check if this specific date is an exception (compare YYYY-MM-DD string)
-      const dateString = `${occurrence.getUTCFullYear()}-${String(occurrence.getUTCMonth() + 1).padStart(2, '0')}-${String(occurrence.getUTCDate()).padStart(2, '0')}`;
+      // Use the local timezone to ensure accurate day calculation (preventing UTC shifts)
+      const dateString = formatInTimeZone(occurrence, 'Europe/Amsterdam', 'yyyy-MM-dd');
       if (exceptions.has(dateString)) {
         return; // Skip this occurrence, it has been overridden or deleted
       }

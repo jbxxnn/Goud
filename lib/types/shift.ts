@@ -380,15 +380,16 @@ export function shiftToCalendarEvent(
   const startLocalHhMm = formatInTimeZone(new Date(shift.start_time), 'Europe/Amsterdam', 'HH:mm');
   const endLocalHhMm = formatInTimeZone(new Date(shift.end_time), 'Europe/Amsterdam', 'HH:mm');
   
-  // Extract strictly the YYYY-MM-DD from the UTC string so it matches the day of the week accurately.
-  // We use exactly 10 characters from the UTC ISO string to prevent date-fns from shifting the day backwards.
-  const startYyyyMmDd = shift.start_time.substring(0, 10);
+  // Extract strictly the YYYY-MM-DD from the local time so it matches the day of the week accurately.
+  // We use formatInTimeZone to prevent UTC-related day shifts (e.g. 01:00 AM Amsterdam is previous day in UTC).
+  const startYyyyMmDd = formatInTimeZone(new Date(shift.start_time), 'Europe/Amsterdam', 'yyyy-MM-dd');
+  const endYyyyMmDd = formatInTimeZone(new Date(shift.end_time), 'Europe/Amsterdam', 'yyyy-MM-dd');
   
   // Create naive local date strings that the browser parses as local timeline.
   // This guarantees the calendar component draws "09:00" exactly on the "09:00" row.
   const visualStartString = `${startYyyyMmDd}T${startLocalHhMm}:00`;
-  const visualEndString = shift.end_time > shift.start_time && shift.end_time.substring(0, 10) !== startYyyyMmDd 
-    ? `${shift.end_time.substring(0, 10)}T${endLocalHhMm}:00`
+  const visualEndString = shift.end_time > shift.start_time && endYyyyMmDd !== startYyyyMmDd 
+    ? `${endYyyyMmDd}T${endLocalHhMm}:00`
     : `${startYyyyMmDd}T${endLocalHhMm}:00`;
 
   return {
