@@ -98,8 +98,14 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
           name: s.user.name,
           color: s.color,
           userId: s.user.id,
-          locationId: s.location?.id || 'no-loc'
+          locationId: s.location?.id || 'no-loc',
+          startTime: s.startDate,
+          endTime: s.endDate
         });
+      } else {
+        const existing = entryMap.get(key);
+        if (s.startDate < existing.startTime) existing.startTime = s.startDate;
+        if (s.endDate > existing.endTime) existing.endTime = s.endDate;
       }
     });
 
@@ -174,12 +180,12 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                 className="flex-1 border-l py-2 px-3 cursor-pointer hover:bg-accent/5 transition-colors group flex items-start justify-start min-h-[44px]"
               >
                 <div className="flex flex-col gap-2 w-full">
-                  {(currentDayNote && staffOnDuty.length > 0) && (
+                  {staffOnDuty.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-1">
                       {staffOnDuty.map(staff => (
                         <div 
                           key={staff.id} 
-                          className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-semibold truncate max-w-[120px]"
+                          className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-semibold truncate max-w-[180px]"
                           style={{
                             backgroundColor: staff.color ? `${staff.color}33` : '#f3f4f6',
                             borderColor: staff.color || '#e5e7eb',
@@ -188,6 +194,9 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
                         >
                           <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
                           {staff.name}
+                          <span className="ml-0.5 opacity-70 font-normal lowercase">
+                            ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
+                          </span>
                         </div>
                       ))}
                     </div>

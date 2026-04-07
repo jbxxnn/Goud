@@ -160,8 +160,14 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                       id: `${s.id}-${key}`,
                       name: s.user.name,
                       color: s.color,
-                      locationId: s.location?.id || 'no-loc'
+                      locationId: s.location?.id || 'no-loc',
+                      startTime: s.startDate,
+                      endTime: s.endDate
                     });
+                  } else {
+                    const existing = entryMap.get(key);
+                    if (s.startDate < existing.startTime) existing.startTime = s.startDate;
+                    if (s.endDate > existing.endTime) existing.endTime = s.endDate;
                   }
                 });
                 const dayStaff = Array.from(entryMap.values()).sort((a, b) => 
@@ -173,21 +179,31 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
                     <div
                       className="py-1.5 px-2 cursor-pointer hover:bg-accent/5 transition-colors group text-center min-h-[44px] flex flex-col items-center justify-center gap-1 overflow-hidden"
                     >
-                      {(note && dayStaff.length > 0) && (
+                      {dayStaff.length > 0 && (
                         <div className="flex flex-wrap gap-0.5 justify-center mb-0.5 max-w-full">
                           {dayStaff.map(staff => (
                             <div 
                               key={staff.id} 
-                              className="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-bold uppercase truncate max-w-[60px]"
+                              className={cn(
+                                "flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-bold uppercase truncate",
+                                selectedLocationId === 'all' ? "max-w-[60px]" : "max-w-[120px]"
+                              )}
                               style={{
                                 backgroundColor: staff.color ? `${staff.color}22` : '#f3f4f6',
                                 borderColor: staff.color || '#e5e7eb',
                                 color: staff.color || '#374151'
                               }}
-                              title={staff.name}
+                              title={selectedLocationId === 'all' 
+                                ? staff.name 
+                                : `${staff.name} (${format(parseISO(staff.startTime), "HH:mm")} - ${format(parseISO(staff.endTime), "HH:mm")})`}
                             >
                               <div className="w-1 h-1 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
                               {staff.name.split(' ')[0]}
+                              {selectedLocationId !== 'all' && (
+                                <span className="ml-0.5 opacity-70 font-normal lowercase">
+                                  ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
