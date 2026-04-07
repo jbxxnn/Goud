@@ -313,9 +313,29 @@ export class ShiftService {
    * Create a new shift
    */
   static async createShift(shiftData: CreateShiftRequest): Promise<Shift> {
-    const { service_ids, max_concurrent_bookings, skip_conflicting_occurrences, ...shiftFields } = shiftData;
+    const { service_ids, max_concurrent_bookings, skip_conflicting_occurrences, breaks, ...shiftFields } = shiftData;
 
     const supabase = await createClient();
+
+    // If this is a single occurrence exception to a recurring shift, check if it was 
+    // already "realized" into a record (e.g. by adding a break before saving)
+    if (shiftFields.parent_shift_id && shiftFields.exception_date) {
+      const { data: existingException } = await supabase
+        .from('shifts')
+        .select('id')
+        .eq('parent_shift_id', shiftFields.parent_shift_id)
+        .eq('exception_date', shiftFields.exception_date)
+        .single();
+      
+      if (existingException) {
+        // If it already exists, update it instead of creating a new one
+        // This ensures any breaks or other data already attached to this exception are preserved
+        return await this.updateShift(existingException.id, { 
+          ...shiftData, 
+          is_active: true 
+        } as UpdateShiftRequest);
+      }
+    }
 
     // Create shift record
     const { data: shift, error: shiftError } = await supabase
@@ -380,7 +400,10 @@ export class ShiftService {
       }
     }
 
-
+    // Synchronize breaks if provided
+    if (shiftData.breaks !== undefined) {
+      await this.syncShiftBreaks(shift.id, shiftData.breaks);
+    }
 
     return shift;
   }
@@ -389,7 +412,7 @@ export class ShiftService {
    * Update a shift
    */
   static async updateShift(id: string, shiftData: UpdateShiftRequest): Promise<Shift> {
-    const { service_ids, max_concurrent_bookings, ...shiftFields } = shiftData;
+    const { service_ids, max_concurrent_bookings, breaks, ...shiftFields } = shiftData;
 
     const supabase = getServiceSupabase();
 
@@ -454,7 +477,56 @@ export class ShiftService {
       }
     }
 
+    // Synchronize breaks if provided
+    if (shiftData.breaks !== undefined) {
+      await this.syncShiftBreaks(id, shiftData.breaks);
+    }
+
     return shift;
+  }
+
+  /**
+   * Synchronize breaks for a shift (replaces existing ones)
+   */
+  private static async syncShiftBreaks(shiftId: string, breaks: UpdateShiftRequest['breaks']): Promise<void> {
+    if (!breaks) return;
+    const supabase = await createClient();
+
+    // 1. Remove existing breaks for this specific shift record
+    await supabase.from('shift_breaks').delete().eq('shift_id', shiftId);
+
+    // 2. Insert new breaks
+    if (breaks.length > 0) {
+      const { toDate, formatInTimeZone } = require('date-fns-tz');
+      
+      // We need to fetch the target shift to get its actual start date for normalization
+      const { data: shift } = await supabase.from('shifts').select('start_time').eq('id', shiftId).single();
+      const targetDate = shift?.start_time?.split('T')[0] || new Date().toISOString().split('T')[0];
+
+      const newBreaks = breaks.map(b => {
+        const bStart = new Date(b.start_time);
+        const bEnd = new Date(b.end_time);
+        const startHhMm = formatInTimeZone(bStart, 'Europe/Amsterdam', 'HH:mm:ss');
+        const endHhMm = formatInTimeZone(bEnd, 'Europe/Amsterdam', 'HH:mm:ss');
+
+        const startIso = toDate(`${targetDate}T${startHhMm}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+        const endIso = toDate(`${targetDate}T${endHhMm}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
+
+        return {
+          shift_id: shiftId,
+          name: b.name,
+          start_time: startIso,
+          end_time: endIso,
+          sitewide_break_id: b.sitewide_break_id || null
+        };
+      });
+
+      const { error } = await supabase.from('shift_breaks').insert(newBreaks);
+      if (error) {
+        console.error('Error syncing shift breaks:', error);
+        throw new Error(`Failed to sync shift breaks: ${error.message}`);
+      }
+    }
   }
 
   /**

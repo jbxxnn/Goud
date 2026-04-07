@@ -46,9 +46,10 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
           // Keep recurring instance metadata for the UI
           shiftData = {
             ...shiftData,
+            id: String(event.id), // CRITICAL: Preserve the virtual ID so ShiftForm handles it as an instance
             _isRecurringInstance: true,
-            _instanceDate: event.startDate, // Keep track of the specific visually offset date we clicked for expansion math
-            _originalShiftId: shiftData.parent_shift_id || baseId, // Pass the true parent for "Entire Series" edits
+            _instanceDate: event.startDate, 
+            _originalShiftId: shiftData.parent_shift_id || baseId,
           };
         }
 

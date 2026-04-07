@@ -98,6 +98,7 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
   const [editBreakStart, setEditBreakStart] = useState('');
   const [editBreakEnd, setEditBreakEnd] = useState('');
   const [isUpdatingBreak, setIsUpdatingBreak] = useState(false);
+  const [deletedInheritedBreakIds, setDeletedInheritedBreakIds] = useState<string[]>([]);
 
   const {
     register,
@@ -228,93 +229,35 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     }
   }, [shift, reset]);
 
-  const deleteShiftBreak = async (id: string) => {
-    try {
-      if (id.startsWith('inherited-')) {
-        // It's a virtual break. To "delete" it, we must create a local tombstone (override).
-        const sitewideId = id.replace('inherited-', '');
-        const inheritedBreak = shiftBreaks.find(b => b.id === id);
-        if (!inheritedBreak || !shift) return;
-        
-        const payload: any = {
-          shift_id: shift.id,
-          sitewide_break_id: sitewideId,
-          name: inheritedBreak.name,
-          start_time: inheritedBreak.start_time,
-          end_time: inheritedBreak.start_time // 0 duration marks as deleted/overridden
-        };
-
-        if (shift.id.includes('-instance-')) {
-          payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
-          payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
-        }
-
-        const response = await fetch('/api/shift-breaks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        if (response.ok) {
-          setShiftBreaks(prev => prev.filter(b => b.id !== id));
-          toast.success('Break removed');
-        } else {
-          toast.error('Failed to remove break');
-        }
-      } else {
-        const response = await fetch(`/api/shift-breaks/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-          setShiftBreaks(prev => prev.filter(b => b.id !== id));
-          toast.success('Break removed');
-        } else {
-          toast.error('Failed to remove break');
-        }
-      }
-    } catch {
-      toast.error('Failed to remove break');
+  const deleteShiftBreak = (id: string) => {
+    if (id.toString().startsWith('inherited-')) {
+      const sitewideId = id.toString().replace('inherited-', '');
+      setDeletedInheritedBreakIds(prev => [...prev, sitewideId]);
     }
+    setShiftBreaks(prev => prev.filter(b => b.id !== id));
+    toast.success('Break removed from draft');
   };
 
-  const addShiftBreak = async () => {
-    if (!shift || !newBreakName || !newBreakStart || !newBreakEnd) return;
-    setIsAddingBreak(true);
-    try {
-      const shiftDate = shift.start_time.split('T')[0];
-      const startIso = createLocalIsoString(`${shiftDate}T${newBreakStart}`);
-      const endIso = createLocalIsoString(`${shiftDate}T${newBreakEnd}`);
-      
-      const payload: any = {
-        shift_id: shift.id,
-        name: newBreakName,
-        start_time: startIso,
-        end_time: endIso
-      };
+  const addShiftBreak = () => {
+    if (!newBreakName || !newBreakStart || !newBreakEnd) return;
+    
+    const shiftDate = (shift?.start_time || new Date().toISOString()).split('T')[0];
+    const startIso = createLocalIsoString(`${shiftDate}T${newBreakStart}`);
+    const endIso = createLocalIsoString(`${shiftDate}T${newBreakEnd}`);
+    
+    const newBreak = {
+      id: `new-${Date.now()}`,
+      name: newBreakName,
+      start_time: startIso,
+      end_time: endIso,
+      is_local: true
+    };
 
-      if (shift.id.includes('-instance-')) {
-        payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
-        payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
-      }
-
-      const response = await fetch('/api/shift-breaks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (data.success) {
-        setShiftBreaks(prev => [...prev].concat(data.data).sort((a,b) => a.start_time.localeCompare(b.start_time)));
-        setNewBreakName('');
-        setNewBreakStart('');
-        setNewBreakEnd('');
-        toast.success('Break added');
-      } else {
-        toast.error(data.error);
-      }
-    } catch {
-      toast.error('Failed to add break');
-    } finally {
-      setIsAddingBreak(false);
-    }
+    setShiftBreaks(prev => [...prev, newBreak].sort((a,b) => a.start_time.localeCompare(b.start_time)));
+    setNewBreakName('');
+    setNewBreakStart('');
+    setNewBreakEnd('');
+    toast.success('Break added to draft');
   };
 
   const startEditingBreak = (b: any) => {
@@ -333,56 +276,28 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
     setEditBreakEnd('');
   };
 
-  const updateShiftBreak = async () => {
-    if (!shift || !editingBreakId || !editBreakName || !editBreakStart || !editBreakEnd) return;
-    setIsUpdatingBreak(true);
-    try {
-      const shiftDate = shift.start_time.split('T')[0];
-      const startIso = createLocalIsoString(`${shiftDate}T${editBreakStart}`);
-      const endIso = createLocalIsoString(`${shiftDate}T${editBreakEnd}`);
-      
-      const payload: any = {
-        name: editBreakName,
-        start_time: startIso,
-        end_time: endIso
-      };
+  const updateShiftBreak = () => {
+    if (!editingBreakId || !editBreakName || !editBreakStart || !editBreakEnd) return;
+    
+    // Use either the shift's start date or today's date
+    const shiftDate = (shift?.start_time || new Date().toISOString()).split('T')[0];
+    const startIso = createLocalIsoString(`${shiftDate}T${editBreakStart}`);
+    const endIso = createLocalIsoString(`${shiftDate}T${editBreakEnd}`);
 
-      let response;
-      if (editingBreakId.startsWith('inherited-')) {
-        // Create an override record
-        payload.shift_id = shift.id;
-        payload.sitewide_break_id = editingBreakId.replace('inherited-', '');
-
-        if (shift.id.includes('-instance-')) {
-          payload.parent_shift_id = (shift as any)._originalShiftId || shift.id.split('-instance-')[0];
-          payload.exception_date = (shift as any)._instanceDate?.split('T')[0];
-        }
-        response = await fetch('/api/shift-breaks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        response = await fetch(`/api/shift-breaks/${editingBreakId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
-      
-      const data = await response.json();
-      if (data.success) {
-        setShiftBreaks(prev => prev.map(b => b.id === editingBreakId ? data.data : b).sort((a,b) => a.start_time.localeCompare(b.start_time)));
-        cancelEditingBreak();
-        toast.success('Break updated');
-      } else {
-        toast.error(data.error);
-      }
-    } catch {
-      toast.error('Failed to update break');
-    } finally {
-      setIsUpdatingBreak(false);
-    }
+    setShiftBreaks(prev => prev.map(b => 
+      b.id === editingBreakId 
+        ? { 
+            ...b, 
+            name: editBreakName, 
+            start_time: startIso, 
+            end_time: endIso,
+            sitewide_break_id: b.sitewide_break_id // Preserve if it was an override
+          } 
+        : b
+    ).sort((a,b) => a.start_time.localeCompare(b.start_time)));
+    
+    cancelEditingBreak();
+    toast.success('Break updated in draft');
   };
 
   const onSubmit = async (data: ShiftFormData) => {
@@ -423,6 +338,20 @@ export default function ShiftForm({ shift, onSave, onCancel, onDelete, isViewMod
         notes: data.notes || null,
         service_ids: selectedServices,
         max_concurrent_bookings: data.max_concurrent_bookings,
+        breaks: [
+          ...shiftBreaks.map(b => ({
+            name: b.name,
+            start_time: b.start_time,
+            end_time: b.end_time,
+            sitewide_break_id: b.sitewide_break_id || (b.id?.toString().startsWith('inherited-') ? b.id.toString().replace('inherited-', '') : null)
+          })),
+          ...deletedInheritedBreakIds.map(id => ({
+            name: 'Deleted', 
+            start_time: createLocalIsoString(data.start_time),
+            end_time: createLocalIsoString(data.start_time), // 0 duration
+            sitewide_break_id: id
+          }))
+        ]
       };
 
       let url = shift ? `/api/shifts/${shift._originalShiftId || shift.id}` : '/api/shifts';

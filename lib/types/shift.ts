@@ -123,6 +123,12 @@ export interface CreateShiftRequest {
   service_ids: string[]; // Services to assign to this shift
   max_concurrent_bookings?: { [service_id: string]: number | null }; // Per-service booking limits
   skip_conflicting_occurrences?: boolean; // If true, create but skip conflicting dates
+  breaks?: {
+    name: string;
+    start_time: string; // ISO timestamp (HH:mm strictly extracted anyway)
+    end_time: string; // ISO timestamp
+    sitewide_break_id?: string | null;
+  }[];
 }
 
 export interface UpdateShiftRequest {
@@ -139,6 +145,12 @@ export interface UpdateShiftRequest {
   is_active?: boolean;
   service_ids?: string[]; // Services to assign to this shift
   max_concurrent_bookings?: { [service_id: string]: number | null };
+  breaks?: {
+    name: string;
+    start_time: string;
+    end_time: string;
+    sitewide_break_id?: string | null;
+  }[];
 }
 
 export interface CreateBlackoutPeriodRequest {
