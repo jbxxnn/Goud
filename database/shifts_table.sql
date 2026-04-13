@@ -214,14 +214,23 @@ CREATE POLICY "Allow read access to shift_services"
   USING (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Allow all for admins on shift_services" ON shift_services;
-CREATE POLICY "Allow all for admins on shift_services"
+DROP POLICY IF EXISTS "Allow all for admins and assistants on shift_services" ON shift_services;
+CREATE POLICY "Allow all for admins and assistants on shift_services"
   ON shift_services FOR ALL
   USING (
     auth.role() = 'authenticated' AND
     EXISTS (
-      SELECT 1 FROM users 
-      WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.role IN ('admin', 'assistant')
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.role IN ('admin', 'assistant')
     )
   );
 
@@ -232,14 +241,23 @@ CREATE POLICY "Allow read access to blackout_periods"
   USING (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Allow all for admins on blackout_periods" ON blackout_periods;
-CREATE POLICY "Allow all for admins on blackout_periods"
+DROP POLICY IF EXISTS "Allow all for admins and assistants on blackout_periods" ON blackout_periods;
+CREATE POLICY "Allow all for admins and assistants on blackout_periods"
   ON blackout_periods FOR ALL
   USING (
     auth.role() = 'authenticated' AND
     EXISTS (
       SELECT 1 FROM users 
       WHERE users.id = auth.uid() 
-      AND users.role = 'admin'
+      AND users.role IN ('admin', 'assistant')
+    )
+  )
+  WITH CHECK (
+    auth.role() = 'authenticated' AND
+    EXISTS (
+      SELECT 1 FROM users 
+      WHERE users.id = auth.uid() 
+      AND users.role IN ('admin', 'assistant')
     )
   );
 
@@ -370,4 +388,3 @@ END $$;
 -- =============================================
 -- DONE!
 -- =============================================
-

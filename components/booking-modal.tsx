@@ -1017,7 +1017,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     {t('btnDelete')}
                   </Button>
                 )}
-                {booking.service_id && booking.status === 'completed' && userRole !== 'assistant' && (
+                {booking.service_id && ['ongoing', 'completed'].includes(booking.status) && (
                   <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
                 )}
               </div>
@@ -1073,4 +1073,3 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
     </Sheet>
   );
 }
-

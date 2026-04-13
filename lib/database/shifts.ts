@@ -397,6 +397,7 @@ export class ShiftService {
 
       if (servicesError) {
         console.error('Error creating service assignments:', servicesError);
+        throw new Error(`Failed to create service assignments: ${servicesError.message}`);
       }
     }
 
@@ -473,6 +474,7 @@ export class ShiftService {
 
         if (servicesError) {
           console.error('Error updating service assignments:', servicesError);
+          throw new Error(`Failed to update service assignments: ${servicesError.message}`);
         }
       }
     }
@@ -1190,4 +1192,3 @@ export class ShiftService {
     if (error) throw new Error(`Failed to delete shift break: ${error.message}`);
   }
 }
-
