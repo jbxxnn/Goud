@@ -24,6 +24,8 @@ import { useTranslations } from "next-intl";
 interface IProps {
   singleDayEvents: IEvent[];
   multiDayEvents: IEvent[];
+  summaryShiftEvents?: IEvent[];
+  showNotesRow?: boolean;
   onShiftCreated?: () => void;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
@@ -31,7 +33,7 @@ interface IProps {
   hideAddButton?: boolean;
 }
 
-export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
+export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShiftEvents, showNotesRow = true, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
   const t = useTranslations('Calendar.view');
   const { selectedDate, workingHours, visibleHours, entityType, showShiftGuidance, dayNotes, locations, selectedLocationId } = useCalendar();
 
@@ -114,127 +116,129 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, onShiftCreat
             </div>
           </div>
 
-          {/* Notes row */}
-          <div className="relative z-10 flex border-b bg-muted/5">
-            <div className="flex w-18 items-center justify-end pr-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 translate-y-[1px]">
-              {t('notes')}
-            </div>
-            <div className="grid flex-1 divide-x border-l" style={gridStyle}>
-              {visibleDays.map(({ day, index }) => {
-                const dateStr = format(day, "yyyy-MM-dd");
-                let note;
+          {showNotesRow && (
+            <div className="relative z-10 flex border-b bg-muted/5">
+              <div className="flex w-18 items-center justify-end pr-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 translate-y-[1px]">
+                {t('notes')}
+              </div>
+              <div className="grid flex-1 divide-x border-l" style={gridStyle}>
+                {visibleDays.map(({ day, index }) => {
+                  const dateStr = format(day, "yyyy-MM-dd");
+                  let note;
 
-                if (selectedLocationId === 'all') {
-                  // Find the note that applies to ALL locations
-                  note = dayNotes.find(n => 
-                    n.date === dateStr && 
-                    n.location_ids.length === (locations?.length || 0)
-                  );
-                } else {
-                  note = dayNotes.find(n => n.date === dateStr);
-                }
-
-                // Extract staff for this day (including multi-day shifts)
-                const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
-                const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
-
-                const dayShifts = [...singleDayEvents, ...multiDayEvents].filter(e => {
-                  if (!e.metadata?.isShift) return false;
-                  const start = parseISO(e.startDate);
-                  const end = parseISO(e.endDate);
-                  return start <= dayEnd && end >= dayStart;
-                });
-                
-                const filteredShifts = selectedLocationId === 'all'
-                  ? dayShifts
-                  : dayShifts.filter(s => s.location?.id === selectedLocationId);
-                
-                // Get unique user-location combinations with consistent coloring
-                const entryMap = new Map<string, any>();
-                filteredShifts.forEach(s => {
-                  if (!s.user) return;
-                  
-                  const key = `${s.user.id}-${s.location?.id || 'no-loc'}`;
-                  if (!entryMap.has(key)) {
-                    entryMap.set(key, {
-                      id: `${s.id}-${key}`,
-                      name: s.user.name,
-                      color: s.color,
-                      locationId: s.location?.id || 'no-loc',
-                      startTime: s.startDate,
-                      endTime: s.endDate
-                    });
+                  if (selectedLocationId === 'all') {
+                    note = dayNotes.find(n => 
+                      n.date === dateStr && 
+                      n.location_ids.length === (locations?.length || 0)
+                    );
                   } else {
-                    const existing = entryMap.get(key);
-                    if (s.startDate < existing.startTime) existing.startTime = s.startDate;
-                    if (s.endDate > existing.endTime) existing.endTime = s.endDate;
+                    note = dayNotes.find(n => n.date === dateStr);
                   }
-                });
-                const dayStaff = Array.from(entryMap.values()).sort((a, b) => 
-                  a.locationId.localeCompare(b.locationId)
-                );
 
-                return (
-                  <DayNoteDialog key={index} date={day}>
-                    <div
-                      className="py-1.5 px-2 cursor-pointer hover:bg-accent/5 transition-colors group text-center min-h-[44px] flex flex-col items-center justify-center gap-1 overflow-hidden"
-                    >
-                      {dayStaff.length > 0 && (
-                        <div className="flex flex-wrap gap-0.5 justify-center mb-0.5 max-w-full">
-                          {dayStaff.map(staff => (
-                            <div 
-                              key={staff.id} 
-                              className={cn(
-                                "flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-bold uppercase truncate",
-                                selectedLocationId === 'all' ? "max-w-[60px]" : "max-w-[120px]"
-                              )}
-                              style={{
-                                backgroundColor: staff.color ? `${staff.color}22` : '#f3f4f6',
-                                borderColor: staff.color || '#e5e7eb',
-                                color: staff.color || '#374151'
-                              }}
-                              title={selectedLocationId === 'all' 
-                                ? staff.name 
-                                : `${staff.name} (${format(parseISO(staff.startTime), "HH:mm")} - ${format(parseISO(staff.endTime), "HH:mm")})`}
-                            >
-                              <div className="w-1 h-1 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
-                              {staff.name.split(' ')[0]}
-                              {selectedLocationId !== 'all' && (
-                                <span className="ml-0.5 opacity-70 font-normal lowercase">
-                                  ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+                  const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
 
-                      {note ? (
-                        <TooltipProvider delayDuration={0} disableHoverableContent>
-                          <Tooltip delayDuration={0} disableHoverableContent>
-                            <TooltipTrigger asChild>
-                              <div className="bg-gray-200 text-black rounded-md px-2 py-1 shadow-sm border border-gray-400 w-full overflow-hidden">
-                                <p className="text-[10px] font-bold leading-tight line-clamp-2 break-all text-left">
-                                  {note.content.length > 30 ? `${note.content.slice(0, 30)}...` : note.content}
-                                </p>
+                  const summarySource = summaryShiftEvents && summaryShiftEvents.length > 0
+                    ? summaryShiftEvents
+                    : [...singleDayEvents, ...multiDayEvents];
+
+                  const dayShifts = summarySource.filter(e => {
+                    if (!e.metadata?.isShift) return false;
+                    const start = parseISO(e.startDate);
+                    const end = parseISO(e.endDate);
+                    return start <= dayEnd && end >= dayStart;
+                  });
+                  
+                  const filteredShifts = selectedLocationId === 'all'
+                    ? dayShifts
+                    : dayShifts.filter(s => s.location?.id === selectedLocationId);
+                  
+                  const entryMap = new Map<string, any>();
+                  filteredShifts.forEach(s => {
+                    if (!s.user) return;
+                    
+                    const key = `${s.user.id}-${s.location?.id || 'no-loc'}`;
+                    if (!entryMap.has(key)) {
+                      entryMap.set(key, {
+                        id: `${s.id}-${key}`,
+                        name: s.user.name,
+                        color: s.color,
+                        locationId: s.location?.id || 'no-loc',
+                        startTime: s.startDate,
+                        endTime: s.endDate
+                      });
+                    } else {
+                      const existing = entryMap.get(key);
+                      if (s.startDate < existing.startTime) existing.startTime = s.startDate;
+                      if (s.endDate > existing.endTime) existing.endTime = s.endDate;
+                    }
+                  });
+                  const dayStaff = Array.from(entryMap.values()).sort((a, b) => 
+                    a.locationId.localeCompare(b.locationId)
+                  );
+
+                  return (
+                    <DayNoteDialog key={index} date={day}>
+                      <div
+                        className="py-1.5 px-2 cursor-pointer hover:bg-accent/5 transition-colors group text-center min-h-[44px] flex flex-col items-center justify-center gap-1 overflow-hidden"
+                      >
+                        {dayStaff.length > 0 && (
+                          <div className="flex flex-wrap gap-0.5 justify-center mb-0.5 max-w-full">
+                            {dayStaff.map(staff => (
+                              <div 
+                                key={staff.id} 
+                                className={cn(
+                                  "flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-bold uppercase truncate",
+                                  selectedLocationId === 'all' ? "max-w-[60px]" : "max-w-[120px]"
+                                )}
+                                style={{
+                                  backgroundColor: staff.color ? `${staff.color}22` : '#f3f4f6',
+                                  borderColor: staff.color || '#e5e7eb',
+                                  color: staff.color || '#374151'
+                                }}
+                                title={selectedLocationId === 'all' 
+                                  ? staff.name 
+                                  : `${staff.name} (${format(parseISO(staff.startTime), "HH:mm")} - ${format(parseISO(staff.endTime), "HH:mm")})`}
+                              >
+                                <div className="w-1 h-1 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
+                                {staff.name.split(' ')[0]}
+                                {selectedLocationId !== 'all' && (
+                                  <span className="ml-0.5 opacity-70 font-normal lowercase">
+                                    ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
+                                  </span>
+                                )}
                               </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="pointer-events-none" sideOffset={8}>
-                              <p className="max-w-[150px] break-all">{note.content}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground/25 italic group-hover:text-muted-foreground/40 transition-all font-medium truncate">
-                          {t('noNotes')}
-                        </span>
-                      )}
-                    </div>
-                  </DayNoteDialog>
-                );
-              })}
+                            ))}
+                          </div>
+                        )}
+
+                        {note ? (
+                          <TooltipProvider delayDuration={0} disableHoverableContent>
+                            <Tooltip delayDuration={0} disableHoverableContent>
+                              <TooltipTrigger asChild>
+                                <div className="bg-gray-200 text-black rounded-md px-2 py-1 shadow-sm border border-gray-400 w-full overflow-hidden">
+                                  <p className="text-[10px] font-bold leading-tight line-clamp-2 break-all text-left">
+                                    {note.content.length > 30 ? `${note.content.slice(0, 30)}...` : note.content}
+                                  </p>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="pointer-events-none" sideOffset={8}>
+                                <p className="max-w-[150px] break-all">{note.content}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/25 italic group-hover:text-muted-foreground/40 transition-all font-medium truncate">
+                            {t('noNotes')}
+                          </span>
+                        )}
+                      </div>
+                    </DayNoteDialog>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <ScrollArea className="h-[736px]" type="always">

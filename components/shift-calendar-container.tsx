@@ -10,6 +10,7 @@ import { CalendarMonthView } from "@/calendar/components/month-view/calendar-mon
 import { CalendarAgendaView } from "@/calendar/components/agenda-view/calendar-agenda-view";
 import { CalendarDayView } from "@/calendar/components/week-and-day-view/calendar-day-view";
 import { CalendarWeekView } from "@/calendar/components/week-and-day-view/calendar-week-view";
+import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
 
 interface IProps {
@@ -18,10 +19,11 @@ interface IProps {
   onShiftCreated?: () => void;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
+  summaryShiftEvents?: IEvent[];
   hideAddButton?: boolean;
 }
 
-export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated, hideAddButton }: IProps) {
+export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated, summaryShiftEvents, hideAddButton }: IProps) {
   const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
   const filteredEvents = useMemo(() => {
@@ -93,13 +95,12 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
       <ShiftCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} onShiftCreated={onShiftCreated} hideAddButton={hideAddButton} />
 
       <DndProviderWrapper>
-        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
+        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} />}
         {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
-        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
+        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} />}
         {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
         {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
       </DndProviderWrapper>
     </div>
   );
 }
-

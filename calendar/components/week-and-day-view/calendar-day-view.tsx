@@ -26,6 +26,8 @@ import { useTranslations } from "next-intl";
 interface IProps {
   singleDayEvents: IEvent[];
   multiDayEvents: IEvent[];
+  summaryShiftEvents?: IEvent[];
+  showNotesRow?: boolean;
   onShiftCreated?: () => void;
   onShiftDeleted?: () => void;
   onShiftUpdated?: () => void;
@@ -33,7 +35,7 @@ interface IProps {
   hideAddButton?: boolean;
 }
 
-export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
+export function CalendarDayView({ singleDayEvents, multiDayEvents, summaryShiftEvents, showNotesRow = true, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
   const t = useTranslations('Calendar.view');
   const { 
     selectedDate, 
@@ -77,8 +79,17 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
   }, [singleDayEvents, multiDayEvents, selectedDate]);
 
   const staffOnDuty = useMemo(() => {
-    // Collect shifts from both single and multi-day sources for the day overlap
-    const shifts = dayEvents.filter(e => e.metadata?.isShift);
+    const summarySource = summaryShiftEvents && summaryShiftEvents.length > 0
+      ? summaryShiftEvents
+      : dayEvents;
+    const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
+    const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
+    const shifts = summarySource.filter(e => {
+      if (!e.metadata?.isShift) return false;
+      const start = parseISO(e.startDate);
+      const end = parseISO(e.endDate);
+      return start <= dayEnd && end >= dayStart;
+    });
     
     // Filter by location if not 'all'
     const filteredShifts = selectedLocationId === 'all' 
@@ -112,7 +123,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
     return Array.from(entryMap.values()).sort((a, b) => 
       a.locationId.localeCompare(b.locationId)
     );
-  }, [dayEvents, selectedLocationId]);
+  }, [dayEvents, summaryShiftEvents, selectedDate, selectedLocationId]);
 
   // Get events that are currently happening right now
   const interactiveEvents = dayEvents.filter(e => !e.metadata?.isShift);
@@ -170,62 +181,63 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, onShiftCreate
             </span>
           </div>
 
-          {/* Notes row */}
-          <div className="relative z-10 flex border-b bg-muted/5">
-            <div className="flex w-18 items-center justify-end pr-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 translate-y-[1px]">
-              {t('notes')}
-            </div>
-            <DayNoteDialog date={selectedDate}>
-              <div 
-                className="flex-1 border-l py-2 px-3 cursor-pointer hover:bg-accent/5 transition-colors group flex items-start justify-start min-h-[44px]"
-              >
-                <div className="flex flex-col gap-2 w-full">
-                  {staffOnDuty.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-1">
-                      {staffOnDuty.map(staff => (
-                        <div 
-                          key={staff.id} 
-                          className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-semibold truncate max-w-[180px]"
-                          style={{
-                            backgroundColor: staff.color ? `${staff.color}33` : '#f3f4f6',
-                            borderColor: staff.color || '#e5e7eb',
-                            color: staff.color || '#374151'
-                          }}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
-                          {staff.name}
-                          <span className="ml-0.5 opacity-70 font-normal lowercase">
-                            ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {currentDayNote ? (
-                    <TooltipProvider delayDuration={0} disableHoverableContent>
-                      <Tooltip delayDuration={0} disableHoverableContent>
-                        <TooltipTrigger asChild>
-                          <div className="bg-gray-200 text-black rounded-md px-3 py-2 shadow-sm border border-black w-full">
-                            <p className="text-[11px] font-bold leading-relaxed break-all line-clamp-2">
-                              {currentDayNote.content.length > 30 ? `${currentDayNote.content.slice(0, 30)}...` : currentDayNote.content}
-                            </p>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="pointer-events-none" sideOffset={8}>
-                          <p className="max-w-[200px] break-all">{currentDayNote.content}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground/30 italic group-hover:text-muted-foreground/50 transition-all font-medium flex items-center justify-center w-full h-[32px]">
-                      {t('noNotes')}
-                    </span>
-                  )}
-                </div>
+          {showNotesRow && (
+            <div className="relative z-10 flex border-b bg-muted/5">
+              <div className="flex w-18 items-center justify-end pr-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 translate-y-[1px]">
+                {t('notes')}
               </div>
-            </DayNoteDialog>
-          </div>
+              <DayNoteDialog date={selectedDate}>
+                <div 
+                  className="flex-1 border-l py-2 px-3 cursor-pointer hover:bg-accent/5 transition-colors group flex items-start justify-start min-h-[44px]"
+                >
+                  <div className="flex flex-col gap-2 w-full">
+                    {staffOnDuty.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-1">
+                        {staffOnDuty.map(staff => (
+                          <div 
+                            key={staff.id} 
+                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] font-semibold truncate max-w-[180px]"
+                            style={{
+                              backgroundColor: staff.color ? `${staff.color}33` : '#f3f4f6',
+                              borderColor: staff.color || '#e5e7eb',
+                              color: staff.color || '#374151'
+                            }}
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: staff.color }} />
+                            {staff.name}
+                            <span className="ml-0.5 opacity-70 font-normal lowercase">
+                              ({format(parseISO(staff.startTime), "HH:mm")}-{format(parseISO(staff.endTime), "HH:mm")})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {currentDayNote ? (
+                      <TooltipProvider delayDuration={0} disableHoverableContent>
+                        <Tooltip delayDuration={0} disableHoverableContent>
+                          <TooltipTrigger asChild>
+                            <div className="bg-gray-200 text-black rounded-md px-3 py-2 shadow-sm border border-black w-full">
+                              <p className="text-[11px] font-bold leading-relaxed break-all line-clamp-2">
+                                {currentDayNote.content.length > 30 ? `${currentDayNote.content.slice(0, 30)}...` : currentDayNote.content}
+                              </p>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="pointer-events-none" sideOffset={8}>
+                            <p className="max-w-[200px] break-all">{currentDayNote.content}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground/30 italic group-hover:text-muted-foreground/50 transition-all font-medium flex items-center justify-center w-full h-[32px]">
+                        {t('noNotes')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </DayNoteDialog>
+            </div>
+          )}
         </div>
 
         <ScrollArea className="h-[800px]" type="always">

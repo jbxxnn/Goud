@@ -24,16 +24,16 @@ export async function GET() {
       );
     }
 
-    // Get user data to check if admin
+    // Get user data to check if admin or assistant
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (userError || !userData || userData.role !== 'admin') {
+    if (userError || !userData || !['admin', 'assistant'].includes(userData.role)) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Admin access required' },
+        { success: false, error: 'Forbidden - Admin or assistant access required' },
         { status: 403 }
       );
     }
@@ -87,16 +87,16 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get user data to check if admin
+    // Get user data to check if admin or assistant
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (userError || !userData || userData.role !== 'admin') {
+    if (userError || !userData || !['admin', 'assistant'].includes(userData.role)) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Admin access required' },
+        { success: false, error: 'Forbidden - Admin or assistant access required' },
         { status: 403 }
       );
     }

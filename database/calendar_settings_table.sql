@@ -23,25 +23,34 @@ ON CONFLICT (setting_key) DO NOTHING;
 -- Enable Row Level Security
 ALTER TABLE calendar_settings ENABLE ROW LEVEL SECURITY;
 
--- Policy: Only authenticated admins can read calendar settings
-CREATE POLICY "Admins can read calendar settings"
+DROP POLICY IF EXISTS "Admins can read calendar settings" ON calendar_settings;
+DROP POLICY IF EXISTS "Admins and assistants can read calendar settings" ON calendar_settings;
+CREATE POLICY "Admins and assistants can read calendar settings"
   ON calendar_settings FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.role IN ('admin', 'assistant')
     )
   );
 
--- Policy: Only authenticated admins can update calendar settings
-CREATE POLICY "Admins can update calendar settings"
+DROP POLICY IF EXISTS "Admins can update calendar settings" ON calendar_settings;
+DROP POLICY IF EXISTS "Admins and assistants can update calendar settings" ON calendar_settings;
+CREATE POLICY "Admins and assistants can update calendar settings"
   ON calendar_settings FOR UPDATE
   USING (
     EXISTS (
       SELECT 1 FROM users
       WHERE users.id = auth.uid()
-      AND users.role = 'admin'
+      AND users.role IN ('admin', 'assistant')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users
+      WHERE users.id = auth.uid()
+      AND users.role IN ('admin', 'assistant')
     )
   );
 

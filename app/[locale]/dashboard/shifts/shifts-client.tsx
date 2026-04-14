@@ -110,6 +110,31 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     placeholderData: keepPreviousData,
   });
 
+  const { data: coworkerShifts = [] } = useQuery<ShiftWithDetails[]>({
+    queryKey: ['shifts', 'summary', fetchStartDate.toISOString(), fetchEndDate.toISOString()],
+    enabled: !!staffId,
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        with_details: 'true',
+        start_date: fetchStartDate.toISOString(),
+        end_date: fetchEndDate.toISOString(),
+        limit: '2500',
+      });
+
+      const response = await fetch(`/api/shifts?${params}`);
+      const data: ShiftsWithDetailsResponse = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || t('errors.fetchShifts'));
+      }
+
+      const rawShifts = data.data || [];
+      return expandRecurringShifts(rawShifts, fetchStartDate, fetchEndDate);
+    },
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+
   const loading = shiftsLoading && shifts.length === 0;
   const error = shiftsError instanceof Error ? shiftsError.message : null;
 
@@ -170,7 +195,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     // Fallback for any shifts with locations not in the fetched list (only after locations are loaded)
     if (!locationsLoading && locations.length > 0) {
       const defaultColors: IEvent['color'][] = ['blue', 'green', 'red', 'yellow', 'purple', 'orange'];
-      shifts.forEach((shift) => {
+      [...shifts, ...coworkerShifts].forEach((shift) => {
         if (!colorMap[shift.location_id]) {
           // Use a consistent fallback color based on location ID hash
           const hash = shift.location_id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -180,7 +205,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
     }
 
     return colorMap;
-  }, [locations, shifts, locationsLoading]);
+  }, [locations, shifts, coworkerShifts, locationsLoading]);
 
   // Convert shifts to calendar events
   // Only convert if locations are loaded (to avoid using fallback colors)
@@ -205,6 +230,29 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
       };
     });
   }, [shifts, locationColors, locationsLoading]);
+
+  const summaryShiftEvents: CalendarEvent[] = useMemo(() => {
+    if (locationsLoading) {
+      return [];
+    }
+
+    const sourceShifts = staffId ? coworkerShifts : shifts;
+
+    return sourceShifts.map((shift) => {
+      const calendarEvent = shiftToCalendarEvent(shift, locationColors);
+      return {
+        id: calendarEvent.id,
+        startDate: calendarEvent.startDate,
+        endDate: calendarEvent.endDate,
+        title: calendarEvent.title,
+        color: calendarEvent.color,
+        description: calendarEvent.description,
+        user: calendarEvent.user,
+        location: calendarEvent.location,
+        metadata: calendarEvent.metadata,
+      };
+    });
+  }, [staffId, coworkerShifts, shifts, locationColors, locationsLoading]);
 
   if (loading || (locationsLoading && locations.length === 0)) {
     return (
@@ -256,6 +304,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
                 view={calendarView}
                 onViewChange={setCalendarView}
                 fetchShifts={fetchShifts}
+                summaryShiftEvents={summaryShiftEvents as unknown as IEvent[]}
                 hideAddButton={!!staffId || ((userRole !== 'admin' && userRole !== 'assistant') && !staffId)}
               />
               {/* Calendar Settings */}
@@ -283,11 +332,13 @@ function ShiftCalendarContainerWrapper({
   view,
   onViewChange,
   fetchShifts,
+  summaryShiftEvents,
   hideAddButton,
 }: {
   view: TCalendarView;
   onViewChange: (view: TCalendarView) => void;
   fetchShifts: (preserveDate?: Date) => Promise<void>;
+  summaryShiftEvents: IEvent[];
   hideAddButton?: boolean;
 }) {
   const searchParams = useSearchParams();
@@ -318,8 +369,8 @@ function ShiftCalendarContainerWrapper({
       onShiftCreated={handleShiftChange}
       onShiftDeleted={handleShiftChange}
       onShiftUpdated={handleShiftChange}
+      summaryShiftEvents={summaryShiftEvents}
       hideAddButton={hideAddButton}
     />
   );
 }
-

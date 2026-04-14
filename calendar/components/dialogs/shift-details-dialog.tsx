@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
 import ShiftModal from "@/components/shift-modal";
 import { ShiftWithDetails } from "@/lib/types/shift";
@@ -22,13 +22,12 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
   const [loading, setLoading] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
+  useEffect(() => {
+    setShift(null);
+  }, [event.id, event.startDate, event.endDate]);
+
   const fetchShiftDetails = async () => {
     if (loading) return; // Prevent multiple clicks
-    if (shift) {
-      // If we already fetched it, just open the modal
-      setIsEditOpen(true);
-      return;
-    }
 
     setLoading(true);
     try {
@@ -93,15 +92,20 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
       {shift && (
         <ShiftModal
           isOpen={isEditOpen}
-          onClose={() => setIsEditOpen(false)}
+          onClose={() => {
+            setIsEditOpen(false);
+            setShift(null);
+          }}
           shift={shift}
           isViewMode={isReadOnly}
           onSave={() => {
             setIsEditOpen(false);
+            setShift(null);
             if (onShiftUpdated) onShiftUpdated();
           }}
           onDelete={() => {
             setIsEditOpen(false);
+            setShift(null);
             if (onShiftDeleted) onShiftDeleted();
           }}
         />
@@ -109,4 +113,3 @@ export function ShiftDetailsDialog({ event, children, onShiftDeleted, onShiftUpd
     </>
   );
 }
-
