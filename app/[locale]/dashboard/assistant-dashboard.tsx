@@ -910,12 +910,10 @@ export default function AssistantDashboard() {
                 }),
               });
               if (!response.ok) throw new Error('Reschedule failed');
-              toast.success(t('toasts.rescheduleSuccess', { fallback: 'Booking rescheduled' }));
               fetchData();
-              setIsRescheduleModalOpen(false);
             } catch (err) {
               console.error('Reschedule Error:', err);
-              toast.error(t('toasts.rescheduleError', { fallback: 'Failed to reschedule' }));
+              throw err;
             }
           }}
         />

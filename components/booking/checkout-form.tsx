@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -25,6 +25,18 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar03Icon } from '@hugeicons/core-free-icons';
 import Link from 'next/link';
 
+type BookingProfileLookup = {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address: string;
+    houseNumber: string;
+    postalCode: string;
+    streetName: string;
+    city: string;
+    birthDate: string;
+};
+
 interface CheckoutFormProps {
     currentEmail: string;
     contactDefaults: Omit<BookingContactInput, 'clientEmail'>;
@@ -40,6 +52,7 @@ interface CheckoutFormProps {
     onSubmit: (values: BookingContactInput) => void | Promise<void>;
     finalizing: boolean;
     onValidationChange?: (isValid: boolean) => void;
+    onMissingFieldsChange?: (fields: string[]) => void;
     serviceId?: string;
     hiddenFields?: string[];
 }
@@ -59,17 +72,23 @@ export function CheckoutForm({
     onSubmit,
     finalizing,
     onValidationChange,
+    onMissingFieldsChange,
     serviceId,
     hiddenFields = [],
 }: CheckoutFormProps) {
     const t = useTranslations('Booking.flow.form');
     const tv = useTranslations('Booking.flow');
     const [midwives, setMidwives] = useState<Array<{ id: string; first_name: string | null; last_name: string | null; practice_name: string | null }>>([]);
+    const [currentMidwifeRecordId, setCurrentMidwifeRecordId] = useState('');
+    const [hasExistingBookingClient, setHasExistingBookingClient] = useState(false);
+    const [hasMidwifePracticeMismatch, setHasMidwifePracticeMismatch] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+    const [isLookingUpBookingClient, setIsLookingUpBookingClient] = useState(false);
+    const isInternalUser = ['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '');
+    const isMidwifeUser = userRole === 'midwife';
     const [isBookingForClient, setIsBookingForClient] = useState(() => {
-        // Auto-enable if pre-filled and user is internal
-        if (['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '')) {
-            return !!contactDefaults.midwifeClientEmail;
+        if (isInternalUser) {
+            return true;
         }
         return true;
     });
@@ -89,7 +108,7 @@ export function CheckoutForm({
         resolver: zodResolver(bookingContactSchema),
         mode: 'onChange',
         reValidateMode: 'onChange',
-        shouldUnregister: true,
+        shouldUnregister: false,
         defaultValues: {
             clientEmail: currentEmail,
             firstName: contactDefaults.firstName ?? '',
@@ -125,11 +144,35 @@ export function CheckoutForm({
         fetchMidwives();
     }, []);
 
+    useEffect(() => {
+        if (!isLoggedIn || !isMidwifeUser) {
+            setCurrentMidwifeRecordId('');
+            return;
+        }
+
+        const fetchCurrentMidwife = async () => {
+            try {
+                const response = await fetch('/api/users/current');
+                const payload = await response.json();
+                setCurrentMidwifeRecordId(payload?.data?.midwife_id || '');
+            } catch (error) {
+                console.error('Error loading current midwife link:', error);
+                setCurrentMidwifeRecordId('');
+            }
+        };
+
+        fetchCurrentMidwife();
+    }, [isLoggedIn, isMidwifeUser]);
+
     const defaultsVersionRef = useRef(contactDefaultsVersion);
+    const clientLookupTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastAutofillRef = useRef<BookingProfileLookup | null>(null);
+    const clientLookupRequestIdRef = useRef(0);
 
     useEffect(() => {
         if (contactDefaultsVersion !== defaultsVersionRef.current) {
             defaultsVersionRef.current = contactDefaultsVersion;
+            const currentMidwifeId = getValues('midwifeId');
             reset({
                 clientEmail: getValues('clientEmail'),
                 firstName: contactDefaults.firstName ?? '',
@@ -138,7 +181,7 @@ export function CheckoutForm({
                 address: contactDefaults.address ?? '',
                 dueDate: contactDefaults.dueDate ?? '',
                 birthDate: contactDefaults.birthDate ?? '',
-                midwifeId: contactDefaults.midwifeId ?? '',
+                midwifeId: contactDefaults.midwifeId || currentMidwifeId || '',
                 otherMidwifeName: getValues('otherMidwifeName') || '',
                 houseNumber: contactDefaults.houseNumber ?? '',
                 postalCode: contactDefaults.postalCode ?? '',
@@ -149,11 +192,17 @@ export function CheckoutForm({
             });
             
             // Also update the toggle if needed
-            if (contactDefaults.midwifeClientEmail && !isBookingForClient) {
+            if (isInternalUser && !isBookingForClient) {
                 setIsBookingForClient(true);
             }
         }
-    }, [contactDefaults, contactDefaultsVersion, getValues, reset]);
+    }, [contactDefaults, contactDefaultsVersion, getValues, isBookingForClient, isInternalUser, reset]);
+
+    useEffect(() => {
+        if (isInternalUser && !isBookingForClient) {
+            setIsBookingForClient(true);
+        }
+    }, [isBookingForClient, isInternalUser]);
 
     // Watch fields for validation
     const midwifeClientEmailValue = watch('midwifeClientEmail');
@@ -165,6 +214,80 @@ export function CheckoutForm({
     const houseNumberValue = watch('houseNumber');
     const postalCodeValue = watch('postalCode');
     const cityValue = watch('city');
+    const firstNameValue = watch('firstName');
+    const lastNameValue = watch('lastName');
+    const phoneValue = watch('phone');
+    const midwifeIdValue = watch('midwifeId');
+    const otherMidwifeNameValue = watch('otherMidwifeName');
+    const showLoginForm = emailChecked?.exists === true && !isLoggedIn;
+    const showDetailsForm = emailChecked?.exists === false || isLoggedIn;
+
+    const missingFields = useMemo(() => {
+        const fields: string[] = [];
+        const addIfMissing = (value: string | undefined | null, label: string) => {
+            if (!value || value.trim() === '') fields.push(label);
+        };
+
+        if (showLoginForm && !password) {
+            fields.push(t('password'));
+        }
+
+        if (!showDetailsForm) {
+            return fields;
+        }
+
+        addIfMissing(firstNameValue, t('firstName'));
+        addIfMissing(lastNameValue, t('lastName'));
+        addIfMissing(phoneValue, t('phone'));
+        addIfMissing(streetNameValue, t('street'));
+        addIfMissing(houseNumberValue, t('houseNumber'));
+        addIfMissing(postalCodeValue, t('postalCode'));
+        addIfMissing(cityValue, t('city'));
+        addIfMissing(birthDateValue, t('birthDate'));
+
+        if (!hiddenFields.includes('due_date')) {
+            addIfMissing(dueDateValue, t('dueDate'));
+        }
+
+        if (!hiddenFields.includes('midwife')) {
+            addIfMissing(midwifeIdValue, t('midwife'));
+            if (midwifeIdValue === 'other') {
+                addIfMissing(otherMidwifeNameValue, t('otherMidwifeName'));
+            }
+        }
+
+        if (isInternalUser) {
+            if (isBookingForClient) {
+                addIfMissing(midwifeClientEmailValue, t('clientEmailPlaceholder'));
+            }
+            addIfMissing(gravidaValue, t('gravida'));
+            addIfMissing(paraValue, t('para'));
+        }
+
+        return [...new Set(fields)];
+    }, [
+        birthDateValue,
+        cityValue,
+        dueDateValue,
+        firstNameValue,
+        gravidaValue,
+        hiddenFields,
+        houseNumberValue,
+        isBookingForClient,
+        lastNameValue,
+        midwifeClientEmailValue,
+        midwifeIdValue,
+        otherMidwifeNameValue,
+        paraValue,
+        password,
+        phoneValue,
+        postalCodeValue,
+        showDetailsForm,
+        showLoginForm,
+        streetNameValue,
+        t,
+        userRole,
+    ]);
 
     // Notify parent of validation state changes
     useEffect(() => {
@@ -173,10 +296,14 @@ export function CheckoutForm({
             
             // Additional manual checks for fields that might have complex conditional requirements
             // or those marked as compulsory (*) in the UI
-            if (['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '')) {
+            if (isInternalUser) {
                 if (isBookingForClient && !midwifeClientEmailValue) valid = false;
                 if (!gravidaValue || gravidaValue.trim() === '') valid = false;
                 if (!paraValue || paraValue.trim() === '') valid = false;
+            }
+
+            if (isMidwifeUser && (isLookingUpBookingClient || hasMidwifePracticeMismatch)) {
+                valid = false;
             }
 
             // Ensure midwife and dueDate are provided if not hidden
@@ -193,6 +320,8 @@ export function CheckoutForm({
         userRole, 
         gravidaValue, 
         paraValue,
+        isLookingUpBookingClient,
+        hasMidwifePracticeMismatch,
         birthDateValue,
         dueDateValue,
         streetNameValue,
@@ -201,12 +330,46 @@ export function CheckoutForm({
         cityValue
     ]);
 
+    useEffect(() => {
+        onMissingFieldsChange?.(missingFields);
+    }, [missingFields, onMissingFieldsChange]);
+
+    useEffect(() => {
+        const savedMidwifeId = contactDefaults.midwifeId ?? '';
+        const currentMidwifeId = getValues('midwifeId') ?? '';
+
+        if (showDetailsForm && savedMidwifeId && currentMidwifeId !== savedMidwifeId) {
+            setValue('midwifeId', savedMidwifeId, { shouldValidate: true });
+        }
+    }, [contactDefaults.midwifeId, contactDefaultsVersion, getValues, setValue, showDetailsForm]);
+
+    useEffect(() => {
+        if (!showDetailsForm || !isMidwifeUser || !currentMidwifeRecordId) {
+            return;
+        }
+
+        const currentMidwifeId = getValues('midwifeId') ?? '';
+        if (currentMidwifeId !== currentMidwifeRecordId) {
+            setValue('midwifeId', currentMidwifeRecordId, { shouldValidate: true });
+        }
+    }, [currentMidwifeRecordId, getValues, isMidwifeUser, setValue, showDetailsForm]);
+
+    const availableMidwives = useMemo(() => {
+        if (isMidwifeUser && currentMidwifeRecordId) {
+            return midwives.filter((midwife) => midwife.id === currentMidwifeRecordId);
+        }
+        return midwives;
+    }, [currentMidwifeRecordId, isMidwifeUser, midwives]);
+
     // Debounce email check
     const emailDebounceTimer = useRef<NodeJS.Timeout | null>(null);
     useEffect(() => {
         return () => {
             if (emailDebounceTimer.current) {
                 clearTimeout(emailDebounceTimer.current);
+            }
+            if (clientLookupTimerRef.current) {
+                clearTimeout(clientLookupTimerRef.current);
             }
         };
     }, []);
@@ -225,9 +388,6 @@ export function CheckoutForm({
         }, 1500);
     };
 
-    const showLoginForm = emailChecked?.exists === true && !isLoggedIn;
-    const showDetailsForm = emailChecked?.exists === false || isLoggedIn;
-
     const emailField = register('clientEmail');
     const firstNameField = register('firstName');
     const lastNameField = register('lastName');
@@ -241,6 +401,125 @@ export function CheckoutForm({
     const otherMidwifeNameField = register('otherMidwifeName');
     const gravidaField = register('gravida');
     const paraField = register('para');
+    const lockExistingClientFields = isMidwifeUser && hasExistingBookingClient;
+    const disableClientIdentityFields = isMidwifeUser && isLookingUpBookingClient;
+    const lockOrDisableClientIdentityFields = lockExistingClientFields || disableClientIdentityFields;
+    const hideFieldsForPracticeMismatch = isMidwifeUser && hasMidwifePracticeMismatch;
+
+    useEffect(() => {
+        if (!isInternalUser || !isBookingForClient) {
+            lastAutofillRef.current = null;
+            return;
+        }
+
+        if (clientLookupTimerRef.current) {
+            clearTimeout(clientLookupTimerRef.current);
+        }
+
+        const email = (midwifeClientEmailValue || '').trim();
+        if (!email || !email.includes('@')) {
+            clientLookupRequestIdRef.current += 1;
+            setIsLookingUpBookingClient(false);
+            setHasExistingBookingClient(false);
+            setHasMidwifePracticeMismatch(false);
+            const previousAutofill = lastAutofillRef.current;
+            if (previousAutofill) {
+                const fieldsToClear: Array<keyof BookingProfileLookup> = [
+                    'firstName',
+                    'lastName',
+                    'phone',
+                    'address',
+                    'houseNumber',
+                    'postalCode',
+                    'streetName',
+                    'city',
+                    'birthDate',
+                ];
+
+                fieldsToClear.forEach((fieldName) => {
+                    const currentValue = (getValues(fieldName) ?? '') as string;
+                    if (currentValue === previousAutofill[fieldName]) {
+                        setValue(fieldName, '', { shouldValidate: true });
+                    }
+                });
+            }
+            lastAutofillRef.current = null;
+            return;
+        }
+
+        clientLookupTimerRef.current = setTimeout(async () => {
+            const requestId = ++clientLookupRequestIdRef.current;
+            setIsLookingUpBookingClient(true);
+            try {
+                const response = await fetch(`/api/users/booking-profile?email=${encodeURIComponent(email)}`);
+                const payload = await response.json();
+
+                if (requestId !== clientLookupRequestIdRef.current) {
+                    return;
+                }
+
+                setHasExistingBookingClient(Boolean(payload?.user));
+                setHasMidwifePracticeMismatch(Boolean(payload?.practiceMismatch));
+
+                const nextAutofill: BookingProfileLookup | null = payload?.user
+                    ? {
+                        firstName: payload.user.first_name || '',
+                        lastName: payload.user.last_name || '',
+                        phone: payload.user.phone || '',
+                        address: payload.user.address || '',
+                        houseNumber: payload.user.house_number || '',
+                        postalCode: payload.user.postal_code || '',
+                        streetName: payload.user.street_name || '',
+                        city: payload.user.city || '',
+                        birthDate: payload.user.birth_date || '',
+                    }
+                    : null;
+
+                const previousAutofill = lastAutofillRef.current;
+                const fieldsToSync: Array<keyof BookingProfileLookup> = [
+                    'firstName',
+                    'lastName',
+                    'phone',
+                    'address',
+                    'houseNumber',
+                    'postalCode',
+                    'streetName',
+                    'city',
+                    'birthDate',
+                ];
+
+                fieldsToSync.forEach((fieldName) => {
+                    const currentValue = (getValues(fieldName) ?? '') as string;
+                    const previousValue = previousAutofill?.[fieldName] || '';
+                    const nextValue = nextAutofill?.[fieldName] || '';
+                    const shouldReplace = currentValue === '' || currentValue === previousValue;
+
+                    if (shouldReplace && currentValue !== nextValue) {
+                        setValue(fieldName, nextValue, { shouldValidate: true });
+                    }
+                });
+
+                lastAutofillRef.current = nextAutofill;
+            } catch (error) {
+                if (requestId !== clientLookupRequestIdRef.current) {
+                    return;
+                }
+                setHasExistingBookingClient(false);
+                setHasMidwifePracticeMismatch(false);
+                console.error('Error looking up booking profile:', error);
+            } finally {
+                if (requestId === clientLookupRequestIdRef.current) {
+                    setIsLookingUpBookingClient(false);
+                }
+            }
+        }, 500);
+
+        return () => {
+            if (clientLookupTimerRef.current) {
+                clearTimeout(clientLookupTimerRef.current);
+            }
+        };
+    }, [currentMidwifeRecordId, getValues, isBookingForClient, isInternalUser, isMidwifeUser, midwifeClientEmailValue, setValue]);
 
     return (
         <div className="relative">
@@ -351,35 +630,61 @@ export function CheckoutForm({
 
                     {showDetailsForm && (
                         <>
-                    {['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '') && (
-                        <div className="space-y-4 md:col-span-2 pt-2 pb-2">
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    checked={isBookingForClient}
-                                    onCheckedChange={setIsBookingForClient}
-                                    id="booking-for-client-mode"
-                                />
-                                <Label htmlFor="booking-for-client-mode" className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-0">
-                                    {t('bookingForClient')}
-                                </Label>
-                            </div>
-                            {isBookingForClient && (
-                                <div className="animate-in fade-in slide-in-from-top-2 duration-200">
-                                    <Input
-                                        required
-                                        type="email"
-                                        className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
-                                        placeholder={t('clientEmailPlaceholder')}
-                                        {...register('midwifeClientEmail')}
-                                    />
+                            {!hideFieldsForPracticeMismatch && missingFields.length > 0 && (
+                                <div className="md:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                    <p className="font-semibold">{t('missingFieldsTitle')}</p>
+                                    <p className="mt-1 text-xs">{t('missingFieldsHint', { fields: missingFields.join(', ') })}</p>
                                 </div>
                             )}
-                        </div>
-                    )}
+                            {isInternalUser && (
+                                <div className="space-y-4 md:col-span-2 pt-2 pb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch
+                                            checked={isBookingForClient}
+                                            onCheckedChange={setIsBookingForClient}
+                                            id="booking-for-client-mode"
+                                            disabled
+                                        />
+                                        <Label htmlFor="booking-for-client-mode" className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-0">
+                                            {t('bookingForClient')}
+                                        </Label>
+                                    </div>
+                                    {isBookingForClient && (
+                                        <>
+                                            <div className="animate-in fade-in slide-in-from-top-2 duration-200 relative">
+                                                <Input
+                                                    required
+                                                    type="email"
+                                                    className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200 pr-10"
+                                                    placeholder={t('clientEmailPlaceholder')}
+                                                    {...register('midwifeClientEmail')}
+                                                />
+                                                {isLookingUpBookingClient && (
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                        <Loader className="h-4 w-4 animate-spin text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {hasMidwifePracticeMismatch && (
+                                                <p className="mt-2 text-xs font-medium text-amber-700">
+                                                    {t('clientMidwifeMismatch')}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                            {!hideFieldsForPracticeMismatch && (
+                                <>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('firstName')} *</label>
                                 <Input
-                                    className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
+                                    readOnly={lockOrDisableClientIdentityFields}
+                                    className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                        ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                        : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                        }`}
+                                    tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
                                     placeholder={t('firstNamePlaceholder')}
                                     {...firstNameField}
                                 />
@@ -388,7 +693,12 @@ export function CheckoutForm({
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('lastName')} *</label>
                                 <Input
-                                    className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
+                                    readOnly={lockOrDisableClientIdentityFields}
+                                    className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                        ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                        : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                        }`}
+                                    tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
                                     placeholder={t('lastNamePlaceholder')}
                                     {...lastNameField}
                                 />
@@ -397,14 +707,19 @@ export function CheckoutForm({
                             <div className="space-y-2 md:col-span-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('phone')} *</label>
                                 <Input
-                                    className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200"
+                                    readOnly={lockOrDisableClientIdentityFields}
+                                    className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                        ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                        : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                        }`}
+                                    tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
                                     placeholder={t('phonePlaceholder')}
                                     {...phoneField}
                                 />
                                 {errors.phone && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.phone.message, tv)}</div>}
                             </div>
 
-                            {['admin', 'staff', 'assistant', 'midwife'].includes(userRole || '') && (
+                            {isInternalUser && (
                                 <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('gravida')} *</label>
@@ -431,22 +746,58 @@ export function CheckoutForm({
                             <div className="md:col-span-2 grid grid-cols-2 gap-4">
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('street')} *</label>
-                                    <Input placeholder={t('streetPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...streetNameField} />
+                                    <Input
+                                        readOnly={lockOrDisableClientIdentityFields}
+                                        tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
+                                        placeholder={t('streetPlaceholder')}
+                                        className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                            ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                            : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                            }`}
+                                        {...streetNameField}
+                                    />
                                     {errors.streetName && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.streetName.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-2 md:col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('houseNumber')} *</label>
-                                    <Input placeholder={t('houseNumberPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...houseNumberField} />
+                                    <Input
+                                        readOnly={lockOrDisableClientIdentityFields}
+                                        tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
+                                        placeholder={t('houseNumberPlaceholder')}
+                                        className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                            ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                            : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                            }`}
+                                        {...houseNumberField}
+                                    />
                                     {errors.houseNumber && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.houseNumber.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('postalCode')} *</label>
-                                    <Input placeholder={t('postalCodePlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...postalCodeField} />
+                                    <Input
+                                        readOnly={lockOrDisableClientIdentityFields}
+                                        tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
+                                        placeholder={t('postalCodePlaceholder')}
+                                        className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                            ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                            : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                            }`}
+                                        {...postalCodeField}
+                                    />
                                     {errors.postalCode && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.postalCode.message, tv)}</div>}
                                 </div>
                                 <div className="col-span-1 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">{t('city')} *</label>
-                                    <Input placeholder={t('cityPlaceholder')} className="h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200" {...cityField} />
+                                    <Input
+                                        readOnly={lockOrDisableClientIdentityFields}
+                                        tabIndex={lockOrDisableClientIdentityFields ? -1 : undefined}
+                                        placeholder={t('cityPlaceholder')}
+                                        className={`h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                            ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                            : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                            }`}
+                                        {...cityField}
+                                    />
                                     {errors.city && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.city.message, tv)}</div>}
                                 </div>
                             </div>
@@ -504,10 +855,14 @@ export function CheckoutForm({
                                                 <Button
                                                     variant={"outline"}
                                                     className={cn(
-                                                        "w-full h-12 rounded-xl justify-start text-left font-normal border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200 px-4 text-sm shadow-md",
+                                                        "w-full h-12 rounded-xl justify-start text-left font-normal border-gray-200 px-4 text-sm shadow-md transition-all duration-200",
+                                                        lockOrDisableClientIdentityFields
+                                                            ? "bg-gray-100 text-gray-500 cursor-default pointer-events-none"
+                                                            : "bg-gray-50/50 hover:bg-white focus:bg-white",
                                                         !field.value && "text-muted-foreground"
                                                     )}
                                                     style={{ borderRadius: "0.5rem" }}
+                                                    disabled={lockOrDisableClientIdentityFields}
                                                 >
                                                     <HugeiconsIcon icon={Calendar03Icon} />
                                                     {field.value ? format(new Date(field.value), "dd-MM-yyyy") : <span>{t('selectDate')}</span>}
@@ -540,18 +895,22 @@ export function CheckoutForm({
                                     <Select
                                         value={watch('midwifeId') || ''}
                                         onValueChange={(value) => setValue('midwifeId', value || '', { shouldValidate: true })}
+                                        disabled={lockOrDisableClientIdentityFields}
                                     >
-                                        <SelectTrigger className="w-full h-12 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:bg-white transition-all duration-200">
+                                        <SelectTrigger className={`w-full h-12 rounded-xl border-gray-200 transition-all duration-200 ${lockOrDisableClientIdentityFields
+                                            ? 'bg-gray-100 text-gray-500 cursor-default pointer-events-none'
+                                            : 'bg-gray-50/50 hover:bg-white focus:bg-white'
+                                            }`}>
                                             <SelectValue placeholder={t('midwifePlaceholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {midwives.map((m) => {
+                                            {availableMidwives.map((m) => {
                                                 const label = m.practice_name
                                                     ? `${m.practice_name} (${[m.first_name, m.last_name].filter(Boolean).join(' ')})`
                                                     : [m.first_name, m.last_name].filter(Boolean).join(' ');
                                                 return <SelectItem key={m.id} value={m.id}>{label || t('unknownMidwife')}</SelectItem>;
                                             })}
-                                            <SelectItem value="other">{t('otherMidwife')}</SelectItem>
+                                            {!isMidwifeUser && <SelectItem value="other">{t('otherMidwife')}</SelectItem>}
                                         </SelectContent>
                                     </Select>
                                     {errors.midwifeId && <div className="text-xs text-red-600 font-medium">{translateValidationError(errors.midwifeId.message, tv)}</div>}
@@ -579,6 +938,8 @@ export function CheckoutForm({
                                 />
                                 {errors.notes && <div className="text-xs text-red-600 font-medium ml-1">{translateValidationError(errors.notes.message, tv)}</div>}
                             </div>
+                                </>
+                            )}
                         </>
                     )}
                 </div>

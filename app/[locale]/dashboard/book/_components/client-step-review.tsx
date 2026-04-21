@@ -40,14 +40,17 @@ export function ClientStepReview() {
         userRole,
         isTwin,
         continuationToken,
+        isFormValid,
+        setIsFormValid,
     } = useBooking();
+    const lockEditDetails = userRole === 'midwife';
 
     // Force show form for midwives so they can enter client details
     useEffect(() => {
-        if (userRole === 'midwife') {
+        if (lockEditDetails) {
             setShowForm(true);
         }
-    }, [userRole]);
+    }, [lockEditDetails]);
 
     const t = useTranslations('Booking.flow');
 
@@ -195,6 +198,7 @@ export function ClientStepReview() {
                             id="edit-details"
                             checked={showForm}
                             onCheckedChange={setShowForm}
+                            disabled={lockEditDetails}
                         />
                     </div>
                 </div>
@@ -239,6 +243,7 @@ export function ClientStepReview() {
                                 onLogout={() => { }} // Not needed
                                 onSubmit={handleBookingSubmit}
                                 finalizing={finalizing}
+                                onValidationChange={setIsFormValid}
                                 serviceId={serviceId}
                                 hiddenFields={selectedService?.hiddenCheckoutFields}
                             />
@@ -271,7 +276,7 @@ export function ClientStepReview() {
                     }}
                     type={showForm ? "submit" : "button"}
                     form={showForm ? "checkout-form" : undefined}
-                    disabled={finalizing}
+                    disabled={finalizing || (showForm && !isFormValid)}
                     className="h-auto px-8 bg-primary text-white hover:bg-primary/90 rounded-2xl shadow-lg hover:shadow-xl transition-all"
                 >
                     {finalizing ? t('review.processing') : t('review.confirmBooking')}

@@ -165,6 +165,71 @@ function clearBookingState(): void {
     } catch { }
 }
 
+function isInternalRole(role?: string | null): boolean {
+    return ['admin', 'staff', 'assistant', 'midwife'].includes(role || '');
+}
+
+function createBlankContactDefaults(): Omit<BookingContactInput, 'clientEmail'> {
+    return {
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address: undefined,
+        postalCode: '',
+        houseNumber: '',
+        streetName: '',
+        city: '',
+        birthDate: '',
+        midwifeId: '',
+        otherMidwifeName: '',
+        dueDate: '',
+        notes: undefined,
+        midwifeClientEmail: '',
+    };
+}
+
+type BookingUserProfile = {
+    role?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    postal_code?: string | null;
+    house_number?: string | null;
+    street_name?: string | null;
+    city?: string | null;
+    birth_date?: string | null;
+    midwife_id?: string | null;
+};
+
+function mergeUserIntoContactDefaults(
+    prev: Omit<BookingContactInput, 'clientEmail'>,
+    user: BookingUserProfile,
+): Omit<BookingContactInput, 'clientEmail'> {
+    if (isInternalRole(user.role)) {
+        return createBlankContactDefaults();
+    }
+
+    return {
+        firstName: prev.firstName || user.first_name || '',
+        lastName: prev.lastName || user.last_name || '',
+        phone: prev.phone || user.phone || '',
+        address: prev.address || user.address || undefined,
+        postalCode: prev.postalCode || user.postal_code || '',
+        houseNumber: prev.houseNumber || user.house_number || '',
+        streetName: prev.streetName || user.street_name || '',
+        city: prev.city || user.city || '',
+        birthDate: prev.birthDate || user.birth_date || '',
+        midwifeId: user.midwife_id || prev.midwifeId || '',
+        dueDate: prev.dueDate,
+        notes: prev.notes,
+        otherMidwifeName: prev.otherMidwifeName,
+        midwifeClientEmail: prev.midwifeClientEmail,
+        gravida: prev.gravida,
+        para: prev.para,
+    };
+}
+
 // Helpers for Heatmap logic
 function toISODate(d: Date): string {
     const y = d.getFullYear();
@@ -320,20 +385,7 @@ export function BookingProvider({
         }
     };
     const [contactDefaults, setContactDefaults] = useState<Omit<BookingContactInput, 'clientEmail'>>({
-        firstName: '',
-        lastName: '',
-        phone: '',
-        address: undefined,
-        postalCode: '',
-        houseNumber: '',
-        streetName: '',
-        city: '',
-        birthDate: '',
-        midwifeId: "",
-        otherMidwifeName: "",
-        dueDate: '',
-        notes: undefined,
-        midwifeClientEmail: '',
+        ...createBlankContactDefaults(),
     });
     const [contactDefaultsVersion, setContactDefaultsVersion] = useState(0);
     const [hasAutofilled, setHasAutofilled] = useState(false);
@@ -564,29 +616,7 @@ export function BookingProvider({
                     const user = payload?.data;
                     if (user) {
                         setUserRole(user.role || null);
-                        setContactDefaults((prev) => {
-                            if (['admin', 'staff', 'assistant', 'midwife'].includes(user.role)) {
-                                return {
-                                    ...prev,
-                                    midwifeId: user.midwife_id || undefined,
-                                };
-                            }
-                            if (prev.firstName || prev.lastName) return prev;
-                            return {
-                                firstName: user.first_name || '',
-                                lastName: user.last_name || '',
-                                phone: user.phone || '',
-                                address: user.address || undefined,
-                                postalCode: user.postal_code || undefined,
-                                houseNumber: user.house_number || undefined,
-                                streetName: user.street_name || undefined,
-                                city: user.city || undefined,
-                                birthDate: user.birth_date || undefined,
-                                midwifeId: user.midwife_id || "",
-                                dueDate: prev.dueDate,
-                                notes: prev.notes,
-                            };
-                        });
+                        setContactDefaults((prev) => mergeUserIntoContactDefaults(prev, user));
                         setContactDefaultsVersion(v => v + 1);
                         setHasAutofilled(true);
                     }
@@ -617,9 +647,15 @@ export function BookingProvider({
             }
 
             if (savedState.clientEmail) setClientEmail(savedState.clientEmail);
-            if (savedState.contactDefaults) setContactDefaults(savedState.contactDefaults);
+            if (savedState.contactDefaults) {
+                setContactDefaults((prev) => ({
+                    ...prev,
+                    ...savedState.contactDefaults,
+                    midwifeId: prev.midwifeId || savedState.contactDefaults?.midwifeId || '',
+                }));
+                setContactDefaultsVersion((v) => v + 1);
+            }
             if (savedState.emailChecked !== undefined) setEmailChecked(savedState.emailChecked);
-            if (savedState.isLoggedIn !== undefined) setIsLoggedIn(savedState.isLoggedIn);
             if (savedState.isTwin !== undefined) setIsTwin(savedState.isTwin);
 
             // If in repeat mode, do NOT restore serviceId or step from local storage to avoid conflicts
@@ -656,7 +692,6 @@ export function BookingProvider({
                     clientEmail,
                     contactDefaults,
                     emailChecked,
-                    isLoggedIn,
                     monthCursor: monthCursor.toISOString(),
                     isTwin,
                     // Don't save state if repeat mode? 
@@ -855,29 +890,7 @@ export function BookingProvider({
                         const user = payload?.data;
                         if (user) {
                             setUserRole(user.role || null);
-                            if (user.role === 'midwife') {
-                                setContactDefaults(prev => ({
-                                    ...prev,
-                                    midwifeId: user.midwife_id || "",
-                                }));
-                                setContactDefaultsVersion(v => v + 1);
-                                setHasAutofilled(true);
-                                return;
-                            }
-                            setContactDefaults({
-                                firstName: user.first_name || '',
-                                lastName: user.last_name || '',
-                                phone: user.phone || '',
-                                address: user.address || undefined,
-                                postalCode: user.postal_code || '',
-                                houseNumber: user.house_number || '',
-                                streetName: user.street_name || '',
-                                city: user.city || '',
-                                birthDate: user.birth_date || '',
-                                midwifeId: user.midwife_id || '',
-                                otherMidwifeName: '',
-                                dueDate: '',
-                            });
+                            setContactDefaults((prev) => mergeUserIntoContactDefaults(prev, user));
                             setContactDefaultsVersion(v => v + 1);
                             setHasAutofilled(true);
                         }
@@ -989,13 +1002,7 @@ export function BookingProvider({
 
         // Helper to clear
         const clear = () => {
-            setContactDefaults({
-                firstName: '', lastName: '', phone: '', address: undefined,
-                postalCode: '', houseNumber: '', streetName: '',
-                city: '', birthDate: '', midwifeId: "",
-                otherMidwifeName: "",
-                dueDate: '', notes: undefined
-            });
+            setContactDefaults(createBlankContactDefaults());
             setContactDefaultsVersion(v => v + 1);
             setHasAutofilled(false);
         };
@@ -1026,25 +1033,7 @@ export function BookingProvider({
                     const user = payload?.user;
                     if (user) {
                         setUserRole(user.role || null);
-                        if (user.role === 'midwife') {
-                            setContactDefaultsVersion(v => v + 1);
-                            setHasAutofilled(true);
-                            return;
-                        }
-                        setContactDefaults({
-                            firstName: user.first_name || '',
-                            lastName: user.last_name || '',
-                            phone: user.phone || '',
-                            address: user.address || undefined,
-                            postalCode: user.postal_code || '',
-                            houseNumber: user.house_number || '',
-                            streetName: user.street_name || '',
-                            city: user.city || '',
-                            birthDate: user.birth_date || '',
-                            midwifeId: user.midwife_id || '',
-                            otherMidwifeName: '',
-                            dueDate: '',
-                        });
+                        setContactDefaults((prev) => mergeUserIntoContactDefaults(prev, user));
                         setContactDefaultsVersion(v => v + 1);
                         setHasAutofilled(true);
                     } else {

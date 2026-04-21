@@ -49,6 +49,11 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
     const [dateTo, setDateTo] = useState<string>('');
     const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
+    const formatBookingReference = (bookingNumber?: number | null) => {
+        if (typeof bookingNumber !== 'number') return t('table.unknown');
+        return `G-${bookingNumber.toString().padStart(4, '0')}`;
+    };
+
     const fetchBookings = useCallback(async (isInitial = false) => {
         try {
             if (isInitial) {
@@ -323,6 +328,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>{t('table.id')}</TableHead>
                                     <TableHead>{t('table.dateTime')}</TableHead>
                                     {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
                                     <TableHead>{t('table.service')}</TableHead>
@@ -334,6 +340,9 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                             <TableBody>
                                 {sortedBookings.map((booking) => (
                                     <TableRow key={booking.id}>
+                                        <TableCell className="font-mono text-xs text-muted-foreground">
+                                            {formatBookingReference(booking.booking_number)}
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="font-medium">

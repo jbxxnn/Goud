@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Booking } from '@/lib/types/booking';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Location } from '@/lib/types/location_simple';
 import { formatInTimeZone, toDate } from 'date-fns-tz';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 
 interface BookingRescheduleModalProps {
@@ -30,6 +39,56 @@ type Slot = {
   endTime: string;
 };
 
+type RescheduleSummary = {
+  previous: {
+    startTime: string;
+    endTime: string;
+    locationName: string;
+  };
+  next: {
+    startTime: string;
+    endTime: string;
+    locationName: string;
+  };
+};
+
+type RescheduleModalText = {
+  title: string;
+  currentBooking: string;
+  selectNewDateTime: string;
+  location: string;
+  selectLocation: string;
+  availableTimes: string;
+  loadingTimes: string;
+  noSlots: string;
+  morning: string;
+  afternoon: string;
+  evening: string;
+  prevMonth: string;
+  nextMonth: string;
+  weekdays: {
+    sun: string;
+    mon: string;
+    tue: string;
+    wed: string;
+    thu: string;
+    fri: string;
+    sat: string;
+  };
+  cancel: string;
+  confirm: string;
+  processing: string;
+  successTitle: string;
+  successDescription: string;
+  previous: string;
+  new: string;
+  date: string;
+  time: string;
+  done: string;
+  notAvailable: string;
+  errorTitle: string;
+};
+
 const formatDate = (dateString: string) => {
   return formatInTimeZone(toDate(dateString, { timeZone: 'Europe/Amsterdam' }), 'Europe/Amsterdam', 'd MMM yyyy');
 };
@@ -42,13 +101,14 @@ const toISODate = (d: Date): string => {
   return formatInTimeZone(d, 'Europe/Amsterdam', 'yyyy-MM-dd');
 };
 
-function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onNextMonth }: {
+function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onNextMonth, text }: {
   month: Date;
   selectedDate: string;
   onSelectDate: (d: string) => void;
   heatmap: Record<string, number>;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  text: RescheduleModalText;
 }) {
   const year = month.getFullYear();
   const m = month.getMonth();
@@ -84,19 +144,19 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
           className="px-2 py-1 border rounded"
           onClick={onPrevMonth}
         >
-          Prev
+          {text.prevMonth}
         </button>
         <div className="font-medium">{monthLabel}</div>
         <button
           className="px-2 py-1 border rounded"
           onClick={onNextMonth}
         >
-          Next
+          {text.nextMonth}
         </button>
       </div>
       <div className="grid grid-cols-7 gap-2 text-xs mb-4 font-bold">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d} className="text-center text-gray-500">{d}</div>
+        {(['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const).map((d) => (
+          <div key={d} className="text-center text-gray-500">{text.weekdays[d]}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
@@ -126,11 +186,12 @@ function Calendar({ month, selectedDate, onSelectDate, heatmap, onPrevMonth, onN
   );
 }
 
-function TimePicker({ slots, selected, onSelect, loading }: {
+function TimePicker({ slots, selected, onSelect, loading, text }: {
   slots: Slot[];
   selected: Slot | null;
   onSelect: (s: Slot) => void;
   loading: boolean;
+  text: RescheduleModalText;
 }) {
   const groups: { morning: Slot[]; afternoon: Slot[]; evening: Slot[] } = { morning: [], afternoon: [], evening: [] };
   for (const s of slots) {
@@ -142,14 +203,14 @@ function TimePicker({ slots, selected, onSelect, loading }: {
 
   return (
     <div>
-      <label className="block text-sm mb-2">Available Times</label>
-      {loading && <div className="text-sm text-gray-500 mb-2">Loading times…</div>}
-      {!loading && slots.length === 0 && <div className="text-sm text-gray-500">No slots available for chosen date.</div>}
+      <label className="block text-sm mb-2">{text.availableTimes}</label>
+      {loading && <div className="text-sm text-gray-500 mb-2">{text.loadingTimes}</div>}
+      {!loading && slots.length === 0 && <div className="text-sm text-gray-500">{text.noSlots}</div>}
       {!loading && slots.length > 0 && (
         <div className="space-y-4">
           {(['morning', 'afternoon', 'evening'] as const).map((k) => groups[k].length > 0 && (
             <div key={k}>
-              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">{k}</div>
+              <div className="text-xs uppercase tracking-wide text-gray-500 mb-2">{text[k]}</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {groups[k].map((s, idx) => (
                   <Button
@@ -171,6 +232,43 @@ function TimePicker({ slots, selected, onSelect, loading }: {
 }
 
 export default function BookingRescheduleModal({ isOpen, onClose, booking, onReschedule }: BookingRescheduleModalProps) {
+  const tAppointments = useTranslations('Appointments');
+  const text: RescheduleModalText = {
+    title: tAppointments.has('rescheduleModal.title') ? tAppointments('rescheduleModal.title') : 'Reschedule Booking',
+    currentBooking: tAppointments.has('rescheduleModal.currentBooking') ? tAppointments('rescheduleModal.currentBooking') : 'Current Booking',
+    selectNewDateTime: tAppointments.has('rescheduleModal.selectNewDateTime') ? tAppointments('rescheduleModal.selectNewDateTime') : 'Select New Date & Time',
+    location: tAppointments.has('rescheduleModal.location') ? tAppointments('rescheduleModal.location') : 'Location',
+    selectLocation: tAppointments.has('rescheduleModal.selectLocation') ? tAppointments('rescheduleModal.selectLocation') : 'Select location',
+    availableTimes: tAppointments.has('rescheduleModal.availableTimes') ? tAppointments('rescheduleModal.availableTimes') : 'Available Times',
+    loadingTimes: tAppointments.has('rescheduleModal.loadingTimes') ? tAppointments('rescheduleModal.loadingTimes') : 'Loading times...',
+    noSlots: tAppointments.has('rescheduleModal.noSlots') ? tAppointments('rescheduleModal.noSlots') : 'No slots available for chosen date.',
+    morning: tAppointments.has('rescheduleModal.morning') ? tAppointments('rescheduleModal.morning') : 'Morning',
+    afternoon: tAppointments.has('rescheduleModal.afternoon') ? tAppointments('rescheduleModal.afternoon') : 'Afternoon',
+    evening: tAppointments.has('rescheduleModal.evening') ? tAppointments('rescheduleModal.evening') : 'Evening',
+    prevMonth: tAppointments.has('rescheduleModal.prevMonth') ? tAppointments('rescheduleModal.prevMonth') : 'Prev',
+    nextMonth: tAppointments.has('rescheduleModal.nextMonth') ? tAppointments('rescheduleModal.nextMonth') : 'Next',
+    weekdays: {
+      sun: tAppointments.has('rescheduleModal.weekdays.sun') ? tAppointments('rescheduleModal.weekdays.sun') : 'Sun',
+      mon: tAppointments.has('rescheduleModal.weekdays.mon') ? tAppointments('rescheduleModal.weekdays.mon') : 'Mon',
+      tue: tAppointments.has('rescheduleModal.weekdays.tue') ? tAppointments('rescheduleModal.weekdays.tue') : 'Tue',
+      wed: tAppointments.has('rescheduleModal.weekdays.wed') ? tAppointments('rescheduleModal.weekdays.wed') : 'Wed',
+      thu: tAppointments.has('rescheduleModal.weekdays.thu') ? tAppointments('rescheduleModal.weekdays.thu') : 'Thu',
+      fri: tAppointments.has('rescheduleModal.weekdays.fri') ? tAppointments('rescheduleModal.weekdays.fri') : 'Fri',
+      sat: tAppointments.has('rescheduleModal.weekdays.sat') ? tAppointments('rescheduleModal.weekdays.sat') : 'Sat',
+    },
+    cancel: tAppointments.has('rescheduleModal.cancel') ? tAppointments('rescheduleModal.cancel') : 'Cancel',
+    confirm: tAppointments.has('rescheduleModal.confirm') ? tAppointments('rescheduleModal.confirm') : 'Reschedule',
+    processing: tAppointments.has('rescheduleModal.processing') ? tAppointments('rescheduleModal.processing') : 'Rescheduling...',
+    successTitle: tAppointments.has('rescheduleModal.successTitle') ? tAppointments('rescheduleModal.successTitle') : 'Appointment Rescheduled',
+    successDescription: tAppointments.has('rescheduleModal.successDescription') ? tAppointments('rescheduleModal.successDescription') : 'Your appointment has been updated successfully. Review the previous and new booking details below.',
+    previous: tAppointments.has('rescheduleModal.previous') ? tAppointments('rescheduleModal.previous') : 'Previous',
+    new: tAppointments.has('rescheduleModal.new') ? tAppointments('rescheduleModal.new') : 'New',
+    date: tAppointments.has('rescheduleModal.date') ? tAppointments('rescheduleModal.date') : 'Date',
+    time: tAppointments.has('rescheduleModal.time') ? tAppointments('rescheduleModal.time') : 'Time',
+    done: tAppointments.has('rescheduleModal.done') ? tAppointments('rescheduleModal.done') : 'Done',
+    notAvailable: tAppointments.has('rescheduleModal.notAvailable') ? tAppointments('rescheduleModal.notAvailable') : 'N/A',
+    errorTitle: tAppointments.has('rescheduleModal.errorTitle') ? tAppointments('rescheduleModal.errorTitle') : 'Failed to reschedule booking',
+  };
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
@@ -186,6 +284,9 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
     return d;
   });
   const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleSummary, setRescheduleSummary] = useState<RescheduleSummary | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const timeSectionRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch locations
   useEffect(() => {
@@ -207,6 +308,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
       setSelectedSlot(null);
       setSelectedLocationId('');
       setSlots([]);
+      setRescheduleSummary(null);
       return;
     }
     setSelectedLocationId(booking.location_id);
@@ -265,10 +367,32 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
       .finally(() => setLoadingHeatmap(false));
   }, [booking, monthCursor, isOpen, selectedLocationId]);
 
+  useEffect(() => {
+    if (!selectedDate || !isOpen) return;
+
+    const scrollContainer = scrollContainerRef.current;
+    const timeSection = timeSectionRef.current;
+
+    if (!scrollContainer || !timeSection) return;
+
+    const topOffset = 88;
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const sectionRect = timeSection.getBoundingClientRect();
+    const nextScrollTop =
+      scrollContainer.scrollTop + (sectionRect.top - containerRect.top) - topOffset;
+
+    scrollContainer.scrollTo({
+      top: Math.max(0, nextScrollTop),
+      behavior: 'smooth',
+    });
+  }, [selectedDate, isOpen]);
+
   const handleReschedule = async () => {
     if (!booking || !selectedSlot || !selectedLocationId || rescheduling) return;
     setRescheduling(true);
     try {
+      const selectedLocation = locations.find((location) => location.id === selectedLocationId);
+
       await onReschedule(
         booking.id,
         selectedSlot.startTime,
@@ -277,13 +401,21 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
         selectedSlot.staffId,  // Use staff from the selected slot
         selectedSlot.shiftId
       );
-      toast.success('Booking rescheduled', {
-        description: 'The booking has been rescheduled successfully.',
+      setRescheduleSummary({
+        previous: {
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          locationName: booking.locations?.name || text.notAvailable,
+        },
+        next: {
+          startTime: selectedSlot.startTime,
+          endTime: selectedSlot.endTime,
+          locationName: selectedLocation?.name || booking.locations?.name || text.notAvailable,
+        },
       });
-      onClose();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reschedule booking';
-      toast.error('Failed to reschedule booking', {
+      const errorMessage = err instanceof Error ? err.message : text.errorTitle;
+      toast.error(text.errorTitle, {
         description: errorMessage,
       });
     } finally {
@@ -294,36 +426,39 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
   if (!booking) return null;
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-[500px] p-0 flex flex-col">
+    <>
+      <Sheet open={isOpen && !rescheduleSummary} onOpenChange={(open) => {
+        if (!open) onClose();
+      }}>
+        <SheetContent className="w-full sm:max-w-[500px] p-0 flex flex-col">
         <SheetHeader className="px-4 sm:px-6 py-4 border-b">
-          <SheetTitle>Reschedule Booking</SheetTitle>
+          <SheetTitle>{text.title}</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
           <div className="space-y-2">
-            <h3 className="font-semibold">Current Booking</h3>
+            <h3 className="font-semibold">{text.currentBooking}</h3>
             <div className="text-sm p-3 bg-muted rounded-md">
-              <div><span className="font-medium">Date:</span> {formatDate(booking.start_time)}</div>
-              <div><span className="font-medium">Time:</span> {formatTime(booking.start_time)} - {formatTime(booking.end_time)}</div>
-              <div><span className="font-medium">Location:</span> {booking.locations?.name || 'N/A'}</div>
+              <div><span className="font-medium">{text.date}:</span> {formatDate(booking.start_time)}</div>
+              <div><span className="font-medium">{text.time}:</span> {formatTime(booking.start_time)} - {formatTime(booking.end_time)}</div>
+              <div><span className="font-medium">{text.location}:</span> {booking.locations?.name || text.notAvailable}</div>
               {/* <div><span className="font-medium">Staff:</span> {booking.staff ? `${booking.staff.first_name} ${booking.staff.last_name}` : 'N/A'}</div> */}
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold">Select New Date & Time</h3>
+              <h3 className="font-semibold">{text.selectNewDateTime}</h3>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Location</label>
+              <label className="text-sm font-medium">{text.location}</label>
               <Select value={selectedLocationId} onValueChange={(val) => {
                 setSelectedLocationId(val);
                 setSelectedSlot(null);
                 setSelectedDate('');
               }}>
                 <SelectTrigger className="w-full bg-white">
-                  <SelectValue placeholder="Select location" />
+                  <SelectValue placeholder={text.selectLocation} />
                 </SelectTrigger>
                 <SelectContent>
                   {locations.map((loc) => (
@@ -344,6 +479,7 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
                   setSelectedSlot(null);
                 }}
                 heatmap={heatmap}
+                text={text}
                 onPrevMonth={() => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1))}
                 onNextMonth={() => setMonthCursor(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1))}
               />
@@ -355,26 +491,81 @@ export default function BookingRescheduleModal({ isOpen, onClose, booking, onRes
             </div>
 
             {selectedDate && (
-              <TimePicker
-                slots={slots}
-                selected={selectedSlot}
-                onSelect={setSelectedSlot}
-                loading={loadingSlots}
-              />
+              <div ref={timeSectionRef}>
+                <TimePicker
+                  slots={slots}
+                  selected={selectedSlot}
+                  onSelect={setSelectedSlot}
+                  loading={loadingSlots}
+                  text={text}
+                />
+              </div>
             )}
           </div>
         </div>
         <div className="px-4 sm:px-6 py-4 border-t flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>{text.cancel}</Button>
           <Button
             onClick={handleReschedule}
             disabled={!selectedSlot || !selectedLocationId || rescheduling}
           >
-            {rescheduling ? 'Rescheduling...' : 'Reschedule'}
+            {rescheduling ? text.processing : text.confirm}
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog
+        open={Boolean(rescheduleSummary)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRescheduleSummary(null);
+            onClose();
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg" style={{borderRadius: '0.5rem'}}>
+          <DialogHeader>
+            <DialogTitle>{text.successTitle}</DialogTitle>
+            <DialogDescription>
+              {text.successDescription}
+            </DialogDescription>
+          </DialogHeader>
+
+          {rescheduleSummary && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-md border bg-muted p-4" style={{borderRadius: '0.5rem'}}>
+                <p className="text-sm font-semibold mb-3">{text.previous}</p>
+                <div className="space-y-2 text-sm">
+                  <div className='line-through'><span className="font-medium">{text.date}:</span> {formatDate(rescheduleSummary.previous.startTime)}</div>
+                  <div className='line-through'><span className="font-medium">{text.time}:</span> {formatTime(rescheduleSummary.previous.startTime)} - {formatTime(rescheduleSummary.previous.endTime)}</div>
+                  <div className='line-through'><span className="font-medium">{text.location}:</span> {rescheduleSummary.previous.locationName}</div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-accent bg-accent p-4" style={{borderRadius: '0.5rem'}}>
+                <p className="text-sm font-semibold mb-3">{text.new}</p>
+                <div className="space-y-2 text-sm">
+                  <div><span className="font-medium">{text.date}:</span> {formatDate(rescheduleSummary.next.startTime)}</div>
+                  <div><span className="font-medium">{text.time}:</span> {formatTime(rescheduleSummary.next.startTime)} - {formatTime(rescheduleSummary.next.endTime)}</div>
+                  <div><span className="font-medium">{text.location}:</span> {rescheduleSummary.next.locationName}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setRescheduleSummary(null);
+                onClose();
+              }}
+            >
+              {text.done}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
-

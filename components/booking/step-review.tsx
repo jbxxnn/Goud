@@ -9,6 +9,29 @@ import { BookingContactInput } from '@/lib/validation/booking';
 import { buildAddonPayload, buildPolicyAnswerPayload } from './booking-utils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CircleArrowLeft02Icon, CircleArrowRight02Icon } from '@hugeicons/core-free-icons';
+import { useState } from 'react';
+
+function isInternalRole(role?: string | null): boolean {
+    return ['admin', 'staff', 'assistant', 'midwife'].includes(role || '');
+}
+
+function createBlankContactDefaults() {
+    return {
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address: undefined,
+        postalCode: '',
+        houseNumber: '',
+        streetName: '',
+        city: '',
+        birthDate: '',
+        midwifeId: '',
+        dueDate: '',
+        notes: undefined,
+        otherMidwifeName: '',
+    };
+}
 
 export function StepReview() {
     const router = useRouter();
@@ -27,7 +50,7 @@ export function StepReview() {
     const t = useTranslations('Booking.flow');
 
     // We handle local password state for login here as it is transient UI state
-    const [password, setPassword] = 'useState' in require('react') ? require('react').useState('') : ['', ''];
+    const [password, setPassword] = useState('');
 
     const handleLogin = async (emailForLogin: string) => {
         setErrorMsg('');
@@ -48,6 +71,7 @@ export function StepReview() {
             setIsLoggedIn(true);
             setPassword('');
             setErrorMsg('');
+            router.refresh();
 
             try {
                 const response = await fetch(`/api/users/by-email?email=${encodeURIComponent(emailForLogin)}`);
@@ -55,11 +79,8 @@ export function StepReview() {
                 const user = payload?.user;
                 if (user) {
                     setUserRole(user.role || null);
-                    if (['admin', 'staff', 'assistant', 'midwife'].includes(user.role)) {
-                        setContactDefaults({
-                            ...contactDefaults,
-                            midwifeId: user.midwife_id || "",
-                        });
+                    if (isInternalRole(user.role)) {
+                        setContactDefaults(createBlankContactDefaults());
                         setContactDefaultsVersion((v: number) => v + 1);
                     } else {
                         setContactDefaults({
@@ -106,13 +127,7 @@ export function StepReview() {
             setEmailChecked(null);
             setUserRole(null);
             setPassword('');
-            setContactDefaults({
-                firstName: '', lastName: '', phone: '', address: undefined,
-                postalCode: '', houseNumber: '', streetName: '',
-                city: '', birthDate: '', midwifeId: "",
-                dueDate: '', notes: undefined,
-                otherMidwifeName: "",
-            });
+            setContactDefaults(createBlankContactDefaults());
             setContactDefaultsVersion(v => v + 1);
         }
     };

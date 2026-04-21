@@ -268,7 +268,7 @@ export default function ClientDetailClient({
       toast.error('Error marking as no show');
       throw err;
     }
-  }, [tBookings]);
+  }, []);
 
   const handleDelete = useCallback((booking: Booking) => {
     setBookingToAction(booking);
@@ -330,10 +330,8 @@ export default function ClientDetailClient({
       const result = await response.json();
       if (result.success) {
         setBookings(prev => prev.map(b => b.id === bookingId ? result.data : b));
-        toast.success(tBookings('toasts.rescheduleSuccess'));
       }
     } catch (err) {
-      toast.error(tBookings('toasts.rescheduleError'));
       throw err;
     }
   }, [tBookings]);
@@ -966,4 +964,3 @@ export default function ClientDetailClient({
     </div>
   );
 }
-

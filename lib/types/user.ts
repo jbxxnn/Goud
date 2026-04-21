@@ -39,7 +39,7 @@ export interface UpdateUserRequest {
   street_name?: string;
   city?: string;
   birth_date?: string;
-  midwife_id?: string;
+  midwife_id?: string | null;
   role?: UserRole;
 }
 

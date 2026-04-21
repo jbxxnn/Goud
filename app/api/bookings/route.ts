@@ -63,6 +63,24 @@ export async function POST(req: NextRequest) {
       isTwin,
       continuationToken,
     } = parsed.data;
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '') || '';
+    const authSupabase = getServiceSupabase();
+    const sessionResponse = token ? await authSupabase.auth.getUser(token) : { data: { user: null } };
+    const requester = sessionResponse.data.user;
+
+    let requesterProfile:
+      | { id: string; role: string | null; midwife_id: string | null }
+      | null = null;
+
+    if (requester?.id) {
+      const { data } = await authSupabase
+        .from('users')
+        .select('id, role, midwife_id')
+        .eq('id', requester.id)
+        .single();
+      requesterProfile = data || null;
+    }
 
     // Mutable variables for repeat logic override
     let finalServiceId = serviceId;
@@ -105,16 +123,33 @@ export async function POST(req: NextRequest) {
     // 1. If midwifeClientEmail provided, look up that user's ID (midwife booking for client)
     // 2. Otherwise use the currently logged-in user's ID
     let createdByUserId: string | undefined;
+    let existingMidwifeClient:
+      | { id: string; midwife_id: string | null }
+      | null = null;
 
     if (midwifeClientEmail) {
       const supabase = getServiceSupabase();
       const { data: cwUser } = await supabase
         .from('users')
-        .select('id')
+        .select('id, midwife_id')
         .ilike('email', midwifeClientEmail)
         .maybeSingle();
 
       if (cwUser?.id) {
+        existingMidwifeClient = cwUser;
+
+        if (
+          requesterProfile?.role === 'midwife' &&
+          requesterProfile.midwife_id &&
+          cwUser.midwife_id &&
+          cwUser.midwife_id !== requesterProfile.midwife_id
+        ) {
+          return NextResponse.json(
+            { error: 'This client is not with your midwife practice.' },
+            { status: 403 }
+          );
+        }
+
         createdByUserId = cwUser.id;
       } else {
         // User not found, create new account for client
@@ -128,10 +163,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!createdByUserId) {
-      const authHeader = req.headers.get('Authorization');
-      const token = authHeader?.replace('Bearer ', '') || '';
-      const sessionResponse = await getServiceSupabase().auth.getUser(token);
-      createdByUserId = sessionResponse.data.user?.id;
+      createdByUserId = requester?.id;
     }
 
     // Resolve client id: use provided or find/create by email
@@ -814,6 +846,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
 
 
