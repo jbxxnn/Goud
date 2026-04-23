@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
+import QRCode from 'qrcode';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations, useFormatter } from 'next-intl';
 import { Booking } from '@/lib/types/booking';
 import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Badge } from '@/components/ui/badge';
 import { differenceInMinutes } from 'date-fns';
-import { CheckmarkCircle03Icon, Calendar02Icon, DashboardSquare02Icon } from '@hugeicons/core-free-icons';
+import { CheckmarkCircle03Icon, Calendar02Icon, DashboardSquare02Icon, Copy01Icon } from '@hugeicons/core-free-icons';
 
 
 
@@ -21,17 +23,30 @@ interface PolicyField {
   choices?: Array<{ id: string; title: string; price?: number }>;
 }
 
+const formatBookingReference = (bookingNumber?: number | null, fallback?: string) => {
+  if (typeof bookingNumber === 'number') {
+    return `G-${bookingNumber.toString().padStart(4, '0')}`;
+  }
+
+  return fallback || '';
+};
+
 function BookingConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const t = useTranslations('Booking.confirmation');
   const format = useFormatter();
   const bookingId = searchParams.get('bookingId');
+  const paymentMode = searchParams.get('payment');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
+  const [paymentQrCode, setPaymentQrCode] = useState<string | null>(null);
+  const [copiedPaymentLink, setCopiedPaymentLink] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -41,9 +56,23 @@ function BookingConfirmationContent() {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
+        if (!session) {
+          setCurrentUserRole(null);
+          return;
+        }
+
+        const response = await fetch('/api/users/current');
+        if (!response.ok) {
+          setCurrentUserRole(null);
+          return;
+        }
+
+        const data = await response.json();
+        setCurrentUserRole(data.data?.role || null);
       } catch (err) {
         console.error('Error checking auth:', err);
         setIsLoggedIn(false);
+        setCurrentUserRole(null);
       }
     };
 
@@ -59,7 +88,7 @@ function BookingConfirmationContent() {
 
     const fetchBooking = async () => {
       try {
-        const response = await fetch(`/api/bookings/${bookingId}`);
+        const response = await fetch(`/api/bookings/${bookingId}/confirmation`);
         const data = await response.json();
 
         if (!response.ok || !data.booking) {
@@ -108,6 +137,41 @@ function BookingConfirmationContent() {
 
     fetchBooking();
   }, [bookingId]);
+
+  useEffect(() => {
+    if (!booking?.payment_link || currentUserRole !== 'midwife') {
+      setPaymentQrCode(null);
+      return;
+    }
+
+    let cancelled = false;
+    QRCode.toDataURL(booking.payment_link, {
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      width: 220,
+      color: {
+        dark: '#1f2937',
+        light: '#ffffff',
+      },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setPaymentQrCode(dataUrl);
+      })
+      .catch((error) => {
+        console.error('Failed to generate payment QR code:', error);
+        if (!cancelled) setPaymentQrCode(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [booking?.payment_link, currentUserRole]);
+
+  useEffect(() => {
+    if (currentUserRole === 'midwife' && booking?.payment_link && paymentMode === 'midwife' && booking.payment_status !== 'paid') {
+      setIsPaymentDialogOpen(true);
+    }
+  }, [booking?.payment_link, booking?.payment_status, currentUserRole, paymentMode]);
 
   const generateCalendarLink = () => {
     if (!booking) return '';
@@ -217,6 +281,10 @@ function BookingConfirmationContent() {
   const headerDate = format.dateTime(new Date(booking.start_time), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Amsterdam' });
   const headerTime = `${format.dateTime(new Date(booking.start_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })} - ${format.dateTime(new Date(booking.end_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}`;
   const dayName = format.dateTime(new Date(booking.start_time), { weekday: 'long', timeZone: 'Europe/Amsterdam' });
+  const canUseClientCalendarActions = currentUserRole === 'client';
+  const showMidwifeConfirmationNote = currentUserRole === 'midwife';
+  const showMidwifePaymentActions = currentUserRole === 'midwife' && Boolean(booking.payment_link) && booking.payment_status !== 'paid';
+  const bookingReference = formatBookingReference(booking.booking_number, booking.id);
 
   return (
     <div className="min-h-screen bg-gray-50/50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8">
@@ -241,6 +309,9 @@ function BookingConfirmationContent() {
             {dayName} {headerDate}
           </h1>
           <div className="text-lg text-primary-foreground font-medium">{headerTime}</div>
+          <div className="mt-1 text-xs font-medium text-white/75">
+            {t('bookingNumber')}: <span className="font-mono">{bookingReference}</span>
+          </div>
         </div>
         <div className="bg-white max-w-lg w-full mx-auto rounded-b-2xl shadow-sm border border-gray-200/60 overflow-hidden">
           {/* Booking Details Section */}
@@ -302,6 +373,13 @@ function BookingConfirmationContent() {
             </div>
 
           </div>
+
+          {showMidwifeConfirmationNote && (
+            <div className="p-6 bg-amber-50/70 border-b border-amber-100">
+              <h3 className="text-sm font-semibold text-amber-950 mb-2">{t('midwifeNoticeTitle')}</h3>
+              <p className="text-sm leading-6 text-amber-900">{t('midwifeNoticeBody')}</p>
+            </div>
+          )}
 
           {/* Price Breakdown */}
           <div className="p-6 bg-gray-50/50 border-b border-gray-100">
@@ -546,31 +624,107 @@ function BookingConfirmationContent() {
             </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button
-            onClick={() => window.open(generateCalendarLink(), '_blank')}
-            variant="outline"
-            className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
-          >
-            {t('addToCalendar')}
-          </Button>
-          <Button
-            onClick={downloadICal}
-            variant="outline"
-            className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
-          >
-            {t('downloadICal')}
-          </Button>
-        </div>
+        {canUseClientCalendarActions && (
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={() => window.open(generateCalendarLink(), '_blank')}
+              variant="outline"
+              className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
+            >
+              {t('addToCalendar')}
+            </Button>
+            <Button
+              onClick={downloadICal}
+              variant="outline"
+              className="border-none bg-transparent hover:bg-transparent h-auto text-primary"
+            >
+              {t('downloadICal')}
+            </Button>
+          </div>
+        )}
 
         {/* Booking ID */}
         <div className="text-center mt-8 pt-6 border-t border-gray-200">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg">
             <span className="text-xs font-medium text-gray-500">{t('bookingNumber')}:</span>
-            <span className="font-mono font-semibold text-gray-900 text-sm">{booking.id}</span>
+            <span className="font-mono font-semibold text-gray-900 text-sm">{bookingReference}</span>
           </div>
         </div>
+
+        {showMidwifePaymentActions && booking.payment_link && (
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={() => setIsPaymentDialogOpen(true)}
+              className="group flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-primary/5"
+            >
+              <div>
+                <div className="text-sm font-semibold text-gray-900">{t('paymentOptionsTriggerTitle')}</div>
+                <div className="mt-0.5 text-xs text-gray-600">{t('paymentOptionsTriggerBody')}</div>
+              </div>
+              <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary group-hover:bg-primary/15">
+                {t('openPaymentOptions')}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
+      {showMidwifePaymentActions && booking.payment_link && (
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md" style={{ borderRadius: '1rem' }}>
+            <DialogHeader>
+              <DialogTitle>{t('midwifePaymentTitle')}</DialogTitle>
+              <DialogDescription>{t('midwifePaymentBody')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-3">
+                <div className="rounded-xl border bg-white p-3 shadow-sm">
+                  {paymentQrCode ? (
+                    <img
+                      src={paymentQrCode}
+                      alt={t('midwifePaymentQrAlt')}
+                      className="h-40 w-40"
+                    />
+                  ) : (
+                    <div className="flex h-40 w-40 items-center justify-center text-xs text-muted-foreground">
+                      {t('midwifePaymentQrLoading')}
+                    </div>
+                  )}
+                </div>
+                <p className="max-w-sm text-center text-xs leading-5 text-gray-500">{t('midwifePaymentQrHint')}</p>
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <div className="min-w-0 rounded-lg border border-input bg-white p-3 text-xs font-mono leading-none">
+                  <span className="block truncate">{booking.payment_link}</span>
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(booking.payment_link || '');
+                    setCopiedPaymentLink(true);
+                    setTimeout(() => setCopiedPaymentLink(false), 2000);
+                  }}
+                  className={`h-10 w-10 shrink-0 ${copiedPaymentLink ? 'text-primary border-primary bg-primary/5' : 'hover:border-primary hover:text-primary transition-colors'}`}
+                  style={{ borderRadius: '0.75rem' }}
+                  aria-label={t('copyPaymentLink')}
+                >
+                  <HugeiconsIcon icon={copiedPaymentLink ? CheckmarkCircle03Icon : Copy01Icon} size={20} />
+                </Button>
+              </div>
+              <Button
+                type="button"
+                onClick={() => window.location.href = booking.payment_link || ''}
+                className="w-full h-11 bg-primary text-white hover:bg-primary/90"
+                style={{ borderRadius: '0.75rem' }}
+              >
+                {t('continueToPayment')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -596,4 +750,3 @@ export default function BookingConfirmationPage() {
     </Suspense>
   );
 }
-

@@ -35,9 +35,10 @@ interface ActionButtonsProps {
     onCancel: (booking: Booking) => void;
     onViewResults?: (booking: Booking) => void;
     isPast?: boolean;
+    canManage?: boolean;
 }
 
-export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, isPast }: ActionButtonsProps) {
+export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, isPast, canManage = true }: ActionButtonsProps) {
     const t = useTranslations('Appointments.actions');
     const [isCancelOpen, setIsCancelOpen] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
@@ -104,6 +105,10 @@ export function ActionButtons({ booking, onReschedule, onCancel, onViewResults, 
     // If appointment is cancelled, maybe show nothing or just "Add to calendar" if they still want it? 
     // Usually cancelled appointments don't need actions.
     if (booking.status === 'cancelled') {
+        return null;
+    }
+
+    if (!canManage) {
         return null;
     }
 

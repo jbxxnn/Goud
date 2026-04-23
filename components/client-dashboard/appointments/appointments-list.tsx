@@ -28,7 +28,7 @@ import { Separator } from '@/components/ui/separator';
 
 interface AppointmentsListProps {
     clientId: string;
-    filterBy?: 'created_by' | 'client_id'; // Default: 'created_by'
+    filterBy?: 'created_by' | 'client_id' | 'midwife_practice'; // Default: 'created_by'
     showFilters?: boolean;
 }
 
@@ -67,18 +67,21 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                 page: '1',
             };
 
-            // If we filter by created_by (default for clients), use 'clientId' param
-            // If we filter by client_id (for midwives), use 'patientId' param
-            if (filterBy === 'client_id') {
+            // If we filter by created_by (default for clients), use 'clientId' param.
+            // If we filter by client_id, use 'patientId' param.
+            // Midwife practice scope is resolved from the authenticated user on the API.
+            if (filterBy === 'midwife_practice') {
+                queryParams.midwifePractice = 'true';
+            } else if (filterBy === 'client_id') {
                 queryParams.patientId = clientId;
             } else {
                 queryParams.clientId = clientId;
             }
 
             if (statusFilter !== 'all') queryParams.status = statusFilter;
-            if (searchQuery) queryParams.search = searchQuery;
-            if (dateFrom) queryParams.dateFrom = dateFrom;
-            if (dateTo) queryParams.dateTo = dateTo;
+            if (searchQuery && filterBy !== 'midwife_practice') queryParams.search = searchQuery;
+            if (dateFrom) queryParams.dateFrom = `${dateFrom}T00:00:00.000`;
+            if (dateTo) queryParams.dateTo = `${dateTo}T23:59:59.999`;
 
             const params = new URLSearchParams(queryParams);
 
@@ -86,6 +89,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
             const result: BookingsResponse = await response.json();
 
             if (!result.success) {
+                console.error('Failed to fetch bookings:', result.error);
                 throw new Error(result.error || 'Failed to fetch bookings');
             }
 
@@ -179,8 +183,39 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
         setIsResultsOpen(true);
     };
 
+    const canManageBooking = (booking: Booking) => {
+        if (filterBy !== 'midwife_practice') return true;
+        return booking.client_id === clientId;
+    };
+
+    const getBookingOwnershipLabel = (booking: Booking) => {
+        return canManageBooking(booking) ? t('table.bookedByYou') : t('table.bookedByOther');
+    };
+
+    const visibleBookings = filterBy === 'midwife_practice' && searchQuery.trim()
+        ? bookings.filter((booking) => {
+            const search = searchQuery.trim().toLowerCase();
+            const reference = formatBookingReference(booking.booking_number).toLowerCase();
+            const clientName = [
+                booking.users?.first_name,
+                booking.users?.last_name,
+            ].filter(Boolean).join(' ').toLowerCase();
+            const searchableText = [
+                reference,
+                clientName,
+                booking.users?.email,
+                booking.users?.phone,
+                booking.services?.name,
+                booking.locations?.name,
+                booking.status,
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            return searchableText.includes(search);
+        })
+        : bookings;
+
     // Sort bookings: Upcoming first, then past
-    const sortedBookings = [...bookings].sort((a, b) => {
+    const sortedBookings = [...visibleBookings].sort((a, b) => {
         return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
     });
 
@@ -216,6 +251,33 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
         return mappedStatuses[statusKey] || status.charAt(0).toUpperCase() + status.slice(1);
     };
 
+    const getPaymentStatusColor = (status?: string | null) => {
+        switch (status) {
+            case 'paid':
+                return 'bg-emerald-600 text-white hover:bg-emerald-600 border-emerald-200';
+            case 'unpaid':
+                return 'bg-orange-600 text-white hover:bg-orange-600 border-orange-200';
+            case 'pending_at_location':
+                return 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200';
+            case 'refunded':
+                return 'bg-gray-600 text-white hover:bg-gray-600 border-gray-200';
+            default:
+                return 'bg-muted text-muted-foreground hover:bg-muted border-muted';
+        }
+    };
+
+    const getPaymentStatusLabel = (status?: string | null) => {
+        const paymentStatuses: Record<string, string> = {
+            paid: t('paymentStatus.paid'),
+            unpaid: t('paymentStatus.unpaid'),
+            pending_at_location: t('paymentStatus.pending_at_location'),
+            refunded: t('paymentStatus.refunded'),
+        };
+
+        if (!status) return t('paymentStatus.unknown');
+        return paymentStatuses[status] || status.replace(/_/g, ' ');
+    };
+
     if (isInitialLoading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -243,7 +305,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
 
             {showFilters && (
                 <div className="flex flex-wrap items-center gap-4 bg-muted/30 p-4 rounded-lg border">
-                    {filterBy === 'client_id' && (
+                    {(filterBy === 'client_id' || filterBy === 'midwife_practice') && (
                         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                             <div className="relative w-full">
                                 <HugeiconsIcon icon={Search01Icon} className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -330,10 +392,12 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                 <TableRow>
                                     <TableHead>{t('table.id')}</TableHead>
                                     <TableHead>{t('table.dateTime')}</TableHead>
-                                    {filterBy === 'client_id' && <TableHead>{t('table.client')}</TableHead>}
+                                    {(filterBy === 'client_id' || filterBy === 'midwife_practice') && <TableHead>{t('table.client')}</TableHead>}
                                     <TableHead>{t('table.service')}</TableHead>
                                     <TableHead>{t('table.location')}</TableHead>
                                     <TableHead>{t('table.status')}</TableHead>
+                                    <TableHead>{t('table.payment')}</TableHead>
+                                    {filterBy === 'midwife_practice' && <TableHead>{t('table.bookedBy')}</TableHead>}
                                     <TableHead className="text-right">{t('table.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -353,7 +417,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        {filterBy === 'client_id' && (
+                                        {(filterBy === 'client_id' || filterBy === 'midwife_practice') && (
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">
@@ -409,6 +473,24 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                                 {getStatusLabel(booking.status, booking.end_time)}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="outline"
+                                                className={`capitalize ${getPaymentStatusColor(booking.payment_status)}`}
+                                            >
+                                                {getPaymentStatusLabel(booking.payment_status)}
+                                            </Badge>
+                                        </TableCell>
+                                        {filterBy === 'midwife_practice' && (
+                                            <TableCell>
+                                                <Badge
+                                                    variant={canManageBooking(booking) ? 'default' : 'secondary'}
+                                                    className={canManageBooking(booking) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
+                                                >
+                                                    {getBookingOwnershipLabel(booking)}
+                                                </Badge>
+                                            </TableCell>
+                                        )}
                                         <TableCell className="text-right">
                                             <ActionButtons
                                                 booking={booking}
@@ -416,6 +498,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                                 onCancel={handleCancel}
                                                 // onViewResults={handleViewResults}
                                                 isPast={isPast(new Date(booking.end_time))}
+                                                canManage={canManageBooking(booking)}
                                             />
                                         </TableCell>
                                     </TableRow>
@@ -444,6 +527,15 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                         {getStatusLabel(booking.status, booking.end_time)}
                                     </Badge>
                                 </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-muted-foreground">{t('table.payment')}</span>
+                                    <Badge
+                                        variant="outline"
+                                        className={`capitalize ${getPaymentStatusColor(booking.payment_status)}`}
+                                    >
+                                        {getPaymentStatusLabel(booking.payment_status)}
+                                    </Badge>
+                                </div>
 
                                 <div className="space-y-1">
                                     <div className="flex flex-wrap items-center gap-2">
@@ -464,11 +556,19 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                     <div className="text-xs text-muted-foreground flex items-center gap-1">
                                         <span className="font-medium">{booking.locations?.name || t('table.location')}</span>
                                     </div>
-                                    {filterBy === 'client_id' && booking.users && (
+                                    {(filterBy === 'client_id' || filterBy === 'midwife_practice') && booking.users && (
                                         <div className="pt-1">
                                             <p className="text-xs font-semibold">{[booking.users.first_name, booking.users.last_name].filter(Boolean).join(' ')}</p>
                                             <p className="text-[10px] text-muted-foreground">{booking.users.email}</p>
                                         </div>
+                                    )}
+                                    {filterBy === 'midwife_practice' && (
+                                        <Badge
+                                            variant={canManageBooking(booking) ? 'default' : 'secondary'}
+                                            className={`mt-2 w-fit ${canManageBooking(booking) ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+                                        >
+                                            {t('table.bookedBy')}: {getBookingOwnershipLabel(booking)}
+                                        </Badge>
                                     )}
                                 </div>
                                 <Separator />
@@ -479,6 +579,7 @@ export function AppointmentsList({ clientId, filterBy = 'created_by', showFilter
                                         onCancel={handleCancel}
                                         // onViewResults={handleViewResults}
                                         isPast={isPast(new Date(booking.end_time))}
+                                        canManage={canManageBooking(booking)}
                                     />
                                 </div>
                             </div>

@@ -104,6 +104,8 @@ export interface Booking {
     location_id: string;
     staff_id: string | null;
     user_id: string;
+    client_id?: string | null;
+    created_by?: string | null;
     due_date?: string | null;
     internal_notes?: string | null;
     birth_date?: string | null;
@@ -217,4 +219,3 @@ export interface BookingsResponse {
     };
     statusCounts?: Record<string, number>;
 }
-

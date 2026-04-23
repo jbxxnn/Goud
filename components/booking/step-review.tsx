@@ -10,6 +10,7 @@ import { buildAddonPayload, buildPolicyAnswerPayload } from './booking-utils';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CircleArrowLeft02Icon, CircleArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 function isInternalRole(role?: string | null): boolean {
     return ['admin', 'staff', 'assistant', 'midwife'].includes(role || '');
@@ -51,6 +52,8 @@ export function StepReview() {
 
     // We handle local password state for login here as it is transient UI state
     const [password, setPassword] = useState('');
+    const [clientPaysForMidwifeBooking, setClientPaysForMidwifeBooking] = useState(true);
+    const showMidwifePaymentChoice = userRole === 'midwife' && grandTotalCents > 0;
 
     const handleLogin = async (emailForLogin: string) => {
         setErrorMsg('');
@@ -195,6 +198,9 @@ export function StepReview() {
                     sessionToken: sessionStorage.getItem('booking_session_token') || undefined,
                     isTwin,
                     continuationToken,
+                    paymentMethod: showMidwifePaymentChoice
+                        ? (clientPaysForMidwifeBooking ? 'client_payment_link' : 'midwife_payment_link')
+                        : 'online',
                 }),
 
             });
@@ -243,7 +249,9 @@ export function StepReview() {
             // Clear state before redirecting to confirmation
             try { localStorage.removeItem('goudecho_booking_state'); } catch { }
 
-            router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
+            const confirmationParams = new URLSearchParams({ bookingId: data.booking.id });
+            if (data.paymentLinkAvailable) confirmationParams.set('payment', 'midwife');
+            router.push(`/booking/confirmation?${confirmationParams.toString()}`);
         } catch (e: any) {
             setErrorMsg(e?.message || t('review.errors.bookingFailed'));
         } finally {
@@ -276,6 +284,43 @@ export function StepReview() {
                 serviceId={serviceId}
                 hiddenFields={selectedService?.hiddenCheckoutFields}
             />
+            {showMidwifePaymentChoice && (
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div className="mb-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('review.paymentMethodTitle')}</h3>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setClientPaysForMidwifeBooking(true)}
+                                    className={`rounded-xl border p-3 text-left transition-colors ${clientPaysForMidwifeBooking ? 'border-secondary bg-accent' : 'border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    <div className="text-sm font-semibold text-gray-900">{t('review.midwifeClientPays')}</div>
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-80 text-center">
+                                <p>{t('review.midwifeClientPaysDesc')}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setClientPaysForMidwifeBooking(false)}
+                                    className={`rounded-xl border p-3 text-left transition-colors ${!clientPaysForMidwifeBooking ? 'border-secondary bg-accent' : 'border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    <div className="text-sm font-semibold text-gray-900">{t('review.midwifePayNow')}</div>
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-80 text-center">
+                                <p>{t('review.midwifePayNowDesc')}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </div>
+            )}
             {errorMsg && (
                 <div className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded border border-red-100">
                     {errorMsg}

@@ -51,6 +51,21 @@ export async function PUT(
       );
     }
 
+    const currentUserResult = await UserService.getCurrentUser();
+    if (!currentUserResult.success || !currentUserResult.data) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (body.role !== undefined && currentUserResult.data.role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Only admins can change user roles' },
+        { status: 403 }
+      );
+    }
+
     const result = await UserService.updateUser(id, body);
 
     if (!result.success) {

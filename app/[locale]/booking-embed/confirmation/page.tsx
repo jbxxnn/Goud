@@ -16,6 +16,14 @@ interface PolicyField {
   choices?: Array<{ id: string; title: string; price?: number }>;
 }
 
+const formatBookingReference = (bookingNumber?: number | null, fallback?: string) => {
+  if (typeof bookingNumber === 'number') {
+    return `G-${bookingNumber.toString().padStart(4, '0')}`;
+  }
+
+  return fallback || '';
+};
+
 function BookingConfirmationContent() {
   const searchParams = useSearchParams();
   const t = useTranslations('Booking.confirmation');
@@ -34,7 +42,7 @@ function BookingConfirmationContent() {
 
     const fetchBooking = async () => {
       try {
-        const response = await fetch(`/api/bookings/${bookingId}`);
+        const response = await fetch(`/api/bookings/${bookingId}/confirmation`);
         const data = await response.json();
 
         if (!response.ok || !data.booking) {
@@ -70,6 +78,7 @@ function BookingConfirmationContent() {
   const headerDate = format.dateTime(new Date(booking.start_time), { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Amsterdam' });
   const headerTime = `${format.dateTime(new Date(booking.start_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })} - ${format.dateTime(new Date(booking.end_time), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' })}`;
   const dayName = format.dateTime(new Date(booking.start_time), { weekday: 'long', timeZone: 'Europe/Amsterdam' });
+  const bookingReference = formatBookingReference(booking.booking_number, booking.id);
 
   return (
     <div className="max-w-lg mx-auto p-4 animate-in fade-in duration-500 bg-white">
@@ -81,6 +90,9 @@ function BookingConfirmationContent() {
           <div className="text-sm font-medium opacity-90 mb-1">{t('title')}</div>
           <h1 className="text-xl font-bold capitalize">{dayName} {headerDate}</h1>
           <div className="text-lg opacity-90">{headerTime}</div>
+          <div className="mt-1 text-xs font-medium text-white/75">
+            {t('bookingNumber')}: <span className="font-mono">{bookingReference}</span>
+          </div>
         </div>
 
         <div className="p-6 bg-white space-y-6">
@@ -108,7 +120,7 @@ function BookingConfirmationContent() {
           </div>
 
           <div className="pt-2 text-center">
-             <p className="text-xs text-gray-400">{t('bookingNumber')}: {booking.id}</p>
+             <p className="text-xs text-gray-400">{t('bookingNumber')}: {bookingReference}</p>
           </div>
         </div>
       </div>

@@ -201,8 +201,7 @@ export const bookingRequestSchema = bookingSelectionSchema.merge(bookingContactS
   policyAnswers: z.array(bookingPolicyAnswerSchema).optional(),
   addons: z.array(bookingAddonSelectionSchema).optional(),
   sessionToken: z.string().optional(),
+  paymentMethod: z.enum(['online', 'client_payment_link', 'midwife_payment_link']).optional(),
 });
 
 export type BookingRequestInput = z.infer<typeof bookingRequestSchema>;
-
-

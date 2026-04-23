@@ -130,7 +130,7 @@ export function ClientBookingFlow() {
                 <CardContent className="p-8 pt-0 space-y-4">
 
                     {/* Service Summary */}
-                    {(loadingServices || serviceId) ? (
+                    {serviceId && (
                         <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
                             <div className="p-5 pl-7">
@@ -145,35 +145,20 @@ export function ClientBookingFlow() {
                                         <p className="text-lg font-bold text-gray-900 leading-tight">
                                             {selectedService?.name || t('noServiceSelected')}
                                         </p>
-                                        {((selectedService?.price ?? 0) > 0 || (selectedService?.customPriceLabel && selectedService?.customPriceLabel.trim() !== '')) && (
+                                        {(selectedService?.price ?? 0) > 0 && (
                                             <p className="text-sm font-bold text-primary mt-1">
-                                                {(selectedService?.price ?? 0) > 0 
-                                                    ? formatEuroCents((selectedService?.price ?? 0)) 
-                                                    : selectedService?.customPriceLabel}
+                                                {formatEuroCents((selectedService?.price ?? 0))}
                                             </p>
                                         )}
                                     </div>
                                 )}
                             </div>
                         </div>
-                    ) : (
-                        <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
-                            <div className="p-5 pl-7">
-                                <p className="text-xs font-bold text-gray-800 tracking-wider mb-2">{t('service')}</p>
-                                <div>
-                                    <div className="flex items-center gap-2 opacity-25">
-                                        <div className="h-4 w-24 bg-gray-300 rounded-full animate-pulse" />
-                                        <div className="h-4 w-16 bg-gray-300 rounded-full animate-pulse delay-75" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     )}
 
 
                     {/* Date/Time Summary */}
-                    {(loadingHeatmap || date) ? (
+                    {date && (
                         <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
                             <div className="p-5 pl-7">
@@ -197,56 +182,26 @@ export function ClientBookingFlow() {
                                 )}
                             </div>
                         </div>
-                    ) : (
-                        <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
-                            <div className="p-5 pl-7">
-                                <p className="text-xs font-bold text-gray-800 tracking-wider mb-2">{t('dateTime')}</p>
-                                <div>
-                                    <div className="flex items-center gap-2 opacity-25">
-                                        <div className="h-4 w-10 bg-gray-300 rounded-full animate-pulse" />
-                                        <div className="h-4 w-36 bg-gray-300 rounded-full animate-pulse delay-75" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     )}
 
                     {/* Others Summary */}
-                    {(loadingServices || otherSelections.length > 0) ? (
+                    {otherSelections.length > 0 && (
                         <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
                             <div className="p-5 pl-7">
                                 <p className="text-xs font-bold text-gray-800 tracking-wider mb-2">{t('others')}</p>
-                                {loadingServices ? (
-                                    <div className="h-6 w-3/4 bg-gray-200/50 rounded animate-pulse" />
-                                ) : (
-                                    <div className="animate-in fade-in zoom-in-95 duration-500">
-                                        <div className="flex flex-col gap-1">
-                                            {otherSelections.map((item, idx) => (
-                                                <p key={idx} className="text-sm font-bold text-gray-900 leading-tight">
-                                                    {item.label}
-                                                    {item.price > 0 && (
-                                                        <span className="text-primary ml-1">
-                                                            (+{formatEuroCents(item.price)})
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="group relative overflow-hidden rounded-2xl bg-gray-50 hover:bg-gray-50/80 transition-colors duration-300">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors duration-300" />
-                            <div className="p-5 pl-7">
-                                <p className="text-xs font-bold text-gray-800 tracking-wider mb-2">{t('others')}</p>
-                                <div>
-                                    <div className="flex items-center gap-2 opacity-25">
-                                        <div className="h-4 w-10 bg-gray-300 rounded-full animate-pulse" />
-                                        <div className="h-4 w-24 bg-gray-300 rounded-full animate-pulse delay-75" />
+                                <div className="animate-in fade-in zoom-in-95 duration-500">
+                                    <div className="flex flex-col gap-1">
+                                        {otherSelections.map((item, idx) => (
+                                            <p key={idx} className="text-sm font-bold text-gray-900 leading-tight">
+                                                {item.label}
+                                                {item.price > 0 && (
+                                                    <span className="text-primary ml-1">
+                                                        (+{formatEuroCents(item.price)})
+                                                    </span>
+                                                )}
+                                            </p>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -255,8 +210,7 @@ export function ClientBookingFlow() {
 
                     {/* Total Cost Summary */}
                     <div className="pt-4 mt-2 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
+                        <div className="flex items-center justify-end">
                             <span className="text-2xl font-bold text-primary tracking-tight">
                                 {grandTotalCents > 0 
                                     ? formatEuroCents(grandTotalCents) 

@@ -795,10 +795,10 @@
             "location": "Locatie",
             "dateTime": "Datum & Tijd",
             "noServiceSelected": "Geen echo geselecteerd",
-            "others": "Overige",
+            "others": "Te betalen",
             "totalDue": "Totaal te betalen",
             "summary": "Samenvatting",
-            "policyExtras": "Beleidstoeslagen",
+            "policyExtras": "Niet-vergoede zorg",
             "steps": {
                 "service": "Echo",
                 "dateTime": "Datum & Tijd",
@@ -836,10 +836,15 @@
                     "loginSessionFailed": "Inloggen mislukt: geen sessie aangemaakt",
                     "incompleteSelection": "Selecteer eerst een echo, locatie en tijd",
                     "loginRequired": "Log in om door te gaan",
-                    "bookingFailed": "Boeking is niet gelukt",
-                    "editSuggestion": "Schakel 'Gegevens bewerken' hieronder in om uw ontbrekende profielinformatie aan te vullen."
+                "bookingFailed": "Boeking is niet gelukt",
+                "editSuggestion": "Schakel 'Gegevens bewerken' hieronder in om uw ontbrekende profielinformatie aan te vullen."
                 },
-                "editDetails": "Gegevens bewerken"
+                "editDetails": "Gegevens bewerken",
+                "paymentMethodTitle": "Betaalmethode",
+                "midwifeClientPays": "Cliënt betaalt zelf",
+                "midwifeClientPaysDesc": "De cliënt ontvangt per e-mail een betaallink om online te betalen. Betalen op locatie blijft ook mogelijk.",
+                "midwifePayNow": "Betalen namens de cliënt",
+                "midwifePayNowDesc": "U wordt doorgestuurd naar de betaalpagina om de online betaling namens de cliënt af te ronden."
             },
             "form": {
                 "processingDetails": "Bezig met verwerken van uw gegevens...",
@@ -930,6 +935,18 @@
             "addToCalendar": "Toevoegen aan agenda",
             "downloadICal": "Download iCal",
             "bookingNumber": "Boekingsnummer",
+            "midwifeNoticeTitle": "Bevestiging van cliëntboeking",
+            "midwifeNoticeBody": "Er is een bevestigingsmail naar de cliënt verzonden. Als dit de eerste boeking van de cliënt was, is er ook een cliëntaccount aangemaakt. Zowel de cliënt als de verloskundige kan deze boeking beheren.",
+            "midwifePaymentTitle": "Betaallink klaar",
+            "midwifePaymentBody": "Gebruik deze QR-code of betaallink om de online betaling namens de cliënt af te ronden.",
+            "midwifePaymentQrAlt": "QR-code voor de betaallink van de boeking",
+            "midwifePaymentQrLoading": "QR-code genereren...",
+            "midwifePaymentQrHint": "Scan deze QR-code met een ander apparaat, laat de cliënt hem scannen, of ga hieronder door naar de betaalpagina.",
+            "copyPaymentLink": "Betaallink kopiëren",
+            "continueToPayment": "Doorgaan naar betaling",
+            "paymentOptionsTriggerTitle": "Betaallink of QR-code nodig?",
+            "paymentOptionsTriggerBody": "Open de betaalopties als u nu wilt betalen of de cliënt vanaf dit scherm wilt laten scannen.",
+            "openPaymentOptions": "Openen",
             "yourDetails": "Details",
             "name": "Naam",
             "email": "E-mail",
@@ -1013,6 +1030,10 @@
             "title": "Afspraak succesvol aangemaakt",
             "description": "De afspraak is aangemaakt en de client heeft een bevestigingsmail ontvangen.",
             "paymentLink": "Betalingslink",
+            "qrCode": "Betaal-QR-code",
+            "qrCodeAlt": "QR-code voor de betaallink",
+            "qrCodeLoading": "QR-code genereren...",
+            "qrCodeHint": "De cliënt kan deze QR-code scannen om de betaalpagina voor deze boeking te openen.",
             "copyHint": "Kopieer deze link om direct naar de client te sturen via WhatsApp of SMS.",
             "done": "Klaar"
         },
@@ -1351,7 +1372,18 @@
             "staff": "Medewerker",
             "location": "Locatie",
             "status": "Status",
+            "payment": "Betaling",
+            "bookedBy": "Geboekt door",
+            "bookedByYou": "U",
+            "bookedByOther": "Andere",
             "actions": "Acties",
+            "unknown": "Onbekend"
+        },
+        "paymentStatus": {
+            "paid": "Betaald",
+            "unpaid": "Onbetaald",
+            "pending_at_location": "Betalen op locatie",
+            "refunded": "Terugbetaald",
             "unknown": "Onbekend"
         },
         "empty": {

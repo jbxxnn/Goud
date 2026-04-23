@@ -795,10 +795,10 @@
             "location": "Location",
             "dateTime": "Date & Time",
             "noServiceSelected": "No echo selected",
-            "others": "Others",
+            "others": "To pay",
             "totalDue": "Total Due",
             "summary": "Summary",
-            "policyExtras": "Policy extras",
+            "policyExtras": "Non-insurance-covered care",
             "steps": {
                 "service": "Echo",
                 "dateTime": "Date & Time",
@@ -836,10 +836,15 @@
                     "loginSessionFailed": "Login failed: no session created",
                     "incompleteSelection": "Select an echo, location and time first",
                     "loginRequired": "Log in to continue",
-                    "bookingFailed": "Booking failed",
-                    "editSuggestion": "Please toggle 'Edit Details' below to complete your missing profile information."
+                "bookingFailed": "Booking failed",
+                "editSuggestion": "Please toggle 'Edit Details' below to complete your missing profile information."
                 },
-                "editDetails": "Edit Details"
+                "editDetails": "Edit Details",
+                "paymentMethodTitle": "Payment method",
+                "midwifeClientPays": "Client pays themselves",
+                "midwifeClientPaysDesc": "The client will receive a payment link by email so they can pay online. They can also choose to pay at the location.",
+                "midwifePayNow": "Pay on behalf of the client",
+                "midwifePayNowDesc": "You will be redirected to the payment page to complete the online payment on behalf of the client."
             },
             "form": {
                 "processingDetails": "Processing your details...",
@@ -930,6 +935,18 @@
             "addToCalendar": "Add to calendar",
             "downloadICal": "Download iCal",
             "bookingNumber": "Booking number",
+            "midwifeNoticeTitle": "Client booking confirmation",
+            "midwifeNoticeBody": "A confirmation email has been sent to the client. If this was their first booking, a client account has also been created for them. Both the client and the midwife can manage this booking.",
+            "midwifePaymentTitle": "Payment link ready",
+            "midwifePaymentBody": "Use this QR code or payment link to complete the online payment on behalf of the client.",
+            "midwifePaymentQrAlt": "QR code for the booking payment link",
+            "midwifePaymentQrLoading": "Generating QR code...",
+            "midwifePaymentQrHint": "Scan this QR code from another device, let the client scan it, or continue to the payment page below.",
+            "copyPaymentLink": "Copy payment link",
+            "continueToPayment": "Continue to payment",
+            "paymentOptionsTriggerTitle": "Need the payment link or QR code?",
+            "paymentOptionsTriggerBody": "Open payment options if you want to pay now or let the client scan from this screen.",
+            "openPaymentOptions": "Open",
             "yourDetails": "Details",
             "name": "Name",
             "email": "Email",
@@ -1013,6 +1030,10 @@
             "title": "Booking created successfully",
             "description": "The appointment has been created and the client has received a confirmation email.",
             "paymentLink": "Payment Link",
+            "qrCode": "Payment QR code",
+            "qrCodeAlt": "QR code for the payment link",
+            "qrCodeLoading": "Generating QR code...",
+            "qrCodeHint": "The client can scan this QR code to open the payment page for this booking.",
             "copyHint": "Copy this link to send directly to the client via WhatsApp or SMS.",
             "done": "Done"
         },
@@ -1351,7 +1372,18 @@
             "staff": "Staff",
             "location": "Location",
             "status": "Status",
+            "payment": "Payment",
+            "bookedBy": "Booked by",
+            "bookedByYou": "You",
+            "bookedByOther": "Other",
             "actions": "Actions",
+            "unknown": "Unknown"
+        },
+        "paymentStatus": {
+            "paid": "Paid",
+            "unpaid": "Unpaid",
+            "pending_at_location": "Pay at location",
+            "refunded": "Refunded",
             "unknown": "Unknown"
         },
         "empty": {

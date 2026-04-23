@@ -14,6 +14,7 @@ import { CheckoutForm } from '@/components/booking/checkout-form';
 import { BookingContactInput } from '@/lib/validation/booking';
 import { translateValidationError } from '@/lib/validation/translate-error';
 import { buildAddonPayload, buildPolicyAnswerPayload } from '@/components/booking/booking-utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function ClientStepReview() {
     const router = useRouter();
@@ -44,6 +45,8 @@ export function ClientStepReview() {
         setIsFormValid,
     } = useBooking();
     const lockEditDetails = userRole === 'midwife';
+    const [clientPaysForMidwifeBooking, setClientPaysForMidwifeBooking] = useState(true);
+    const showMidwifePaymentChoice = userRole === 'midwife' && grandTotalCents > 0;
 
     // Force show form for midwives so they can enter client details
     useEffect(() => {
@@ -144,6 +147,9 @@ export function ClientStepReview() {
                     sessionToken: sessionStorage.getItem('booking_session_token') || undefined,
                     isTwin,
                     continuationToken,
+                    paymentMethod: showMidwifePaymentChoice
+                        ? (clientPaysForMidwifeBooking ? 'client_payment_link' : 'midwife_payment_link')
+                        : 'online',
                 }),
             });
 
@@ -164,7 +170,9 @@ export function ClientStepReview() {
             }
 
             // Redirect to success / my appointments
-            router.push(`/booking/confirmation?bookingId=${data.booking.id}`);
+            const confirmationParams = new URLSearchParams({ bookingId: data.booking.id });
+            if (data.paymentLinkAvailable) confirmationParams.set('payment', 'midwife');
+            router.push(`/booking/confirmation?${confirmationParams.toString()}`);
 
         } catch (e: any) {
             let msg = translateValidationError(e?.message || t('review.errors.bookingFailed'), t);
@@ -247,6 +255,43 @@ export function ClientStepReview() {
                                 serviceId={serviceId}
                                 hiddenFields={selectedService?.hiddenCheckoutFields}
                             />
+                            {showMidwifePaymentChoice && (
+                                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                                    <div className="mb-3">
+                                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('review.paymentMethodTitle')}</h3>
+                                    </div>
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setClientPaysForMidwifeBooking(true)}
+                                                    className={`rounded-xl border p-3 text-left transition-colors ${clientPaysForMidwifeBooking ? 'border-primary bg-primary/10' : 'border-gray-200 hover:bg-gray-50'}`}
+                                                >
+                                                    <div className="text-sm font-semibold text-gray-900">{t('review.midwifeClientPays')}</div>
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-80 text-center">
+                                                <p>{t('review.midwifeClientPaysDesc')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setClientPaysForMidwifeBooking(false)}
+                                                    className={`rounded-xl border p-3 text-left transition-colors ${!clientPaysForMidwifeBooking ? 'border-primary bg-primary/10' : 'border-gray-200 hover:bg-gray-50'}`}
+                                                >
+                                                    <div className="text-sm font-semibold text-gray-900">{t('review.midwifePayNow')}</div>
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-80 text-center">
+                                                <p>{t('review.midwifePayNowDesc')}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

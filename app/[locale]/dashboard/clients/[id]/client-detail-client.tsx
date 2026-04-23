@@ -69,6 +69,7 @@ export default function ClientDetailClient({
   const tBookings = useTranslations('Bookings');
   const tCommon = useTranslations('Common');
   const tBookingStatus = useTranslations('BookingStatus');
+  const canChangeClientRole = userRole === 'admin';
 
   // Action states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -178,7 +179,7 @@ export default function ClientDetailClient({
         city: data.city || undefined,
         birth_date: data.birth_date || undefined,
         midwife_id: data.midwife_id || undefined,
-        role: data.role || undefined,
+        role: canChangeClientRole ? data.role || undefined : undefined,
       };
       const response = await fetch(`/api/users/${clientId}`, {
         method: 'PUT',
@@ -769,32 +770,33 @@ export default function ClientDetailClient({
                 </div>
               </div>
 
-              {/* Role Field */}
-              <div>
-                <Label htmlFor="role" className="text-sm font-semibold mb-2">{t('editModal.role')}</Label>
-                <Select
-                  value={watch('role') || client.role}
-                  onValueChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
-                >
-                  <SelectTrigger id="role">
-                    <SelectValue placeholder={t('editModal.roleSelect')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {t('editModal.roleHint')}{' '}
-                  <a href="/dashboard/staff" className="text-primary underline">
-                    /dashboard/staff
-                  </a>
-                  .
-                </p>
-              </div>
+              {canChangeClientRole && (
+                <div>
+                  <Label htmlFor="role" className="text-sm font-semibold mb-2">{t('editModal.role')}</Label>
+                  <Select
+                    value={watch('role') || client.role}
+                    onValueChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
+                  >
+                    <SelectTrigger id="role">
+                      <SelectValue placeholder={t('editModal.roleSelect')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLE_OPTIONS.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t('editModal.roleHint')}{' '}
+                    <a href="/dashboard/staff" className="text-primary underline">
+                      /dashboard/staff
+                    </a>
+                    .
+                  </p>
+                </div>
+              )}
 
               {/* Address Fields */}
               <div>

@@ -10,7 +10,7 @@ interface MidwifeDashboardProps {
 export default function MidwifeDashboard({ clientId }: MidwifeDashboardProps) {
     return (
         <PageContainer className="container max-w-7xl py-6">
-            <AppointmentsList clientId={clientId} filterBy="client_id" />
+            <AppointmentsList clientId={clientId} filterBy="midwife_practice" />
         </PageContainer>
     );
 }

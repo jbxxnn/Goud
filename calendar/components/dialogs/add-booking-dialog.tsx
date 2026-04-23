@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, memo } from "react";
+import QRCode from "qrcode";
 import { useForm } from "react-hook-form";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
@@ -123,6 +124,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   const [pendingData, setPendingData] = useState<BookingFormData | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [checkoutQrCode, setCheckoutQrCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const formatDateTimeLocal = (date: Date): string => {
@@ -158,6 +160,35 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   const watchIsTwin = watch("is_twin");
   const watchLocationId = watch("location_id");
   const watchStaffId = watch("staff_id");
+
+  useEffect(() => {
+    if (!checkoutUrl) {
+      setCheckoutQrCode(null);
+      return;
+    }
+
+    let cancelled = false;
+    QRCode.toDataURL(checkoutUrl, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: 220,
+      color: {
+        dark: "#1f2937",
+        light: "#ffffff",
+      },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setCheckoutQrCode(dataUrl);
+      })
+      .catch((error) => {
+        console.error("Failed to generate payment QR code:", error);
+        if (!cancelled) setCheckoutQrCode(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutUrl]);
 
   // Filter locations based on available shifts
   const filteredLocations = useMemo(() => {
@@ -1091,6 +1122,28 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
           <div className="w-full p-6 space-y-6 box-border">
             {checkoutUrl && (
               <div className="space-y-3">
+                <div className="flex flex-col items-center gap-3 rounded-2xl border bg-white p-5">
+                  <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+                    {t("success.qrCode")}
+                  </Label>
+                  <div className="rounded-xl border bg-white p-3 shadow-sm">
+                    {checkoutQrCode ? (
+                      <img
+                        src={checkoutQrCode}
+                        alt={t("success.qrCodeAlt")}
+                        className="h-44 w-44"
+                      />
+                    ) : (
+                      <div className="flex h-44 w-44 items-center justify-center text-xs text-muted-foreground">
+                        {t("success.qrCodeLoading")}
+                      </div>
+                    )}
+                  </div>
+                  <p className="max-w-sm text-center text-xs leading-5 text-muted-foreground">
+                    {t("success.qrCodeHint")}
+                  </p>
+                </div>
+
                 <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
                   {t("success.paymentLink")}
                 </Label>

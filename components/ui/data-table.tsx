@@ -44,6 +44,7 @@ interface DataTableProps<TData, TValue> {
   showColumnToggle?: boolean
   pageSize?: number
   manualPagination?: boolean
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -57,6 +58,7 @@ export function DataTable<TData, TValue>({
   showColumnToggle = true,
   pageSize = 10,
   manualPagination = false,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations('Table');
 
@@ -159,6 +161,8 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  className={onRowClick ? "cursor-pointer transition-colors hover:bg-muted" : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

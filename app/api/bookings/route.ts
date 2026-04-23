@@ -15,6 +15,14 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunked;
 }
 
+function sanitizePostgrestSearchTerm(term: string) {
+  return term.replace(/[^a-zA-Z0-9@._+\-\s]/g, '').trim();
+}
+
+function getSupabaseErrorMessage(error: any, fallback: string) {
+  return error?.message || error?.details || error?.hint || error?.code || fallback;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
       midwifeClientEmail,
       isTwin,
       continuationToken,
+      paymentMethod,
     } = parsed.data;
     const authHeader = req.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '') || '';
@@ -260,6 +269,67 @@ export async function POST(req: NextRequest) {
         .eq('id', continuationId);
     }
 
+    // -------------------------------
+    // MOLLIE PAYMENT INTEGRATION
+    // -------------------------------
+    const shouldSendPaymentLinkToClient =
+      requesterProfile?.role === 'midwife' &&
+      Boolean(midwifeClientEmail) &&
+      paymentMethod === 'client_payment_link';
+    const shouldShowPaymentLinkToMidwife =
+      requesterProfile?.role === 'midwife' &&
+      Boolean(midwifeClientEmail) &&
+      paymentMethod === 'midwife_payment_link';
+    let checkoutUrl: string | undefined;
+    let paymentLinkForEmail: string | undefined;
+
+    if (finalPrice > 0) {
+      try {
+        const { default: mollieClient } = await import('@/lib/mollie/client');
+
+        const payment = await mollieClient.payments.create({
+          amount: {
+            currency: 'EUR',
+            value: (finalPrice / 100).toFixed(2),
+          },
+          description: `Order #${booking.id}`,
+          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?bookingId=${booking.id}`,
+          webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mollie`,
+          metadata: {
+            booking_id: booking.id,
+          },
+        });
+
+        if (payment.id) {
+          const supabase = getServiceSupabase();
+          const link = payment._links.checkout?.href;
+          const { error: updateError, data: updatedBooking } = await supabase
+            .from('bookings')
+            .update({
+              mollie_payment_id: payment.id,
+              payment_link: link,
+              payment_status: 'unpaid'
+            })
+            .eq('id', booking.id)
+            .select();
+
+          if (updateError) {
+            console.error('[Booking API] Failed to update booking with payment ID:', updateError);
+          } else {
+            console.log('[Booking API] Successfully updated booking payment ID. Rows affected:', updatedBooking?.length);
+          }
+
+          paymentLinkForEmail = link;
+          if (!shouldSendPaymentLinkToClient && !shouldShowPaymentLinkToMidwife) {
+            checkoutUrl = link;
+          }
+        }
+      } catch (paymentError) {
+        console.error('Failed to create Mollie payment:', paymentError);
+        // We do NOT fail the request if payment creation fails. The booking remains unpaid.
+      }
+    }
+
     // --- Send Email Confirmation ---
     try {
       // Fetch location and service details for the email
@@ -351,7 +421,8 @@ export async function POST(req: NextRequest) {
           bookingId: booking.id.substring(0, 8).toUpperCase(), // Short ID for display
           notes: notes,
           addons: emailAddons,
-          googleMapsLink: locationData.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.address)}` : undefined
+          googleMapsLink: locationData.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.address)}` : undefined,
+          paymentLink: shouldSendPaymentLinkToClient ? paymentLinkForEmail : undefined,
         });
       }
     } catch (emailError) {
@@ -370,56 +441,12 @@ export async function POST(req: NextRequest) {
         .eq('session_token', parsed.data.sessionToken);
     }
 
-    // -------------------------------
-    // MOLLIE PAYMENT INTEGRATION
-    // -------------------------------
-    let checkoutUrl: string | undefined;
-
-    if (finalPrice > 0) {
-      try {
-        const { default: mollieClient } = await import('@/lib/mollie/client');
-
-        const payment = await mollieClient.payments.create({
-          amount: {
-            currency: 'EUR',
-            value: (finalPrice / 100).toFixed(2),
-          },
-          description: `Order #${booking.id}`,
-          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/booking/confirmation?bookingId=${booking.id}`,
-          webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/mollie`,
-          metadata: {
-            booking_id: booking.id,
-          },
-        });
-
-        if (payment.id) {
-          const supabase = getServiceSupabase();
-          const { error: updateError, data: updatedBooking } = await supabase
-            .from('bookings')
-            .update({
-              mollie_payment_id: payment.id,
-              payment_link: payment._links.checkout?.href,
-              payment_status: 'unpaid'
-            })
-            .eq('id', booking.id)
-            .select();
-
-          if (updateError) {
-            console.error('[Booking API] Failed to update booking with payment ID:', updateError);
-          } else {
-            console.log('[Booking API] Successfully updated booking payment ID. Rows affected:', updatedBooking?.length);
-          }
-
-          checkoutUrl = payment._links.checkout?.href;
-        }
-      } catch (paymentError) {
-        console.error('Failed to create Mollie payment:', paymentError);
-        // We do NOT fail the request if payment creation fails, but the user won't get a redirect.
-        // They will land on confirmation page with 'unpaid' status.
-      }
-    }
-
-    return NextResponse.json({ booking, checkoutUrl });
+    return NextResponse.json({
+      booking,
+      checkoutUrl,
+      paymentLinkSentToClient: shouldSendPaymentLinkToClient && Boolean(paymentLinkForEmail),
+      paymentLinkAvailable: shouldShowPaymentLinkToMidwife && Boolean(paymentLinkForEmail),
+    });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
@@ -453,7 +480,7 @@ export async function GET(req: NextRequest) {
     // Fetch user profile to get their role
     const { data: userProfile } = await supabase
       .from('users')
-      .select('role')
+      .select('role, midwife_id')
       .eq('id', user.id)
       .single();
 
@@ -522,7 +549,21 @@ export async function GET(req: NextRequest) {
 
       let queryBuilder = supabase.from('users').select('id');
       // Instead of keeping users.birth_date, we will just use the `first_name`, `last_name`, and `email` for users table search
-      terms = searchTerm.split(/\s+/).filter(Boolean);
+      terms = searchTerm.split(/\s+/).map(sanitizePostgrestSearchTerm).filter(Boolean);
+      if (terms.length === 0 && !exactDateFilter && searchBookingNumber === null) {
+        return NextResponse.json({
+          success: true,
+          data: [],
+          statusCounts: { all: 0, pending: 0, confirmed: 0, cancelled: 0, ongoing: 0, completed: 0, no_show: 0 },
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            total_pages: 0,
+          },
+        });
+      }
+
       const orConditions = terms.map(term => `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`);
       
       orConditions.forEach(condition => {
@@ -530,15 +571,12 @@ export async function GET(req: NextRequest) {
       });
 
       const { data: matchingUsers, error: userSearchError } = await queryBuilder;
-      
-      console.log('SearchTerm:', searchTerm);
-      console.log('Terms:', terms);
-      console.log('exactDateFilter:', exactDateFilter);
-      console.log('partialDateUserIds:', partialDateUserIds);
-      console.log('matchingUsers from regex/name:', matchingUsers);
 
       if (userSearchError) {
-        return NextResponse.json({ error: 'Failed to search users' }, { status: 500 });
+        return NextResponse.json(
+          { error: getSupabaseErrorMessage(userSearchError, 'Failed to search users'), details: userSearchError },
+          { status: 500 }
+        );
       }
 
       let matchingUserIdsSet = new Set<string>();
@@ -550,9 +588,9 @@ export async function GET(req: NextRequest) {
       if (matchingUserIds.length === 0 && !exactDateFilter && searchBookingNumber === null) {
         // No matching users and no valid date filter constructed, return empty
         return NextResponse.json({
-          debug_info: { searchTerm, terms, exactDateFilter, partialDateUserIds, matchingUsers, searchBookingNumber },
           success: true,
           data: [],
+          statusCounts: { all: 0, pending: 0, confirmed: 0, cancelled: 0, ongoing: 0, completed: 0, no_show: 0 },
           pagination: {
             page,
             limit,
@@ -565,6 +603,7 @@ export async function GET(req: NextRequest) {
 
     const anyUserId = searchParams.get('anyUserId');
     const patientId = searchParams.get('patientId');
+    const midwifePractice = searchParams.get('midwifePractice') === 'true';
 
     // --- Status Counts Logic ---
     const statusKeys = ['pending', 'confirmed', 'cancelled', 'ongoing', 'completed', 'no_show'];
@@ -577,7 +616,7 @@ export async function GET(req: NextRequest) {
         if (clientId && !anyUserId) {
           filtered = filtered.eq('created_by', clientId);
         }
-        if (patientId && !anyUserId) {
+        if (patientId && !anyUserId && !(userRole === 'midwife' && midwifePractice)) {
           filtered = filtered.eq('client_id', patientId);
         }
 
@@ -618,7 +657,11 @@ export async function GET(req: NextRequest) {
         if (userRole === 'client') {
             filtered = filtered.or(`created_by.eq.${user.id},client_id.eq.${user.id}`);
         } else if (userRole === 'midwife') {
-            filtered = filtered.eq('client_id', user.id);
+            if (midwifePractice && userProfile?.midwife_id) {
+                filtered = filtered.eq('midwife_id', userProfile.midwife_id);
+            } else {
+                filtered = filtered.eq('client_id', user.id);
+            }
         }
         // staff, admin, and assistant can view all (filters applied above suffice)
         
@@ -693,7 +736,7 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('Supabase Query Error:', error);
-      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+      return NextResponse.json({ error: getSupabaseErrorMessage(error, 'Failed to fetch bookings'), details: error }, { status: 500 });
     }
 
     let finalData = data || [];
@@ -846,5 +889,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: (e as Error)?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
-

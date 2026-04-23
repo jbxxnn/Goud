@@ -112,7 +112,10 @@ export function createClientColumns({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onView(client)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onView(client);
+              }}
               className="h-8 w-8"
               title={t('cells.viewDetails')}
               disabled={isLoading}
@@ -129,4 +132,3 @@ export function createClientColumns({
     },
   ];
 }
-

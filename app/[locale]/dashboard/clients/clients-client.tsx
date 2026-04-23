@@ -450,6 +450,7 @@ export default function ClientsClient({
               showColumnToggle={false}
               showPagination={false}
               manualPagination={true}
+              onRowClick={handleView}
             />
           )}
         </div>
@@ -542,4 +543,3 @@ export default function ClientsClient({
     </PageContainer>
   );
 }
-
