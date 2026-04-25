@@ -25,12 +25,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { TimeInput } from '@/components/ui/time-input';
 import { Time } from '@internationalized/date';
 import { cn } from '@/lib/utils';
-import { useLocale } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon } from '@hugeicons/core-free-icons';
 
 export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | 'breaks' }) {
+  const t = useTranslations('SitewideBreaks');
   const locale = useLocale();
   const [holidays, setHolidays] = useState<BlackoutPeriod[]>([]);
   const [sitewideBreaks, setSitewideBreaks] = useState<SitewideBreak[]>([]);
@@ -99,7 +100,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     end_time: '',
     start_date: '',
     end_date: '',
-    is_recurring: true,
+    is_recurring: false,
   });
 
   const fetchData = async () => {
@@ -117,16 +118,16 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       if (holidaysData.success) {
         setHolidays(holidaysData.data.filter((b: BlackoutPeriod) => b.location_id === null && b.staff_id === null));
       } else {
-        toast.error('Failed to load holidays');
+        toast.error(t('toasts.loadHolidaysError'));
       }
       
       if (breaksData.success) {
         setSitewideBreaks(breaksData.data);
       } else {
-        toast.error('Failed to load sitewide breaks');
+        toast.error(t('toasts.loadBreaksError'));
       }
     } catch (error) {
-      toast.error('Failed to load data');
+      toast.error(t('toasts.loadDataError'));
     } finally {
       setLoading(false);
     }
@@ -157,14 +158,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Holiday created');
+        toast.success(t('toasts.holidayCreated'));
         setNewHoliday({ start_date: '', end_date: '', reason: '' });
         fetchData();
       } else {
-        toast.error(data.error);
+        toast.error(data.error || t('toasts.createHolidayError'));
       }
     } catch (error) {
-      toast.error('Failed to create holiday');
+      toast.error(t('toasts.createHolidayError'));
     } finally {
       setSubmittingHoliday(false);
     }
@@ -195,14 +196,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Sitewide break created');
-        setNewBreak({ name: '', start_time: '', end_time: '', start_date: '', end_date: '', is_recurring: true });
+        toast.success(t('toasts.breakCreated'));
+        setNewBreak({ name: '', start_time: '', end_time: '', start_date: '', end_date: '', is_recurring: false });
         fetchData();
       } else {
-        toast.error(data.error);
+        toast.error(data.error || t('toasts.createBreakError'));
       }
     } catch (error) {
-      toast.error('Failed to create break');
+      toast.error(t('toasts.createBreakError'));
     } finally {
       setSubmittingBreak(false);
     }
@@ -229,14 +230,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Holiday updated');
+        toast.success(t('toasts.holidayUpdated'));
         setEditingHoliday(null);
         fetchData();
       } else {
-        toast.error(data.error);
+        toast.error(data.error || t('toasts.updateHolidayError'));
       }
     } catch (error) {
-      toast.error('Failed to update holiday');
+      toast.error(t('toasts.updateHolidayError'));
     } finally {
       setSubmittingEditHoliday(false);
     }
@@ -267,14 +268,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Sitewide break updated');
+        toast.success(t('toasts.breakUpdated'));
         setEditingBreak(null);
         fetchData();
       } else {
-        toast.error(data.error);
+        toast.error(data.error || t('toasts.updateBreakError'));
       }
     } catch (error) {
-      toast.error('Failed to update break');
+      toast.error(t('toasts.updateBreakError'));
     } finally {
       setSubmittingEditBreak(false);
     }
@@ -284,13 +285,13 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     try {
       const response = await fetch(`/api/blackout-periods/${id}`, { method: 'DELETE' });
       if (response.ok) {
-         toast.success('Holiday deleted');
+         toast.success(t('toasts.holidayDeleted'));
          fetchData();
       } else {
-         toast.error('Failed to delete');
+         toast.error(t('toasts.deleteError'));
       }
     } catch (error) {
-      toast.error('Failed to delete');
+      toast.error(t('toasts.deleteError'));
     }
   };
 
@@ -299,13 +300,13 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       const response = await fetch(`/api/sitewide-breaks/${id}`, { method: 'DELETE' });
       const data = await response.json();
       if (data.success) {
-         toast.success('Break deleted');
+         toast.success(t('toasts.breakDeleted'));
          fetchData();
       } else {
-         toast.error(data.error || 'Failed to delete');
+         toast.error(data.error || t('toasts.deleteError'));
       }
     } catch (error) {
-      toast.error('Failed to delete');
+      toast.error(t('toasts.deleteError'));
     }
   };
 
@@ -314,15 +315,15 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       {activeTab === 'holidays' && (
           <Card className='shadow-none' style={{borderRadius: '10px'}}>
             <CardHeader>
-              <CardTitle>Holidays</CardTitle>
+              <CardTitle>{t('holidays.title')}</CardTitle>
               <CardDescription>
-                These strict limits completely block booking across ALL locations and ALL staff during the given timeframe.
+                {t('holidays.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateHoliday} className="grid gap-2 md:grid-cols-3 2xl:grid-cols-3 items-end mb-6">
                 <div className="grid gap-2 min-w-0">
-                  <Label>Start Date & Time</Label>
+                  <Label>{t('holidays.date')}</Label>
                   <div className="flex gap-2 min-w-0">
                     <Popover modal={true} open={startDateOpen} onOpenChange={setStartDateOpen}>
                       <PopoverTrigger asChild>
@@ -335,7 +336,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {newHoliday.start_date ? formatInAmsterdam(newHoliday.start_date, "P") : "Pick date"}
+                            {newHoliday.start_date ? formatInAmsterdam(newHoliday.start_date, "P") : t('holidays.pickDate')}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -368,7 +369,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       </PopoverContent>
                     </Popover>
                     <TimeInput
-                      className="flex-1 min-w-[100px]"
+                      className="flex-1 min-w-[100px] hidden"
                       style={{borderRadius: "10px"}}
                       dateInputClassName="h-10"
                       hourCycle={24}
@@ -383,8 +384,8 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     />
                   </div>
                 </div>
-                <div className="grid gap-2 min-w-0">
-                  <Label>End Date & Time</Label>
+                <div className="grid gap-2 min-w-0 hidden">
+                  <Label>Date</Label>
                   <div className="flex gap-2 min-w-0">
                     <Popover modal={true} open={endDateOpen} onOpenChange={setEndDateOpen}>
                       <PopoverTrigger asChild>
@@ -436,12 +437,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="h_reason">Reason</Label>
+                  <Label htmlFor="h_reason">{t('holidays.reason')}</Label>
                   <Input
                     id="h_reason"
                     className='h-10'
                     style={{borderRadius: '10px'}}
-                    placeholder="e.g. Holiday"
+                    placeholder={t('holidays.reasonPlaceholder')}
                     value={newHoliday.reason}
                     onChange={(e) => setNewHoliday({ ...newHoliday, reason: e.target.value })}
                     required
@@ -449,7 +450,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                 </div>
                 <Button type="submit" disabled={submittingHoliday} style={{borderRadius: '10px'}} className='h-10'>
                   {submittingHoliday ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Add Holiday
+                  {t('holidays.addHoliday')}
                 </Button>
               </form>
 
@@ -457,10 +458,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                 <Table >
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Start</TableHead>
-                      <TableHead>End</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                      <TableHead>{t('holidays.reason')}</TableHead>
+                      <TableHead>{t('holidays.start')}</TableHead>
+                      {/* <TableHead>End</TableHead> */}
+                      <TableHead className="w-[100px]">{t('holidays.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -473,7 +474,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     ) : holidays.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                          No holidays configured.
+                          {t('holidays.empty')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -481,7 +482,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         <TableRow key={b.id}>
                           <TableCell className="font-medium">{b.reason}</TableCell>
                           <TableCell>{b.start_date ? formatInAmsterdam(b.start_date, 'PPp') : ''}</TableCell>
-                          <TableCell>{b.end_date ? formatInAmsterdam(b.end_date, 'PPp') : ''}</TableCell>
+                          {/* <TableCell>{b.end_date ? formatInAmsterdam(b.end_date, 'PPp') : ''}</TableCell> */}
                           <TableCell>
                             <div className="flex items-center space-x-1">
                               <Button
@@ -515,19 +516,19 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       {activeTab === 'breaks' && (
           <Card className='shadow-none' style={{borderRadius: "10px"}}>
             <CardHeader>
-              <CardTitle>Sitewide Breaks</CardTitle>
+              <CardTitle>{t('breaks.title')}</CardTitle>
               <CardDescription>
-                These templates are automatically applied to ALL matching shifts. You can customize them from within individual shift details.
+                {t('breaks.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateBreak} className="p-4 bg-muted/30 rounded-lg border mb-6 space-y-4" style={{borderRadius: "10px"}}>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="grid gap-2 col-span-2">
-                    <Label htmlFor="b_name">Break Name</Label>
+                    <Label htmlFor="b_name">{t('breaks.breakName')}</Label>
                     <Input
                       id="b_name"
-                      placeholder="e.g. Lunch Break"
+                      placeholder={t('breaks.breakNamePlaceholder')}
                       className='h-10'
                       style={{borderRadius: '10px'}}
                       value={newBreak.name}
@@ -537,7 +538,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   </div>
                   <div className='flex gap-2'>
                   <div className="grid gap-2">
-                    <Label htmlFor="b_start_time">Start Time</Label>
+                    <Label htmlFor="b_start_time">{t('breaks.startTime')}</Label>
                     <div className="h-10">
                       <TimeInput
                         className="w-full"
@@ -555,7 +556,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     </div>
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="b_end_time">End Time</Label>
+                    <Label htmlFor="b_end_time">{t('breaks.endTime')}</Label>
                     <div className="h-10">
                       <TimeInput
                         className="w-full"
@@ -583,14 +584,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     onCheckedChange={(checked) => setNewBreak({ ...newBreak, is_recurring: checked === true })}
                   />
                   <Label htmlFor="b_recurring" className="font-medium cursor-pointer mb-0">
-                    Apply Every Day
+                    {t('breaks.applyEveryDay')}
                   </Label>
                 </div>
 
                 {!newBreak.is_recurring && (
                   <div className="grid gap-4 md:grid-cols-2 pt-2">
                     <div className="grid gap-2">
-                      <Label>Start Date (Optional)</Label>
+                      <Label>{t('breaks.startDateOptional')}</Label>
                       <Popover modal={true} open={breakStartDateOpen} onOpenChange={setBreakStartDateOpen}>
                         <PopoverTrigger asChild>
                           <Button
@@ -602,7 +603,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           >
                             <HugeiconsIcon icon={Calendar02Icon} />
                             <span className="truncate">
-                              {newBreak.start_date ? formatInAmsterdam(`${newBreak.start_date}T12:00`, 'P') : "Pick date"}
+                              {newBreak.start_date ? formatInAmsterdam(`${newBreak.start_date}T12:00`, 'P') : t('holidays.pickDate')}
                             </span>
                           </Button>
                         </PopoverTrigger>
@@ -631,7 +632,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       </Popover>
                     </div>
                     <div className="grid gap-2">
-                      <Label>End Date (Optional)</Label>
+                      <Label>{t('breaks.endDateOptional')}</Label>
                       <Popover modal={true} open={breakEndDateOpen} onOpenChange={setBreakEndDateOpen}>
                         <PopoverTrigger asChild>
                           <Button
@@ -643,7 +644,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           >
                             <HugeiconsIcon icon={Calendar02Icon} />
                             <span className="truncate">
-                              {newBreak.end_date ? formatInAmsterdam(`${newBreak.end_date}T12:00`, 'P') : "Pick date"}
+                              {newBreak.end_date ? formatInAmsterdam(`${newBreak.end_date}T12:00`, 'P') : t('holidays.pickDate')}
                             </span>
                           </Button>
                         </PopoverTrigger>
@@ -670,7 +671,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                 <div className="pt-2">
                   <Button type="submit" disabled={submittingBreak} className="w-full md:w-auto">
                     {submittingBreak ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Add Break Template
+                    {t('breaks.addBreakTemplate')}
                   </Button>
                 </div>
               </form>
@@ -679,10 +680,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Template Name</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Recurrence</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
+                      <TableHead>{t('breaks.templateName')}</TableHead>
+                      <TableHead>{t('breaks.time')}</TableHead>
+                      <TableHead>{t('breaks.recurrence')}</TableHead>
+                      <TableHead className="w-[100px]">{t('holidays.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -695,7 +696,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     ) : sitewideBreaks.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                          No sitewide breaks configured.
+                          {t('breaks.empty')}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -705,10 +706,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           <TableCell>{b.start_time.substring(0, 5)} - {b.end_time.substring(0, 5)}</TableCell>
                           <TableCell>
                             {b.is_recurring 
-                              ? 'Daily' 
+                              ? t('breaks.daily') 
                               : (b.start_date || b.end_date) 
-                                ? `From ${b.start_date || 'beginning'} to ${b.end_date || 'end'}` 
-                                : 'Specific dates'}
+                                ? t('breaks.fromTo', { start: b.start_date || t('breaks.beginning'), end: b.end_date || t('breaks.end') }) 
+                                : t('breaks.specificDates')}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-1">
@@ -753,13 +754,13 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       <Dialog open={!!editingHoliday} onOpenChange={(open) => !open && setEditingHoliday(null)}>
         <DialogContent className="max-w-[300px]" style={{borderRadius: "10px"}}>
           <DialogHeader>
-            <DialogTitle>Edit Holiday</DialogTitle>
+            <DialogTitle>{t('holidays.editTitle')}</DialogTitle>
           </DialogHeader>
           {editingHoliday && (
             <form onSubmit={handleUpdateHoliday} className="grid gap-4 py-4">
               <div className='flex'>
               <div className="grid gap-2 min-w-0">
-                  <Label>Start Date & Time</Label>
+                  <Label>{t('holidays.startDateTime')}</Label>
                   <div className="flex gap-2 min-w-0">
                     <Popover modal={true} open={editHolidayStartDateOpen} onOpenChange={setEditHolidayStartDateOpen}>
                       <PopoverTrigger asChild>
@@ -772,7 +773,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {editingHoliday.start_date ? formatInAmsterdam(editingHoliday.start_date, "P") : "Pick date"}
+                            {editingHoliday.start_date ? formatInAmsterdam(editingHoliday.start_date, "P") : t('holidays.pickDate')}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -821,7 +822,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   </div>
                 </div>
                 <div className="grid gap-2 min-w-0">
-                  <Label>End Date & Time</Label>
+                  <Label>{t('holidays.endDateOptional')}</Label>
                   <div className="flex gap-2 min-w-0">
                     <Popover modal={true} open={editHolidayEndDateOpen} onOpenChange={setEditHolidayEndDateOpen}>
                       <PopoverTrigger asChild>
@@ -834,7 +835,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {editingHoliday.end_date ? formatInAmsterdam(editingHoliday.end_date, "P") : "Pick date"}
+                            {editingHoliday.end_date ? formatInAmsterdam(editingHoliday.end_date, "P") : t('holidays.pickDate')}
                           </span>
                         </Button>
                       </PopoverTrigger>
@@ -874,7 +875,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                 </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit_h_reason">Reason</Label>
+                  <Label htmlFor="edit_h_reason">{t('holidays.reason')}</Label>
                   <Input
                     id="edit_h_reason"
                     className='h-10'
@@ -885,10 +886,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   />
                 </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditingHoliday(null)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setEditingHoliday(null)}>{t('common.cancel')}</Button>
                 <Button type="submit" disabled={submittingEditHoliday} style={{borderRadius: '10px'}}>
                   {submittingEditHoliday ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Save Changes
+                  {t('holidays.updateHoliday')}
                 </Button>
               </DialogFooter>
             </form>
@@ -900,12 +901,12 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       <Dialog open={!!editingBreak} onOpenChange={(open) => !open && setEditingBreak(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Sitewide Break</DialogTitle>
+            <DialogTitle>{t('breaks.editTitle')}</DialogTitle>
           </DialogHeader>
           {editingBreak && (
             <form onSubmit={handleUpdateBreak} className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="edit_b_name">Break Name</Label>
+                    <Label htmlFor="edit_b_name">{t('breaks.breakName')}</Label>
                     <Input
                       id="edit_b_name"
                       value={editingBreak.name}
@@ -916,7 +917,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="edit_b_start_time">Start Time</Label>
+                      <Label htmlFor="edit_b_start_time">{t('breaks.startTime')}</Label>
                       <div className="h-10">
                         <TimeInput
                           className="w-full"
@@ -934,7 +935,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       </div>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="edit_b_end_time">End Time</Label>
+                      <Label htmlFor="edit_b_end_time">{t('breaks.endTime')}</Label>
                       <div className="h-10">
                         <TimeInput
                           className="w-full"
@@ -960,14 +961,14 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       onCheckedChange={(checked) => setEditingBreak({ ...editingBreak, is_recurring: checked === true })}
                     />
                     <Label htmlFor="edit_b_recurring" className="font-medium cursor-pointer">
-                      Apply Every Day
+                      {t('breaks.applyEveryDay')}
                     </Label>
                   </div>
 
                   {!editingBreak.is_recurring && (
                     <div className="grid gap-4 md:grid-cols-2 pt-2">
                       <div className="grid gap-2">
-                        <Label>Start Date (Optional)</Label>
+                        <Label>{t('breaks.startDateOptional')}</Label>
                         <Popover modal={true} open={editBreakStartDateOpen} onOpenChange={setEditBreakStartDateOpen}>
                           <PopoverTrigger asChild>
                             <Button
@@ -979,7 +980,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                             >
                               <HugeiconsIcon icon={Calendar02Icon} />
                               <span className="truncate">
-                                {editingBreak.start_date ? formatInAmsterdam(`${editingBreak.start_date}T12:00`, 'P') : "Pick date"}
+                                {editingBreak.start_date ? formatInAmsterdam(`${editingBreak.start_date}T12:00`, 'P') : t('holidays.pickDate')}
                               </span>
                             </Button>
                           </PopoverTrigger>
@@ -1006,7 +1007,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                         </Popover>
                       </div>
                       <div className="grid gap-2">
-                        <Label>End Date (Optional)</Label>
+                        <Label>{t('breaks.endDateOptional')}</Label>
                         <Popover modal={true} open={editBreakEndDateOpen} onOpenChange={setEditBreakEndDateOpen}>
                           <PopoverTrigger asChild>
                             <Button
@@ -1018,7 +1019,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                             >
                               <HugeiconsIcon icon={Calendar02Icon} />
                               <span className="truncate">
-                                {editingBreak.end_date ? formatInAmsterdam(`${editingBreak.end_date}T12:00`, 'P') : "Pick date"}
+                                {editingBreak.end_date ? formatInAmsterdam(`${editingBreak.end_date}T12:00`, 'P') : t('holidays.pickDate')}
                               </span>
                             </Button>
                           </PopoverTrigger>
@@ -1042,10 +1043,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     </div>
                   )}
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditingBreak(null)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setEditingBreak(null)}>{t('common.cancel')}</Button>
                 <Button type="submit" disabled={submittingEditBreak}>
                   {submittingEditBreak ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Save Changes
+                  {t('breaks.updateBreak')}
                 </Button>
               </DialogFooter>
             </form>

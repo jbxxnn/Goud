@@ -12,6 +12,9 @@ import { CalendarDayView } from "@/calendar/components/week-and-day-view/calenda
 import { CalendarWeekView } from "@/calendar/components/week-and-day-view/calendar-week-view";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
+import type { Staff } from "@/lib/types/staff";
+import type { Location } from "@/lib/types/location_simple";
+import type { Service } from "@/lib/types/service";
 
 interface IProps {
   view: TCalendarView;
@@ -21,9 +24,12 @@ interface IProps {
   onShiftUpdated?: () => void;
   summaryShiftEvents?: IEvent[];
   hideAddButton?: boolean;
+  staff: Staff[];
+  locations: Location[];
+  services: Service[];
 }
 
-export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated, summaryShiftEvents, hideAddButton }: IProps) {
+export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onShiftDeleted, onShiftUpdated, summaryShiftEvents, hideAddButton, staff, locations, services }: IProps) {
   const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
   const filteredEvents = useMemo(() => {
@@ -92,12 +98,12 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
 
   return (
     <div className="overflow-hidden rounded-xl border">
-      <ShiftCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} onShiftCreated={onShiftCreated} hideAddButton={hideAddButton} />
+      <ShiftCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} onShiftCreated={onShiftCreated} hideAddButton={hideAddButton} staff={staff} locations={locations} services={services} />
 
       <DndProviderWrapper>
-        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} />}
+        {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} shiftStaff={staff} shiftLocations={locations} shiftServices={services} />}
         {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
-        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} />}
+        {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} shiftStaff={staff} shiftLocations={locations} shiftServices={services} />}
         {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
         {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
       </DndProviderWrapper>

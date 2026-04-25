@@ -43,6 +43,9 @@ import { Service } from "@/lib/types/service";
 
 interface IProps {
   children: React.ReactNode;
+  staff: Staff[];
+  locations: Location[];
+  services: Service[];
   startDate?: Date;
   startTime?: { hour: number; minute: number };
   onShiftCreated?: () => void;
@@ -66,15 +69,11 @@ interface ShiftFormData {
 
 import { useTranslations } from 'next-intl';
 
-export function AddShiftDialog({ children, startDate, startTime, onShiftCreated }: IProps) {
+export function AddShiftDialog({ children, staff, locations, services, startDate, startTime, onShiftCreated }: IProps) {
   const t = useTranslations('Shifts.dialog.add');
   const { isOpen, onClose, onToggle } = useDisclosure();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [staffLocationMap, setStaffLocationMap] = useState<{ [key: string]: string[] }>({});
   const [staffServiceMap, setStaffServiceMap] = useState<{ [key: string]: string[] }>({});
@@ -110,69 +109,23 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     },
   });
 
-  // Fetch data
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // Get cache version from localStorage (updated on mutations) or use timestamp
-        const { getStaffAssignmentsCacheVersion } = await import('@/lib/utils/cache-invalidation');
-        const cacheVersion = getStaffAssignmentsCacheVersion();
+    const locationMapping: { [key: string]: string[] } = {};
+    const serviceMapping: { [key: string]: string[] } = {};
 
-        // Fetch all data in parallel - single API call for staff with assignments
-        // Add cache version to bust cache when mutations occur
-        const [staffResponse, locationsResponse, servicesResponse] = await Promise.all([
-          fetch(`/api/staff?active_only=true&limit=1000&with_assignments=true&v=${cacheVersion}`, {
-            cache: 'no-store', // Always fetch fresh when dialog opens
-          }),
-          fetch('/api/locations-simple?active_only=true&limit=1000'),
-          fetch('/api/services?active_only=true&limit=1000'),
-        ]);
+    for (const member of staff) {
+      locationMapping[member.id] = member.location_ids || [];
+      serviceMapping[member.id] = member.service_ids || [];
+    }
 
-        const [staffData, locationsData, servicesData] = await Promise.all([
-          staffResponse.json(),
-          locationsResponse.json(),
-          servicesResponse.json(),
-        ]);
+    setStaffLocationMap(locationMapping);
+    setStaffServiceMap(serviceMapping);
+  }, [staff]);
 
-        if (staffData.success) {
-          const staffList = staffData.data || [];
-          setStaff(staffList);
-
-          // Build staff-location and staff-service mappings from the single response
-          const locationMapping: { [key: string]: string[] } = {};
-          const serviceMapping: { [key: string]: string[] } = {};
-
-          for (const member of staffList) {
-            locationMapping[member.id] = member.location_ids || [];
-            serviceMapping[member.id] = member.service_ids || [];
-          }
-
-          setStaffLocationMap(locationMapping);
-          setStaffServiceMap(serviceMapping);
-        }
-
-        if (locationsData.success) {
-          setLocations(locationsData.data || []);
-        }
-
-        if (servicesData.success) {
-          setServices(servicesData.data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (isOpen) {
-      fetchData();
-    } else {
-      // Reset state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
       setSelectedServices([]);
       setShowServices(false);
-      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -422,20 +375,15 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             {/* Staff Selection */}
             <div className="space-y-2">
               <Label htmlFor="staff_id">{t('staffMember')}</Label>
-              <Select
+                <Select
                 value={watch('staff_id')}
                 onValueChange={handleStaffChange}
-                disabled={isLoading}
               >
                 <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
-                  <SelectValue placeholder={isLoading ? t('loadingStaff') : t('selectStaff')} />
+                  <SelectValue placeholder={t('selectStaff')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {isLoading ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      Loading staff...
-                    </div>
-                  ) : filteredStaff.length === 0 ? (
+                  {filteredStaff.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {watch('location_id')
                         ? 'No staff assigned to this location'
@@ -463,20 +411,15 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
             {/* Location Selection */}
             <div className="space-y-2">
               <Label htmlFor="location_id">{t('location')}</Label>
-              <Select
+                <Select
                 value={watch('location_id')}
                 onValueChange={handleLocationChange}
-                disabled={isLoading}
               >
                 <SelectTrigger className="bg-card" style={{borderRadius: "1rem"}}>
-                  <SelectValue placeholder={isLoading ? t('loadingLocations') : t('selectLocation')} />
+                  <SelectValue placeholder={t('selectLocation')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {isLoading ? (
-                    <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                      {t('loadingLocations')}
-                    </div>
-                  ) : filteredLocations.length === 0 ? (
+                  {filteredLocations.length === 0 ? (
                     <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                       {watch('staff_id')
                         ? t('noLocationStaff')
@@ -560,7 +503,6 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     style={{ borderRadius: '0.2rem' }}
                     dateInputClassName="h-10"
                     hourCycle={24}
-                    disabled={isLoading}
                     value={watch('start_time') && watch('start_time').includes('T') ? new Time(
                       parseInt(watch('start_time').split('T')[1].split(':')[0]),
                       parseInt(watch('start_time').split('T')[1].split(':')[1])
@@ -637,7 +579,6 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
                     style={{ borderRadius: '0.2rem' }}
                     dateInputClassName="h-10"
                     hourCycle={24}
-                    disabled={isLoading}
                     value={watch('end_time') && watch('end_time').includes('T') ? new Time(
                       parseInt(watch('end_time').split('T')[1].split(':')[0]),
                       parseInt(watch('end_time').split('T')[1].split(':')[1])
@@ -957,4 +898,3 @@ export function AddShiftDialog({ children, startDate, startTime, onShiftCreated 
     </>
   );
 }
-

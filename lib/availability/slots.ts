@@ -1,3 +1,5 @@
+import { formatInTimeZone } from 'date-fns-tz';
+
 export type TimeInterval = {
   start: Date; // inclusive
   end: Date;   // exclusive
@@ -33,12 +35,22 @@ export type Slot = {
 };
 
 function isWithinBlackout(date: Date, blackouts: BlackoutPeriod[], locationId: string): boolean {
+  const requestedLocalDate = formatInTimeZone(date, 'Europe/Amsterdam', 'yyyy-MM-dd');
+
   for (const b of blackouts) {
     // If locationId is null, it's a global blackout (applies to all)
     // Otherwise, it must match the requested locationId
     if (b.locationId !== null && b.locationId !== locationId) continue;
-    
-    if (date >= startOfDay(b.startDate) && date <= endOfDay(b.endDate)) return true;
+
+    const blackoutStartLocalDate = formatInTimeZone(b.startDate, 'Europe/Amsterdam', 'yyyy-MM-dd');
+    const blackoutEndLocalDate = formatInTimeZone(b.endDate, 'Europe/Amsterdam', 'yyyy-MM-dd');
+
+    if (
+      requestedLocalDate >= blackoutStartLocalDate &&
+      requestedLocalDate <= blackoutEndLocalDate
+    ) {
+      return true;
+    }
   }
   return false;
 }
@@ -149,6 +161,5 @@ export function summarizeDayHeatmap(
     return { date: key, availableSlots: perDaySlots.get(key)?.length ?? 0 };
   });
 }
-
 
 

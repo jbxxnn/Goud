@@ -20,6 +20,10 @@ import { calculateEventLayout, isWorkingHour, getVisibleHours, isDayClosed } fro
 import type { IEvent } from "@/calendar/interfaces";
 
 import { useTranslations } from "next-intl";
+import type { Service } from "@/lib/types/booking";
+import type { Location } from "@/lib/types/location_simple";
+import type { Staff } from "@/lib/types/staff";
+import type { Service as ShiftService } from "@/lib/types/service";
 
 interface IProps {
   singleDayEvents: IEvent[];
@@ -31,9 +35,74 @@ interface IProps {
   onShiftUpdated?: () => void;
   onEventClick?: (event: IEvent) => void;
   hideAddButton?: boolean;
+  services?: Service[];
+  bookingLocations?: Location[];
+  bookingStaffMembers?: Staff[];
+  shiftStaff?: Staff[];
+  shiftLocations?: Location[];
+  shiftServices?: ShiftService[];
 }
 
-export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShiftEvents, showNotesRow = true, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton }: IProps) {
+interface AddBookingStripProps {
+  topClassName: string;
+  side: "left" | "right";
+  date: Date;
+  hour: number;
+  minute: number;
+  shifts: IEvent[];
+  services: Service[];
+  bookingLocations: Location[];
+  bookingStaffMembers: Staff[];
+  onBookingCreated?: () => void;
+}
+
+function AddBookingStrip({
+  topClassName,
+  side,
+  date,
+  hour,
+  minute,
+  shifts,
+  services,
+  bookingLocations,
+  bookingStaffMembers,
+  onBookingCreated,
+}: AddBookingStripProps) {
+  const firstShift = shifts[0];
+
+  return (
+    <AddBookingDialog
+      services={services}
+      locations={bookingLocations}
+      staffMembers={bookingStaffMembers}
+      startDate={date}
+      startHour={hour}
+      startMinute={minute}
+      initialShiftId={firstShift?.id?.toString()}
+      initialStaffId={firstShift?.user?.id}
+      initialLocationId={firstShift?.location?.id}
+      availableShifts={shifts}
+      onBookingCreated={onBookingCreated}
+    >
+      <div
+        className={cn(
+          "absolute z-[3] h-[24px] w-3 cursor-pointer bg-secondary opacity-0 transition-all hover:w-4 hover:bg-primary/10 hover:opacity-100 group-hover:opacity-100",
+          side === "left"
+            ? "left-0 border-r border-primary"
+            : "right-0 border-l border-primary",
+          topClassName
+        )}
+        title="Add booking"
+      >
+        <div className="flex h-full items-center justify-center text-[10px] font-semibold text-primary/70">
+          +
+        </div>
+      </div>
+    </AddBookingDialog>
+  );
+}
+
+export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShiftEvents, showNotesRow = true, onShiftCreated, onShiftDeleted, onShiftUpdated, onEventClick, hideAddButton, services = [], bookingLocations = [], bookingStaffMembers = [], shiftStaff = [], shiftLocations = [], shiftServices = [] }: IProps) {
   const t = useTranslations('Calendar.view');
   const { selectedDate, workingHours, visibleHours, entityType, showShiftGuidance, dayNotes, locations, selectedLocationId } = useCalendar();
 
@@ -293,27 +362,55 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
 
                           {(() => {
                             const shifts = allShiftsMap[`${dayIndex}-${hour}-0`] || [];
-                            const firstShift = shifts[0];
                             return (
                               hideAddButton || isPastDate ? (
                                 <div className="absolute inset-x-0 top-0 h-[24px]" />
                               ) : (
                                 <DroppableTimeBlock date={day} hour={hour} minute={0}>
                                   {entityType === 'booking' ? (
-                                    <AddBookingDialog 
-                                      startDate={day} 
-                                      startHour={hour} 
-                                      startMinute={0} 
-                                      initialShiftId={firstShift?.id?.toString()}
-                                      initialStaffId={firstShift?.user?.id}
-                                      initialLocationId={firstShift?.location?.id}
-                                      availableShifts={shifts}
-                                      onBookingCreated={onShiftCreated}
-                                    >
-                                      <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                    </AddBookingDialog>
+                                    <>
+                                      <AddBookingDialog 
+                                        services={services}
+                                        locations={bookingLocations}
+                                        staffMembers={bookingStaffMembers}
+                                        startDate={day} 
+                                        startHour={hour} 
+                                        startMinute={0} 
+                                        initialShiftId={shifts[0]?.id?.toString()}
+                                        initialStaffId={shifts[0]?.user?.id}
+                                        initialLocationId={shifts[0]?.location?.id}
+                                        availableShifts={shifts}
+                                        onBookingCreated={onShiftCreated}
+                                      >
+                                        <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                      </AddBookingDialog>
+                                      <AddBookingStrip
+                                        topClassName="top-0"
+                                        side="left"
+                                        date={day}
+                                        hour={hour}
+                                        minute={0}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                      <AddBookingStrip
+                                        topClassName="top-0"
+                                        side="right"
+                                        date={day}
+                                        hour={hour}
+                                        minute={0}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                    </>
                                   ) : (
-                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated}>
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 0 }} onShiftCreated={onShiftCreated} staff={shiftStaff} locations={shiftLocations} services={shiftServices}>
                                       <div className="absolute inset-x-0 top-0 h-[24px] cursor-pointer transition-colors hover:bg-accent" />
                                     </AddShiftDialog>
                                   )}
@@ -324,27 +421,55 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
 
                           {(() => {
                             const shifts = allShiftsMap[`${dayIndex}-${hour}-15`] || [];
-                            const firstShift = shifts[0];
                             return (
                               hideAddButton || isPastDate ? (
                                 <div className="absolute inset-x-0 top-[24px] h-[24px]" />
                               ) : (
                                 <DroppableTimeBlock date={day} hour={hour} minute={15}>
                                   {entityType === 'booking' ? (
-                                    <AddBookingDialog 
-                                      startDate={day} 
-                                      startHour={hour} 
-                                      startMinute={15} 
-                                      initialShiftId={firstShift?.id?.toString()}
-                                      initialStaffId={firstShift?.user?.id}
-                                      initialLocationId={firstShift?.location?.id}
-                                      availableShifts={shifts}
-                                      onBookingCreated={onShiftCreated}
-                                    >
-                                      <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                    </AddBookingDialog>
+                                    <>
+                                      <AddBookingDialog 
+                                        services={services}
+                                        locations={bookingLocations}
+                                        staffMembers={bookingStaffMembers}
+                                        startDate={day} 
+                                        startHour={hour} 
+                                        startMinute={15} 
+                                        initialShiftId={shifts[0]?.id?.toString()}
+                                        initialStaffId={shifts[0]?.user?.id}
+                                        initialLocationId={shifts[0]?.location?.id}
+                                        availableShifts={shifts}
+                                        onBookingCreated={onShiftCreated}
+                                      >
+                                        <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                      </AddBookingDialog>
+                                      <AddBookingStrip
+                                        topClassName="top-[24px]"
+                                        side="left"
+                                        date={day}
+                                        hour={hour}
+                                        minute={15}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                      <AddBookingStrip
+                                        topClassName="top-[24px]"
+                                        side="right"
+                                        date={day}
+                                        hour={hour}
+                                        minute={15}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                    </>
                                   ) : (
-                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated}>
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 15 }} onShiftCreated={onShiftCreated} staff={shiftStaff} locations={shiftLocations} services={shiftServices}>
                                       <div className="absolute inset-x-0 top-[24px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
                                     </AddShiftDialog>
                                   )}
@@ -357,27 +482,55 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
 
                           {(() => {
                             const shifts = allShiftsMap[`${dayIndex}-${hour}-30`] || [];
-                            const firstShift = shifts[0];
                             return (
                               hideAddButton || isPastDate ? (
                                 <div className="absolute inset-x-0 top-[48px] h-[24px]" />
                               ) : (
                                 <DroppableTimeBlock date={day} hour={hour} minute={30}>
                                   {entityType === 'booking' ? (
-                                    <AddBookingDialog 
-                                      startDate={day} 
-                                      startHour={hour} 
-                                      startMinute={30} 
-                                      initialShiftId={firstShift?.id?.toString()}
-                                      initialStaffId={firstShift?.user?.id}
-                                      initialLocationId={firstShift?.location?.id}
-                                      availableShifts={shifts}
-                                      onBookingCreated={onShiftCreated}
-                                    >
-                                      <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                    </AddBookingDialog>
+                                    <>
+                                      <AddBookingDialog 
+                                        services={services}
+                                        locations={bookingLocations}
+                                        staffMembers={bookingStaffMembers}
+                                        startDate={day} 
+                                        startHour={hour} 
+                                        startMinute={30} 
+                                        initialShiftId={shifts[0]?.id?.toString()}
+                                        initialStaffId={shifts[0]?.user?.id}
+                                        initialLocationId={shifts[0]?.location?.id}
+                                        availableShifts={shifts}
+                                        onBookingCreated={onShiftCreated}
+                                      >
+                                        <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                      </AddBookingDialog>
+                                      <AddBookingStrip
+                                        topClassName="top-[48px]"
+                                        side="left"
+                                        date={day}
+                                        hour={hour}
+                                        minute={30}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                      <AddBookingStrip
+                                        topClassName="top-[48px]"
+                                        side="right"
+                                        date={day}
+                                        hour={hour}
+                                        minute={30}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                    </>
                                   ) : (
-                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated}>
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 30 }} onShiftCreated={onShiftCreated} staff={shiftStaff} locations={shiftLocations} services={shiftServices}>
                                       <div className="absolute inset-x-0 top-[48px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
                                     </AddShiftDialog>
                                   )}
@@ -388,27 +541,55 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
 
                           {(() => {
                             const shifts = allShiftsMap[`${dayIndex}-${hour}-45`] || [];
-                            const firstShift = shifts[0];
                             return (
                               hideAddButton || isPastDate ? (
                                 <div className="absolute inset-x-0 top-[72px] h-[24px]" />
                               ) : (
                                 <DroppableTimeBlock date={day} hour={hour} minute={45}>
                                   {entityType === 'booking' ? (
-                                    <AddBookingDialog 
-                                      startDate={day} 
-                                      startHour={hour} 
-                                      startMinute={45} 
-                                      initialShiftId={firstShift?.id?.toString()}
-                                      initialStaffId={firstShift?.user?.id}
-                                      initialLocationId={firstShift?.location?.id}
-                                      availableShifts={shifts}
-                                      onBookingCreated={onShiftCreated}
-                                    >
-                                      <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
-                                    </AddBookingDialog>
+                                    <>
+                                      <AddBookingDialog 
+                                        services={services}
+                                        locations={bookingLocations}
+                                        staffMembers={bookingStaffMembers}
+                                        startDate={day} 
+                                        startHour={hour} 
+                                        startMinute={45} 
+                                        initialShiftId={shifts[0]?.id?.toString()}
+                                        initialStaffId={shifts[0]?.user?.id}
+                                        initialLocationId={shifts[0]?.location?.id}
+                                        availableShifts={shifts}
+                                        onBookingCreated={onShiftCreated}
+                                      >
+                                        <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
+                                      </AddBookingDialog>
+                                      <AddBookingStrip
+                                        topClassName="top-[72px]"
+                                        side="left"
+                                        date={day}
+                                        hour={hour}
+                                        minute={45}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                      <AddBookingStrip
+                                        topClassName="top-[72px]"
+                                        side="right"
+                                        date={day}
+                                        hour={hour}
+                                        minute={45}
+                                        shifts={shifts}
+                                        services={services}
+                                        bookingLocations={bookingLocations}
+                                        bookingStaffMembers={bookingStaffMembers}
+                                        onBookingCreated={onShiftCreated}
+                                      />
+                                    </>
                                   ) : (
-                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated}>
+                                    <AddShiftDialog startDate={day} startTime={{ hour, minute: 45 }} onShiftCreated={onShiftCreated} staff={shiftStaff} locations={shiftLocations} services={shiftServices}>
                                       <div className="absolute inset-x-0 top-[72px] h-[24px] cursor-pointer transition-colors hover:bg-accent" />
                                     </AddShiftDialog>
                                   )}

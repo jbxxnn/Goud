@@ -13,6 +13,9 @@ import { CalendarDayView } from "@/calendar/components/week-and-day-view/calenda
 import { CalendarWeekView } from "@/calendar/components/week-and-day-view/calendar-week-view";
 import type { TCalendarView } from "@/calendar/types";
 import type { IEvent } from "@/calendar/interfaces";
+import type { Service } from "@/lib/types/booking";
+import type { Location } from "@/lib/types/location_simple";
+import type { Staff } from "@/lib/types/staff";
 
 interface IProps {
     view: TCalendarView;
@@ -20,9 +23,12 @@ interface IProps {
     onEventClick?: (event: IEvent) => void;
     onBookingCreated?: () => void;
     userRole?: string;
+    services: Service[];
+    bookingLocations: Location[];
+    bookingStaffMembers: Staff[];
 }
 
-export function BookingCalendarContainer({ view, onViewChange, onEventClick, onBookingCreated, userRole }: IProps) {
+export function BookingCalendarContainer({ view, onViewChange, onEventClick, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers }: IProps) {
     const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
 
     const filteredEvents = useMemo(() => {
@@ -99,11 +105,14 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onB
               events={filteredEvents} 
               onViewChange={onViewChange} 
               onBookingCreated={onBookingCreated}
-              userRole={userRole} 
+              userRole={userRole}
+              services={services}
+              bookingLocations={bookingLocations}
+              bookingStaffMembers={bookingStaffMembers}
             />
 
             <DndProviderWrapper>
-                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} />}
+                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
                 {view === "month" && (
                     <CalendarMonthView 
                         singleDayEvents={singleDayEvents.filter(e => !e.metadata?.isShift)} 
@@ -111,7 +120,7 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onB
                         onEventClick={onEventClick} 
                     />
                 )}
-                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} />}
+                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
                 {view === "year" && (
                     <CalendarYearView 
                         allEvents={eventStartDates.filter(e => !e.metadata?.isShift)} 

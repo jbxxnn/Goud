@@ -9,6 +9,9 @@ import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIc
 import { cn } from "@/lib/utils";
 import type { IEvent } from "@/calendar/interfaces";
 import type { TCalendarView } from "@/calendar/types";
+import type { Staff } from "@/lib/types/staff";
+import type { Location } from "@/lib/types/location_simple";
+import type { Service } from "@/lib/types/service";
 
 interface IProps {
   view: TCalendarView;
@@ -16,11 +19,14 @@ interface IProps {
   onViewChange: (view: TCalendarView) => void;
   onShiftCreated?: () => void;
   hideAddButton?: boolean;
+  staff: Staff[];
+  locations: Location[];
+  services: Service[];
 }
 
 import { useTranslations } from 'next-intl';
 
-export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated, hideAddButton }: IProps) {
+export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated, hideAddButton, staff, locations, services }: IProps) {
   const t = useTranslations('Shifts.header');
   return (
     <div className="flex flex-col gap-4 border-b bg-border p-4 lg:flex-row lg:items-center lg:justify-between">
@@ -107,7 +113,7 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
           <UserSelect />
 
           {!hideAddButton && (
-            <AddShiftDialog onShiftCreated={onShiftCreated}>
+            <AddShiftDialog onShiftCreated={onShiftCreated} staff={staff} locations={locations} services={services}>
               <Button size="default" className="hover:bg-secondary-foreground bg-primary text-primary-foreground" style={{ borderRadius: '1rem' }}>
                 {t('addShift')}
               </Button>
@@ -118,4 +124,3 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
     </div>
   );
 }
-

@@ -11,6 +11,8 @@ export interface Staff {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  location_ids?: string[];
+  service_ids?: string[];
 }
 
 export interface StaffWithDetails extends Staff {

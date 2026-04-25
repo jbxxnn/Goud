@@ -13,6 +13,7 @@ import { Staff } from '@/lib/types/staff';
 import { Location } from '@/lib/types/location_simple';
 import { expandRecurringShifts } from '@/lib/utils/expand-recurring-shifts';
 import { mapLocationColorToCalendarColor } from '@/lib/utils/location-color-mapper';
+import { Service } from '@/lib/types/service';
 import type { TCalendarView } from '@/calendar/types';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import PageContainer, { PageItem } from '@/components/ui/page-transition';
@@ -140,9 +141,9 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
 
   // Fetch staff query
   const { data: staff = [] } = useQuery<Staff[]>({
-    queryKey: ['staff', 'active'],
+    queryKey: ['staff', 'active', 'with-assignments'],
     queryFn: async () => {
-      const response = await fetch('/api/staff?active_only=true&limit=1000');
+      const response = await fetch('/api/staff?active_only=true&limit=1000&with_assignments=true');
       const data = await response.json();
       if (!data.success) throw new Error(t('errors.fetchStaff'));
       return data.data || [];
@@ -156,6 +157,16 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
       const response = await fetch('/api/locations-simple?active_only=true&limit=1000');
       const data = await response.json();
       if (!data.success) throw new Error(t('errors.fetchLocations'));
+      return data.data || [];
+    },
+  });
+
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ['services', 'active', 'shift-dialog'],
+    queryFn: async () => {
+      const response = await fetch('/api/services?active_only=true&limit=1000');
+      const data = await response.json();
+      if (!data.success) throw new Error(t('errors.fetchServices', { fallback: 'Failed to fetch services' }));
       return data.data || [];
     },
   });
@@ -305,6 +316,9 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
                 onViewChange={setCalendarView}
                 fetchShifts={fetchShifts}
                 summaryShiftEvents={summaryShiftEvents as unknown as IEvent[]}
+                staff={staff}
+                locations={locations}
+                services={services}
                 hideAddButton={!!staffId || ((userRole !== 'admin' && userRole !== 'assistant') && !staffId)}
               />
               {/* Calendar Settings */}
@@ -333,12 +347,18 @@ function ShiftCalendarContainerWrapper({
   onViewChange,
   fetchShifts,
   summaryShiftEvents,
+  staff,
+  locations,
+  services,
   hideAddButton,
 }: {
   view: TCalendarView;
   onViewChange: (view: TCalendarView) => void;
   fetchShifts: (preserveDate?: Date) => Promise<void>;
   summaryShiftEvents: IEvent[];
+  staff: Staff[];
+  locations: Location[];
+  services: Service[];
   hideAddButton?: boolean;
 }) {
   const searchParams = useSearchParams();
@@ -370,6 +390,9 @@ function ShiftCalendarContainerWrapper({
       onShiftDeleted={handleShiftChange}
       onShiftUpdated={handleShiftChange}
       summaryShiftEvents={summaryShiftEvents}
+      staff={staff}
+      locations={locations}
+      services={services}
       hideAddButton={hideAddButton}
     />
   );

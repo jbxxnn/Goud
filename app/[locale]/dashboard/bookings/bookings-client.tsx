@@ -3,13 +3,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { startOfMonth, endOfMonth, subMonths, addMonths, format, startOfWeek, endOfWeek, subDays, addDays } from 'date-fns';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Loading03Icon, CalendarIcon, ViewIcon, LeftToRightListDashIcon, PlusSignIcon, RotateLeft01Icon } from '@hugeicons/core-free-icons';
 import { AddBookingDialog } from '@/calendar/components/dialogs/add-booking-dialog';
 import { Staff } from '@/lib/types/staff';
-import { Booking, BookingsResponse } from '@/lib/types/booking';
+import { Booking, BookingsResponse, Service } from '@/lib/types/booking';
 import { bookingToCalendarEvent } from '@/lib/utils/booking-mapper';
 import { formatInTimeZone } from 'date-fns-tz';
 import { CalendarProvider } from '@/calendar/contexts/calendar-context';
@@ -34,6 +33,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Calendar03Icon } from '@hugeicons/core-free-icons';
+import { Location as BookingLocation } from '@/lib/types/location_simple';
+import { normalizeAddons, normalizePolicyFields } from '@/components/booking/booking-utils';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -86,19 +87,9 @@ export default function BookingsClient({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
   const [locationFilter, setLocationFilter] = useState<string>('all');
-  const [locations, setLocations] = useState<{ id: string, name: string, color?: string }[]>([]);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isDateFromOpen, setIsDateFromOpen] = useState(false);
   const [isDateToOpen, setIsDateToOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from('locations').select('id, name, color').eq('is_active', true).order('name');
-      if (data) setLocations(data);
-    };
-    fetchLocations();
-  }, []);
 
   // Modal states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -265,6 +256,48 @@ export default function BookingsClient({
   });
 
   const allStaff = allStaffData || [];
+
+  const { data: bookingLocationsData } = useQuery<BookingLocation[]>({
+    queryKey: ['locations', 'active'],
+    queryFn: async () => {
+      const response = await fetch('/api/locations-simple?active_only=true&limit=1000');
+      const data = await response.json();
+      if (!data.success) return [];
+      return data.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const locations = bookingLocationsData || [];
+
+  const { data: bookingServicesData } = useQuery<Service[]>({
+    queryKey: ['services', 'active', 'booking-dialog'],
+    queryFn: async () => {
+      const response = await fetch('/api/services?active_only=true&with_addons=true&limit=1000');
+      const data = await response.json();
+      if (!data.success) return [];
+
+      return (data.data || []).map((service: any) => ({
+        ...service,
+        id: service.id,
+        name: service.name,
+        price: service.price,
+        duration: service.duration,
+        policyFields: normalizePolicyFields(service.policy_fields),
+        addons: normalizeAddons(service.addons),
+        allowsTwins: !!service.allows_twins,
+        twinPrice: service.twin_price,
+        twinDurationMinutes: service.twin_duration_minutes,
+        staff_ids: service.staff_ids,
+        hiddenCheckoutFields: service.hidden_checkout_fields,
+        customPriceLabel: service.custom_price_label,
+        customPriceDescription: service.custom_price_description,
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const bookingServices = bookingServicesData || [];
 
   const calendarEvents = useMemo(() => {
     const bookingEvents = bookings
@@ -658,7 +691,12 @@ export default function BookingsClient({
                 entityType="booking"
                 initialSettings={{}}
               >
-                <AddBookingDialog onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}>
+                <AddBookingDialog
+                  services={bookingServices}
+                  locations={locations}
+                  staffMembers={allStaff}
+                  onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}
+                >
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '10rem' }}>
                     <HugeiconsIcon icon={PlusSignIcon} size={18} />
                     {/* {t('addBooking', { fallback: 'Add Booking' })} */}
@@ -742,6 +780,9 @@ export default function BookingsClient({
               <BookingCalendarContainer
                 view={calendarView}
                 userRole={userRole}
+                services={bookingServices}
+                bookingLocations={locations}
+                bookingStaffMembers={allStaff}
                 onViewChange={setCalendarView}
                 onEventClick={(event) => {
                   const booking = bookings.find(b => b.id === event.id);
@@ -914,4 +955,3 @@ export default function BookingsClient({
     </PageContainer>
   );
 }
-

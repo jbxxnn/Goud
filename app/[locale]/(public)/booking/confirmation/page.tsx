@@ -651,27 +651,27 @@ function BookingConfirmationContent() {
           </div>
         </div>
 
-        {showMidwifePaymentActions && booking.payment_link && (
-          <div className="mt-5">
-            <button
-              type="button"
-              onClick={() => setIsPaymentDialogOpen(true)}
-              className="group flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-primary/5"
-            >
-              <div>
-                <div className="text-sm font-semibold text-gray-900">{t('paymentOptionsTriggerTitle')}</div>
-                <div className="mt-0.5 text-xs text-gray-600">{t('paymentOptionsTriggerBody')}</div>
-              </div>
-              <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary group-hover:bg-primary/15">
-                {t('openPaymentOptions')}
-              </span>
-            </button>
-          </div>
-        )}
       </div>
       {showMidwifePaymentActions && booking.payment_link && (
+        <div className="mt-5 max-w-2xl mx-auto">
+          <button
+            type="button"
+            onClick={() => setIsPaymentDialogOpen(true)}
+            className="group flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:bg-primary/5"
+          >
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-gray-900">{t('paymentOptionsTriggerTitle')}</div>
+              <div className="mt-0.5 text-xs text-gray-600">{t('paymentOptionsTriggerBody')}</div>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary group-hover:bg-primary/15">
+              {t('openPaymentOptions')}
+            </span>
+          </button>
+        </div>
+      )}
+      {showMidwifePaymentActions && booking.payment_link && (
         <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md" style={{ borderRadius: '1rem' }}>
+          <DialogContent className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-md overflow-y-auto overflow-x-hidden p-5 sm:p-6" style={{ borderRadius: '1rem' }}>
             <DialogHeader>
               <DialogTitle>{t('midwifePaymentTitle')}</DialogTitle>
               <DialogDescription>{t('midwifePaymentBody')}</DialogDescription>
@@ -693,9 +693,9 @@ function BookingConfirmationContent() {
                 </div>
                 <p className="max-w-sm text-center text-xs leading-5 text-gray-500">{t('midwifePaymentQrHint')}</p>
               </div>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                <div className="min-w-0 rounded-lg border border-input bg-white p-3 text-xs font-mono leading-none">
-                  <span className="block truncate">{booking.payment_link}</span>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <div className="min-w-0 overflow-hidden rounded-lg border border-input bg-white p-3 text-xs font-mono leading-none">
+                  <span className="block truncate max-w-full">{booking.payment_link}</span>
                 </div>
                 <Button
                   type="button"
@@ -706,7 +706,7 @@ function BookingConfirmationContent() {
                     setCopiedPaymentLink(true);
                     setTimeout(() => setCopiedPaymentLink(false), 2000);
                   }}
-                  className={`h-10 w-10 shrink-0 ${copiedPaymentLink ? 'text-primary border-primary bg-primary/5' : 'hover:border-primary hover:text-primary transition-colors'}`}
+                  className={`h-10 w-10 shrink-0 self-stretch ${copiedPaymentLink ? 'text-primary border-primary bg-primary/5' : 'hover:border-primary hover:text-primary transition-colors'}`}
                   style={{ borderRadius: '0.75rem' }}
                   aria-label={t('copyPaymentLink')}
                 >

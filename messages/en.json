@@ -1888,5 +1888,65 @@
             "servicesSynced": "Service mappings updated",
             "deleteSuccess": "Checklist deleted"
         }
+    },
+    "SitewideBreaks": {
+        "holidays": {
+            "title": "Holidays",
+            "description": "These strict limits completely block booking across ALL locations and ALL staff during the given timeframe.",
+            "date": "Date",
+            "pickDate": "Pick date",
+            "reason": "Reason",
+            "reasonPlaceholder": "e.g. Holiday",
+            "addHoliday": "Add Holiday",
+            "start": "Start",
+            "actions": "Actions",
+            "empty": "No holidays configured.",
+            "editTitle": "Edit Holiday",
+            "startDateTime": "Start Date & Time",
+            "updateHoliday": "Update Holiday"
+        },
+        "breaks": {
+            "title": "Sitewide Breaks",
+            "description": "These templates are automatically applied to ALL matching shifts. You can customize them from within individual shift details.",
+            "breakName": "Break Name",
+            "breakNamePlaceholder": "e.g. Lunch Break",
+            "startTime": "Start Time",
+            "endTime": "End Time",
+            "applyEveryDay": "Apply Every Day",
+            "startDateOptional": "Start Date (Optional)",
+            "endDateOptional": "End Date (Optional)",
+            "addBreakTemplate": "Add Break Template",
+            "templateName": "Template Name",
+            "time": "Time",
+            "recurrence": "Recurrence",
+            "empty": "No sitewide breaks configured.",
+            "daily": "Daily",
+            "fromTo": "From {start} to {end}",
+            "beginning": "beginning",
+            "end": "end",
+            "specificDates": "Specific dates",
+            "editTitle": "Edit Break",
+            "updateBreak": "Update Break"
+        },
+        "common": {
+            "cancel": "Cancel",
+            "loading": "Loading..."
+        },
+        "toasts": {
+            "loadHolidaysError": "Failed to load holidays",
+            "loadBreaksError": "Failed to load sitewide breaks",
+            "loadDataError": "Failed to load data",
+            "holidayCreated": "Holiday created",
+            "createHolidayError": "Failed to create holiday",
+            "breakCreated": "Sitewide break created",
+            "createBreakError": "Failed to create break",
+            "holidayUpdated": "Holiday updated",
+            "updateHolidayError": "Failed to update holiday",
+            "breakUpdated": "Sitewide break updated",
+            "updateBreakError": "Failed to update break",
+            "holidayDeleted": "Holiday deleted",
+            "deleteError": "Failed to delete",
+            "breakDeleted": "Break deleted"
+        }
     }
 }

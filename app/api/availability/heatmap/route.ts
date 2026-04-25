@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
     const { data: blackoutData } = await supabase
       .from('blackout_periods')
       .select('location_id, start_date, end_date')
-      .eq('location_id', locationId)
+      .or(`location_id.eq.${locationId},location_id.is.null`)
       .lte('start_date', endUTC.toISOString())
       .gte('end_date', startUTC.toISOString());
     const blackouts: BlackoutPeriod[] = (blackoutData ?? []).map((b: any) => ({
@@ -403,6 +403,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
 
 

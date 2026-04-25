@@ -15,6 +15,9 @@ import { useTranslations } from 'next-intl';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useCalendar } from "@/calendar/contexts/calendar-context";
+import type { Service } from "@/lib/types/booking";
+import type { Location } from "@/lib/types/location_simple";
+import type { Staff } from "@/lib/types/staff";
 
 interface IProps {
     view: TCalendarView;
@@ -22,9 +25,12 @@ interface IProps {
     onViewChange: (view: TCalendarView) => void;
     onBookingCreated?: () => void;
     userRole?: string;
+    services: Service[];
+    bookingLocations: Location[];
+    bookingStaffMembers: Staff[];
 }
 
-export function BookingCalendarHeader({ view, events, onViewChange, onBookingCreated, userRole }: IProps) {
+export function BookingCalendarHeader({ view, events, onViewChange, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers }: IProps) {
     const { showShiftGuidance, setShowShiftGuidance, selectedDate } = useCalendar();
     // reusing shifts header translations for common view names if possible, or fallback to generic
     const t = useTranslations('Shifts.header');
@@ -128,6 +134,9 @@ export function BookingCalendarHeader({ view, events, onViewChange, onBookingCre
                     <LocationSelect />
 
                     <AddBookingDialog 
+                      services={services}
+                      locations={bookingLocations}
+                      staffMembers={bookingStaffMembers}
                       startDate={selectedDate} 
                       onBookingCreated={onBookingCreated}
                     >

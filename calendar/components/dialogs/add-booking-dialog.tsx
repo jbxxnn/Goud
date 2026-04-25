@@ -57,8 +57,6 @@ import {
   AddonSelections 
 } from "@/lib/types/booking";
 import { 
-  normalizeAddons, 
-  normalizePolicyFields, 
   calculatePolicyExtraPriceCents, 
   calculateAddonExtraPriceCents,
   buildPolicyAnswerPayload,
@@ -67,9 +65,13 @@ import {
 import { IEvent } from "@/calendar/interfaces";
 import { useTranslations, useLocale } from "next-intl";
 import { translateValidationError } from "@/lib/validation/translate-error";
+import type { Staff } from "@/lib/types/staff";
 
 interface IProps {
   children: React.ReactNode;
+  services: Service[];
+  locations: Location[];
+  staffMembers: Staff[];
   startDate?: Date;
   startHour?: number;
   startMinute?: number;
@@ -95,7 +97,7 @@ interface BookingFormData {
   notes: string;
 }
 
-export const AddBookingDialog = memo(function AddBookingDialog({ children, startDate, startHour, startMinute, initialShiftId, initialStaffId, initialLocationId, availableShifts = [], onBookingCreated }: IProps) {
+export const AddBookingDialog = memo(function AddBookingDialog({ children, services, locations, staffMembers, startDate, startHour, startMinute, initialShiftId, initialStaffId, initialLocationId, availableShifts = [], onBookingCreated }: IProps) {
   const t = useTranslations("BookingDialog");
   const tFlow = useTranslations("Booking.flow");
   const locale = useLocale();
@@ -103,15 +105,11 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
   const { selectedUserId, users: calendarUsers } = useCalendar();
   const selectedUser = calendarUsers.find(u => u.id === selectedUserId);
   
-  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [selectedClient, setSelectedClient] = useState<User | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   
-  const [services, setServices] = useState<Service[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [staffMembers, setStaffMembers] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   
   const [selectedAddons, setSelectedAddons] = useState<AddonSelections>({});
@@ -190,26 +188,86 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
     };
   }, [checkoutUrl]);
 
-  // Filter locations based on available shifts
+  // Keep all locations visible. Shift-aware labels are added separately.
   const filteredLocations = useMemo(() => {
-    if (!availableShifts || availableShifts.length === 0) return locations;
-    const shiftLocationIds = new Set(availableShifts.map(s => s.location?.id?.toString()).filter(Boolean));
-    return locations.filter(l => shiftLocationIds.has(l.id.toString()));
+    const withShifts: Location[] = [];
+    const withoutShifts: Location[] = [];
+
+    locations.forEach((location) => {
+      const hasShift = availableShifts.some(
+        (shift) => shift.location?.id?.toString() === location.id.toString()
+      );
+
+      if (hasShift) {
+        withShifts.push(location);
+      } else {
+        withoutShifts.push(location);
+      }
+    });
+
+    return [...withShifts, ...withoutShifts];
   }, [locations, availableShifts]);
+
+  const locationLabels = useMemo(() => {
+    const labels = new Map<string, { name: string; timeRange?: string; noShift?: boolean }>();
+
+    filteredLocations.forEach((location) => {
+      const shiftsForLocation = availableShifts.filter(
+        (shift) => shift.location?.id?.toString() === location.id.toString()
+      );
+
+      if (shiftsForLocation.length === 0) {
+        labels.set(location.id.toString(), { name: location.name, noShift: true });
+        return;
+      }
+
+      const shiftTimes = shiftsForLocation.reduce(
+        (acc, shift) => {
+          const shiftStart = new Date(shift.startDate);
+          const shiftEnd = new Date(shift.endDate);
+
+          if (!acc.start || shiftStart < acc.start) acc.start = shiftStart;
+          if (!acc.end || shiftEnd > acc.end) acc.end = shiftEnd;
+
+          return acc;
+        },
+        { start: null as Date | null, end: null as Date | null }
+      );
+
+      if (!shiftTimes.start || !shiftTimes.end) {
+        labels.set(location.id.toString(), { name: location.name, noShift: true });
+        return;
+      }
+
+      const timeRange = `${formatInTimeZone(shiftTimes.start, 'Europe/Amsterdam', "HH:mm")} - ${formatInTimeZone(shiftTimes.end, 'Europe/Amsterdam', "HH:mm")}`;
+      labels.set(location.id.toString(), { name: location.name, timeRange });
+    });
+
+    return labels;
+  }, [filteredLocations, availableShifts]);
 
   // Filter staff based on available shifts and selected location
   const filteredStaff = useMemo(() => {
     if (!availableShifts || availableShifts.length === 0) return calendarUsers;
     
-    // First, get all users who have shifts in this 15-min slot
-    let relevantShifts = availableShifts;
-    
-    // If a location is selected, only show staff working at THAT location
     if (watchLocationId) {
-      relevantShifts = availableShifts.filter(s => s.location?.id?.toString() === watchLocationId.toString());
+      const locationShifts = availableShifts.filter(
+        s => s.location?.id?.toString() === watchLocationId.toString()
+      );
+
+      if (locationShifts.length > 0) {
+        const shiftUserIds = new Set(locationShifts.map(s => s.user?.id?.toString()).filter(Boolean));
+        return calendarUsers.filter(u => shiftUserIds.has(u.id.toString()));
+      }
+
+      const unavailableStaffIds = new Set(
+        availableShifts.map(s => s.user?.id?.toString()).filter(Boolean)
+      );
+      return calendarUsers.filter(u => !unavailableStaffIds.has(u.id.toString()));
     }
     
-    const shiftUserIds = new Set(relevantShifts.map(s => s.user?.id?.toString()).filter(Boolean));
+    // Without a selected location, show staff who have shifts in this slot.
+    const shiftUserIds = new Set(availableShifts.map(s => s.user?.id?.toString()).filter(Boolean));
     return calendarUsers.filter(u => shiftUserIds.has(u.id.toString()));
   }, [calendarUsers, availableShifts, watchLocationId]);
 
@@ -274,6 +332,18 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
     if (firstStaff) {
       targetStaffId = firstStaff.id;
       setValue("staff_id", targetStaffId, { shouldDirty: true });
+    } else {
+      setValue("shift_id", "", { shouldDirty: true });
+
+      const unavailableStaffIds = new Set(
+        availableShifts.map(s => s.user?.id?.toString()).filter(Boolean)
+      );
+      const currentStaffId = getValues("staff_id");
+
+      if (currentStaffId && unavailableStaffIds.has(currentStaffId.toString())) {
+        setValue("staff_id", "", { shouldDirty: true });
+      }
+      return;
     }
 
     // Sync shift_id
@@ -284,6 +354,8 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
       );
       if (matchingShift) {
         setValue("shift_id", matchingShift.id.toString(), { shouldDirty: true });
+      } else {
+        setValue("shift_id", "", { shouldDirty: true });
       }
     }
   };
@@ -334,56 +406,8 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
     }
   }, [isOpen, reset, setValue]);
 
-  // Fetch initial data
   useEffect(() => {
     if (isOpen) {
-      const fetchData = async () => {
-        // Only fetch if we don't have services yet
-        if (services.length > 0) return;
-        
-        setIsLoading(true);
-        try {
-          const [svcRes, locRes, staffRes] = await Promise.all([
-            fetch("/api/services?active_only=true&with_addons=true&limit=1000"),
-            fetch("/api/locations-simple?active_only=true&limit=1000"),
-            fetch("/api/staff?active_only=true&limit=1000"),
-          ]);
-          
-          const [svcData, locData, staffData] = await Promise.all([
-            svcRes.json(), 
-            locRes.json(),
-            staffRes.json(),
-          ]);
-          
-          if (svcData.success) {
-            const rawServices = svcData.data || [];
-            const normalized = rawServices.map((s: any) => ({
-              ...s,
-              id: s.id,
-              name: s.name,
-              price: s.price,
-              duration: s.duration,
-              policyFields: normalizePolicyFields(s.policy_fields),
-              addons: normalizeAddons(s.addons),
-              allowsTwins: !!s.allows_twins,
-              twinPrice: s.twin_price,
-              twinDurationMinutes: s.twin_duration_minutes,
-              staff_ids: s.staff_ids,
-              hiddenCheckoutFields: s.hidden_checkout_fields,
-            }));
-            setServices(normalized);
-          }
-          if (locData.success) setLocations(locData.data || []);
-          if (staffData.success) setStaffMembers(staffData.data || []);
-        } catch (err) {
-          console.error("Failed to fetch booking data", err);
-          toast.error(t("toasts.fetchError"));
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchData();
-
       // Set initial time ONLY if not already set
       if (startDate && startHour !== undefined && startMinute !== undefined && !getValues("start_time")) {
         const year = startDate.getFullYear();
@@ -400,7 +424,7 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
         setValue("end_time", formatDateTimeLocal(end));
       }
     }
-  }, [isOpen, startDate, startHour, startMinute, setValue, getValues, services.length]);
+  }, [isOpen, startDate, startHour, startMinute, setValue, getValues]);
 
   // Update end time when service or start time changes
   useEffect(() => {
@@ -774,7 +798,24 @@ export const AddBookingDialog = memo(function AddBookingDialog({ children, start
                       </SelectTrigger>
                       <SelectContent>
                         {filteredLocations.map(l => (
-                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          <SelectItem
+                            key={l.id}
+                            value={l.id}
+                            textValue={locationLabels.get(l.id.toString())?.name ?? l.name}
+                          >
+                            <span className={locationLabels.get(l.id.toString())?.noShift ? "text-muted-foreground" : undefined}>
+                              {locationLabels.get(l.id.toString())?.name ?? l.name}
+                            </span>
+                            {locationLabels.get(l.id.toString())?.timeRange ? (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                ({locationLabels.get(l.id.toString())?.timeRange})
+                              </span>
+                            ) : locationLabels.get(l.id.toString())?.noShift ? (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                - geen shift
+                              </span>
+                            ) : null}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
