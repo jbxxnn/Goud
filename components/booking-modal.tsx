@@ -37,6 +37,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { MidwifeLabel } from './midwife-label';
 import { BookingTagSelector } from './booking-tag-selector';
+import { createClient } from '@/lib/supabase/client';
 
 interface PolicyField {
   id: string;
@@ -56,6 +57,7 @@ interface BookingModalProps {
   onUpdate?: (booking: Booking) => void;
   onComplete?: (booking: Booking) => void;
   onNoShow?: (booking: Booking) => void | Promise<void>;
+  onReviewRequested?: () => void;
   userRole?: string;
 }
 
@@ -127,7 +129,7 @@ const getPaymentBadge = (status: string, t: (key: string) => string, onClick?: (
 };
 
 
-export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, onNoShow, userRole }: BookingModalProps) {
+export default function BookingModal({ isOpen, onClose, booking, onCancel, onDelete, onReschedule, onUpdate, onComplete, onNoShow, onReviewRequested, userRole }: BookingModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   
   if (isOpen) {
@@ -138,6 +140,9 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const queryClient = useQueryClient();
   const tStatus = useTranslations('BookingStatus');
   const locale = useLocale();
+  const reviewButtonLabel = locale === 'nl' ? 'Review aanvragen' : 'Request Review';
+  const reviewRequestedLabel = locale === 'nl' ? 'Google Review aangevraagd' : 'Google Review Requested';
+  const supabase = createClient();
 
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
@@ -148,12 +153,88 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const [isMarkingNoShow, setIsMarkingNoShow] = useState(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [isCreatingReviewTask, setIsCreatingReviewTask] = useState(false);
   const [copied, setCopied] = useState(false);
   const [policyFields, setPolicyFields] = useState<Record<string, PolicyField>>({});
   const [isSyncingChecklist, setIsSyncingChecklist] = useState(false);
 
+  const { data: existingReviewTaskId } = useQuery({
+    queryKey: ['booking-review-task', booking?.id],
+    enabled: isOpen && !!booking?.id && booking?.status === 'completed',
+    queryFn: async () => {
+      if (!booking?.id) return null;
+
+      const { data, error } = await supabase
+        .from('assistant_tasks')
+        .select('id')
+        .eq('task_type', 'google_review')
+        .eq('booking_id', booking.id)
+        .eq('is_completed', false)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.id ?? null;
+    },
+  });
+  const hasRequestedReview = Boolean(existingReviewTaskId);
+
   const handleMarkAsPaidClick = () => {
     setIsConfirmingPayment(true);
+  };
+
+  const handleRequestReview = async () => {
+    if (!booking) return;
+
+    try {
+      setIsCreatingReviewTask(true);
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data: existingTask, error: existingTaskError } = await supabase
+        .from('assistant_tasks')
+        .select('id')
+        .eq('task_type', 'google_review')
+        .eq('booking_id', booking.id)
+        .eq('is_completed', false)
+        .maybeSingle();
+
+      if (existingTaskError) throw existingTaskError;
+
+      if (existingTask) {
+        queryClient.setQueryData(['booking-review-task', booking.id], existingTask.id);
+        toast.message(locale === 'nl' ? 'Reviewverzoek bestaat al' : 'Review request already exists');
+        return;
+      }
+
+      const clientName = booking.users
+        ? [booking.users.first_name, booking.users.last_name].filter(Boolean).join(' ') || t('placeholders.unknown')
+        : t('placeholders.unknown');
+      const serviceName = booking.services?.name || t('placeholders.na');
+
+      const { error } = await supabase
+        .from('assistant_tasks')
+        .insert({
+          content: `${reviewButtonLabel}: ${clientName} - ${serviceName}`,
+          created_by: user.id,
+          task_type: 'google_review',
+          booking_id: booking.id,
+          due_date: booking.start_time || null,
+        });
+
+      if (error) throw error;
+
+      queryClient.setQueryData(['booking-review-task', booking.id], crypto.randomUUID());
+      toast.success(locale === 'nl' ? 'Reviewverzoek toegevoegd' : 'Review request added');
+      onReviewRequested?.();
+    } catch (error) {
+      console.error('Error creating review request task:', error);
+      toast.error(locale === 'nl' ? 'Kon reviewverzoek niet toevoegen' : 'Failed to add review request');
+    } finally {
+      setIsCreatingReviewTask(false);
+    }
   };
 
   const executeMarkAsPaid = async () => {
@@ -944,7 +1025,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               (onComplete && booking.status === 'ongoing') ||
               (onDelete && ['cancelled', 'completed'].includes(booking.status)) ||
               (booking.status !== 'cancelled' && booking.service_id)) ? (
-              <div className="px-6 py-4 border-t flex justify-end gap-3">
+              <div className="px-6 py-4 border-t flex flex-wrap justify-end gap-3">
                 {onCancel && !['cancelled', 'completed'].includes(booking.status) && (
                   <Button
                     variant="destructive"
@@ -952,7 +1033,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClose();
                       onCancel(booking);
                     }}
-                    className="bg-secondary-foreground hover:bg-secondary-foreground/70"
+                    className="h-12 rounded-full bg-secondary-foreground px-6 text-base hover:bg-secondary-foreground/70"
                   >
                     {t('btnCancel')}
                   </Button>
@@ -960,7 +1041,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                 {onNoShow && ['confirmed', 'completed', 'ongoing'].includes(booking.status) && (
                   <Button
                     variant="outline"
-                    className="border-orange-500 text-orange-500 hover:bg-orange-50 min-w-[124px]"
+                    className="h-12 min-w-[190px] rounded-full border-orange-500 px-6 text-base text-orange-500 hover:bg-orange-50"
                     disabled={isMarkingNoShow}
                     onClick={async () => {
                       try {
@@ -990,6 +1071,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClose();
                       onReschedule(booking);
                     }}
+                    className="h-12 rounded-full px-6 text-base"
                   >
                     {t('btnReschedule')}
                   </Button>
@@ -1001,8 +1083,28 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClose();
                       onComplete(booking);
                     }}
+                    className="h-12 rounded-full px-6 text-base"
                   >
                     {t('btnComplete')}
+                  </Button>
+                )}
+                {booking.status === 'completed' && (
+                  <Button
+                    variant="outline"
+                    className="h-12 min-w-[190px] rounded-full px-6 text-base"
+                    disabled={isCreatingReviewTask}
+                    onClick={handleRequestReview}
+                  >
+                    {isCreatingReviewTask ? (
+                      <>
+                        <Loader className="mr-2 h-4 w-4 animate-spin" />
+                        {locale === 'nl' ? 'Toevoegen...' : 'Adding...'}
+                      </>
+                    ) : (
+                      <span className={hasRequestedReview ? 'line-through opacity-70' : undefined}>
+                        {hasRequestedReview ? reviewRequestedLabel : reviewButtonLabel}
+                      </span>
+                    )}
                   </Button>
                 )}
                 {onDelete && ['cancelled', 'completed'].includes(booking.status) && (
@@ -1012,7 +1114,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                       onClose();
                       onDelete(booking);
                     }}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="h-12 min-w-[190px] rounded-full bg-destructive px-6 text-base text-destructive-foreground hover:bg-destructive/90"
                   >
                     {t('btnDelete')}
                   </Button>

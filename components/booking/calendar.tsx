@@ -9,6 +9,7 @@ interface CalendarProps {
     onSelectDate: (yyyyMmDd: string) => void;
     heatmap: Record<string, number>;
     loading?: boolean;
+    disabled?: boolean;
 }
 
 import { useFormatter, useLocale } from 'next-intl';
@@ -28,6 +29,7 @@ export function Calendar({
     onSelectDate,
     heatmap,
     loading = false,
+    disabled = false,
 }: CalendarProps) {
     const year = month.getFullYear();
     const m = month.getMonth();
@@ -73,11 +75,11 @@ export function Calendar({
     });
 
     return (
-        <div className="">
+        <div className={disabled ? "opacity-45 grayscale" : ""}>
             <div className="flex justify-between items-center mb-3 p-4 bg-secondary" style={{ borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
-                <button className="p-1 border rounded-full bg-accent hover:border-primary disabled:opacity-50" onClick={onPrevMonth} disabled={loading}><HugeiconsIcon icon={ArrowLeft01Icon} size={16} /></button>
+                <button className="p-1 border rounded-full bg-accent hover:border-primary disabled:opacity-50" onClick={onPrevMonth} disabled={loading || disabled}><HugeiconsIcon icon={ArrowLeft01Icon} size={16} /></button>
                 <div className="text-sm text-secondary-foreground font-bold">{formattedMonthLabel}</div>
-                <button className="p-1 border rounded-full bg-accent hover:border-primary disabled:opacity-50" onClick={onNextMonth} disabled={loading}><HugeiconsIcon icon={ArrowRight01Icon} size={16} /></button>
+                <button className="p-1 border rounded-full bg-accent hover:border-primary disabled:opacity-50" onClick={onNextMonth} disabled={loading || disabled}><HugeiconsIcon icon={ArrowRight01Icon} size={16} /></button>
             </div>
             <div className="bg-white p-2">
                 <div className="grid grid-cols-7 gap-2 text-md mb-3">
@@ -96,7 +98,7 @@ export function Calendar({
                         cells.map((cell, idx) => {
                             const count = heatmap[cell.dateStr] ?? 0;
                             const isSelected = selectedDate === cell.dateStr;
-                            const enabled = count > 0;
+                            const enabled = !disabled && count > 0;
                             return (
                                 <button
                                     key={idx}

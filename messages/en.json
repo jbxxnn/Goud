@@ -1633,7 +1633,8 @@
         "loading": "Loading dashboard...",
         "sections": {
             "tasks": "Tasks",
-            "noShowAppointments": "No Show Appointments"
+            "noShowAppointments": "No Show Appointments",
+            "googleReview": "Google Reviews"
         },
         "tasks": {
             "empty": "No pending tasks for upcoming appointments.",

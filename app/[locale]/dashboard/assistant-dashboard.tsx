@@ -105,6 +105,7 @@ function AssistantDashboardSkeleton() {
 interface ChecklistItem {
   id: string;
   booking_id?: string | null;
+  task_type?: 'general' | 'google_review';
   content: string;
   is_completed: boolean;
   comment?: string | null;
@@ -120,11 +121,21 @@ interface DashboardBooking extends Booking {
   noShowCount?: number;
 }
 
+function isGoogleReviewTask(task: { task_type?: string; content?: string | null }) {
+  const content = (task.content || '').trim().toLowerCase();
+  return (
+    task.task_type === 'google_review' ||
+    content.startsWith('request review:') ||
+    content.startsWith('review aanvragen:')
+  );
+}
+
 export default function AssistantDashboard() {
   const t = useTranslations('AssistantDashboard');
   const locale = useLocale();
   const [upcomingBookings, setUpcomingBookings] = useState<DashboardBooking[]>([]);
   const [tasks, setTasks] = useState<ChecklistItem[]>([]);
+  const [reviewTasks, setReviewTasks] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Comment editing state
@@ -343,7 +354,18 @@ export default function AssistantDashboard() {
       // 3. Fetch general tasks
       const { data: generalTasks, error: generalTasksError } = await supabase
         .from('assistant_tasks')
-        .select('*, creator:users!created_by(first_name, last_name)')
+        .select(`
+          *,
+          creator:users!created_by(first_name, last_name),
+          booking:bookings (
+            *,
+            users!created_by(id, first_name, last_name, email, phone, street_name, house_number, postal_code, city, birth_date, address),
+            services(id, name, duration, custom_price_label),
+            locations(id, name),
+            staff(id, first_name, last_name),
+            booking_tag_mappings(tag:booking_tags(*))
+          )
+        `)
         .eq('is_completed', false)
         .order('created_at', { ascending: true });
 
@@ -354,6 +376,7 @@ export default function AssistantDashboard() {
 
       // Combine all tasks
       const allTasks: ChecklistItem[] = [];
+      const allReviewTasks: ChecklistItem[] = [];
 
       // Process booking tasks
       (bookingTasks as any)?.forEach((task: any) => {
@@ -367,7 +390,11 @@ export default function AssistantDashboard() {
           ...task,
           isGeneral: true
         };
-        allTasks.push(item);
+        if (isGoogleReviewTask(task)) {
+          allReviewTasks.push(item);
+        } else {
+          allTasks.push(item);
+        }
       });
 
       // Sort tasks by date (booking start time, or task due date/created_at)
@@ -379,7 +406,16 @@ export default function AssistantDashboard() {
         return timeA - timeB; // Ascending order
       });
 
+      allReviewTasks.sort((a, b) => {
+        const dateA = a.booking?.start_time || a.due_date || a.created_at;
+        const dateB = b.booking?.start_time || b.due_date || b.created_at;
+        const timeA = new Date(dateA || 0).getTime();
+        const timeB = new Date(dateB || 0).getTime();
+        return timeA - timeB;
+      });
+
       setTasks(allTasks);
+      setReviewTasks(allReviewTasks);
 
     } catch (error) {
       console.error('Error fetching assistant dashboard data:', error);
@@ -392,6 +428,9 @@ export default function AssistantDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const visibleTasks = tasks.filter((task) => !isGoogleReviewTask(task));
+  const visibleReviewTasks = reviewTasks.filter((task) => isGoogleReviewTask(task));
 
   const handleTaskComplete = async (task: ChecklistItem, skipToast = false) => {
     try {
@@ -411,6 +450,7 @@ export default function AssistantDashboard() {
       }
       // Remove from local state
       setTasks(prev => prev.filter(t => t.id !== task.id));
+      setReviewTasks(prev => prev.filter(t => t.id !== task.id));
     } catch (error) {
       console.error('Error completing task:', error);
       toast.error(t('toasts.completeError'));
@@ -451,6 +491,7 @@ export default function AssistantDashboard() {
       // Update local state (if not removed by completion)
       if (!isTaskCompleted) {
         setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
+        setReviewTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, comment: commentText } : t));
       }
       
       setEditingTask(null);
@@ -520,15 +561,15 @@ export default function AssistantDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <HugeiconsIcon icon={CheckListIcon} className="h-5 w-5" />
-                {t('sections.tasks', { fallback: 'Tasks' })} ({tasks.length})
+                {t('sections.tasks', { fallback: 'Tasks' })} ({visibleTasks.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {tasks.length === 0 ? (
+              {visibleTasks.length === 0 ? (
                 <p className="text-muted-foreground text-sm">{t('tasks.empty')}</p>
               ) : (
                 <div className="space-y-4">
-                  {tasks.map(task => (
+                  {visibleTasks.map(task => (
                     <div key={task.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{borderRadius: "10px"}}>
                       <div className="space-y-1 w-full">
                         <div className="flex items-start justify-between gap-2">
@@ -605,8 +646,9 @@ export default function AssistantDashboard() {
           </Card>
         </div>
 
+        <div className="space-y-6 md:col-span-1">
         {/* NO SHOW APPOINTMENTS SECTION */}
-        <Card style={{borderRadius: "10px"}} className="md:col-span-1">
+        <Card style={{borderRadius: "10px"}}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HugeiconsIcon icon={Calendar02Icon} className="h-5 w-5" />
@@ -698,6 +740,88 @@ export default function AssistantDashboard() {
             </div>
           </CardContent>
         </Card>
+
+          <Card style={{borderRadius: "10px"}}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HugeiconsIcon icon={Task01Icon} className="h-5 w-5" />
+                {t('sections.googleReview', { fallback: 'Google Review' })} ({visibleReviewTasks.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {visibleReviewTasks.length === 0 ? (
+                <p className="text-muted-foreground text-sm">{t('tasks.empty')}</p>
+              ) : (
+                <div className="space-y-4">
+                  {visibleReviewTasks.map(task => (
+                    <div key={task.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg" style={{borderRadius: "10px"}}>
+                      <div className="space-y-1 w-full">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <HugeiconsIcon icon={Task01Icon} className="h-4 w-4 text-primary shrink-0" />
+                            <p className="text-sm font-medium leading-none mt-1 line-clamp-1" title={task.content}>
+                              {task.content}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-primary shrink-0"
+                            onClick={() => openCommentDialog(task)}
+                          >
+                            <HugeiconsIcon icon={Edit02Icon} className="h-4 w-4" />
+                            <span className="sr-only">{t('tasks.editComment')}</span>
+                          </Button>
+                        </div>
+                        {task.comment && (
+                          <div className="bg-primary/5 text-primary text-xs p-2 rounded-md italic border border-primary/10">
+                             &quot;{task.comment}&quot;
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground flex flex-wrap gap-x-1">
+                          {task.booking ? (
+                            <>
+                              {task.booking.staff && (
+                                <>
+                                  <span className="font-medium text-primary">{task.booking.staff.first_name} {task.booking.staff.last_name}</span>
+                                  <span className="text-muted-foreground/50">•</span>
+                                </>
+                              )}
+                              <span>
+                                <button
+                                  onClick={() => handleOpenBookingModal(task.booking!)}
+                                  className="hover:underline text-left"
+                                >
+                                  {task.booking.services?.name}
+                                </button>
+                              </span>
+                              <span className="text-muted-foreground/50">•</span>
+                              <button
+                                onClick={() => handleOpenBookingModal(task.booking!)}
+                                className="hover:underline text-left"
+                              >
+                                {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.first_name : task.booking?.users?.first_name} {Array.isArray(task.booking?.users) ? task.booking?.users[0]?.last_name : task.booking?.users?.last_name}
+                              </button>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span className="text-primary">
+                                {task.booking?.start_time ? formatInTimeZone(new Date(task.booking.start_time), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) : t('tasks.noDate')}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-primary italic">
+                              {task.created_at ? t('tasks.droppedOn', { date: formatInTimeZone(new Date(task.created_at), 'Europe/Amsterdam', 'MMM d, HH:mm', { locale: locale === 'nl' ? nl : enUS }) }) : ''}
+                              {task.creator && ` ${t('tasks.droppedBy', { name: `${task.creator.first_name} ${task.creator.last_name}` })}`}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
@@ -738,6 +862,24 @@ export default function AssistantDashboard() {
                 <span>
                   {Array.isArray(editingTask.booking.users) ? editingTask.booking.users[0]?.first_name : editingTask.booking.users?.first_name}{' '}
                   {Array.isArray(editingTask.booking.users) ? editingTask.booking.users[0]?.last_name : editingTask.booking.users?.last_name}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={InformationCircleIcon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Email:</span>
+                <span>
+                  {Array.isArray(editingTask.booking.users)
+                    ? editingTask.booking.users[0]?.email || 'No email'
+                    : editingTask.booking.users?.email || 'No email'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <HugeiconsIcon icon={InformationCircleIcon} className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-medium">Phone:</span>
+                <span>
+                  {Array.isArray(editingTask.booking.users)
+                    ? editingTask.booking.users[0]?.phone || 'No phone'
+                    : editingTask.booking.users?.phone || 'No phone'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -888,6 +1030,7 @@ export default function AssistantDashboard() {
         onNoShow={handleNoShowBooking as any}
         onDelete={handleDeleteBooking as any}
         onComplete={handleCompleteBooking as any}
+        onReviewRequested={fetchData}
         onReschedule={handleRescheduleBooking}
       />
       

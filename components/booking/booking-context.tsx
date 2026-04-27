@@ -453,21 +453,22 @@ export function BookingProvider({
     // Initial Load
     useEffect(() => {
         const load = async () => {
-            // Fetch locations first as they are needed for both flows
-            try {
-                const locRes = await fetch('/api/locations-simple');
-                const locJson = await locRes.json();
-                const locData = Array.isArray(locJson?.data) ? locJson.data : [];
-                setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
-                setLoadingLocations(false);
-            } catch (e) {
-                console.error('Failed to load locations', e);
-                setLoadingLocations(false);
-            }
-
             if (continuationToken) {
                 // REPEAT FLOW
                 try {
+                    const locationsPromise = fetch('/api/locations-simple')
+                        .then(r => r.json())
+                        .then((locJson) => {
+                            const locData = Array.isArray(locJson?.data) ? locJson.data : [];
+                            setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
+                        })
+                        .catch((e) => {
+                            console.error('Failed to load locations', e);
+                        })
+                        .finally(() => {
+                            setLoadingLocations(false);
+                        });
+
                     // Check for existing session first to avoid forcing logout
                     const { createClient } = await import('@/lib/supabase/client');
                     const supabase = createClient();
@@ -570,9 +571,12 @@ export function BookingProvider({
                         }
                     }
 
+                    await locationsPromise;
+
                 } catch (e) {
                     console.error('Error loading repeat details', e);
                     setErrorMsg('Failed to load repeat details');
+                    setLoadingLocations(false);
                 } finally {
                     setLoadingServices(false);
                 }
@@ -584,7 +588,14 @@ export function BookingProvider({
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
 
-            const svcRes = await fetch('/api/services?limit=1000&active_only=true').then(r => r.json()).catch(() => ({ data: [] }));
+            const [locRes, svcRes] = await Promise.all([
+                fetch('/api/locations-simple').then(r => r.json()).catch(() => ({ data: [] })),
+                fetch('/api/services?limit=1000&active_only=true').then(r => r.json()).catch(() => ({ data: [] })),
+            ]);
+
+            const locData = Array.isArray(locRes?.data) ? locRes.data : [];
+            setLocations(locData.map((l: Location) => ({ id: l.id, name: l.name })));
+            setLoadingLocations(false);
 
             const svcData = Array.isArray(svcRes?.data) ? svcRes.data : [];
             const normalizedServices: Service[] = (svcData as ServiceApiResponse[]).map((service) => ({
@@ -754,6 +765,11 @@ export function BookingProvider({
             setHeatmap(buildHeatmapForRange(heatmapCacheRef.current, gridStart, gridEnd));
         };
 
+        const visibleRange: DateRange = {
+            start: toISODate(gridStart),
+            end: toISODate(gridEnd),
+        };
+
         const extendedEnd = new Date(gridEnd);
         extendedEnd.setHours(0, 0, 0, 0);
         extendedEnd.setMonth(extendedEnd.getMonth() + PREFETCH_MONTHS);
@@ -764,15 +780,25 @@ export function BookingProvider({
             end: toISODate(extendedEnd),
         };
 
+        const missingVisibleRanges = computeMissingRanges(heatmapRangesRef.current, visibleRange);
         const missingRanges = computeMissingRanges(heatmapRangesRef.current, desiredRange);
 
         if (missingRanges.length === 0) {
             applyCachedHeatmap();
+            setLoadingHeatmap(false);
             return;
         }
 
         let cancelled = false;
-        setLoadingHeatmap(true);
+        const hasVisibleCache = missingVisibleRanges.length === 0;
+
+        if (hasVisibleCache) {
+            applyCachedHeatmap();
+            setLoadingHeatmap(false);
+        } else {
+            setLoadingHeatmap(true);
+        }
+
         (async () => {
             for (const range of missingRanges) {
                 if (cancelled) break;
@@ -797,6 +823,9 @@ export function BookingProvider({
                     }
                     heatmapCacheRef.current = { ...heatmapCacheRef.current, ...map };
                     heatmapRangesRef.current = mergeRanges([...heatmapRangesRef.current, range]);
+                    if (!cancelled && !hasVisibleCache) {
+                        applyCachedHeatmap();
+                    }
                 } catch { }
             }
             if (!cancelled) applyCachedHeatmap();

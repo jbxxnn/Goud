@@ -1633,7 +1633,8 @@
         "loading": "Dashboard laden...",
         "sections": {
             "tasks": "Taken",
-            "noShowAppointments": "No-Show afspraken"
+            "noShowAppointments": "No-Show afspraken",
+            "googleReview": "Google Reviews"
         },
         "tasks": {
             "empty": "Geen openstaande taken voor aankomende afspraken.",

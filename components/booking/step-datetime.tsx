@@ -64,7 +64,15 @@ export function StepDateTime() {
                     onSelectDate={setDate}
                     heatmap={heatmap}
                     loading={loadingHeatmap}
+                    disabled={!locationId}
                 />
+                {!locationId && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-white/20">
+                        <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm">
+                            {t('datetime.locationPlaceholder')}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <TimePicker
