@@ -9,6 +9,7 @@ import {
     BOOKING_STATE_KEY,
     BookingState,
     DateRange,
+    getBookingStateKey,
     Location,
     PolicyAnswerValue,
     PolicyResponses,
@@ -108,7 +109,7 @@ export function useBooking() {
 
 const PREFETCH_MONTHS = 2;
 
-function saveBookingState(state: Partial<BookingState>): void {
+function saveBookingState(state: Partial<BookingState>, storageKey: string): void {
     if (typeof window === 'undefined') return;
     try {
         const serializable: Partial<BookingState> = {
@@ -123,45 +124,45 @@ function saveBookingState(state: Partial<BookingState>): void {
                 endTime: String(serializable.selectedSlot.endTime || ''),
             };
         }
-        localStorage.setItem(BOOKING_STATE_KEY, JSON.stringify(serializable));
+        localStorage.setItem(storageKey, JSON.stringify(serializable));
     } catch (e) {
         console.warn('Failed to save booking state:', e);
-        try { clearBookingState(); } catch { }
+        try { clearBookingState(storageKey); } catch { }
     }
 }
 
-function loadBookingState(): Partial<BookingState> | null {
+function loadBookingState(storageKey: string): Partial<BookingState> | null {
     if (typeof window === 'undefined') return null;
     try {
-        const stored = localStorage.getItem(BOOKING_STATE_KEY);
+        const stored = localStorage.getItem(storageKey);
         if (!stored || stored.trim() === '') return null;
         let state: BookingState;
         try {
             state = JSON.parse(stored) as BookingState;
         } catch {
-            clearBookingState();
+            clearBookingState(storageKey);
             return null;
         }
         if (!state || typeof state !== 'object') {
-            clearBookingState();
+            clearBookingState(storageKey);
             return null;
         }
         if (typeof state.timestamp !== 'number' || Date.now() - state.timestamp > STATE_EXPIRY_MS) {
-            clearBookingState();
+            clearBookingState(storageKey);
             return null;
         }
         return state;
     } catch (e) {
         console.warn('Failed to load booking state:', e);
-        clearBookingState();
+        clearBookingState(storageKey);
         return null;
     }
 }
 
-function clearBookingState(): void {
+function clearBookingState(storageKey: string): void {
     if (typeof window === 'undefined') return;
     try {
-        localStorage.removeItem(BOOKING_STATE_KEY);
+        localStorage.removeItem(storageKey);
     } catch { }
 }
 
@@ -335,6 +336,7 @@ export function BookingProvider({
     initialServiceId?: string;
     lockService?: boolean;
 }) {
+    const storageKey = getBookingStateKey(initialServiceId, lockService);
     const [isMounted, setIsMounted] = useState(false);
     const t = useTranslations('Booking.flow');
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -640,7 +642,7 @@ export function BookingProvider({
     // Persistence Restore
     useEffect(() => {
         setIsMounted(true);
-        const savedState = loadBookingState();
+        const savedState = loadBookingState(storageKey);
         if (savedState) {
             isRestoringRef.current = true;
             if (savedState.serviceId) previousServiceIdRef.current = savedState.serviceId;
@@ -674,6 +676,7 @@ export function BookingProvider({
                 // Ignore saved service/step
                 // But we might want to restore inputs if same token?
                 // For safety, let's ignore.
+                isRestoringRef.current = false;
                 return;
             }
 
@@ -681,7 +684,7 @@ export function BookingProvider({
 
             setTimeout(() => { isRestoringRef.current = false; }, 100);
         }
-    }, []);
+    }, [continuationToken, storageKey]);
 
     // Save State
     useEffect(() => {
@@ -708,7 +711,7 @@ export function BookingProvider({
                     // Don't save state if repeat mode? 
                     // Or save with token?
                     // Safe to save, but load logic handles ignoring it.
-                });
+                }, storageKey);
             } catch (error) {
                 console.error('Error saving booking state:', error);
             } finally {
@@ -716,7 +719,7 @@ export function BookingProvider({
             }
         }, 500);
         return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-    }, [isMounted, step, serviceId, locationId, date, selectedSlot, policyResponses, selectedAddons, clientEmail, contactDefaults, emailChecked, isLoggedIn, monthCursor, isTwin]);
+    }, [isMounted, step, serviceId, locationId, date, selectedSlot, policyResponses, selectedAddons, clientEmail, contactDefaults, emailChecked, isLoggedIn, monthCursor, isTwin, storageKey]);
 
     // Slots
     useEffect(() => {
@@ -1002,7 +1005,7 @@ export function BookingProvider({
         } catch (e) {
             console.error('Failed to release lock', e);
         }
-        clearBookingState();
+        clearBookingState(storageKey);
         window.location.reload();
     };
 

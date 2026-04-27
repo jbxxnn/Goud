@@ -7,6 +7,7 @@ import { useBooking } from './booking-context';
 import { CheckoutForm } from './checkout-form';
 import { BookingContactInput } from '@/lib/validation/booking';
 import { buildAddonPayload, buildPolicyAnswerPayload } from './booking-utils';
+import { getBookingStateKey } from '@/lib/types/booking';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CircleArrowLeft02Icon, CircleArrowRight02Icon } from '@hugeicons/core-free-icons';
 import { useState } from 'react';
@@ -46,9 +47,11 @@ export function StepReview() {
         setEmailChecked, setUserRole, setContactDefaults, setContactDefaultsVersion,
         isTwin,
         continuationToken,
+        lockService,
     } = useBooking();
 
     const t = useTranslations('Booking.flow');
+    const bookingStateKey = getBookingStateKey(serviceId, lockService);
 
     // We handle local password state for login here as it is transient UI state
     const [password, setPassword] = useState('');
@@ -234,7 +237,7 @@ export function StepReview() {
             // Start payment flow if checkout link exists
             if (data.checkoutUrl) {
                 // Clear state before leaving
-                try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+                try { localStorage.removeItem(bookingStateKey); } catch { }
                 
                 // If in iframe, breakout for Mollie
                 const isIframe = window !== window.top;
@@ -247,7 +250,7 @@ export function StepReview() {
             }
 
             // Clear state before redirecting to confirmation
-            try { localStorage.removeItem('goudecho_booking_state'); } catch { }
+            try { localStorage.removeItem(bookingStateKey); } catch { }
 
             const confirmationParams = new URLSearchParams({ bookingId: data.booking.id });
             if (data.paymentLinkAvailable) confirmationParams.set('payment', 'midwife');
