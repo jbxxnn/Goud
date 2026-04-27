@@ -25,9 +25,9 @@ export default function BookingEmbedClient() {
   }, []);
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center pt-4">
+    <div ref={containerRef} className="flex w-full flex-col pt-4">
       <BookingProvider initialServiceId={serviceId} lockService={!!serviceId}>
-        <BookingFlow />
+        <BookingFlow embedded />
       </BookingProvider>
     </div>
   );

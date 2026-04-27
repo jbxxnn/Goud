@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { RotateLeft01Icon } from '@hugeicons/core-free-icons';
 
-export function BookingFlow() {
+export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
     const {
         step,
         loadingServices,
@@ -42,9 +42,13 @@ export function BookingFlow() {
         ...selectedAddOnItems.map(a => ({ label: a.name, price: a.priceCents })),
     ];
 
+    const containerClassName = embedded
+        ? `w-full max-w-none flex flex-col lg:flex-row gap-6 items-start justify-center px-0 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`
+        : `mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-start justify-center px-4 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`;
+
     return (
         <div 
-            className={`mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-start justify-center px-4 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`} 
+            className={containerClassName}
             style={lockService ? {} : { marginTop: "2rem", marginBottom: "2rem", paddingBottom: "2rem" }}
         >
 

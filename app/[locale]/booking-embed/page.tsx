@@ -5,8 +5,8 @@ import BookingEmbedClient from './booking-embed-client';
 
 function BookingEmbedFallback() {
   return (
-    <div className="flex flex-col items-center pt-4 px-4">
-      <div className="w-full max-w-lg rounded-md bg-white/90 shadow-2xl shadow-black/5 backdrop-blur-xl">
+    <div className="flex w-full flex-col pt-4">
+      <div className="w-full rounded-md bg-white/90 shadow-2xl shadow-black/5 backdrop-blur-xl">
         <div className="space-y-6 px-6 py-12">
           <div className="flex flex-col items-center text-center">
             <div className="relative mb-5">
