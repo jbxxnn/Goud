@@ -43,7 +43,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
     ];
 
     const containerClassName = embedded
-        ? `w-full max-w-none flex flex-col lg:flex-row gap-6 items-start justify-stretch px-0 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`
+        ? `w-full max-w-none flex flex-col lg:flex-row gap-6 items-start justify-stretch px-4 lg:px-6 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`
         : `mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-start justify-center px-4 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`;
     const mobileSummaryCardClassName = embedded ? 'w-full lg:hidden' : 'w-full max-w-lg lg:hidden';
     const mainCardClassName = embedded
