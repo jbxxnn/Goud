@@ -43,8 +43,15 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
     ];
 
     const containerClassName = embedded
-        ? `w-full max-w-none flex flex-col lg:flex-row gap-6 items-start justify-center px-0 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`
+        ? `w-full max-w-none flex flex-col lg:flex-row gap-6 items-start justify-stretch px-0 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`
         : `mx-auto w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-start justify-center px-4 ${lockService ? 'mt-0 pb-0' : 'mt-[2rem] pb-[2rem]'}`;
+    const mobileSummaryCardClassName = embedded ? 'w-full lg:hidden' : 'w-full max-w-lg lg:hidden';
+    const mainCardClassName = embedded
+        ? 'w-full min-w-0 shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:flex-[1.15]'
+        : 'w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl';
+    const sidebarCardClassName = embedded
+        ? 'w-full min-w-0 hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:flex-1 lg:sticky lg:top-18'
+        : 'w-full max-w-lg hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18';
 
     return (
         <div 
@@ -54,7 +61,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
 
 
             {step === 4 && (
-                <Card className="w-full max-w-lg lg:hidden" style={{ borderRadius: "0.5rem" }}>
+                <Card className={mobileSummaryCardClassName} style={{ borderRadius: "0.5rem" }}>
                     
                     <CardContent className="p-4 space-y-4">
                         <AlertDialog>
@@ -131,7 +138,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
                 </Card>
             )}
             {/* this is the right card */}
-            <Card className="w-full max-w-lg shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl" style={{ borderRadius: "0.5rem" }}>
+            <Card className={mainCardClassName} style={{ borderRadius: "0.5rem" }}>
                 {/* <div className="w-full h-12" style={{ borderTopLeftRadius: '1rem', borderTopRightRadius: '1rem', background: 'linear-gradient(180deg, oklch(0.8412 0.0402 57.2748) 0%, oklch(0.9449 0.0154 48.5561) 100%)' }}></div> */}
                 <CardContent className="space-y-6 pt-12">
                     {errorMsg && step === 1 && !loadingServices ? (
@@ -207,7 +214,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
             
 
             {/* this is the left card */}
-            <Card className="w-full max-w-lg hidden lg:flex flex-col shadow-2xl shadow-black/5 border-0 rounded-md overflow-hidden bg-white/80 backdrop-blur-xl lg:sticky lg:top-18" style={{ borderRadius: "0.5rem" }}>
+            <Card className={sidebarCardClassName} style={{ borderRadius: "0.5rem" }}>
                 <CardHeader className="relative pb-6 pt-8 px-8">
                     <div className="flex items-start justify-between">
                         {/* Header content if needed */}
