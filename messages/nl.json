@@ -272,12 +272,12 @@
             "recommended": "Aanbevolen"
         },
         "form": {
-            "firstName": "Voornaam *",
-            "firstNamePlaceholder": "Vul voornaam in",
-            "lastName": "Achternaam *",
-            "lastNamePlaceholder": "Vul achternaam in",
-            "practiceName": "Praktijknaam",
-            "practicePlaceholder": "Vul praktijknaam in (optioneel)",
+            "firstName": "Plaats *",
+            "firstNamePlaceholder": "Vul plaats in",
+            "lastName": "Praktijknaam *",
+            "lastNamePlaceholder": "Vul praktijknaam in",
+            "practiceName": "Weergavenaam",
+            "practicePlaceholder": "Plaats - Praktijknaam",
             "email": "E-mail",
             "emailPlaceholder": "Vul e-mail in (optioneel)",
             "phone": "Telefoon",
@@ -287,11 +287,11 @@
             "recommended": "Aanbevolen Optie",
             "recommendedHint": "Aanbevolen verloskundigen verschijnen bovenaan de selectielijsten",
             "validation": {
-                "firstNameRequired": "Voornaam is verplicht",
-                "firstNameLength": "Voornaam moet minder dan 100 tekens zijn",
-                "lastNameRequired": "Achternaam is verplicht",
-                "lastNameLength": "Achternaam moet minder dan 100 tekens zijn",
-                "practiceLength": "Praktijknaam moet minder dan 255 tekens zijn",
+                "firstNameRequired": "Plaats is verplicht",
+                "firstNameLength": "Plaats moet minder dan 100 tekens zijn",
+                "lastNameRequired": "Praktijknaam is verplicht",
+                "lastNameLength": "Praktijknaam moet minder dan 100 tekens zijn",
+                "practiceLength": "Weergavenaam moet minder dan 255 tekens zijn",
                 "emailInvalid": "Ongeldig e-mailadres",
                 "phoneLength": "Telefoonnummer moet minder dan 32 tekens zijn"
             }

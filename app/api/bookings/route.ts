@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import { createClient } from '@/lib/supabase/server';
 import { createBooking } from '@/lib/bookings/createBooking';
-import { sendBookingConfirmationEmail } from '@/lib/email';
+import { sendBookingConfirmationEmail, sendPaymentLinkEmail } from '@/lib/email';
 import { formatEuroCents } from '@/lib/currency/format';
 import { createUserAndProfile } from '@/lib/auth/account';
 import { bookingRequestSchema } from '@/lib/validation/booking';
@@ -424,6 +424,16 @@ export async function POST(req: NextRequest) {
           googleMapsLink: locationData.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationData.address)}` : undefined,
           paymentLink: shouldSendPaymentLinkToClient ? paymentLinkForEmail : undefined,
         });
+
+        if (shouldSendPaymentLinkToClient && paymentLinkForEmail && clientEmail) {
+          await sendPaymentLinkEmail(clientEmail, {
+            clientName: firstName,
+            serviceName: serviceData.name,
+            amount: formatEuroCents(finalPrice),
+            paymentLink: paymentLinkForEmail,
+            bookingId: booking.id.substring(0, 8).toUpperCase(),
+          });
+        }
       }
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError);
@@ -604,6 +614,7 @@ export async function GET(req: NextRequest) {
     const anyUserId = searchParams.get('anyUserId');
     const patientId = searchParams.get('patientId');
     const midwifePractice = searchParams.get('midwifePractice') === 'true';
+    const includeStatusCounts = searchParams.get('includeStatusCounts') !== 'false';
 
     // --- Status Counts Logic ---
     const statusKeys = ['pending', 'confirmed', 'cancelled', 'ongoing', 'completed', 'no_show'];
@@ -668,7 +679,8 @@ export async function GET(req: NextRequest) {
         return filtered;
     };
 
-    const statusCountsPromise = Promise.all([
+    const emptyStatusCounts = { all: 0, pending: 0, confirmed: 0, cancelled: 0, ongoing: 0, completed: 0, no_show: 0 };
+    const statusCountsPromise = includeStatusCounts ? Promise.all([
         buildBaseFilter(supabase.from('bookings').select('*', { count: 'exact', head: true })),
         ...statusKeys.map(s => buildBaseFilter(supabase.from('bookings').select('*', { count: 'exact', head: true })).eq('status', s))
     ]).then(results => {
@@ -679,7 +691,7 @@ export async function GET(req: NextRequest) {
             counts[s] = results[i+1].count || 0;
         });
         return counts;
-    });
+    }) : Promise.resolve(emptyStatusCounts);
 
     let query = supabase
       .from('bookings')

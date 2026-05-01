@@ -51,7 +51,8 @@ export const BookingReminderEmail = ({
                     />
                 </Container>
                 <Container style={container}>
-                    <Heading style={h1}>Herinnering: Afspraak morgen</Heading>
+                    <Heading style={h1}>Herinnering:</Heading>
+                    <Heading style={h1}>Morgen is je {serviceName}</Heading>
 
                     {customBody ? (
                         <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
@@ -61,7 +62,7 @@ export const BookingReminderEmail = ({
                                 Hoi {clientName},
                             </Text>
                             <Text style={text}>
-                                Dit is een herinnering voor je afspraak voor <strong>{serviceName}</strong> morgen.
+                               Hierbij nog even de details van je afspraak:
                             </Text>
                         </>
                     )}
@@ -85,22 +86,18 @@ export const BookingReminderEmail = ({
                         </Row>
                     </Section>
 
-                    <Section>
-                        <Text style={text}>We kijken ernaar uit je te zien!</Text>
+                    <Section style={{ marginBottom: '60px' }}>
+                        <Text style={h1}>Tot morgen!</Text>
                     </Section>
 
                     <Section>
-                        <Text style={h3}>Afspraak wijzigen / annuleren?</Text>
-                        <Text style={smallText}>Wijzigen van datum en/of tijd kan eenvoudig vanuit je account.</Text>
-                        <Link style={link} href="https://goudecho.nl/dashboard/">Klik hier om naar je account te gaan.</Link>
+                        <Text style={smallText}>Afspraak wijzigen of annuleren kan vanuit <Link style={link} href="https://goudecho.nl/dashboard/">je account.</Link></Text>
+                        
                     </Section>
 
                     <Section style={footer}>
                         <Text style={footerText}>
                             Booking Reference: {bookingId}
-                        </Text>
-                        <Text style={footerText}>
-                            Als je de afspraak wilt veranderen of annuleren, neem dan contact op met ons.
                         </Text>
                     </Section>
                 </Container>

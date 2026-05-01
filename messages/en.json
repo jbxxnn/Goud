@@ -272,12 +272,12 @@
             "recommended": "Recommended"
         },
         "form": {
-            "firstName": "First Name *",
-            "firstNamePlaceholder": "Enter first name",
-            "lastName": "Last Name *",
-            "lastNamePlaceholder": "Enter last name",
-            "practiceName": "Practice Name",
-            "practicePlaceholder": "Enter practice name (optional)",
+            "firstName": "City *",
+            "firstNamePlaceholder": "Enter city",
+            "lastName": "Practice Name *",
+            "lastNamePlaceholder": "Enter practice name",
+            "practiceName": "Display Name",
+            "practicePlaceholder": "City - Practice Name",
             "email": "Email",
             "emailPlaceholder": "Enter email (optional)",
             "phone": "Phone",
@@ -287,11 +287,11 @@
             "recommended": "Recommended Option",
             "recommendedHint": "Recommended midwives appear at the top of selection lists",
             "validation": {
-                "firstNameRequired": "First name is required",
-                "firstNameLength": "First name must be less than 100 characters",
-                "lastNameRequired": "Last name is required",
-                "lastNameLength": "Last name must be less than 100 characters",
-                "practiceLength": "Practice name must be less than 255 characters",
+                "firstNameRequired": "City is required",
+                "firstNameLength": "City must be less than 100 characters",
+                "lastNameRequired": "Practice name is required",
+                "lastNameLength": "Practice name must be less than 100 characters",
+                "practiceLength": "Display name must be less than 255 characters",
                 "emailInvalid": "Invalid email address",
                 "phoneLength": "Phone must be less than 32 characters"
             }

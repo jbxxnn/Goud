@@ -50,7 +50,7 @@ export const BookingCancellationEmail = ({
                     />
                 </Container>
                 <Container style={container}>
-                    <Heading style={h1}>Afspraak Geannuleerd</Heading>
+                    <Heading style={h1}>Echo Afspraak Geannuleerd</Heading>
 
                     {customBody ? (
                         <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
@@ -77,7 +77,7 @@ export const BookingCancellationEmail = ({
                     <Section style={section}>
                         <Text style={h3}>Nieuwe afspraak maken?</Text>
                         <Text style={smallText}>Wil je op een ander moment langskomen? Je kunt eenvoudig een nieuwe afspraak maken via onze website.</Text>
-                        <Link style={linkButton} href="https://goudecho.nl/dashboard/">Nieuwe afspraak maken</Link>
+                        <Link style={linkButton} href="https://afspraak.goudecho.nl/dashboard/">Nieuwe afspraak maken</Link>
                     </Section>
 
                     <Section style={footer}>

@@ -4,6 +4,12 @@ import { BookingConfirmationEmail } from '@/components/emails/booking-confirmati
 import { BookingReminderEmail } from '@/components/emails/booking-reminder';
 import { BookingRescheduledEmail } from '@/components/emails/booking-rescheduled';
 import { BookingCancellationEmail } from '@/components/emails/booking-cancellation';
+import { PaymentLinkEmail } from '@/components/emails/payment-link';
+import { PaymentReceiptEmail } from '@/components/emails/payment-receipt';
+import { PaymentFailedEmail } from '@/components/emails/payment-failed';
+import { AccountWelcomeEmail } from '@/components/emails/account-welcome';
+import { AuthLinkEmail } from '@/components/emails/auth-link';
+import { ReviewRequestEmail } from '@/components/emails/review-request';
 import { render } from '@react-email/render';
 import { EmailTemplateService } from '@/lib/services/email-template-service';
 import { replaceTemplateVariables } from '@/lib/utils';
@@ -25,6 +31,10 @@ async function getTemplateContent(
     try {
         const template = await EmailTemplateService.getTemplate(key);
 
+        if (template && template.is_active === false) {
+            return { subject: defaultSubject, body: undefined, isActive: false };
+        }
+
         let subject = defaultSubject;
         let body: string | undefined = undefined;
 
@@ -38,10 +48,10 @@ async function getTemplateContent(
         const finalSubject = replaceTemplateVariables(subject, variables);
         const finalBody = body ? replaceTemplateVariables(body, variables) : undefined;
 
-        return { subject: finalSubject, body: finalBody };
+        return { subject: finalSubject, body: finalBody, isActive: true };
     } catch (error) {
         console.warn(`Error fetching template for ${key}, using defaults.`, error);
-        return { subject: defaultSubject, body: undefined };
+        return { subject: defaultSubject, body: undefined, isActive: true };
     }
 }
 
@@ -120,7 +130,8 @@ export async function sendBookingConfirmationEmail(
     details: BookingConfirmationDetails
 ) {
     const defaultSubject = `Afspraak voor ${details.serviceName} is bevestigd.`;
-    const { subject, body } = await getTemplateContent('booking_confirmation', defaultSubject, details);
+    const { subject, body, isActive } = await getTemplateContent('booking_confirmation', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'booking_confirmation' };
     const emailHtml = await render(BookingConfirmationEmail({ ...details, customBody: body, paymentLink: details.paymentLink }));
 
     return sendEmailWithFallback({
@@ -145,7 +156,8 @@ export async function sendBookingReminderEmail(
     details: BookingReminderDetails
 ) {
     const defaultSubject = `Herinnering: Je afspraak morgen voor ${details.serviceName}`;
-    const { subject, body } = await getTemplateContent('booking_reminder', defaultSubject, details);
+    const { subject, body, isActive } = await getTemplateContent('booking_reminder', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'booking_reminder' };
     const emailHtml = await render(BookingReminderEmail({ ...details, customBody: body }));
 
     return sendEmailWithFallback({
@@ -172,7 +184,8 @@ export async function sendBookingRescheduledEmail(
     details: BookingRescheduledDetails
 ) {
     const defaultSubject = `Wijziging van je afspraak bij Goud Echo: ${details.newDate}`;
-    const { subject, body } = await getTemplateContent('booking_rescheduled', defaultSubject, details);
+    const { subject, body, isActive } = await getTemplateContent('booking_rescheduled', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'booking_rescheduled' };
     const emailHtml = await render(BookingRescheduledEmail({ ...details, customBody: body }));
 
     return sendEmailWithFallback({
@@ -196,7 +209,8 @@ export async function sendBookingCancellationEmail(
     details: BookingCancellationDetails
 ) {
     const defaultSubject = `Annulering van je afspraak bij Goud Echo: ${details.date}`;
-    const { subject, body } = await getTemplateContent('booking_cancellation', defaultSubject, details);
+    const { subject, body, isActive } = await getTemplateContent('booking_cancellation', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'booking_cancellation' };
     const emailHtml = await render(BookingCancellationEmail({ ...details, customBody: body }));
 
     return sendEmailWithFallback({
@@ -218,8 +232,174 @@ export async function sendRepeatBookingEmail(
 ) {
     const { RepeatBookingEmail } = await import('@/components/emails/repeat-booking');
     const defaultSubject = `Plan je vervolgafspraak bij Goud Echo`;
-    const { subject, body } = await getTemplateContent('repeat_booking', defaultSubject, details);
+    const { subject, body, isActive } = await getTemplateContent('repeat_booking', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'repeat_booking' };
     const emailHtml = await render(RepeatBookingEmail({ ...details, customBody: body }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type PaymentLinkDetails = {
+    clientName: string;
+    serviceName: string;
+    amount: string;
+    paymentLink: string;
+    bookingId: string;
+};
+
+export async function sendPaymentLinkEmail(
+    to: string | string[],
+    details: PaymentLinkDetails
+) {
+    const defaultSubject = `Betaallink voor je afspraak bij Goud Echo`;
+    const { subject, body, isActive } = await getTemplateContent('payment_link', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'payment_link' };
+    const emailHtml = await render(PaymentLinkEmail({ ...details, customBody: body }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type PaymentReceiptDetails = {
+    clientName: string;
+    serviceName: string;
+    amount: string;
+    bookingId: string;
+    paymentId?: string;
+};
+
+export async function sendPaymentReceiptEmail(
+    to: string | string[],
+    details: PaymentReceiptDetails
+) {
+    const defaultSubject = `Betaling ontvangen voor je afspraak bij Goud Echo`;
+    const { subject, body, isActive } = await getTemplateContent('payment_receipt', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'payment_receipt' };
+    const emailHtml = await render(PaymentReceiptEmail({ ...details, customBody: body }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type PaymentFailedDetails = {
+    clientName: string;
+    serviceName: string;
+    amount: string;
+    paymentLink?: string;
+    bookingId: string;
+    reason?: string;
+};
+
+export async function sendPaymentFailedEmail(
+    to: string | string[],
+    details: PaymentFailedDetails
+) {
+    const defaultSubject = `Betaling niet voltooid voor je afspraak bij Goud Echo`;
+    const { subject, body, isActive } = await getTemplateContent('payment_failed', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'payment_failed' };
+    const emailHtml = await render(PaymentFailedEmail({ ...details, customBody: body }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type AccountWelcomeDetails = {
+    clientName: string;
+    dashboardLink: string;
+};
+
+export async function sendAccountWelcomeEmail(
+    to: string | string[],
+    details: AccountWelcomeDetails
+) {
+    const defaultSubject = `Welkom bij Goud Echo`;
+    const { subject, body, isActive } = await getTemplateContent('account_welcome', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'account_welcome' };
+    const emailHtml = await render(AccountWelcomeEmail({ ...details, customBody: body }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type AuthLinkDetails = {
+    clientName?: string;
+    actionLink: string;
+};
+
+export async function sendPasswordResetEmail(
+    to: string | string[],
+    details: AuthLinkDetails
+) {
+    const defaultSubject = `Stel je wachtwoord opnieuw in`;
+    const { subject, body, isActive } = await getTemplateContent('password_reset', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'password_reset' };
+    const emailHtml = await render(AuthLinkEmail({
+        ...details,
+        actionLabel: 'Wachtwoord instellen',
+        heading: 'Stel je wachtwoord opnieuw in',
+        preview: 'Gebruik deze link om je wachtwoord opnieuw in te stellen',
+        customBody: body,
+    }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export async function sendMagicLinkEmail(
+    to: string | string[],
+    details: AuthLinkDetails
+) {
+    const defaultSubject = `Log in bij Goud Echo`;
+    const { subject, body, isActive } = await getTemplateContent('magic_link', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'magic_link' };
+    const emailHtml = await render(AuthLinkEmail({
+        ...details,
+        actionLabel: 'Log in',
+        heading: 'Log in bij Goud Echo',
+        preview: 'Gebruik deze link om in te loggen bij Goud Echo',
+        customBody: body,
+    }));
+
+    return sendEmailWithFallback({
+        to,
+        subject,
+        html: emailHtml,
+    });
+}
+
+export type ReviewRequestDetails = {
+    clientName: string;
+    serviceName?: string;
+    reviewLink: string;
+};
+
+export async function sendReviewRequestEmail(
+    to: string | string[],
+    details: ReviewRequestDetails
+) {
+    const defaultSubject = `Wil je je ervaring met Goud Echo delen?`;
+    const { subject, body, isActive } = await getTemplateContent('review_request', defaultSubject, details);
+    if (!isActive) return { skipped: true, reason: 'template_disabled', key: 'review_request' };
+    const emailHtml = await render(ReviewRequestEmail({ ...details, customBody: body }));
 
     return sendEmailWithFallback({
         to,

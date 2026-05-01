@@ -223,13 +223,14 @@ export function StepReview() {
             // Magic link for new users
             if (emailChecked?.exists === false) {
                 try {
-                    const { createClient } = await import('@/lib/supabase/client');
-                    const supabase = createClient();
-                    await supabase.auth.signInWithOtp({
-                        email: values.clientEmail,
-                        options: {
-                            emailRedirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
-                        },
+                    await fetch('/api/auth/send-magic-link', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: values.clientEmail,
+                            clientName: values.firstName,
+                            redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
+                        }),
                     });
                 } catch { }
             }

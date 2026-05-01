@@ -77,6 +77,16 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
+      try {
+        await fetch('/api/auth/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            clientName: [firstName, lastName].filter(Boolean).join(' ') || email,
+          }),
+        });
+      } catch { }
       router.push("/dashboard");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : t("error"));

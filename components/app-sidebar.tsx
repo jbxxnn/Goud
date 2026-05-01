@@ -108,8 +108,7 @@ const allMenuItems: MenuItem[] = [
   },
   {
     title: "Email Templates",
-    url: "#",
-    comingsoon: "coming soon",
+    url: "/dashboard/emails",
     icon: <HugeiconsIcon icon={Mail01Icon} />,
     roles: ['admin'], // Admin only
   },

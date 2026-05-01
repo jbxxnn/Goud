@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Power } from 'lucide-react';
 
 interface EmailTemplatesManagerProps {
     initialTemplates: EmailTemplate[];
@@ -52,6 +53,24 @@ export function EmailTemplatesManager({ initialTemplates }: EmailTemplatesManage
         }
     };
 
+    const handleToggleActive = async (template: EmailTemplate, isActive: boolean) => {
+        setIsLoading(true);
+        const previousTemplates = templates;
+        setTemplates(templates.map(t => t.key === template.key ? { ...t, is_active: isActive } : t));
+
+        try {
+            await updateEmailTemplate(template.key, {
+                is_active: isActive
+            });
+            toast.success(isActive ? 'Email activated' : 'Email deactivated');
+        } catch (error) {
+            setTemplates(previousTemplates);
+            toast.error('Failed to update email status');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -63,10 +82,26 @@ export function EmailTemplatesManager({ initialTemplates }: EmailTemplatesManage
                 {templates.map((template) => (
                     <Card key={template.key}>
                         <CardHeader>
-                            <CardTitle className="text-lg">{formatKey(template.key)}</CardTitle>
-                            <CardDescription>{template.description}</CardDescription>
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <CardTitle className="text-lg">{formatKey(template.key)}</CardTitle>
+                                    <CardDescription>{template.description}</CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Power className={template.is_active !== false ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-muted-foreground'} />
+                                    <Switch
+                                        checked={template.is_active !== false}
+                                        onCheckedChange={(checked) => handleToggleActive(template, checked)}
+                                        disabled={isLoading}
+                                        aria-label={`Toggle ${formatKey(template.key)} email`}
+                                    />
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
+                            <p className={`text-xs font-medium mb-3 ${template.is_active !== false ? 'text-green-700' : 'text-muted-foreground'}`}>
+                                {template.is_active !== false ? 'Active' : 'Inactive'}
+                            </p>
                             <p className="text-sm font-medium mb-1">Subject:</p>
                             <p className="text-sm text-gray-500 mb-4 truncate">{template.subject}</p>
                             <Button onClick={() => handleEdit(template)} variant="outline" className="w-full">

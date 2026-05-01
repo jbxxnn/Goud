@@ -45,7 +45,7 @@ export const BookingConfirmationEmail = ({
     customBody,
     paymentLink,
 }: BookingConfirmationEmailProps) => {
-    const previewText = `Je afspraak is bevestigd. De details kunnen beneden bekeken worden.`;
+    const previewText = `Je ${serviceName} afspraak is bevestigd. Bekijk de details in deze email.`;
 
     return (
         <Html>
@@ -61,7 +61,7 @@ export const BookingConfirmationEmail = ({
                     />
                 </Container>
                 <Container style={container}>
-                    <Heading style={h1}>Je echo afspraak is bevestigd</Heading>
+                    <Heading style={h1}>Je {serviceName} afspraak is bevestigd</Heading>
 
                     {customBody ? (
                         <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
@@ -71,7 +71,10 @@ export const BookingConfirmationEmail = ({
                                 Hoi {clientName},
                             </Text>
                             <Text style={text}>
-                                Bedankt voor je afspraak met <strong>{serviceName}</strong>.
+                                Bedankt voor het maken van een afspraak bij Goud echo en prenatale screening. Je <strong>{serviceName}</strong> is succesvol ingepland.
+                            </Text>
+                            <Text style={text}>
+                                Hieronder vind je de belangrijkste gegevens van je afspraak.
                             </Text>
                         </>
                     )}
@@ -130,7 +133,7 @@ export const BookingConfirmationEmail = ({
                     {paymentLink && (
                         <Section style={section}>
                             <Heading as="h3" style={h3}>Betaling</Heading>
-                            <Text style={text}>Je kunt je afspraak alvast online betalen via de onderstaande knop:</Text>
+                            <Text style={text}>Wil je de afspraak alvast online betalen? Dat kan eenvoudig via de knop hieronder.</Text>
                             <Section style={{ textAlign: 'center', margin: '20px 0' }}>
                                 <Link
                                     href={paymentLink}
@@ -154,17 +157,17 @@ export const BookingConfirmationEmail = ({
                     )}
 
                     <Section>
+                        <Text style={text}>Kom liefst 5 minuten voor je afspraak, zodat we op tijd kunnen beginnen. We zien ernaar uit je te mogen verwelkomen!</Text>
+                    </Section>
+                    <Section>
                         <Text style={h3}>Afspraak wijzigen / annuleren?</Text>
-                        <Text style={smallText}>Wijzigen van datum en/of tijd kan eenvoudig vanuit je account.</Text>
-                        <Link style={link} href="https://goudecho.nl/dashboard/">Klik hier om naar je account te gaan.</Link>
+                        <Text style={smallText}>Wijzigen of annuleren? Dit kan eenvoudig <Link style={link} href="https://goudecho.nl/dashboard/">vanuit je account.</Link></Text>
+                        
                     </Section>
 
                     <Section style={footer}>
                         <Text style={footerText}>
                             Booking Reference: {bookingId}
-                        </Text>
-                        <Text style={footerText}>
-                            Als je de afspraak wilt veranderen of annuleren, neem dan contact op met ons.
                         </Text>
                     </Section>
                 </Container>

@@ -49,6 +49,9 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
       is_recommended: false,
     },
   });
+  const cityValue = watch('first_name');
+  const practiceValue = watch('last_name');
+  const combinedPracticeName = [cityValue?.trim(), practiceValue?.trim()].filter(Boolean).join(' - ');
 
   // Reset form when midwife changes
   useEffect(() => {
@@ -75,6 +78,13 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
     }
   }, [midwife, reset]);
 
+  useEffect(() => {
+    setValue('practice_name', combinedPracticeName, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [combinedPracticeName, setValue]);
+
   const onSubmit = async (data: MidwifeFormData) => {
     if (externalIsSubmitting === undefined) {
       setInternalIsSubmitting(true);
@@ -85,7 +95,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
         last_name: data.last_name.trim(),
         phone: data.phone.trim() || undefined,
         email: data.email.trim() || undefined,
-        practice_name: data.practice_name.trim() || undefined,
+        practice_name: [data.first_name.trim(), data.last_name.trim()].filter(Boolean).join(' - ') || undefined,
         is_active: data.is_active,
         is_recommended: data.is_recommended,
       };
@@ -101,7 +111,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
     <form id="midwife-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full min-h-0">
       <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* First Name */}
+          {/* City */}
           <div>
             <Label htmlFor="first_name" className="text-xs font-semibold mb-2">
               {t('firstName')}
@@ -119,7 +129,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
             )}
           </div>
 
-          {/* Last Name */}
+          {/* Practice Name */}
           <div>
             <Label htmlFor="last_name" className="text-xs font-semibold mb-2">
               {t('lastName')}
@@ -137,7 +147,7 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
             )}
           </div>
 
-          {/* Practice Name */}
+          {/* Combined Practice Name */}
           <div className="md:col-span-2">
             <Label htmlFor="practice_name" className="text-xs font-semibold mb-2">
               {t('practiceName')}
@@ -147,7 +157,10 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
               {...register('practice_name', {
                 maxLength: { value: 255, message: t('validation.practiceLength') },
               })}
+              readOnly
+              aria-readonly="true"
               placeholder={t('practicePlaceholder')}
+              className="bg-muted/40"
             />
             {errors.practice_name && (
               <p className="text-sm text-destructive mt-1">{errors.practice_name.message}</p>
@@ -232,4 +245,3 @@ export default function MidwifeForm({ midwife, onSave, onCancel, isSubmitting: e
     </form>
   );
 }
-

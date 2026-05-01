@@ -106,6 +106,12 @@ export default function BookingsClient({
     setSearchQuery('');
     setPage(1);
   }, []);
+
+  const handleViewModeChange = useCallback((mode: 'table' | 'calendar') => {
+    setViewMode(mode);
+    setPage(1);
+    setLimit(mode === 'table' ? 25 : 1000);
+  }, []);
   const [viewingBooking, setViewingBooking] = useState<Booking | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [reschedulingBooking, setReschedulingBooking] = useState<Booking | null>(null);
@@ -147,43 +153,94 @@ export default function BookingsClient({
     };
   }, [viewMode, activeDate, dateFrom, dateTo, calendarView]);
 
+  const fetchBookings = useCallback(async ({
+    pageValue,
+    limitValue,
+    dateFromValue,
+    dateToValue,
+    sortByValue,
+    sortOrderValue,
+    includeStatusCounts = true,
+  }: {
+    pageValue: number;
+    limitValue: number;
+    dateFromValue: string;
+    dateToValue: string;
+    sortByValue: 'start_time' | 'created_at';
+    sortOrderValue: 'asc' | 'desc';
+    includeStatusCounts?: boolean;
+  }) => {
+    const params = new URLSearchParams({
+      page: pageValue.toString(),
+      limit: limitValue.toString(),
+      sortBy: sortByValue,
+      sortOrder: sortOrderValue,
+      includeStatusCounts: includeStatusCounts ? 'true' : 'false',
+    });
+
+    if (statusFilter !== 'all') params.append('status', statusFilter);
+    if (dateFromValue) params.append('dateFrom', dateFromValue);
+    if (dateToValue) params.append('dateTo', dateToValue);
+    if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+    if (clientId) params.append('clientId', clientId);
+    if (staffId) params.append('staffId', staffId);
+    if (locationFilter && locationFilter !== 'all') params.append('locationId', locationFilter);
+
+    const response = await fetch(`/api/bookings?${params}`);
+    const data: BookingsResponse = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch bookings');
+    }
+    return data;
+  }, [clientId, debouncedSearchQuery, locationFilter, staffId, statusFilter]);
+
+  const bookingsQueryKey = useMemo(() => [
+    'bookings',
+    viewMode,
+    page,
+    limit,
+    statusFilter,
+    fetchDateFrom,
+    fetchDateTo,
+    debouncedSearchQuery,
+    clientId,
+    staffId,
+    locationFilter,
+  ], [viewMode, page, limit, statusFilter, fetchDateFrom, fetchDateTo, debouncedSearchQuery, clientId, staffId, locationFilter]);
+
+  useEffect(() => {
+    if (viewMode !== 'calendar') return;
+
+    queryClient.prefetchQuery({
+      queryKey: ['bookings', 'table', 1, 25, statusFilter, dateFrom, dateTo, debouncedSearchQuery, clientId, staffId, locationFilter],
+      queryFn: () => fetchBookings({
+        pageValue: 1,
+        limitValue: 25,
+        dateFromValue: dateFrom,
+        dateToValue: dateTo,
+        sortByValue: 'created_at',
+        sortOrderValue: 'desc',
+        includeStatusCounts: true,
+      }),
+      staleTime: 30 * 1000,
+    });
+  }, [clientId, dateFrom, dateTo, debouncedSearchQuery, fetchBookings, locationFilter, queryClient, staffId, statusFilter, viewMode]);
+
   // Bookings Query
   const { data: bookingsData, isLoading: bookingsLoading, isFetching: bookingsFetching } = useQuery<BookingsResponse>({
-    queryKey: ['bookings', page, limit, statusFilter, fetchDateFrom, fetchDateTo, debouncedSearchQuery, clientId, staffId, locationFilter],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
-
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (fetchDateFrom) params.append('dateFrom', fetchDateFrom);
-      if (fetchDateTo) params.append('dateTo', fetchDateTo);
-      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
-      if (clientId) params.append('clientId', clientId);
-      if (staffId) params.append('staffId', staffId);
-      if (locationFilter && locationFilter !== 'all') params.append('locationId', locationFilter);
-
-      // Sorting: Use start_time for calendar to ensure bookings in the window are shown first
-      if (viewMode === 'calendar') {
-        params.append('sortBy', 'start_time');
-        params.append('sortOrder', 'asc');
-      } else {
-        // Table mode defaults to created_at desc
-        params.append('sortBy', 'created_at');
-        params.append('sortOrder', 'desc');
-      }
-
-      const response = await fetch(`/api/bookings?${params}`);
-      const data: BookingsResponse = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch bookings');
-      }
-      return data;
-    },
-    // Keep previous data while fetching new page for smoother pagination
-    placeholderData: (previousData) => previousData,
+    queryKey: bookingsQueryKey,
+    queryFn: () => fetchBookings({
+      pageValue: page,
+      limitValue: limit,
+      dateFromValue: fetchDateFrom,
+      dateToValue: fetchDateTo,
+      sortByValue: viewMode === 'calendar' ? 'start_time' : 'created_at',
+      sortOrderValue: viewMode === 'calendar' ? 'asc' : 'desc',
+      includeStatusCounts: viewMode === 'table',
+    }),
+    placeholderData: viewMode === 'calendar' ? (previousData) => previousData : undefined,
+    staleTime: viewMode === 'table' ? 30 * 1000 : 0,
   });
 
   const bookings = bookingsData?.data || [];
@@ -208,6 +265,7 @@ export default function BookingsClient({
       const data = await response.json();
       return data.success ? data.data : [];
     },
+    placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -510,16 +568,6 @@ export default function BookingsClient({
     setPage(1);
   }, [limit]);
 
-  useEffect(() => {
-    if (viewMode === 'calendar') {
-      setLimit(1000); // Fetch more for calendar mode
-    } else {
-      // Keep the current limit if it's already a table-friendly value (10, 25, 50, 100, 200)
-      // otherwise default to 100
-      setLimit(prev => (prev > 200 ? 100 : prev));
-    }
-  }, [viewMode]);
-
   const calendarUsersList = useMemo(() => {
     return allStaff.map(s => ({
       id: s.id,
@@ -544,7 +592,7 @@ export default function BookingsClient({
             variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
             size="sm"
             className="gap-2 h-8"
-            onClick={() => setViewMode('calendar')}
+            onClick={() => handleViewModeChange('calendar')}
           >
             <HugeiconsIcon icon={ViewIcon} size={16} />
             {t('views.calendar')}
@@ -553,7 +601,7 @@ export default function BookingsClient({
             variant={viewMode === 'table' ? 'secondary' : 'ghost'}
             size="sm"
             className="gap-2 h-8"
-            onClick={() => setViewMode('table')}
+            onClick={() => handleViewModeChange('table')}
           >
             <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
             {t('views.list')}

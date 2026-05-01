@@ -311,21 +311,15 @@ export function StepService() {
                     </div>
                 </div>
             ) : null}
-            {selectedService && (
+            {selectedService && !(grandTotalCents === 0 && selectedService?.customPriceLabel) && (
                 <div className="flex items-start justify-between px-4 py-3 bg-white animate-in fade-in slide-in-from-top-4 duration-500 ease-in-out" style={{ borderRadius: '0.2rem' }}>
                     <span className="text-sm font-bold text-gray-700 w-full">
-                        {grandTotalCents === 0 && selectedService?.customPriceLabel ? 'Kosten' : t('currentTotal')}
+                        {t('currentTotal')}
                     </span>
                     <span className="text-sm font-bold text-gray-900 flex text-right flex-col w-full">
                         {grandTotalCents > 0 
                             ? formatEuroCents(grandTotalCents) 
-                            : (selectedService?.customPriceLabel || formatEuroCents(0))}
-
-                            {grandTotalCents === 0 && selectedService?.customPriceDescription && (
-                                <span className="text-[10px] leading-none text-gray-500 mt-1 font-medium text-left">
-                                    {selectedService.customPriceDescription}
-                                </span>
-                            )}
+                            : formatEuroCents(0)}
                     </span>
                 </div>
             )}

@@ -90,6 +90,7 @@ export function bookingToCalendarEvent(booking: Booking): IEvent {
             _originalStartTime: booking.start_time,
             _originalEndTime: booking.end_time,
             booking_id: booking.id,
+            booking_number: booking.booking_number,
             tags: booking.booking_tag_mappings?.map(m => m.tag) || [],
             hasNotes: !!booking.notes,
             allProtocolTasksCompleted: (booking.protocol_items_count ?? 0) > 0 && 

@@ -121,18 +121,24 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
                                             ))}
                                         </div>
                                     </div>
-                        <div className="flex flex-col items-end">
+                        {grandTotalCents === 0 && selectedService?.customPriceLabel ? (
+                            <div className="flex w-full flex-col items-center text-center">
                                 <span className="text-2xl font-bold text-primary tracking-tight">
-                                    {grandTotalCents > 0 
-                                        ? formatEuroCents(grandTotalCents) 
-                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                                    {selectedService.customPriceLabel}
                                 </span>
-                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
-                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
+                                {selectedService.customPriceDescription && (
+                                    <span className="text-xs text-gray-500 mt-1 font-medium max-w-[42rem]">
                                         {selectedService.customPriceDescription}
                                     </span>
                                 )}
                             </div>
+                        ) : (
+                            <div className="flex flex-col items-end">
+                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                    {grandTotalCents > 0 ? formatEuroCents(grandTotalCents) : formatEuroCents(0)}
+                                </span>
+                            </div>
+                        )}
                                     
                     </CardContent>
                 </Card>
@@ -343,23 +349,27 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
 
                     {/* Total Cost Summary */}
                     <div className="pt-4 mt-2 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                            {!(grandTotalCents === 0 && selectedService?.customPriceLabel) && (
-                                <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
-                            )}
-                            <div className="flex flex-col items-end">
+                        {grandTotalCents === 0 && selectedService?.customPriceLabel ? (
+                            <div className="flex w-full flex-col items-center text-center">
                                 <span className="text-2xl font-bold text-primary tracking-tight">
-                                    {grandTotalCents > 0 
-                                        ? formatEuroCents(grandTotalCents) 
-                                        : (selectedService?.customPriceLabel || formatEuroCents(0))}
+                                    {selectedService.customPriceLabel}
                                 </span>
-                                {grandTotalCents === 0 && selectedService?.customPriceDescription && (
-                                    <span className="text-xs text-gray-500 mt-1 font-medium text-right">
+                                {selectedService.customPriceDescription && (
+                                    <span className="text-xs text-gray-500 mt-1 font-medium max-w-[42rem]">
                                         {selectedService.customPriceDescription}
                                     </span>
                                 )}
                             </div>
-                        </div>
+                        ) : (
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-800">{t('totalDue')}</span>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-2xl font-bold text-primary tracking-tight">
+                                        {grandTotalCents > 0 ? formatEuroCents(grandTotalCents) : formatEuroCents(0)}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
 

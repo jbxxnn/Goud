@@ -232,6 +232,8 @@ export function CalendarProvider({ children, users, locations = [], events, init
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events]); // Only depend on events, not selectedDate to avoid loops
 
+  const calendarEvents = entityType === 'booking' ? events : localEvents;
+
   // Fetch settings from API on mount to ensure we have the latest
   // Since we already have initial settings from server, this is just a background sync
   useEffect(() => {
@@ -388,7 +390,7 @@ export function CalendarProvider({ children, users, locations = [], events, init
         workingHours,
         setWorkingHours: handleSetWorkingHours,
         // If you go to the refetch approach, you can remove the localEvents and pass the events directly
-        events: localEvents,
+        events: calendarEvents,
         setLocalEvents,
         isSaving,
         entityType,

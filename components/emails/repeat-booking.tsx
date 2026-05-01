@@ -23,10 +23,10 @@ interface RepeatBookingEmailProps {
 export const RepeatBookingEmail = ({
     clientName = 'Valued Client',
     serviceName = 'Follow-up Ultrasound',
-    link = 'https://goudecho.nl/booking/repeat?token=123',
+    link = 'https://afspraak.goudecho.nl/booking/repeat?token=123',
     customBody,
 }: RepeatBookingEmailProps) => {
-    const previewText = `Je vervolgafspraak staat klaar om geboekt te worden.`;
+    const previewText = `Plan je herhalingsecho`;
 
     return (
         <Html>
@@ -42,7 +42,7 @@ export const RepeatBookingEmail = ({
                     />
                 </Container>
                 <Container style={container}>
-                    <Heading style={h1}>Plan je vervolgafspraak</Heading>
+                    <Heading style={h1}>Plan nu de herhaling voor je echo</Heading>
 
                     {customBody ? (
                         <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
@@ -55,7 +55,7 @@ export const RepeatBookingEmail = ({
                                 We hebben een vervolgafspraak voor je klaargezet voor: <strong>{serviceName}</strong>.
                             </Text>
                             <Text style={text}>
-                                Klik op de onderstaande knop om een datum en tijd te kiezen die jou het beste uitkomen.
+                                Klik op de onderstaande knop de herhaling in te plannen.
                             </Text>
                         </>
                     )}

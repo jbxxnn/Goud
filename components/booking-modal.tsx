@@ -226,6 +226,16 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
 
       if (error) throw error;
 
+      try {
+        await fetch('/api/reviews/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: booking.id }),
+        });
+      } catch (emailError) {
+        console.error('Error sending review request email:', emailError);
+      }
+
       queryClient.setQueryData(['booking-review-task', booking.id], crypto.randomUUID());
       toast.success(locale === 'nl' ? 'Reviewverzoek toegevoegd' : 'Review request added');
       onReviewRequested?.();

@@ -40,7 +40,7 @@ export const BookingRescheduledEmail = ({
     googleMapsLink,
     customBody,
 }: BookingRescheduledEmailProps) => {
-    const previewText = `Je afspraak is gewijzigd naar ${newDate} om ${newTime}.`;
+    const previewText = `Je {serviceName} is verzet naar ${newDate} om ${newTime}.`;
 
     return (
         <Html>
@@ -56,7 +56,7 @@ export const BookingRescheduledEmail = ({
                     />
                 </Container>
                 <Container style={container}>
-                    <Heading style={h1}>Je afspraak is gewijzigd</Heading>
+                    <Heading style={h1}>Je afspraak is verzet</Heading>
 
                     {customBody ? (
                         <Text style={{ ...text, whiteSpace: 'pre-line' }}>{customBody}</Text>
@@ -66,7 +66,7 @@ export const BookingRescheduledEmail = ({
                                 Hoi {clientName},
                             </Text>
                             <Text style={text}>
-                                Je afspraak voor <strong>{serviceName}</strong> is succesvol verzet.
+                                 Je <strong>{serviceName}</strong> afspraak is succesvol verzet.
                             </Text>
                         </>
                     )}
@@ -105,7 +105,7 @@ export const BookingRescheduledEmail = ({
                     <Section style={section}>
                         <Text style={h3}>Toch weer wijzigen?</Text>
                         <Text style={smallText}>Mocht deze tijd toch niet uitkomen, dan kun je de afspraak opnieuw wijzigen via je account.</Text>
-                        <Link style={link} href="https://goudecho.nl/dashboard/">Naar mijn account</Link>
+                        <Link style={link} href="https://afspraak.goudecho.nl/dashboard/">Naar mijn account</Link>
                     </Section>
 
                     <Section style={footer}>

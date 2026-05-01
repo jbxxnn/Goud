@@ -1,4 +1,5 @@
 import { getServiceSupabase } from '@/lib/db/server-supabase';
+import { sendAccountWelcomeEmail } from '@/lib/email';
 
 export async function emailExists(email: string): Promise<boolean> {
   const supabase = getServiceSupabase();
@@ -22,6 +23,14 @@ export async function createUserAndProfile(params: { email: string; password?: s
 
   // Optionally update profile fields in users table
   await supabase.from('users').update({ first_name: params.firstName ?? null, last_name: params.lastName ?? null }).eq('id', userId);
+  try {
+    await sendAccountWelcomeEmail(params.email, {
+      clientName: [params.firstName, params.lastName].filter(Boolean).join(' ') || params.email,
+      dashboardLink: `${process.env.NEXT_PUBLIC_APP_URL || 'https://goudecho.nl'}/dashboard`,
+    });
+  } catch (error) {
+    console.error('[createUserAndProfile] Failed to send welcome email:', error);
+  }
   return { id: userId };
 }
 
@@ -36,7 +45,6 @@ function cryptoRandomString(length: number): string {
   }
   return Buffer.from(bytes).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, length);
 }
-
 
 
 

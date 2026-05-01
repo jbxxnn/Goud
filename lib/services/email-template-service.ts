@@ -6,6 +6,7 @@ export type EmailTemplate = {
     subject: string;
     body: string;
     description: string;
+    is_active: boolean;
     updated_at: string;
 };
 

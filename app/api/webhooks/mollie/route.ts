@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/db/server-supabase';
 import mollieClient from '@/lib/mollie/client';
+import { sendPaymentFailedEmail, sendPaymentReceiptEmail } from '@/lib/email';
+import { formatEuroCents } from '@/lib/currency/format';
 
 export async function POST(req: NextRequest) {
     try {
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
             .from('bookings')
             .update({ payment_status: dbStatus })
             .eq('id', bookingId)
-            .select();
+            .select('id, client_id, created_by, service_id, price_eur_cents, payment_link, payment_receipt_email_sent_at, payment_failed_email_sent_at');
 
         if (error) {
             console.error('[mollie-webhook] DB update failed:', error);
@@ -60,6 +62,60 @@ export async function POST(req: NextRequest) {
 
         if (!data || data.length === 0) {
             return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+        }
+
+        const booking = data[0];
+        const shouldSendReceipt = dbStatus === 'paid' && !booking.payment_receipt_email_sent_at;
+        const shouldSendFailure = ['failed', 'expired', 'canceled'].includes(dbStatus) && !booking.payment_failed_email_sent_at;
+
+        if (shouldSendReceipt || shouldSendFailure) {
+            try {
+                const userIds = [...new Set([booking.client_id, booking.created_by].filter(Boolean))];
+                const [{ data: service }, { data: users }] = await Promise.all([
+                    supabase.from('services').select('name').eq('id', booking.service_id).single(),
+                    userIds.length > 0
+                        ? supabase.from('users').select('id, email, first_name, last_name').in('id', userIds)
+                        : Promise.resolve({ data: [] as any[] }),
+                ]);
+
+                const recipients = [...new Set((users || []).map((user: any) => user.email).filter(Boolean))];
+                const primaryUser = (users || [])[0] as any;
+                const clientName = [primaryUser?.first_name, primaryUser?.last_name].filter(Boolean).join(' ') || primaryUser?.email || 'Client';
+                const serviceName = service?.name || 'je afspraak';
+
+                if (recipients.length > 0 && shouldSendReceipt) {
+                    await sendPaymentReceiptEmail(recipients, {
+                        clientName,
+                        serviceName,
+                        amount: formatEuroCents(booking.price_eur_cents),
+                        bookingId: booking.id.substring(0, 8).toUpperCase(),
+                        paymentId: id,
+                    });
+
+                    await supabase
+                        .from('bookings')
+                        .update({ payment_receipt_email_sent_at: new Date().toISOString() })
+                        .eq('id', booking.id);
+                }
+
+                if (recipients.length > 0 && shouldSendFailure) {
+                    await sendPaymentFailedEmail(recipients, {
+                        clientName,
+                        serviceName,
+                        amount: formatEuroCents(booking.price_eur_cents),
+                        paymentLink: booking.payment_link || undefined,
+                        bookingId: booking.id.substring(0, 8).toUpperCase(),
+                        reason: dbStatus,
+                    });
+
+                    await supabase
+                        .from('bookings')
+                        .update({ payment_failed_email_sent_at: new Date().toISOString() })
+                        .eq('id', booking.id);
+                }
+            } catch (emailError) {
+                console.error('[mollie-webhook] Payment email failed:', emailError);
+            }
         }
 
         return NextResponse.json({ received: true });
