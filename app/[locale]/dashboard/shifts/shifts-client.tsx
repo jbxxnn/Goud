@@ -276,19 +276,7 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
   }
 
   return (
-    <PageContainer className="space-y-6 p-6 bg-card" >
-      {/* Header */}
-      <PageItem>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-            <p className="text-muted-foreground text-sm">
-              {t('description')}
-            </p>
-          </div>
-        </div>
-      </PageItem>
-
+    <PageContainer className="flex h-[calc(100vh-5.5rem)] flex-col gap-4 overflow-hidden bg-card p-4" >
       {/* Error Message */}
       {error && (
         <PageItem>
@@ -302,8 +290,8 @@ export default function ShiftsClient({ initialCalendarSettings, staffId, userRol
       )}
 
       {/* Calendar */}
-      <PageItem>
-        <div className="bg-background">
+      <PageItem className="min-h-0 flex-1 overflow-hidden">
+        <div className="h-full min-h-0 bg-background">
           {users.length > 0 ? (
             <CalendarProvider
               users={users}

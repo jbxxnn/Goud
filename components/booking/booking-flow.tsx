@@ -123,7 +123,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
                                     </div>
                         {grandTotalCents === 0 && selectedService?.customPriceLabel ? (
                             <div className="flex w-full flex-col items-center text-center">
-                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                <span className="text-xl font-bold text-foreground tracking-tight">
                                     {selectedService.customPriceLabel}
                                 </span>
                                 {selectedService.customPriceDescription && (
@@ -351,7 +351,7 @@ export function BookingFlow({ embedded = false }: { embedded?: boolean }) {
                     <div className="pt-4 mt-2 border-t border-gray-100">
                         {grandTotalCents === 0 && selectedService?.customPriceLabel ? (
                             <div className="flex w-full flex-col items-center text-center">
-                                <span className="text-2xl font-bold text-primary tracking-tight">
+                                <span className="text-xl font-bold text-foreground tracking-tight">
                                     {selectedService.customPriceLabel}
                                 </span>
                                 {selectedService.customPriceDescription && (

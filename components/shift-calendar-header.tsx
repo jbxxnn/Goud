@@ -114,8 +114,13 @@ export function ShiftCalendarHeader({ view, events, onViewChange, onShiftCreated
 
           {!hideAddButton && (
             <AddShiftDialog onShiftCreated={onShiftCreated} staff={staff} locations={locations} services={services}>
-              <Button size="default" className="hover:bg-secondary-foreground bg-primary text-primary-foreground" style={{ borderRadius: '1rem' }}>
-                {t('addShift')}
+              <Button
+                aria-label={t('addShift')}
+                size="icon"
+                className="h-10 w-10 hover:bg-secondary-foreground bg-primary text-primary-foreground"
+                style={{ borderRadius: '1rem' }}
+              >
+                <HugeiconsIcon icon={PlusSignIcon} size={18} />
               </Button>
             </AddShiftDialog>
           )}

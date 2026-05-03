@@ -15,7 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from '@hugeicons/react';
-import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon } from '@hugeicons/core-free-icons';
+import { DashboardSquare03Icon, Building03Icon, UserGroup03Icon, BrochureIcon, Calendar02Icon, Loading04Icon, UserIcon, Mail01Icon, PlusSignIcon } from '@hugeicons/core-free-icons';
 import { Loader } from "lucide-react";
 
 
@@ -78,6 +78,12 @@ const allMenuItems: MenuItem[] = [
     url: "/dashboard/bookings",
     icon: <HugeiconsIcon icon={Calendar02Icon} />,
     roles: ['admin', 'assistant'], // Admin and Assistant
+  },
+  {
+    title: "Book",
+    url: "/dashboard/book",
+    icon: <HugeiconsIcon icon={PlusSignIcon} />,
+    roles: ['staff'], // Staff use the guided dashboard booking flow
   },
   {
     title: "Clients",
@@ -174,6 +180,7 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                 const isActive = item.url === '/dashboard'
                   ? normalizedPath === item.url
                   : normalizedPath.startsWith(item.url);
+                const isCurrentPage = normalizedPath === item.url;
 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -188,7 +195,7 @@ export function AppSidebar({ userRole = 'admin' }: AppSidebarProps) {
                         href={item.url}
                         className="min-h-10 "
                         onClick={() => {
-                          if (item.url !== "#" && item.url !== pathname) {
+                          if (item.url !== "#" && !isCurrentPage) {
                             setLoadingUrl(item.url);
                           }
                           if (isMobile) {

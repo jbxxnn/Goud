@@ -44,11 +44,11 @@ export function ClientStepReview() {
         isFormValid,
         setIsFormValid,
     } = useBooking();
-    const lockEditDetails = userRole === 'midwife';
+    const lockEditDetails = userRole === 'midwife' || userRole === 'staff';
     const [clientPaysForMidwifeBooking, setClientPaysForMidwifeBooking] = useState(true);
     const showMidwifePaymentChoice = userRole === 'midwife' && grandTotalCents > 0;
 
-    // Force show form for midwives so they can enter client details
+    // Force show form for internal bookers who must enter client details.
     useEffect(() => {
         if (lockEditDetails) {
             setShowForm(true);

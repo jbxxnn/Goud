@@ -62,6 +62,7 @@ interface BookingsClientProps {
   staffId?: string; // Optional: if provided, filter bookings for this staff only
   onBookingClick?: (booking: Booking) => void;
   userRole?: string;
+  fillParent?: boolean;
 }
 
 export default function BookingsClient({
@@ -70,7 +71,8 @@ export default function BookingsClient({
   clientId,
   staffId,
   onBookingClick,
-  userRole
+  userRole,
+  fillParent = false
 }: BookingsClientProps) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -577,37 +579,34 @@ export default function BookingsClient({
   }, [allStaff]);
 
   return (
-    <PageContainer className="space-y-6 p-6 bg-card">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-md font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground text-sm">
-            {t('description')}
-          </p>
+    <PageContainer className={cn(
+      "flex flex-col gap-4 overflow-hidden bg-card p-4",
+      fillParent ? "h-full min-h-0" : "h-[calc(100vh-5.5rem)]"
+    )}>
+      {viewMode === 'table' && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center bg-accent rounded-full p-1 border">
+            <Button
+              aria-label={t('views.calendar')}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleViewModeChange('calendar')}
+            >
+              <HugeiconsIcon icon={ViewIcon} size={16} />
+            </Button>
+            <Button
+              aria-label={t('views.list')}
+              variant="secondary"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleViewModeChange('table')}
+            >
+              <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center bg-accent rounded-full p-1 border">
-          <Button
-            variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="gap-2 h-8"
-            onClick={() => handleViewModeChange('calendar')}
-          >
-            <HugeiconsIcon icon={ViewIcon} size={16} />
-            {t('views.calendar')}
-          </Button>
-          <Button
-            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-            size="sm"
-            className="gap-2 h-8"
-            onClick={() => handleViewModeChange('table')}
-          >
-            <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
-            {t('views.list')}
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
@@ -731,27 +730,29 @@ export default function BookingsClient({
               </div>
             )}
             
-            <div className="flex items-center gap-2">
-              <CalendarProvider
-                users={calendarUsersList}
-                locations={locations}
-                events={calendarEvents}
-                entityType="booking"
-                initialSettings={{}}
-              >
-                <AddBookingDialog
-                  services={bookingServices}
+            {userRole !== 'staff' && (
+              <div className="flex items-center gap-2">
+                <CalendarProvider
+                  users={calendarUsersList}
                   locations={locations}
-                  staffMembers={allStaff}
-                  onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}
+                  events={calendarEvents}
+                  entityType="booking"
+                  initialSettings={{}}
                 >
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '10rem' }}>
-                    <HugeiconsIcon icon={PlusSignIcon} size={18} />
-                    {/* {t('addBooking', { fallback: 'Add Booking' })} */}
-                  </Button>
-                </AddBookingDialog>
-              </CalendarProvider>
-            </div>
+                  <AddBookingDialog
+                    services={bookingServices}
+                    locations={locations}
+                    staffMembers={allStaff}
+                    onBookingCreated={() => queryClient.invalidateQueries({ queryKey: ['bookings'] })}
+                  >
+                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4" style={{ borderRadius: '10rem' }}>
+                      <HugeiconsIcon icon={PlusSignIcon} size={18} />
+                      {/* {t('addBooking', { fallback: 'Add Booking' })} */}
+                    </Button>
+                  </AddBookingDialog>
+                </CalendarProvider>
+              </div>
+            )}
             {hasActiveFilters && (
               <Button
                 variant="default"
@@ -769,7 +770,7 @@ export default function BookingsClient({
       </div>
 
       {/* Bookings Table */}
-      <div>
+      <div className="min-h-0 flex-1 overflow-hidden">
         {viewMode === 'table' ? (
           <div className="p-0">
             {loading ? (
@@ -817,7 +818,7 @@ export default function BookingsClient({
             )}
           </div>
         ) : (
-          <div className="bg-background">
+          <div className="h-full min-h-0 bg-background">
             <CalendarProvider
               users={calendarUsersList}
               locations={locations}
@@ -832,6 +833,8 @@ export default function BookingsClient({
                 bookingLocations={locations}
                 bookingStaffMembers={allStaff}
                 onViewChange={setCalendarView}
+                pageViewMode={viewMode}
+                onPageViewModeChange={handleViewModeChange}
                 onEventClick={(event) => {
                   const booking = bookings.find(b => b.id === event.id);
                   if (booking) {

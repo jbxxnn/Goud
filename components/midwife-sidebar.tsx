@@ -77,6 +77,7 @@ export function MidwifeSidebar() {
                                 const isActive = item.url === '/dashboard'
                                     ? normalizedPath === item.url
                                     : normalizedPath.startsWith(item.url);
+                                const isCurrentPage = normalizedPath === item.url;
 
                                 return (
                                     <SidebarMenuItem key={item.title}>
@@ -91,7 +92,7 @@ export function MidwifeSidebar() {
                                                 href={item.url}
                                                 className="min-h-10 "
                                                 onClick={() => {
-                                                    if (item.url !== "#" && item.url !== pathname) {
+                                                    if (item.url !== "#" && !isCurrentPage) {
                                                         setLoadingUrl(item.url);
                                                     }
                                                     if (isMobile) {

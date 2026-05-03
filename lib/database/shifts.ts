@@ -1071,16 +1071,23 @@ export class ShiftService {
           const shiftStartOnDate = toDate(`${sDate}T${pStartLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
           const shiftEndOnDate = toDate(`${sDate}T${pEndLocal}`, { timeZone: 'Europe/Amsterdam' }).toISOString();
 
-          if (breakStartTs >= shiftStartOnDate && breakEndTs <= shiftEndOnDate) {
+          const breakStart = new Date(breakStartTs);
+          const breakEnd = new Date(breakEndTs);
+          const shiftStart = new Date(shiftStartOnDate);
+          const shiftEnd = new Date(shiftEndOnDate);
+
+          if (breakStart < shiftEnd && shiftStart < breakEnd) {
             const isOverridden = localBreaks.some(lb => lb.sitewide_break_id === b.id);
             if (!isOverridden) {
+              const clippedStart = breakStart > shiftStart ? breakStart : shiftStart;
+              const clippedEnd = breakEnd < shiftEnd ? breakEnd : shiftEnd;
               inheritedBreaks.push({
                 id: `inherited-${b.id}-${shiftId}`,
                 shift_id: shiftId,
                 sitewide_break_id: b.id,
                 name: b.name,
-                start_time: breakStartTs,
-                end_time: breakEndTs,
+                start_time: clippedStart.toISOString(),
+                end_time: clippedEnd.toISOString(),
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
               } as ShiftBreak);

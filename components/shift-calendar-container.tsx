@@ -97,9 +97,10 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
   }, [filteredEvents]);
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border">
       <ShiftCalendarHeader view={view} events={filteredEvents} onViewChange={onViewChange} onShiftCreated={onShiftCreated} hideAddButton={hideAddButton} staff={staff} locations={locations} services={services} />
 
+      <div className="min-h-0 flex-1 overflow-hidden">
       <DndProviderWrapper>
         {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} summaryShiftEvents={summaryShiftEvents} onShiftCreated={onShiftCreated} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} showNotesRow={false} shiftStaff={staff} shiftLocations={locations} shiftServices={services} />}
         {view === "month" && <CalendarMonthView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
@@ -107,6 +108,7 @@ export function ShiftCalendarContainer({ view, onViewChange, onShiftCreated, onS
         {view === "year" && <CalendarYearView allEvents={eventStartDates} onViewChange={onViewChange} />}
         {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} hideAddButton={hideAddButton} />}
       </DndProviderWrapper>
+      </div>
     </div>
   );
 }

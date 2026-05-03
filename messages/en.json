@@ -1504,7 +1504,7 @@
             "parity": "Parity",
             "contact": "Please contact Goud Echo or your midwife to update these details.",
             "protocolChecklist": "Protocol Checklist",
-            "staffChecklist": "Internal Staff Tasks"
+            "staffChecklist": "Task for assistant"
         }
     },
     "ClientSidebar": {
@@ -1618,7 +1618,7 @@
         "errorUpdating": "Failed to update item",
         "commentSaved": "Comment saved",
         "errorCommenting": "Failed to save comment",
-        "addItemPlaceholder": "Add a new checklist item...",
+        "addItemPlaceholder": "Add task to this appointment for assistant",
         "noItems": "No checklist items yet.",
         "completedBy": "Completed by",
         "commentPlaceholder": "Add a comment...",
@@ -1739,6 +1739,7 @@
         "btnCancel": "Cancel Appointment",
         "btnNoShow": "Mark No Show",
         "btnMarking": "Marking...",
+        "btnMore": "More",
         "btnReschedule": "Reschedule",
         "btnComplete": "Complete Appointment",
         "btnDelete": "Delete Booking",
@@ -1896,6 +1897,9 @@
             "description": "These strict limits completely block booking across ALL locations and ALL staff during the given timeframe.",
             "date": "Date",
             "pickDate": "Pick date",
+            "selectedDates": "{count} dates selected",
+            "clearDates": "Clear",
+            "done": "Done",
             "reason": "Reason",
             "reasonPlaceholder": "e.g. Holiday",
             "addHoliday": "Add Holiday",
@@ -1904,6 +1908,7 @@
             "empty": "No holidays configured.",
             "editTitle": "Edit Holiday",
             "startDateTime": "Start Date & Time",
+            "endDateOptional": "End Date (Optional)",
             "updateHoliday": "Update Holiday"
         },
         "breaks": {
@@ -1937,7 +1942,7 @@
             "loadHolidaysError": "Failed to load holidays",
             "loadBreaksError": "Failed to load sitewide breaks",
             "loadDataError": "Failed to load data",
-            "holidayCreated": "Holiday created",
+            "holidayCreated": "{count, plural, one {Holiday created} other {Holidays created}}",
             "createHolidayError": "Failed to create holiday",
             "breakCreated": "Sitewide break created",
             "createBreakError": "Failed to create break",

@@ -26,10 +26,13 @@ interface IProps {
     services: Service[];
     bookingLocations: Location[];
     bookingStaffMembers: Staff[];
+    pageViewMode?: 'calendar' | 'table';
+    onPageViewModeChange?: (mode: 'calendar' | 'table') => void;
 }
 
-export function BookingCalendarContainer({ view, onViewChange, onEventClick, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers }: IProps) {
+export function BookingCalendarContainer({ view, onViewChange, onEventClick, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers, pageViewMode, onPageViewModeChange }: IProps) {
     const { selectedDate, selectedUserId, selectedLocationId, events } = useCalendar();
+    const hideAddButton = userRole === 'staff';
 
     const filteredEvents = useMemo(() => {
         return events.filter(event => {
@@ -99,7 +102,7 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onB
     // or simple ensure the read-only props are respected by not passing the handlers
 
     return (
-        <div className="overflow-hidden rounded-xl border">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border">
             <BookingCalendarHeader 
               view={view} 
               events={filteredEvents} 
@@ -109,26 +112,32 @@ export function BookingCalendarContainer({ view, onViewChange, onEventClick, onB
               services={services}
               bookingLocations={bookingLocations}
               bookingStaffMembers={bookingStaffMembers}
+              pageViewMode={pageViewMode}
+              onPageViewModeChange={onPageViewModeChange}
+              hideAddButton={hideAddButton}
             />
 
+            <div className="min-h-0 flex-1 overflow-hidden">
             <DndProviderWrapper>
-                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
+                {view === "day" && <CalendarDayView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} hideAddButton={hideAddButton} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
                 {view === "month" && (
                     <CalendarMonthView 
                         singleDayEvents={singleDayEvents.filter(e => !e.metadata?.isShift)} 
                         multiDayEvents={multiDayEvents.filter(e => !e.metadata?.isShift)} 
                         onEventClick={onEventClick} 
+                        hideAddButton={hideAddButton}
                     />
                 )}
-                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
+                {view === "week" && <CalendarWeekView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} onShiftCreated={onBookingCreated} hideAddButton={hideAddButton} services={services} bookingLocations={bookingLocations} bookingStaffMembers={bookingStaffMembers} />}
                 {view === "year" && (
                     <CalendarYearView 
                         allEvents={eventStartDates.filter(e => !e.metadata?.isShift)} 
                         onViewChange={onViewChange} 
                     />
                 )}
-                {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} />}
+                {view === "agenda" && <CalendarAgendaView singleDayEvents={singleDayEvents} multiDayEvents={multiDayEvents} onEventClick={onEventClick} hideAddButton={hideAddButton} />}
             </DndProviderWrapper>
+            </div>
         </div>
     );
 }

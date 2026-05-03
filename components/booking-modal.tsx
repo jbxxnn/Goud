@@ -8,10 +8,17 @@ import { formatEuroCents } from '@/lib/currency/format';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Pencil, Save, X, Loader, ClipboardList, Info } from 'lucide-react';
+import { MoreHorizontal, Pencil, Save, X, Loader, ClipboardList, Info, AlertTriangle, Trash2, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ChecklistManager } from './staff-dashboard/checklist-manager';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { File01Icon, Tick01Icon, Copy01Icon } from '@hugeicons/core-free-icons';
@@ -346,6 +353,16 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
   const clientName = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') || t('placeholders.unknown') : t('placeholders.na');
   const staffName = staff ? [staff.first_name, staff.last_name].filter(Boolean).join(' ') || t('placeholders.unknown') : t('placeholders.unassigned');
   const serviceDuration = service?.duration ? formatDuration(service.duration, t) : t('placeholders.na');
+  const canCancelBooking = !!booking && !!onCancel && !['cancelled', 'completed'].includes(booking.status);
+  const canMarkNoShow = !!booking && !!onNoShow && ['confirmed', 'completed', 'ongoing'].includes(booking.status);
+  const canDeleteBooking = !!booking && !!onDelete && ['cancelled', 'completed'].includes(booking.status);
+  const canRescheduleBooking = !!booking && !!onReschedule && ['pending', 'confirmed'].includes(booking.status);
+  const canCompleteBooking = !!booking && !!onComplete && booking.status === 'ongoing';
+  const canRequestReview = !!booking && booking.status === 'completed';
+  const canPlanFollowUp = !!booking && !!booking.service_id && ['ongoing', 'completed'].includes(booking.status);
+  const hasMoreActions = canCancelBooking || canMarkNoShow || canDeleteBooking;
+  const hasPrimaryActions = canRescheduleBooking || canCompleteBooking || canRequestReview || canPlanFollowUp;
+  const hasFooterActions = hasMoreActions || hasPrimaryActions;
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -886,7 +903,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
               </div>
 
               {/* Staff Notes (Assistant <-> Staff) */}
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">{t('staffNotes')}</h3>
                   {!isEditingInternalNotes && userRole !== 'client' && (
@@ -972,7 +989,7 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
                     </div>
                   )
                 )}
-              </div>
+              </div> */}
 
                 {/* Booking Metadata */}
                 <div className="space-y-2 pt-4 border-t">
@@ -1030,108 +1047,123 @@ export default function BookingModal({ isOpen, onClose, booking, onCancel, onDel
           </div>
 
             {/* Action Buttons at Bottom */}
-            {((onReschedule && ['pending', 'confirmed'].includes(booking.status)) ||
-              (onCancel && !['cancelled', 'completed'].includes(booking.status)) ||
-              (onComplete && booking.status === 'ongoing') ||
-              (onDelete && ['cancelled', 'completed'].includes(booking.status)) ||
-              (booking.status !== 'cancelled' && booking.service_id)) ? (
-              <div className="px-6 py-4 border-t flex flex-wrap justify-end gap-3">
-                {onCancel && !['cancelled', 'completed'].includes(booking.status) && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      onClose();
-                      onCancel(booking);
-                    }}
-                    className="h-12 rounded-full bg-secondary-foreground px-6 text-base hover:bg-secondary-foreground/70"
-                  >
-                    {t('btnCancel')}
-                  </Button>
-                )}
-                {onNoShow && ['confirmed', 'completed', 'ongoing'].includes(booking.status) && (
-                  <Button
-                    variant="outline"
-                    className="h-12 min-w-[190px] rounded-full border-orange-500 px-6 text-base text-orange-500 hover:bg-orange-50"
-                    disabled={isMarkingNoShow}
-                    onClick={async () => {
-                      try {
-                        setIsMarkingNoShow(true);
-                        await onNoShow(booking);
-                        onClose();
-                      } catch (err) {
-                        // Only reset on error so user can try again
-                        setIsMarkingNoShow(false);
-                      }
-                    }}
-                  >
-                    {isMarkingNoShow ? (
-                      <>
-                        <Loader className="mr-2 h-4 w-4 animate-spin" />
-                        {t('btnMarking')}
-                      </>
-                    ) : (
-                      t('btnNoShow')
+            {hasFooterActions ? (
+              <div className="border-t bg-background/95 px-6 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-h-11 items-center">
+                    {hasMoreActions && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="h-11 rounded-full px-4 bg-accent">
+                            <MoreHorizontal className="mr-2 h-4 w-4" />
+                            {t('btnMore')}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          {canCancelBooking && (
+                            <DropdownMenuItem
+                              className="gap-2 text-destructive focus:text-destructive"
+                              onClick={() => {
+                                onClose();
+                                onCancel?.(booking);
+                              }}
+                            >
+                              <Ban className="h-4 w-4" />
+                              {t('btnCancel')}
+                            </DropdownMenuItem>
+                          )}
+                          {canMarkNoShow && (
+                            <DropdownMenuItem
+                              className="gap-2 text-orange-600 focus:text-orange-600"
+                              disabled={isMarkingNoShow}
+                              onClick={async () => {
+                                try {
+                                  setIsMarkingNoShow(true);
+                                  await onNoShow?.(booking);
+                                  onClose();
+                                } catch (err) {
+                                  // Only reset on error so user can try again.
+                                  setIsMarkingNoShow(false);
+                                }
+                              }}
+                            >
+                              {isMarkingNoShow ? (
+                                <Loader className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <AlertTriangle className="h-4 w-4" />
+                              )}
+                              {isMarkingNoShow ? t('btnMarking') : t('btnNoShow')}
+                            </DropdownMenuItem>
+                          )}
+                          {canDeleteBooking && (
+                            <>
+                              {(canCancelBooking || canMarkNoShow) && <DropdownMenuSeparator />}
+                              <DropdownMenuItem
+                                className="gap-2 text-destructive focus:text-destructive"
+                                onClick={() => {
+                                  onClose();
+                                  onDelete?.(booking);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {t('btnDelete')}
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
-                  </Button>
-                )}
-                {onReschedule && ['pending', 'confirmed'].includes(booking.status) && (
-                  <Button
-                    variant="default"
-                    onClick={() => {
-                      onClose();
-                      onReschedule(booking);
-                    }}
-                    className="h-12 rounded-full px-6 text-base"
-                  >
-                    {t('btnReschedule')}
-                  </Button>
-                )}
-                {onComplete && booking.status === 'ongoing' && (
-                  <Button
-                    variant="default"
-                    onClick={() => {
-                      onClose();
-                      onComplete(booking);
-                    }}
-                    className="h-12 rounded-full px-6 text-base"
-                  >
-                    {t('btnComplete')}
-                  </Button>
-                )}
-                {booking.status === 'completed' && (
-                  <Button
-                    variant="outline"
-                    className="h-12 min-w-[190px] rounded-full px-6 text-base"
-                    disabled={isCreatingReviewTask}
-                    onClick={handleRequestReview}
-                  >
-                    {isCreatingReviewTask ? (
-                      <>
-                        <Loader className="mr-2 h-4 w-4 animate-spin" />
-                        {locale === 'nl' ? 'Toevoegen...' : 'Adding...'}
-                      </>
-                    ) : (
-                      <span className={hasRequestedReview ? 'line-through opacity-70' : undefined}>
-                        {hasRequestedReview ? reviewRequestedLabel : reviewButtonLabel}
-                      </span>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                    {canRescheduleBooking && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          onClose();
+                          onReschedule?.(booking);
+                        }}
+                        className="h-11 rounded-full px-5"
+                      >
+                        {t('btnReschedule')}
+                      </Button>
                     )}
-                  </Button>
-                )}
-                {onDelete && ['cancelled', 'completed'].includes(booking.status) && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      onClose();
-                      onDelete(booking);
-                    }}
-                    className="h-12 min-w-[190px] rounded-full bg-destructive px-6 text-base text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {t('btnDelete')}
-                  </Button>
-                )}
-                {booking.service_id && ['ongoing', 'completed'].includes(booking.status) && (
-                  <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
-                )}
+                    {canCompleteBooking && (
+                      <Button
+                        variant="default"
+                        onClick={() => {
+                          onClose();
+                          onComplete?.(booking);
+                        }}
+                        className="h-11 rounded-full px-5"
+                      >
+                        {t('btnComplete')}
+                      </Button>
+                    )}
+                    {canRequestReview && (
+                      <Button
+                        variant="default"
+                        className="h-11 rounded-full px-5 bg-secondary-foreground"
+                        disabled={isCreatingReviewTask}
+                        onClick={handleRequestReview}
+                      >
+                        {isCreatingReviewTask ? (
+                          <>
+                            <Loader className="mr-2 h-4 w-4 animate-spin" />
+                            {locale === 'nl' ? 'Toevoegen...' : 'Adding...'}
+                          </>
+                        ) : (
+                          <span className={hasRequestedReview ? 'line-through opacity-70' : undefined}>
+                            {hasRequestedReview ? reviewRequestedLabel : reviewButtonLabel}
+                          </span>
+                        )}
+                      </Button>
+                    )}
+                    {canPlanFollowUp && (
+                      <RepeatPrescriber bookingId={booking.id} serviceId={booking.service_id} />
+                    )}
+                  </div>
+                </div>
               </div>
             ) : null}
           </>

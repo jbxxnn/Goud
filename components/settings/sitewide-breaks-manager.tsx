@@ -29,10 +29,12 @@ import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Calendar02Icon } from '@hugeicons/core-free-icons';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | 'breaks' }) {
   const t = useTranslations('SitewideBreaks');
   const locale = useLocale();
+  const queryClient = useQueryClient();
   const [holidays, setHolidays] = useState<BlackoutPeriod[]>([]);
   const [sitewideBreaks, setSitewideBreaks] = useState<SitewideBreak[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,11 +44,6 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [breakStartDateOpen, setBreakStartDateOpen] = useState(false);
   const [breakEndDateOpen, setBreakEndDateOpen] = useState(false);
-
-  const [editingHoliday, setEditingHoliday] = useState<BlackoutPeriod | null>(null);
-  const [submittingEditHoliday, setSubmittingEditHoliday] = useState(false);
-  const [editHolidayStartDateOpen, setEditHolidayStartDateOpen] = useState(false);
-  const [editHolidayEndDateOpen, setEditHolidayEndDateOpen] = useState(false);
 
   const [editingBreak, setEditingBreak] = useState<SitewideBreak | null>(null);
   const [submittingEditBreak, setSubmittingEditBreak] = useState(false);
@@ -93,6 +90,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     end_date: '',
     reason: '',
   });
+  const [selectedHolidayDates, setSelectedHolidayDates] = useState<Date[]>([]);
 
   const [newBreak, setNewBreak] = useState({
     name: '',
@@ -137,32 +135,45 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
     fetchData();
   }, []);
 
+  const refreshSitewideBreakConsumers = () => {
+    fetchData();
+    queryClient.invalidateQueries({ queryKey: ['staff-breaks'] });
+  };
+
   const handleCreateHoliday = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newHoliday.start_date || !newHoliday.end_date || !newHoliday.reason) return;
+    if (selectedHolidayDates.length === 0 || !newHoliday.reason) return;
 
     try {
       setSubmittingHoliday(true);
-      const response = await fetch('/api/blackout-periods', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newHoliday,
-          start_date: convertToUTC(newHoliday.start_date),
-          end_date: convertToUTC(newHoliday.end_date),
-          location_id: null,
-          staff_id: null,
-          is_active: true,
-        }),
-      });
+      const responses = await Promise.all(
+        selectedHolidayDates.map(async (date) => {
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const response = await fetch('/api/blackout-periods', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              start_date: convertToUTC(`${dateStr}T00:00`),
+              end_date: convertToUTC(`${dateStr}T23:59`),
+              reason: newHoliday.reason,
+              location_id: null,
+              staff_id: null,
+              is_active: true,
+            }),
+          });
+          const data = await response.json();
+          return { ok: response.ok && data.success, error: data.error };
+        })
+      );
 
-      const data = await response.json();
-      if (data.success) {
-        toast.success(t('toasts.holidayCreated'));
+      const failedResponse = responses.find((response) => !response.ok);
+      if (!failedResponse) {
+        toast.success(t('toasts.holidayCreated', { count: selectedHolidayDates.length }));
         setNewHoliday({ start_date: '', end_date: '', reason: '' });
+        setSelectedHolidayDates([]);
         fetchData();
       } else {
-        toast.error(data.error || t('toasts.createHolidayError'));
+        toast.error(failedResponse.error || t('toasts.createHolidayError'));
       }
     } catch (error) {
       toast.error(t('toasts.createHolidayError'));
@@ -170,6 +181,13 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       setSubmittingHoliday(false);
     }
   };
+
+  const selectedHolidayDateLabel =
+    selectedHolidayDates.length === 0
+      ? t('holidays.pickDate')
+      : selectedHolidayDates.length === 1
+        ? formatInAmsterdam(selectedHolidayDates[0], 'P')
+        : t('holidays.selectedDates', { count: selectedHolidayDates.length });
 
   const handleCreateBreak = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +216,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       if (data.success) {
         toast.success(t('toasts.breakCreated'));
         setNewBreak({ name: '', start_time: '', end_time: '', start_date: '', end_date: '', is_recurring: false });
-        fetchData();
+        refreshSitewideBreakConsumers();
       } else {
         toast.error(data.error || t('toasts.createBreakError'));
       }
@@ -206,40 +224,6 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       toast.error(t('toasts.createBreakError'));
     } finally {
       setSubmittingBreak(false);
-    }
-  };
-
-  const handleUpdateHoliday = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingHoliday || !editingHoliday.start_date || !editingHoliday.end_date || !editingHoliday.reason) return;
-
-    try {
-      setSubmittingEditHoliday(true);
-      const response = await fetch(`/api/blackout-periods/${editingHoliday.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          start_date: convertToUTC(editingHoliday.start_date),
-          end_date: convertToUTC(editingHoliday.end_date),
-          reason: editingHoliday.reason,
-          location_id: null,
-          staff_id: null,
-          is_active: true,
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success(t('toasts.holidayUpdated'));
-        setEditingHoliday(null);
-        fetchData();
-      } else {
-        toast.error(data.error || t('toasts.updateHolidayError'));
-      }
-    } catch (error) {
-      toast.error(t('toasts.updateHolidayError'));
-    } finally {
-      setSubmittingEditHoliday(false);
     }
   };
 
@@ -270,7 +254,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       if (data.success) {
         toast.success(t('toasts.breakUpdated'));
         setEditingBreak(null);
-        fetchData();
+        refreshSitewideBreakConsumers();
       } else {
         toast.error(data.error || t('toasts.updateBreakError'));
       }
@@ -301,7 +285,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
       const data = await response.json();
       if (data.success) {
          toast.success(t('toasts.breakDeleted'));
-         fetchData();
+         refreshSitewideBreakConsumers();
       } else {
          toast.error(data.error || t('toasts.deleteError'));
       }
@@ -331,41 +315,43 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                           variant="outline"
                           className={cn(
                             "justify-start text-left font-normal h-10 px-3 border-input bg-background",
-                            !newHoliday.start_date && "text-muted-foreground"
+                            selectedHolidayDates.length === 0 && "text-muted-foreground"
                           )}
                         >
                           <HugeiconsIcon icon={Calendar02Icon} />
                           <span className="truncate">
-                            {newHoliday.start_date ? formatInAmsterdam(newHoliday.start_date, "P") : t('holidays.pickDate')}
+                            {selectedHolidayDateLabel}
                           </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
-                          mode="single"
-                          selected={newHoliday.start_date ? new Date(newHoliday.start_date) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const dateStr = format(date, 'yyyy-MM-dd');
-                              const currentTime = newHoliday.start_date ? newHoliday.start_date.split('T')[1] : '00:00';
-                              const newStartDateStr = `${dateStr}T${currentTime}`;
-                              
-                              const endTime = newHoliday.end_date ? newHoliday.end_date.split('T')[1] : '23:59';
-                              const newEndDateStr = `${dateStr}T${endTime}`;
-                              
-                              setNewHoliday({ 
-                                ...newHoliday, 
-                                start_date: newStartDateStr,
-                                end_date: newEndDateStr 
-                              });
-                              setStartDateOpen(false);
-                            }
-                          }}
+                          mode="multiple"
+                          selected={selectedHolidayDates}
+                          onSelect={(dates) => setSelectedHolidayDates(dates ?? [])}
                           initialFocus
                           captionLayout="dropdown"
                           fromYear={2020}
                           toYear={2030}
                         />
+                        <div className="flex items-center justify-between gap-2 border-t p-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedHolidayDates([])}
+                            disabled={selectedHolidayDates.length === 0}
+                          >
+                            {t('holidays.clearDates')}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setStartDateOpen(false)}
+                          >
+                            {t('holidays.done')}
+                          </Button>
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <TimeInput
@@ -448,7 +434,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                     required
                   />
                 </div>
-                <Button type="submit" disabled={submittingHoliday} style={{borderRadius: '10px'}} className='h-10'>
+                <Button type="submit" disabled={submittingHoliday || selectedHolidayDates.length === 0} style={{borderRadius: '10px'}} className='h-10'>
                   {submittingHoliday ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   {t('holidays.addHoliday')}
                 </Button>
@@ -459,7 +445,7 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('holidays.reason')}</TableHead>
-                      <TableHead>{t('holidays.start')}</TableHead>
+                      <TableHead>{t('holidays.date')}</TableHead>
                       {/* <TableHead>End</TableHead> */}
                       <TableHead className="w-[100px]">{t('holidays.actions')}</TableHead>
                     </TableRow>
@@ -481,18 +467,10 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
                       holidays.map((b) => (
                         <TableRow key={b.id}>
                           <TableCell className="font-medium">{b.reason}</TableCell>
-                          <TableCell>{b.start_date ? formatInAmsterdam(b.start_date, 'PPp') : ''}</TableCell>
+                          <TableCell>{b.start_date ? formatInAmsterdam(b.start_date, 'PP') : ''}</TableCell>
                           {/* <TableCell>{b.end_date ? formatInAmsterdam(b.end_date, 'PPp') : ''}</TableCell> */}
                           <TableCell>
                             <div className="flex items-center space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditingHoliday(b)}
-                                className="text-secondary-foreground hover:text-foreground"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -749,153 +727,6 @@ export function SitewideBreaksManager({ activeTab }: { activeTab: 'holidays' | '
             </CardContent>
           </Card>
       )}
-
-      {/* Edit Holiday Dialog */}
-      <Dialog open={!!editingHoliday} onOpenChange={(open) => !open && setEditingHoliday(null)}>
-        <DialogContent className="max-w-[300px]" style={{borderRadius: "10px"}}>
-          <DialogHeader>
-            <DialogTitle>{t('holidays.editTitle')}</DialogTitle>
-          </DialogHeader>
-          {editingHoliday && (
-            <form onSubmit={handleUpdateHoliday} className="grid gap-4 py-4">
-              <div className='flex'>
-              <div className="grid gap-2 min-w-0">
-                  <Label>{t('holidays.startDateTime')}</Label>
-                  <div className="flex gap-2 min-w-0">
-                    <Popover modal={true} open={editHolidayStartDateOpen} onOpenChange={setEditHolidayStartDateOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "justify-start text-left font-normal h-10 px-3 border-input bg-background min-w-0",
-                            !editingHoliday.start_date && "text-muted-foreground"
-                          )}
-                        >
-                          <HugeiconsIcon icon={Calendar02Icon} />
-                          <span className="truncate">
-                            {editingHoliday.start_date ? formatInAmsterdam(editingHoliday.start_date, "P") : t('holidays.pickDate')}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editingHoliday.start_date ? new Date(editingHoliday.start_date) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const dateStr = format(date, 'yyyy-MM-dd');
-                              const currentStartTime = editingHoliday.start_date ? editingHoliday.start_date.split('T')[1] : '00:00';
-                              const newStartDateStr = `${dateStr}T${currentStartTime}`;
-                              
-                              const currentEndTime = editingHoliday.end_date ? editingHoliday.end_date.split('T')[1] : '23:59';
-                              const newEndDateStr = `${dateStr}T${currentEndTime}`;
-                              
-                              setEditingHoliday({ 
-                                ...editingHoliday, 
-                                start_date: newStartDateStr,
-                                end_date: newEndDateStr 
-                              });
-                              setEditHolidayStartDateOpen(false);
-                            }
-                          }}
-                          initialFocus
-                          captionLayout="dropdown"
-                          fromYear={2020}
-                          toYear={2030}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <TimeInput
-                      className="flex-1 min-w-[100px]"
-                      style={{borderRadius: "10px"}}
-                      dateInputClassName="h-10"
-                      hourCycle={24}
-                      value={editingHoliday.start_date ? new Time(parseInt(editingHoliday.start_date.split('T')[1].split(':')[0]), parseInt(editingHoliday.start_date.split('T')[1].split(':')[1])) : null}
-                      onChange={(time) => {
-                        if (time) {
-                          const datePart = editingHoliday.start_date ? editingHoliday.start_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
-                          setEditingHoliday({ ...editingHoliday, start_date: `${datePart}T${newTimeStr}` });
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-2 min-w-0">
-                  <Label>{t('holidays.endDateOptional')}</Label>
-                  <div className="flex gap-2 min-w-0">
-                    <Popover modal={true} open={editHolidayEndDateOpen} onOpenChange={setEditHolidayEndDateOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "justify-start text-left font-normal h-10 px-3 border-input bg-background min-w-0",
-                            !editingHoliday.end_date && "text-muted-foreground"
-                          )}
-                        >
-                          <HugeiconsIcon icon={Calendar02Icon} />
-                          <span className="truncate">
-                            {editingHoliday.end_date ? formatInAmsterdam(editingHoliday.end_date, "P") : t('holidays.pickDate')}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editingHoliday.end_date ? new Date(editingHoliday.end_date) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const dateStr = format(date, 'yyyy-MM-dd');
-                              const currentTime = editingHoliday.end_date ? editingHoliday.end_date.split('T')[1] : '23:59';
-                              setEditingHoliday({ ...editingHoliday, end_date: `${dateStr}T${currentTime}` });
-                              setEditHolidayEndDateOpen(false);
-                            }
-                          }}
-                          initialFocus
-                          captionLayout="dropdown"
-                          fromYear={2020}
-                          toYear={2030}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <TimeInput
-                      className="flex-1 min-w-[100px]"
-                      dateInputClassName="h-10"
-                      hourCycle={24}
-                      value={editingHoliday.end_date ? new Time(parseInt(editingHoliday.end_date.split('T')[1].split(':')[0]), parseInt(editingHoliday.end_date.split('T')[1].split(':')[1])) : null}
-                      onChange={(time) => {
-                        if (time) {
-                          const datePart = editingHoliday.end_date ? editingHoliday.end_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                          const newTimeStr = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
-                          setEditingHoliday({ ...editingHoliday, end_date: `${datePart}T${newTimeStr}` });
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit_h_reason">{t('holidays.reason')}</Label>
-                  <Input
-                    id="edit_h_reason"
-                    className='h-10'
-                    style={{borderRadius: '10px'}}
-                    value={editingHoliday.reason || ''}
-                    onChange={(e) => setEditingHoliday({ ...editingHoliday, reason: e.target.value })}
-                    required
-                  />
-                </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setEditingHoliday(null)}>{t('common.cancel')}</Button>
-                <Button type="submit" disabled={submittingEditHoliday} style={{borderRadius: '10px'}}>
-                  {submittingEditHoliday ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  {t('holidays.updateHoliday')}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Break Dialog */}
       <Dialog open={!!editingBreak} onOpenChange={(open) => !open && setEditingBreak(null)}>

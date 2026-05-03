@@ -5,7 +5,7 @@ import { LocationSelect } from "@/calendar/components/header/location-select";
 import { TodayButton } from "@/calendar/components/header/today-button";
 import { DateNavigator } from "@/calendar/components/header/date-navigator";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIcon, Calendar03Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { LeftToRightListDashIcon, Layout3ColumnIcon, LayoutGridIcon, GridTableIcon, Calendar03Icon, PlusSignIcon, ViewIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { AddBookingDialog } from "@/calendar/components/dialogs/add-booking-dialog";
 import type { IEvent } from "@/calendar/interfaces";
@@ -28,12 +28,16 @@ interface IProps {
     services: Service[];
     bookingLocations: Location[];
     bookingStaffMembers: Staff[];
+    pageViewMode?: 'calendar' | 'table';
+    onPageViewModeChange?: (mode: 'calendar' | 'table') => void;
+    hideAddButton?: boolean;
 }
 
-export function BookingCalendarHeader({ view, events, onViewChange, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers }: IProps) {
+export function BookingCalendarHeader({ view, events, onViewChange, onBookingCreated, userRole, services, bookingLocations, bookingStaffMembers, pageViewMode = 'calendar', onPageViewModeChange, hideAddButton }: IProps) {
     const { showShiftGuidance, setShowShiftGuidance, selectedDate } = useCalendar();
     // reusing shifts header translations for common view names if possible, or fallback to generic
     const t = useTranslations('Shifts.header');
+    const bookingsT = useTranslations('Bookings');
 
     // Filter out shifts from the header count (we only want to count bookings here)
     const bookingEvents = useMemo(() => events.filter(e => !e.metadata?.isShift), [events]);
@@ -47,6 +51,29 @@ export function BookingCalendarHeader({ view, events, onViewChange, onBookingCre
 
             <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
                 <div className="flex w-full items-center gap-4">
+                    {onPageViewModeChange && (
+                        <div className="flex items-center bg-accent rounded-full p-1 border">
+                            <Button
+                                aria-label={bookingsT('views.calendar')}
+                                variant={pageViewMode === 'calendar' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => onPageViewModeChange('calendar')}
+                            >
+                                <HugeiconsIcon icon={ViewIcon} size={16} />
+                            </Button>
+                            <Button
+                                aria-label={bookingsT('views.list')}
+                                variant={pageViewMode === 'table' ? 'secondary' : 'ghost'}
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => onPageViewModeChange('table')}
+                            >
+                                <HugeiconsIcon icon={LeftToRightListDashIcon} size={16} />
+                            </Button>
+                        </div>
+                    )}
+
                     <div className="flex items-center gap-2 px-2">
                         <Switch 
                             id="shift-guidance-toggle" 
@@ -133,21 +160,23 @@ export function BookingCalendarHeader({ view, events, onViewChange, onBookingCre
                     {userRole !== 'staff' && <UserSelect />}
                     <LocationSelect />
 
-                    <AddBookingDialog 
-                      services={services}
-                      locations={bookingLocations}
-                      staffMembers={bookingStaffMembers}
-                      startDate={selectedDate} 
-                      onBookingCreated={onBookingCreated}
-                    >
-                        <Button 
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4"
-                            style={{ borderRadius: '10rem' }}
+                    {!hideAddButton && (
+                        <AddBookingDialog
+                            services={services}
+                            locations={bookingLocations}
+                            staffMembers={bookingStaffMembers}
+                            startDate={selectedDate}
+                            onBookingCreated={onBookingCreated}
                         >
-                            <HugeiconsIcon icon={PlusSignIcon} size={18} />
-                            {/* {t('addBooking', { fallback: 'Add Booking' })} */}
-                        </Button>
-                    </AddBookingDialog>
+                            <Button
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10 px-4"
+                                style={{ borderRadius: '10rem' }}
+                            >
+                                <HugeiconsIcon icon={PlusSignIcon} size={18} />
+                                {/* {t('addBooking', { fallback: 'Add Booking' })} */}
+                            </Button>
+                        </AddBookingDialog>
+                    )}
                 </div>
             </div>
         </div>

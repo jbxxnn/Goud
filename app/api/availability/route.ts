@@ -322,13 +322,15 @@ export async function GET(req: NextRequest) {
           const breakStartTs = toDate(`${shiftDate}T${gb.start_time}`, { timeZone: 'Europe/Amsterdam' });
           const breakEndTs = toDate(`${shiftDate}T${gb.end_time}`, { timeZone: 'Europe/Amsterdam' });
 
-          // Only apply if it overlaps with the shift and isn't already overridden
-          if (breakStartTs >= s.startTime && breakEndTs <= s.endTime) {
+          // Apply any overlapping portion of the break to the shift.
+          if (breakStartTs < s.endTime && s.startTime < breakEndTs) {
             const isOverridden = (rawShiftBreaks ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
             if (!isOverridden) {
+              const clippedStart = breakStartTs > s.startTime ? breakStartTs : s.startTime;
+              const clippedEnd = breakEndTs < s.endTime ? breakEndTs : s.endTime;
               sitewideBreaksToApply.push({
-                start: breakStartTs,
-                end: breakEndTs
+                start: clippedStart,
+                end: clippedEnd
               });
             }
           }
@@ -370,6 +372,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
 
 

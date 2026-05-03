@@ -228,8 +228,8 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, summaryShiftE
   }, [selectedDate, dayEvents, hours]);
 
   return (
-    <div className="flex">
-      <div className="flex flex-1 flex-col">
+    <div className="flex h-full min-h-0">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div>
           <DayViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
 
@@ -309,7 +309,7 @@ export function CalendarDayView({ singleDayEvents, multiDayEvents, summaryShiftE
           )}
         </div>
 
-        <ScrollArea className="h-[800px]" type="always">
+        <ScrollArea className="h-full" type="always">
           <div className="flex">
             {/* Hours column */}
             <div className="relative w-18">

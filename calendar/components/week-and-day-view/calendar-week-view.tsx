@@ -155,7 +155,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
 
   return (
     <>
-      <div className="flex flex-col">
+      <div className="flex h-full min-h-0 flex-col">
         <div>
           <WeekViewMultiDayEventsRow selectedDate={selectedDate} multiDayEvents={multiDayEvents} onShiftDeleted={onShiftDeleted} onShiftUpdated={onShiftUpdated} onEventClick={onEventClick} />
 
@@ -310,7 +310,7 @@ export function CalendarWeekView({ singleDayEvents, multiDayEvents, summaryShift
           )}
         </div>
 
-        <ScrollArea className="h-[736px]" type="always">
+        <ScrollArea className="h-full" type="always">
           <div className="flex overflow-hidden">
             {/* Hours column */}
             <div className="relative w-18">

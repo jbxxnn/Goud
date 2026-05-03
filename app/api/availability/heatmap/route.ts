@@ -350,10 +350,12 @@ export async function GET(req: NextRequest) {
             const breakStartTs = toDate(`${dayKeyStr}T${gb.start_time}`, { timeZone: 'Europe/Amsterdam' });
             const breakEndTs = toDate(`${dayKeyStr}T${gb.end_time}`, { timeZone: 'Europe/Amsterdam' });
 
-            if (breakStartTs >= sStart && breakEndTs <= sEnd) {
+            if (breakStartTs < sEnd && sStart < breakEndTs) {
               const isOverridden = (rawShiftBreaks ?? []).some(sb => sb.shift_id === s.id && sb.sitewide_break_id === gb.id);
               if (!isOverridden) {
-                sitewideBreaksToApply.push({ start: breakStartTs, end: breakEndTs });
+                const clippedStart = breakStartTs > sStart ? breakStartTs : sStart;
+                const clippedEnd = breakEndTs < sEnd ? breakEndTs : sEnd;
+                sitewideBreaksToApply.push({ start: clippedStart, end: clippedEnd });
               }
             }
           }
@@ -403,5 +405,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Unexpected error' }, { status: 500 });
   }
 }
-
 
